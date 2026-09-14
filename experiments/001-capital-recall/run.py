@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime, timezone
 from importlib import metadata
+import html
 import json
 from pathlib import Path
 import sys
@@ -242,6 +243,196 @@ def write_results_json(result: dict[str, object], path: Path) -> None:
         json.dumps(result, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+
+
+def write_plots(result: dict[str, object], output_dir: Path) -> None:
+    """Create static cross-prompt logit and rank plots."""
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from matplotlib import pyplot as plt
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    prompts = result["prompts"]
+    if not prompts:
+        raise ValueError("Cannot plot an experiment result without prompts")
+    labels = [stage["label"] for stage in prompts[0]["stages"]]
+    x_values = list(range(len(labels)))
+
+    figure, axis = plt.subplots(figsize=(10, 5.5), constrained_layout=True)
+    for prompt_result in prompts:
+        target = prompt_result["target_token"]["text"].strip()
+        values = [stage["target_logit"] for stage in prompt_result["stages"]]
+        (line,) = axis.plot(x_values, values, marker="o", label=target)
+        axis.scatter(
+            [x_values[-1]],
+            [values[-1]],
+            marker="*",
+            s=150,
+            color=line.get_color(),
+            zorder=3,
+        )
+    axis.set_title("Experiment 001: target-token logit through the residual stream")
+    axis.set_xlabel("Residual-stream stage (star = actual final stage)")
+    axis.set_ylabel("Target-token logit")
+    axis.set_xticks(x_values, labels, rotation=30, ha="right")
+    axis.grid(alpha=0.25)
+    axis.legend(title="Target")
+    figure.savefig(output_dir / "target-logits.svg", format="svg")
+    plt.close(figure)
+
+    figure, axis = plt.subplots(figsize=(10, 5.5), constrained_layout=True)
+    for prompt_result in prompts:
+        target = prompt_result["target_token"]["text"].strip()
+        values = [stage["target_rank"] for stage in prompt_result["stages"]]
+        (line,) = axis.plot(x_values, values, marker="o", label=target)
+        axis.scatter(
+            [x_values[-1]],
+            [values[-1]],
+            marker="*",
+            s=150,
+            color=line.get_color(),
+            zorder=3,
+        )
+    axis.set_title("Experiment 001: target-token rank through the residual stream")
+    axis.set_xlabel("Residual-stream stage (star = actual final stage)")
+    axis.set_ylabel("Target-token rank (1 is best)")
+    axis.set_yscale("log")
+    axis.invert_yaxis()
+    axis.set_xticks(x_values, labels, rotation=30, ha="right")
+    axis.grid(alpha=0.25)
+    axis.legend(title="Target")
+    figure.savefig(output_dir / "target-ranks.svg", format="svg")
+    plt.close(figure)
+
+
+def _inline_svg(path: Path) -> str:
+    svg = path.read_text(encoding="utf-8")
+    return svg[svg.index("<svg") :]
+
+
+def _prompt_report_section(prompt_result: dict[str, object]) -> str:
+    escape = html.escape
+    target = prompt_result["target_token"]
+    prediction = prompt_result["final_model_prediction"]
+    validation = prompt_result["final_projection_validation"]
+    status_class = "ok" if prompt_result["target_is_final_top1"] else "warning"
+    if prompt_result["target_is_final_top1"]:
+        status = "The intended target is the model's actual top-1 next token."
+    else:
+        status = (
+            "Pythia-70M did not predict the intended target as its top-1 next token. "
+            "The measured trajectory is reported without replacing the model."
+        )
+    parity_note = ""
+    if not validation["logits_allclose"]:
+        parity_note = (
+            '<p class="warning"><strong>Raw-logit warning:</strong> The projected '
+            "and actual vectors preserve target rank and top-1 but are outside the "
+            f"configured tolerance. Mean offset: "
+            f"{validation['mean_actual_minus_projected_offset']:.9g}; maximum "
+            "difference after removing that offset: "
+            f"{validation['max_abs_difference_after_offset']:.9g}.</p>"
+        )
+
+    rows = "".join(
+        "<tr>"
+        f"<td>{escape(stage['label'])}</td>"
+        f"<td>{stage['target_logit']:.6f}</td>"
+        f"<td>{stage['target_rank']}</td>"
+        f"<td>{stage['logit_lens_probability']:.8f}</td>"
+        "</tr>"
+        for stage in prompt_result["stages"]
+    )
+    observations = "".join(
+        f"<li>{escape(observation)}</li>"
+        for observation in prompt_result["observations"]
+    )
+    token_pairs = ", ".join(
+        f"{escape(repr(token))} ({token_id})"
+        for token, token_id in zip(
+            prompt_result["tokenized_prompt"],
+            prompt_result["token_ids"],
+            strict=True,
+        )
+    )
+    return f"""
+    <section>
+      <h2>{escape(prompt_result['prompt'])}</h2>
+      <p><strong>Prompt tokens:</strong> {token_pairs}</p>
+      <p><strong>Target:</strong> {escape(repr(target['text']))} (ID {target['id']})</p>
+      <p><strong>Actual final prediction:</strong> {escape(repr(prediction['token']))}
+         (ID {prediction['token_id']}, logit {prediction['logit']:.6f},
+         probability {prediction['probability']:.8f})</p>
+      <p class="{status_class}"><strong>Factual-recall status:</strong> {status}</p>
+      <h3>Intermediate logit-lens projection</h3>
+      <table>
+        <thead><tr><th>Stage</th><th>Target logit</th><th>Target rank</th><th>Logit-lens probability</th></tr></thead>
+        <tbody>{rows}</tbody>
+      </table>
+      <h3>Final-projection validation</h3>
+      <p>Target-rank agreement: {validation['target_rank_matches']};
+         top-1 agreement: {validation['top1_token_id_matches']};
+         logits within tolerance: {validation['logits_allclose']};
+         maximum absolute raw-logit difference:
+         {validation['max_abs_logit_difference']:.9g}.</p>
+      {parity_note}
+      <h3>Measured observations</h3>
+      <ul>{observations}</ul>
+    </section>
+    """
+
+
+def write_html_report(result: dict[str, object], output_dir: Path) -> None:
+    """Create a local, self-contained report around the SVG measurements."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    logits_svg = _inline_svg(output_dir / "target-logits.svg")
+    ranks_svg = _inline_svg(output_dir / "target-ranks.svg")
+    prompt_sections = "".join(
+        _prompt_report_section(prompt_result) for prompt_result in result["prompts"]
+    )
+    model = result["model"]
+    document = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiment 001: Capital Recall Logit Lens</title>
+  <style>
+    body {{ font: 16px/1.55 system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #18212b; }}
+    h1, h2, h3 {{ line-height: 1.2; }}
+    section {{ border-top: 1px solid #ccd5df; margin-top: 2.5rem; padding-top: 1rem; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    th, td {{ border: 1px solid #ccd5df; padding: .45rem .6rem; text-align: right; }}
+    th:first-child, td:first-child {{ text-align: left; }}
+    .notice {{ background: #eef5ff; border-left: 4px solid #3977b8; padding: .8rem 1rem; }}
+    .ok {{ color: #176b36; }}
+    .warning {{ background: #fff3cd; color: #6b4d00; padding: .6rem .8rem; }}
+    .chart svg {{ width: 100%; height: auto; }}
+    code {{ background: #f3f5f7; padding: .1rem .25rem; }}
+  </style>
+</head>
+<body>
+  <h1>Experiment 001: Capital Recall Logit Lens</h1>
+  <p><strong>Model:</strong> {html.escape(model['name'])} ({html.escape(model['device'])}, {html.escape(model['dtype'])})</p>
+  <p><strong>Run:</strong> {html.escape(result['run_timestamp_utc'])}</p>
+  <div class="notice">
+    <strong>Interpretation limit.</strong> This observational logit-lens experiment
+    shows how a vocabulary projection changes across residual-stream stages. It
+    does not establish where a fact is stored or retrieved, does not explain a
+    change through attention or another component, and does not establish causation.
+    Intermediate softmax values are logit-lens probabilities, not actual intermediate
+    model predictions.
+  </div>
+  <div class="chart"><h2>Target logits</h2>{logits_svg}</div>
+  <div class="chart"><h2>Target ranks</h2>{ranks_svg}</div>
+  {prompt_sections}
+</body>
+</html>
+"""
+    (output_dir / "report.html").write_text(document, encoding="utf-8")
 
 
 def print_trace(result: dict[str, object]) -> None:

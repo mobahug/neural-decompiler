@@ -212,3 +212,22 @@ def test_write_results_json_preserves_required_machine_readable_fields(
     assert decoded["prompts"][0]["target_token"]["text"] == " Paris"
     assert decoded["prompts"][0]["stages"][0]["label"] == "embedding"
     assert "final_projection_validation" in decoded["prompts"][0]
+
+
+def test_report_writers_create_readable_svg_and_html(
+    tmp_path: Path,
+    sample_result: dict[str, object],
+) -> None:
+    runner.write_plots(sample_result, tmp_path)
+    runner.write_html_report(sample_result, tmp_path)
+
+    logits_svg = (tmp_path / "target-logits.svg").read_text()
+    ranks_svg = (tmp_path / "target-ranks.svg").read_text()
+    html = (tmp_path / "report.html").read_text()
+
+    assert "<svg" in logits_svg
+    assert "<svg" in ranks_svg
+    assert "The capital of France is" in html
+    assert "Intermediate logit-lens projection" in html
+    assert "does not establish where a fact is stored or retrieved" in html
+    assert "Final-projection validation" in html
