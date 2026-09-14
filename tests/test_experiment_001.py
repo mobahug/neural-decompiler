@@ -59,6 +59,53 @@ def test_observations_report_measured_extrema_without_causal_language() -> None:
     assert not ({"stored", "retrieved", "caused"} & words)
 
 
+def test_extrema_are_machine_readable_and_use_only_directional_changes() -> None:
+    stages = [
+        StageMetric("embedding", 0.0, 10, 0.01),
+        StageMetric("after_layer_0", 2.0, 3, 0.10),
+        StageMetric("after_layer_1", 1.5, 5, 0.05),
+    ]
+
+    assert runner.derive_extrema(stages) == {
+        "largest_target_logit_increase": {
+            "from_stage": "embedding",
+            "to_stage": "after_layer_0",
+            "target_logit_delta": 2.0,
+            "target_rank_delta": -7,
+        },
+        "largest_target_logit_decrease": {
+            "from_stage": "after_layer_0",
+            "to_stage": "after_layer_1",
+            "target_logit_delta": -0.5,
+            "target_rank_delta": 2,
+        },
+        "largest_target_rank_improvement": {
+            "from_stage": "embedding",
+            "to_stage": "after_layer_0",
+            "target_logit_delta": 2.0,
+            "target_rank_delta": -7,
+        },
+        "largest_target_rank_deterioration": {
+            "from_stage": "after_layer_0",
+            "to_stage": "after_layer_1",
+            "target_logit_delta": -0.5,
+            "target_rank_delta": 2,
+        },
+    }
+
+
+def test_observations_describe_zero_deltas_as_unchanged() -> None:
+    stages = [
+        StageMetric("embedding", 1.0, 4, 0.01),
+        StageMetric("after_layer_0", 1.0, 4, 0.01),
+    ]
+
+    assert runner.derive_observations(" Paris", stages) == [
+        "The Paris target logit was unchanged between all adjacent stages.",
+        "The Paris target rank was unchanged between all adjacent stages.",
+    ]
+
+
 class OneLayerCache:
     def accumulated_resid(
         self,
@@ -126,6 +173,7 @@ def test_analyze_prompt_records_tokens_actual_prediction_and_projection() -> Non
     assert result["target_is_final_top1"] is True
     assert result["stages"][-1]["target_rank"] == 1
     assert result["final_projection_validation"]["top1_token_id_matches"] is True
+    assert result["extrema"]["largest_target_logit_increase"]["target_logit_delta"] == 3.0
 
 
 @pytest.fixture
@@ -176,6 +224,22 @@ def sample_result() -> dict[str, object]:
                         "target_rank_delta": -49,
                     }
                 ],
+                "extrema": {
+                    "largest_target_logit_increase": {
+                        "from_stage": "embedding",
+                        "to_stage": "after_layer_0",
+                        "target_logit_delta": 3.0,
+                        "target_rank_delta": -49,
+                    },
+                    "largest_target_logit_decrease": None,
+                    "largest_target_rank_improvement": {
+                        "from_stage": "embedding",
+                        "to_stage": "after_layer_0",
+                        "target_logit_delta": 3.0,
+                        "target_rank_delta": -49,
+                    },
+                    "largest_target_rank_deterioration": None,
+                },
                 "final_projection_validation": {
                     "max_abs_logit_difference": 0.0,
                     "mean_actual_minus_projected_offset": 0.0,
@@ -211,6 +275,9 @@ def test_write_results_json_preserves_required_machine_readable_fields(
     assert decoded["model"]["name"] == "EleutherAI/pythia-70m-deduped"
     assert decoded["prompts"][0]["target_token"]["text"] == " Paris"
     assert decoded["prompts"][0]["stages"][0]["label"] == "embedding"
+    assert decoded["prompts"][0]["extrema"]["largest_target_logit_increase"][
+        "target_logit_delta"
+    ] == 3.0
     assert "final_projection_validation" in decoded["prompts"][0]
 
 

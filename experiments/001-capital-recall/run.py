@@ -55,81 +55,122 @@ def _transitions(stages: Sequence[StageMetric]) -> list[dict[str, object]]:
     ]
 
 
+def derive_extrema(stages: Sequence[StageMetric]) -> dict[str, dict[str, object] | None]:
+    """Select directional adjacent-stage extrema for machine-readable output."""
+
+    transitions = _transitions(stages)
+    logit_increases = [
+        item for item in transitions if float(item["target_logit_delta"]) > 0
+    ]
+    logit_decreases = [
+        item for item in transitions if float(item["target_logit_delta"]) < 0
+    ]
+    rank_improvements = [
+        item for item in transitions if int(item["target_rank_delta"]) < 0
+    ]
+    rank_deteriorations = [
+        item for item in transitions if int(item["target_rank_delta"]) > 0
+    ]
+    return {
+        "largest_target_logit_increase": max(
+            logit_increases,
+            key=lambda item: float(item["target_logit_delta"]),
+            default=None,
+        ),
+        "largest_target_logit_decrease": min(
+            logit_decreases,
+            key=lambda item: float(item["target_logit_delta"]),
+            default=None,
+        ),
+        "largest_target_rank_improvement": min(
+            rank_improvements,
+            key=lambda item: int(item["target_rank_delta"]),
+            default=None,
+        ),
+        "largest_target_rank_deterioration": max(
+            rank_deteriorations,
+            key=lambda item: int(item["target_rank_delta"]),
+            default=None,
+        ),
+    }
+
+
 def derive_observations(
     target_token: str,
     stages: Sequence[StageMetric],
+    *,
+    extrema: dict[str, dict[str, object] | None] | None = None,
 ) -> list[str]:
     """Describe the largest adjacent measured changes without causal language."""
 
     if len(stages) < 2:
         return []
-    transitions = _transitions(stages)
+    extrema = extrema if extrema is not None else derive_extrema(stages)
     target = target_token.strip()
-    logit_high = max(transitions, key=lambda item: float(item["target_logit_delta"]))
-    logit_low = min(transitions, key=lambda item: float(item["target_logit_delta"]))
-    rank_best = min(transitions, key=lambda item: int(item["target_rank_delta"]))
-    rank_worst = max(transitions, key=lambda item: int(item["target_rank_delta"]))
+    logit_high = extrema["largest_target_logit_increase"]
+    logit_low = extrema["largest_target_logit_decrease"]
+    rank_best = extrema["largest_target_rank_improvement"]
+    rank_worst = extrema["largest_target_rank_deterioration"]
 
     observations: list[str] = []
-    high_delta = float(logit_high["target_logit_delta"])
-    if high_delta > 0:
+    if logit_high is None and logit_low is None:
         observations.append(
-            f"The {target} target logit increased most strongly from "
-            f"{logit_high['from_stage']} to {logit_high['to_stage']} "
-            f"({high_delta:+.6f})."
+            f"The {target} target logit was unchanged between all adjacent stages."
         )
     else:
-        observations.append(
-            f"The {target} target logit did not increase between adjacent stages; "
-            f"the least negative change was from {logit_high['from_stage']} to "
-            f"{logit_high['to_stage']} ({high_delta:+.6f})."
-        )
+        if logit_high is not None:
+            high_delta = float(logit_high["target_logit_delta"])
+            observations.append(
+                f"The {target} target logit increased most strongly from "
+                f"{logit_high['from_stage']} to {logit_high['to_stage']} "
+                f"({high_delta:+.6f})."
+            )
+        else:
+            observations.append(
+                f"The {target} target logit did not increase between adjacent stages."
+            )
+        if logit_low is not None:
+            low_delta = float(logit_low["target_logit_delta"])
+            observations.append(
+                f"The {target} target logit decreased most strongly from "
+                f"{logit_low['from_stage']} to {logit_low['to_stage']} "
+                f"({low_delta:+.6f})."
+            )
+        else:
+            observations.append(
+                f"The {target} target logit did not decrease between adjacent stages."
+            )
 
-    low_delta = float(logit_low["target_logit_delta"])
-    if low_delta < 0:
+    stage_by_label = {stage.label: stage for stage in stages}
+    if rank_best is None and rank_worst is None:
         observations.append(
-            f"The {target} target logit decreased most strongly from "
-            f"{logit_low['from_stage']} to {logit_low['to_stage']} "
-            f"({low_delta:+.6f})."
+            f"The {target} target rank was unchanged between all adjacent stages."
         )
     else:
-        observations.append(
-            f"The {target} target logit did not decrease between adjacent stages; "
-            f"the smallest increase was from {logit_low['from_stage']} to "
-            f"{logit_low['to_stage']} ({low_delta:+.6f})."
-        )
-
-    best_delta = int(rank_best["target_rank_delta"])
-    best_from = next(stage for stage in stages if stage.label == rank_best["from_stage"])
-    best_to = next(stage for stage in stages if stage.label == rank_best["to_stage"])
-    if best_delta < 0:
-        observations.append(
-            f"The {target} target rank improved most strongly from "
-            f"{rank_best['from_stage']} to {rank_best['to_stage']} "
-            f"({best_from.target_rank} to {best_to.target_rank})."
-        )
-    else:
-        observations.append(
-            f"The {target} target rank did not improve between adjacent stages; "
-            f"the smallest worsening was from {rank_best['from_stage']} to "
-            f"{rank_best['to_stage']} ({best_from.target_rank} to {best_to.target_rank})."
-        )
-
-    worst_delta = int(rank_worst["target_rank_delta"])
-    worst_from = next(stage for stage in stages if stage.label == rank_worst["from_stage"])
-    worst_to = next(stage for stage in stages if stage.label == rank_worst["to_stage"])
-    if worst_delta > 0:
-        observations.append(
-            f"The {target} target rank worsened most strongly from "
-            f"{rank_worst['from_stage']} to {rank_worst['to_stage']} "
-            f"({worst_from.target_rank} to {worst_to.target_rank})."
-        )
-    else:
-        observations.append(
-            f"The {target} target rank did not worsen between adjacent stages; "
-            f"the smallest improvement was from {rank_worst['from_stage']} to "
-            f"{rank_worst['to_stage']} ({worst_from.target_rank} to {worst_to.target_rank})."
-        )
+        if rank_best is not None:
+            best_from = stage_by_label[str(rank_best["from_stage"])]
+            best_to = stage_by_label[str(rank_best["to_stage"])]
+            observations.append(
+                f"The {target} target rank improved most strongly from "
+                f"{rank_best['from_stage']} to {rank_best['to_stage']} "
+                f"({best_from.target_rank} to {best_to.target_rank})."
+            )
+        else:
+            observations.append(
+                f"The {target} target rank did not improve between adjacent stages."
+            )
+        if rank_worst is not None:
+            worst_from = stage_by_label[str(rank_worst["from_stage"])]
+            worst_to = stage_by_label[str(rank_worst["to_stage"])]
+            observations.append(
+                f"The {target} target rank worsened most strongly from "
+                f"{rank_worst['from_stage']} to {rank_worst['to_stage']} "
+                f"({worst_from.target_rank} to {worst_to.target_rank})."
+            )
+        else:
+            observations.append(
+                f"The {target} target rank did not worsen between adjacent stages."
+            )
     return observations
 
 
@@ -158,6 +199,7 @@ def analyze_prompt(model: Any, prompt: str, target_token: str) -> dict[str, obje
     top1_token_id = int(actual_final_logits.argmax().item())
     target_is_top1 = top1_token_id == target_token_id
     stages = list(projection.stages)
+    extrema = derive_extrema(stages)
     return {
         "prompt": prompt,
         "tokenized_prompt": _token_strings(model, tokens),
@@ -172,8 +214,9 @@ def analyze_prompt(model: Any, prompt: str, target_token: str) -> dict[str, obje
         "target_is_final_top1": target_is_top1,
         "stages": [asdict(stage) for stage in stages],
         "transitions": _transitions(stages),
+        "extrema": extrema,
         "final_projection_validation": asdict(projection.validation),
-        "observations": derive_observations(target_token, stages),
+        "observations": derive_observations(target_token, stages, extrema=extrema),
     }
 
 

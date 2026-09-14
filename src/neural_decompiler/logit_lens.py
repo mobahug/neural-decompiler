@@ -96,6 +96,8 @@ def metrics_from_logits(
         raise ValueError("Stage label count does not match the logits stage count")
     if not 0 <= target_token_id < logits.shape[1]:
         raise ValueError(f"Target token ID {target_token_id} is outside the vocabulary")
+    if not bool(torch.isfinite(logits).all()):
+        raise ValueError("Stage logits contain non-finite values")
 
     probabilities = torch.softmax(logits.float(), dim=-1)
     return [
@@ -124,6 +126,12 @@ def validate_final_projection(
     if projected_logits.shape != actual_logits.shape:
         raise ValueError(
             "Final projected and actual logits must have the same vocabulary shape"
+        )
+    if not bool(torch.isfinite(projected_logits).all()) or not bool(
+        torch.isfinite(actual_logits).all()
+    ):
+        raise FinalProjectionMismatch(
+            "Final residual projection validation received non-finite logits"
         )
 
     difference = actual_logits.float() - projected_logits.float()
