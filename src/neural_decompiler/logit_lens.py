@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
-from typing import Sequence
+from typing import Any, Sequence
 
 import torch
 from torch import Tensor
@@ -36,6 +36,14 @@ class FinalProjectionValidation:
     projected_top1_token_id: int
     actual_top1_token_id: int
     top1_token_id_matches: bool
+
+
+@dataclass(frozen=True)
+class PromptProjection:
+    """Logit-lens stages and their final-output parity result."""
+
+    stages: tuple[StageMetric, ...]
+    validation: FinalProjectionValidation
 
 
 class FinalProjectionMismatch(RuntimeError):
@@ -150,3 +158,40 @@ def validate_final_projection(
             f"maximum absolute logit difference {result.max_abs_logit_difference:.9g}"
         )
     return result
+
+
+def analyze_cached_prompt(
+    model: Any,
+    cache: Any,
+    actual_final_logits: Tensor,
+    target_token_id: int,
+    *,
+    atol: float = 1e-5,
+    rtol: float = 1e-5,
+) -> PromptProjection:
+    """Project normalized accumulated residuals through the complete unembedding."""
+
+    normalized_stack, cache_labels = cache.accumulated_resid(
+        return_labels=True,
+        apply_ln=True,
+    )
+    if normalized_stack.ndim != 4:
+        raise ValueError(
+            "Expected accumulated residuals shaped [stage, batch, position, model], "
+            f"received {normalized_stack.shape}"
+        )
+    if normalized_stack.shape[1] != 1:
+        raise ValueError("Experiment 001 analyzes exactly one prompt at a time")
+
+    final_position_by_stage = normalized_stack[:, 0, -1, :]
+    stage_logits = model.unembed(final_position_by_stage)
+    labels = stage_labels(cache_labels, model.cfg.n_layers)
+    stages = metrics_from_logits(stage_logits, target_token_id, labels)
+    validation = validate_final_projection(
+        stage_logits[-1],
+        actual_final_logits,
+        target_token_id,
+        atol=atol,
+        rtol=rtol,
+    )
+    return PromptProjection(stages=tuple(stages), validation=validation)

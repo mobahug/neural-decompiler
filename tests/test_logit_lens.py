@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 import torch
 
 from neural_decompiler.logit_lens import (
     FinalProjectionMismatch,
+    analyze_cached_prompt,
     metrics_from_logits,
     stage_labels,
     validate_final_projection,
@@ -64,3 +67,45 @@ def test_final_projection_rejects_rank_or_top1_disagreement(
 
     with pytest.raises(FinalProjectionMismatch):
         validate_final_projection(projected, actual, target_token_id=2)
+
+
+class FakeCache:
+    def accumulated_resid(
+        self,
+        *,
+        return_labels: bool,
+        apply_ln: bool,
+    ) -> tuple[torch.Tensor, list[str]]:
+        assert return_labels is True
+        assert apply_ln is True
+        residuals = torch.tensor(
+            [
+                [[[1.0, 0.0]]],
+                [[[0.0, 1.0]]],
+            ]
+        )
+        return residuals, ["0_pre", "final_post"]
+
+
+class FakeBridge:
+    cfg = SimpleNamespace(n_layers=1)
+
+    def unembed(self, residual: torch.Tensor) -> torch.Tensor:
+        weight = torch.tensor([[1.0, 0.0, 2.0], [0.0, 3.0, 1.0]])
+        bias = torch.tensor([0.5, -0.5, 1.0])
+        return residual @ weight + bias
+
+
+def test_analyze_cached_prompt_normalizes_then_uses_complete_unembedding() -> None:
+    actual = torch.tensor([0.5, 2.5, 2.0])
+
+    projection = analyze_cached_prompt(
+        FakeBridge(),
+        FakeCache(),
+        actual,
+        target_token_id=1,
+    )
+
+    assert projection.stages[0].target_logit == -0.5
+    assert projection.stages[1].target_logit == 2.5
+    assert projection.validation.logits_allclose is True
