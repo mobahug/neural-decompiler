@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import gc
+import html
 import importlib.util
 from importlib import metadata
 import json
@@ -245,6 +246,16 @@ def assemble_development_results(
             "dtype": "float32",
             "compatibility_mode": False,
         },
+        "dependencies": _dependency_versions(),
+        "protocol": {
+            "development_case_count": 60,
+            "heldout_case_count": 12,
+            "heldout_top1_success_threshold": 6,
+            "conditional_confirmation_boundary": (
+                "Held-out cases are isolated from Experiment 004 prompt selection, "
+                "but the countries were observed under older formats in Experiment 003."
+            ),
+        },
         "format_summaries": summaries,
         "selected_format": winner["format_id"],
         "cases": cases,
@@ -325,6 +336,188 @@ def analyze_locked_heldout(
     )
 
 
+def summarize_heldout(cases: Sequence[Mapping[str, object]]) -> dict[str, object]:
+    if len(cases) != len(HELDOUT_PAIRS):
+        raise ValueError(f"Held-out result must contain exactly {len(HELDOUT_PAIRS)} cases")
+    successes = sum(bool(case["target_is_final_top1"]) for case in cases)
+    if successes >= 6:
+        decision = "strong_support"
+    elif successes:
+        decision = "partial_insufficient"
+    else:
+        decision = "heldout_failure"
+    return {
+        "case_count": len(cases),
+        "top1_count": successes,
+        "strong_support_threshold": 6,
+        "decision": decision,
+        "median_target_rank": float(median(int(case["final_target"]["rank"]) for case in cases)),
+        "mean_final_selectivity_margin": float(
+            mean(float(case["final_metrics"]["final_correct_minus_control_logit"]) for case in cases)
+        ),
+        "c001_final_block_replication_count": sum(
+            bool(case["final_metrics"]["c001_final_block_replicated"]) for case in cases
+        ),
+        "interpretation": (
+            "Predeclared project decision criterion; rank and selectivity cannot rescue "
+            "failure of the top-1 threshold."
+        ),
+    }
+
+
+def assemble_final_results(
+    development: Mapping[str, object],
+    lock: Mapping[str, object],
+    heldout_cases: list[dict[str, object]],
+    *,
+    timestamp: str,
+    git_commit: str,
+) -> dict[str, object]:
+    summary = summarize_heldout(heldout_cases)
+    return {
+        "schema_version": "1.0",
+        "experiment": "EXPERIMENT-004",
+        "phase": "heldout_complete",
+        "analysis_status": "conditionally_confirmatory",
+        "run_timestamp_utc": timestamp,
+        "analysis_code_commit": git_commit,
+        "model": development["model"],
+        "dependencies": development.get("dependencies", {}),
+        "selection_lock": dict(lock),
+        "protocol": development.get("protocol", {}),
+        "summary": {
+            "development": {
+                "selected_format": development["selected_format"],
+                "format_summaries": development["format_summaries"],
+            },
+            "heldout": summary,
+        },
+        "development_cases": development["cases"],
+        "heldout_cases": heldout_cases,
+        "observations": [
+            f"The locked {lock['selected_format']} format produced the intended capital "
+            f"as top-1 in {summary['top1_count']} of {summary['case_count']} held-out cases.",
+            f"The predeclared held-out decision was {summary['decision']}.",
+            "The result is conditionally confirmatory for prompt-format transfer because "
+            "these countries were observed under older formats in Experiment 003.",
+        ],
+        "interpretation_boundary": (
+            "Observational prompt-elicitation evidence only; this experiment does not "
+            "identify a causal mechanism or localize factual knowledge."
+        ),
+    }
+
+
+def _save_development_plot(result: Mapping[str, object], path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    rows = result["summary"]["development"]["format_summaries"]
+    labels = [str(row["format_id"]) for row in rows]
+    top1 = [int(row["top1_count"]) for row in rows]
+    ranks = [float(row["median_target_rank"]) for row in rows]
+    figure, axes = plt.subplots(1, 2, figsize=(10, 4))
+    axes[0].bar(labels, top1, color="#2563eb")
+    axes[0].axhline(6, color="#dc2626", linestyle="--", linewidth=1)
+    axes[0].set(title="Development top-1 behavior", ylabel="Correct top-1 count", ylim=(0, 12.5))
+    axes[1].bar(labels, ranks, color="#7c3aed")
+    axes[1].set(title="Development target rank", ylabel="Median rank (lower is better)")
+    figure.suptitle("Frozen prompt-format comparison (12 development countries)")
+    figure.tight_layout()
+    figure.savefig(path, format="svg")
+    plt.close(figure)
+
+
+def _save_heldout_behavior(result: Mapping[str, object], path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    cases = result["heldout_cases"]
+    labels = [str(case["country"]) for case in cases]
+    values = [int(bool(case["target_is_final_top1"])) for case in cases]
+    colors = ["#16a34a" if value else "#dc2626" for value in values]
+    figure, axis = plt.subplots(figsize=(11, 4.5))
+    axis.bar(labels, values, color=colors)
+    axis.set(title=f"Held-out strict next-token behavior: {sum(values)}/{len(values)}", ylabel="Target is top-1", ylim=(0, 1.2))
+    axis.tick_params(axis="x", rotation=40)
+    figure.tight_layout()
+    figure.savefig(path, format="svg")
+    plt.close(figure)
+
+
+def _save_heldout_selectivity(result: Mapping[str, object], path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    cases = result["heldout_cases"]
+    labels = [str(case["country"]) for case in cases]
+    margins = [float(case["final_metrics"]["final_correct_minus_control_logit"]) for case in cases]
+    colors = ["#2563eb" if margin >= 0 else "#f97316" for margin in margins]
+    figure, axis = plt.subplots(figsize=(11, 4.5))
+    axis.bar(labels, margins, color=colors)
+    axis.axhline(0, color="#111827", linewidth=1)
+    axis.set(title="Held-out correct-minus-balanced-control margin", ylabel="Final logit margin")
+    axis.tick_params(axis="x", rotation=40)
+    figure.tight_layout()
+    figure.savefig(path, format="svg")
+    plt.close(figure)
+
+
+def _embedded_svg(path: Path) -> str:
+    content = path.read_text()
+    return content[content.index("<svg") :]
+
+
+def _write_report(result: Mapping[str, object], path: Path, svg_paths: Sequence[Path]) -> None:
+    heldout = result["summary"]["heldout"]
+    selected = result["summary"]["development"]["selected_format"]
+    rows = []
+    for case in result["heldout_cases"]:
+        prediction = case.get("final_model_prediction", {})
+        rows.append(
+            "<tr>"
+            f"<td>{html.escape(str(case['country']))}</td>"
+            f"<td>{html.escape(str(case['correct_target']['text']))}</td>"
+            f"<td>{html.escape(str(prediction.get('token', '')))}</td>"
+            f"<td>{'yes' if case['target_is_final_top1'] else 'no'}</td>"
+            f"<td>{case['final_target']['rank']}</td>"
+            f"<td>{case['final_metrics']['final_correct_minus_control_logit']:+.4f}</td>"
+            "</tr>"
+        )
+    svgs = "".join(f"<section>{_embedded_svg(svg)}</section>" for svg in svg_paths)
+    document = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Experiment 004 report</title><style>
+body{{font:16px system-ui;max-width:1180px;margin:2rem auto;padding:0 1rem;color:#172033}}
+.callout{{padding:1rem;border-left:5px solid #2563eb;background:#eff6ff}}table{{border-collapse:collapse;width:100%}}
+th,td{{padding:.55rem;border-bottom:1px solid #dbe2ea;text-align:left}}svg{{max-width:100%;height:auto}}
+</style></head><body>
+<h1>Experiment 004 — Prompt Elicitation</h1>
+<div class="callout"><strong>Conditionally confirmatory result:</strong> locked format {html.escape(str(selected))}
+produced the intended target as top-1 in {heldout['top1_count']}/{heldout['case_count']} held-out cases.
+Decision: <code>{heldout['decision']}</code>.</div>
+<p>The held-out countries were isolated from Experiment 004 prompt selection, but were previously measured under older formats. Development results are exploratory.</p>
+{svgs}
+<h2>Held-out cases</h2><table><thead><tr><th>Country</th><th>Target</th><th>Actual top-1</th><th>Correct</th><th>Rank</th><th>Selectivity</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table>
+<h2>Interpretation boundary</h2>
+<p>C001 remains observational. This experiment does not identify a causal mechanism, factual storage location, attention-head explanation, MLP explanation, or circuit.</p>
+</body></html>"""
+    path.write_text(document)
+
+
+def write_final_outputs(result: dict[str, object], output_dir: Path = OUTPUT_DIR) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    json_path = output_dir / "results.json"
+    json_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
+    svg_paths = (
+        output_dir / "development-prompt-comparison.svg",
+        output_dir / "heldout-behavior.svg",
+        output_dir / "heldout-selectivity.svg",
+    )
+    _save_development_plot(result, svg_paths[0])
+    _save_heldout_behavior(result, svg_paths[1])
+    _save_heldout_selectivity(result, svg_paths[2])
+    _write_report(result, output_dir / "report.html", svg_paths)
+
+
 def run_development() -> None:
     if LOCK_PATH.exists():
         raise SelectionLockError("Tracked selection lock already exists; refusing to regenerate development")
@@ -357,13 +550,34 @@ def run_development() -> None:
 
 def run_heldout() -> None:
     lock = load_verified_lock()
+    development = json.loads(DEVELOPMENT_PATH.read_text())
     model = load_model()
     try:
-        ensure_model_identity(model)
+        resolved = ensure_model_identity(model)
+        if resolved != development["model"]["resolved_revision"]:
+            raise RuntimeError("Held-out model revision differs from development")
         with torch.inference_mode():
             cases = analyze_locked_heldout(model, lock)
+        result = assemble_final_results(
+            development,
+            lock,
+            cases,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            git_commit=_git_head(),
+        )
+        write_final_outputs(result)
         print(f"Held-out cases: {len(cases)}")
         print(f"Locked format: {lock['selected_format']}")
+        for case in cases:
+            prediction = case["final_model_prediction"]
+            print(
+                f"{case['country']}: target={case['correct_target']['text']!r}; "
+                f"top1={prediction['token']!r}; rank={case['final_target']['rank']}; "
+                f"margin={case['final_metrics']['final_correct_minus_control_logit']:+.6f}"
+            )
+        heldout = result["summary"]["heldout"]
+        print(f"Decision: {heldout['decision']} ({heldout['top1_count']}/{heldout['case_count']} top-1)")
+        print(f"Report: {OUTPUT_DIR / 'report.html'}")
     finally:
         del model
         gc.collect()

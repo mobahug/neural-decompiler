@@ -35,6 +35,12 @@ def _fake_case(country: str, capital: str, format_id: str) -> dict[str, object]:
         "correct_target": {"text": f" {capital}", "id": 2},
         "control_targets": [],
         "actual_top1": {"text": f" {capital}" if format_id == "F4" else " the", "id": 2 if format_id == "F4" else 3},
+        "final_model_prediction": {
+            "token": f" {capital}" if format_id == "F4" else " the",
+            "token_id": 2 if format_id == "F4" else 3,
+            "logit": 3.0,
+            "probability": 0.2,
+        },
         "target_is_final_top1": format_id == "F4",
         "final_target": {"logit": 2.0, "rank": rank, "probability": 0.02},
         "candidate_stages": {
@@ -154,3 +160,57 @@ def test_heldout_refuses_when_tracked_lock_is_missing(tmp_path: Path) -> None:
             lock_path=tmp_path / "selection-lock.json",
             development_path=tmp_path / "development-results.json",
         )
+
+
+@pytest.mark.parametrize(
+    ("successes", "label"),
+    [(6, "strong_support"), (3, "partial_insufficient"), (0, "heldout_failure")],
+)
+def test_heldout_decision_uses_frozen_top1_threshold(successes: int, label: str) -> None:
+    cases = [_fake_case(pair.country, pair.capital, "F4") for pair in runner.HELDOUT_PAIRS]
+    for index, case in enumerate(cases):
+        case["target_is_final_top1"] = index < successes
+    summary = runner.summarize_heldout(cases)
+    assert summary["top1_count"] == successes
+    assert summary["decision"] == label
+    assert summary["strong_support_threshold"] == 6
+
+
+def test_final_outputs_include_three_svgs_and_conditional_report(tmp_path: Path) -> None:
+    development_cases = [
+        _fake_case(pair.country, pair.capital, format_id)
+        for format_id in ("F1", "F2", "F3", "F4", "F5")
+        for pair in runner.DEVELOPMENT_PAIRS
+    ]
+    development = runner.assemble_development_results(
+        development_cases,
+        resolved_revision=runner.MODEL_REVISION,
+        timestamp="2026-09-15T00:00:00+00:00",
+        git_commit="e" * 40,
+    )
+    heldout = [_fake_case(pair.country, pair.capital, "F4") for pair in runner.HELDOUT_PAIRS]
+    result = runner.assemble_final_results(
+        development,
+        {"selected_format": "F4", "protocol_code_commit": "e" * 40},
+        heldout,
+        timestamp="2026-09-15T01:00:00+00:00",
+        git_commit="f" * 40,
+    )
+
+    runner.write_final_outputs(result, tmp_path)
+
+    stored = json.loads((tmp_path / "results.json").read_text())
+    assert stored["summary"]["heldout"]["top1_count"] == 12
+    assert stored["summary"]["heldout"]["decision"] == "strong_support"
+    for filename in (
+        "development-prompt-comparison.svg",
+        "heldout-behavior.svg",
+        "heldout-selectivity.svg",
+    ):
+        assert (tmp_path / filename).read_text().lstrip().startswith("<?xml")
+    report = (tmp_path / "report.html").read_text()
+    assert "Conditionally confirmatory" in report
+    assert "12/12" in report
+    assert "C001 remains observational" in report
+    assert "does not identify a causal mechanism" in report
+    assert report.count("<svg") == 3
