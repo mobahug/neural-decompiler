@@ -101,10 +101,27 @@ Generated outputs are written to `outputs/experiment-002/`:
 - [x] Research question and frozen protocol documented
 - [x] Held-out cases and controls fixed before outcome inspection
 - [x] Implementation covered by automated tests
-- [ ] Real Pythia-70M execution completed
-- [ ] Final-projection validity checks passed
-- [ ] Generated artifacts inspected
-- [ ] Claim evidence reviewed
+- [x] Real Pythia-70M execution completed
+- [x] Final-projection validity checks passed
+- [x] Generated artifacts inspected
+- [x] Claim evidence reviewed
+
+## Measured results
+
+The preregistered primary hypothesis was **not supported**. Both templates satisfied the final-margin and Wilson-interval conditions, but both failed the required positive final-block selectivity-change condition.
+
+| Template | Positive final margins | Wilson 95% interval | Median final margin | Median final-block selectivity change | Correct-over-control comparisons | Intended target top-1 | C001 final-block pattern |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Canonical | 24/24 | 0.862–1.000 | +3.246684 | −12.074371 | 71/72 | 0/24 | 24/24 |
+| Paraphrase | 24/24 | 0.862–1.000 | +4.939372 | −10.439687 | 72/72 | 0/24 | 24/24 |
+
+Across both templates, every correct capital had a positive final logit margin over the mean of its three controls, and the correct target beat 143 of 144 individual controls. However, no intended capital was the model's actual top-1 token. These measurements show discrimination within the predefined capital candidates, not successful unconstrained factual completion.
+
+Every case had a negative final-block selectivity change. For the canonical template the changes ranged from −29.107015 to −6.725627; for the paraphrase they ranged from −22.486186 to −3.806925. Thus the final block increased every correct target's raw logit most strongly while increasing the balanced controls still more on average. This supports C001's narrow raw-logit description but does not support interpreting that increase as selective factual amplification.
+
+The C001 secondary criterion was met: 24 of 24 canonical held-out cases exceeded the preregistered requirement of 18 of 24. The claim remains observational and non-causal.
+
+The definitive run used analysis commit `94cf529dfc00a927a6fc16b44729a4558419d000`. Final projected logits matched actual logits exactly in all 48 cases; the maximum absolute difference was 0.0. The run took 8.77 seconds and used 770,654,208 bytes maximum resident memory on the reviewed machine. The generated `results.json` SHA-256 is `5526c33f1dcef31790e50ba75aa35c2869a17f24d2d7886d8bcdabf6d85d1d31`.
 
 ## Interpretation limits
 
@@ -114,4 +131,4 @@ The 24 pairs form a tokenization-constrained convenience sample, not a random sa
 
 ## Related claims
 
-- [C001: Largest target-logit increase occurs across the final block for four tested capital prompts](../../research/claims/C001-final-block-target-logit-increase.md) — Experiment 002 provides a preregistered held-out replication test for the canonical template.
+- [C001: Largest target-logit increase occurs across the final block for four tested capital prompts](../../research/claims/C001-final-block-target-logit-increase.md) — Experiment 002 met the preregistered canonical held-out replication criterion while limiting any target-selective interpretation.
