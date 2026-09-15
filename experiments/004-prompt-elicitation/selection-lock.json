@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "experiment": "EXPERIMENT-004",
+  "model": {
+    "id": "EleutherAI/pythia-160m-deduped",
+    "revision": "582159a2dfe3e712a8d47ae83dec95ae3bde8e7e"
+  },
+  "split": {
+    "development": [
+      {"country": "Spain", "capital": "Madrid"},
+      {"country": "Austria", "capital": "Vienna"},
+      {"country": "Netherlands", "capital": "Amsterdam"},
+      {"country": "Norway", "capital": "Oslo"},
+      {"country": "Poland", "capital": "Warsaw"},
+      {"country": "Greece", "capital": "Athens"},
+      {"country": "Canada", "capital": "Ottawa"},
+      {"country": "China", "capital": "Beijing"},
+      {"country": "Egypt", "capital": "Cairo"},
+      {"country": "Chile", "capital": "Santiago"},
+      {"country": "Iran", "capital": "Tehran"},
+      {"country": "Switzerland", "capital": "Bern"}
+    ],
+    "heldout": [
+      {"country": "Portugal", "capital": "Lisbon"},
+      {"country": "Belgium", "capital": "Brussels"},
+      {"country": "Denmark", "capital": "Copenhagen"},
+      {"country": "Sweden", "capital": "Stockholm"},
+      {"country": "Hungary", "capital": "Budapest"},
+      {"country": "Ireland", "capital": "Dublin"},
+      {"country": "Japan", "capital": "Tokyo"},
+      {"country": "Russia", "capital": "Moscow"},
+      {"country": "Thailand", "capital": "Bangkok"},
+      {"country": "Iraq", "capital": "Baghdad"},
+      {"country": "Philippines", "capital": "Manila"},
+      {"country": "Syria", "capital": "Damascus"}
+    ]
+  },
+  "candidate_formats": [
+    {
+      "id": "F1",
+      "template": "The capital of {country} is",
+      "rationale": "Canonical declarative completion."
+    },
+    {
+      "id": "F2",
+      "template": "{country}'s capital is",
+      "rationale": "Country-first possessive completion."
+    },
+    {
+      "id": "F3",
+      "template": "What is the capital of {country}?",
+      "rationale": "Direct question syntax."
+    },
+    {
+      "id": "F4",
+      "template": "Question: What is the capital of {country}?\nAnswer:",
+      "rationale": "Explicit question and answer boundary."
+    },
+    {
+      "id": "F5",
+      "template": "Question: What is the capital of France?\nAnswer: Paris\n\nQuestion: What is the capital of Germany?\nAnswer: Berlin\n\nQuestion: What is the capital of {country}?\nAnswer:",
+      "rationale": "Fixed two-shot question-answer task induction."
+    }
+  ],
+  "selection_rule": [
+    "higher intended-target top-1 count",
+    "lower median intended-target rank",
+    "higher mean correct-minus-three-controls final-logit margin",
+    "fixed format order F1 < F2 < F3 < F4 < F5"
+  ],
+  "candidate_formats_digest": "34093caf552c52317eb5eaffbca9af0c1f1a928f788e3e3b551d153a1c3bfab7",
+  "protocol_digest": "c537f709fb704fc63f70ecf06b25311a420e8a9cb4ee084f46c0098e5b5d0076",
+  "development_results": {
+    "path": "outputs/experiment-004/development-results.json",
+    "sha256": "91158b791dbd96cb086277fbfb7d4166c00dd84ba91f2be27ca54f274e8204d8"
+  },
+  "selected_format": "F5",
+  "protocol_code_commit": "66054c21a81bdbe13af7380e0e7f15b1328ae0e7",
+  "created_at_utc": "2026-09-15T14:48:45.016608+00:00"
+}
