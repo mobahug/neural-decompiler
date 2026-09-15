@@ -1,5 +1,13 @@
-# neural-decompiler
-Reverse engineering learned computation in transformer language models through causal circuit discovery and interpretability.
+# Neural Decompiler
+
+Neural Decompiler is a mechanistic-interpretability research project investigating whether learned transformer computations can be turned into increasingly complete, causal, and human-understandable explanations.
+
+The project advances through small, reproducible experiments. It separates what was done from what the resulting evidence justifies us in believing, preserves negative and contradictory results, and limits every conclusion to the models, tasks, prompts, and interventions actually tested.
+
+## Research framework
+
+- [Research methodology](docs/RESEARCH_METHODOLOGY.md) — evidence levels, claim governance, falsification rules, and the claim template.
+- [Claim registry](research/claims/README.md) — an index of the project's scientific claims. Each claim file is the authoritative record of its evidence and current status.
 
 ## Experiments
 

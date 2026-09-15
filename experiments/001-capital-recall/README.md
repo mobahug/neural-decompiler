@@ -39,6 +39,21 @@ Generated artifacts are written to `outputs/experiment-001/`:
 
 The terminal also prints prompt tokens, token IDs, the target token ID, every stage's measurements, the actual final prediction, numerical validation, and observations.
 
+## Completion
+
+- [x] Research question and protocol documented
+- [x] Implementation covered by automated tests
+- [x] Real Pythia-70M experiment run completed
+- [x] Final-projection numerical validity checks passed
+- [x] Machine-readable results and human-readable report generated
+- [x] Interpretation limits documented
+
+Experiment completion records what was run; it does not independently establish a scientific claim.
+
+## Related claims
+
+- [C001: Largest target-logit increase occurs across the final block for four tested capital prompts](../../research/claims/C001-final-block-target-logit-increase.md) — Experiment 001 provides exploratory observational evidence.
+
 ## Concepts
 
 ### Residual stream
