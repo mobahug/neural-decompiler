@@ -317,6 +317,23 @@ def _case_outcome(case: dict[str, object]) -> CaseOutcome:
     )
 
 
+def evaluate_c001_replication(
+    observed_replications: int,
+    case_count: int,
+) -> dict[str, object]:
+    """Apply the frozen canonical-template C001 replication boundary."""
+
+    if case_count <= 0 or not 0 <= observed_replications <= case_count:
+        raise ValueError("C001 replication counts must satisfy 0 <= observed <= total")
+    return {
+        "template": "canonical",
+        "minimum_replications": C001_REPLICATION_MINIMUM,
+        "observed_replications": observed_replications,
+        "case_count": case_count,
+        "criterion_met": observed_replications >= C001_REPLICATION_MINIMUM,
+    }
+
+
 def _observations(summary: dict[str, object]) -> list[str]:
     support = bool(summary["primary_hypothesis_supported"])
     observations = [
@@ -360,14 +377,10 @@ def build_results(model: Any) -> dict[str, object]:
         required_template_ids=tuple(TEMPLATES),
     )
     canonical = summary["by_template"]["canonical"]
-    summary["c001_confirmatory_criterion"] = {
-        "template": "canonical",
-        "minimum_replications": C001_REPLICATION_MINIMUM,
-        "observed_replications": canonical["c001_final_block_replication_count"],
-        "case_count": canonical["case_count"],
-        "criterion_met": canonical["c001_final_block_replication_count"]
-        >= C001_REPLICATION_MINIMUM,
-    }
+    summary["c001_confirmatory_criterion"] = evaluate_c001_replication(
+        canonical["c001_final_block_replication_count"],
+        canonical["case_count"],
+    )
     dtype = str(getattr(model.cfg, "dtype", torch.float32)).removeprefix("torch.")
     return {
         "schema_version": "1.0",
@@ -602,6 +615,7 @@ def write_html_report(result: dict[str, object], output_dir: Path) -> None:
     details = "".join(_case_details(case) for case in result["cases"])
     model = result["model"]
     support = bool(result["summary"]["primary_hypothesis_supported"])
+    c001 = result["summary"]["c001_confirmatory_criterion"]
     outcome = "SUPPORTED" if support else "NOT SUPPORTED"
     outcome_class = "ok" if support else "warning"
     document = f"""<!doctype html>
@@ -653,6 +667,11 @@ def write_html_report(result: dict[str, object], output_dir: Path) -> None:
       <thead><tr><th>Template</th><th>Cases</th><th>Median final margin</th><th>Median final-block change</th><th>Positive margins</th><th>Wilson 95%</th><th>Correct top-1</th><th>Primary rule</th></tr></thead>
       <tbody>{summary_rows}</tbody>
     </table>
+    <h3>Secondary C001 replication outcome</h3>
+    <p>The final-block raw-logit pattern occurred in
+       <strong>{c001['observed_replications']} of {c001['case_count']}</strong>
+       canonical held-out cases. The preregistered rule required at least {c001['minimum_replications']}
+       of {c001['case_count']}; the criterion was {'met' if c001['criterion_met'] else 'not met'}.</p>
     <ul>{observations}</ul>
   </section>
   <div class="chart"><h2>Selectivity through layers</h2>{stage_svg}</div>

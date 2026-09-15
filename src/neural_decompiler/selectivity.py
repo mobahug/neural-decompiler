@@ -153,6 +153,39 @@ def _summarize_group(outcomes: Sequence[CaseOutcome]) -> dict[str, object]:
     }
 
 
+def _summarize_paired_templates_descriptively(
+    outcomes: Sequence[CaseOutcome],
+) -> dict[str, object]:
+    """Pool templates only for description, never for interval-based inference."""
+
+    if not outcomes:
+        raise ValueError("Cannot summarize an empty outcome group")
+    wins = sum(outcome.pairwise_wins for outcome in outcomes)
+    comparisons = sum(outcome.pairwise_total for outcome in outcomes)
+    top1_count = sum(outcome.target_is_top1 for outcome in outcomes)
+    positive_count = sum(outcome.final_margin > 0.0 for outcome in outcomes)
+    return {
+        "case_count": len(outcomes),
+        "median_final_correct_minus_control_logit": median(
+            outcome.final_margin for outcome in outcomes
+        ),
+        "median_final_block_selectivity_change": median(
+            outcome.final_block_change for outcome in outcomes
+        ),
+        "positive_final_margin_count": positive_count,
+        "positive_final_margin_fraction": positive_count / len(outcomes),
+        "pairwise_correct_over_control_wins": wins,
+        "pairwise_comparisons": comparisons,
+        "pairwise_win_fraction": wins / comparisons,
+        "intended_target_top1_count": top1_count,
+        "intended_target_top1_fraction": top1_count / len(outcomes),
+        "inference_warning": (
+            "Templates reuse the same countries and are not independent observations; "
+            "inferential criteria are evaluated per template."
+        ),
+    }
+
+
 def summarize_outcomes(
     outcomes: Sequence[CaseOutcome],
     required_template_ids: Sequence[str],
@@ -170,7 +203,7 @@ def summarize_outcomes(
         group = [outcome for outcome in outcomes if outcome.template_id == template_id]
         by_template[template_id] = _summarize_group(group)
     return {
-        "overall": _summarize_group(outcomes),
+        "overall_descriptive": _summarize_paired_templates_descriptively(outcomes),
         "by_template": by_template,
         "primary_hypothesis_supported": all(
             bool(summary["criteria"]["template_supports_primary_hypothesis"])

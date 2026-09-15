@@ -83,5 +83,37 @@ def test_summary_applies_preregistered_criteria_per_template() -> None:
     assert canonical["criteria"]["positive_median_final_margin"] is True
     assert canonical["criteria"]["positive_median_final_block_change"] is True
     assert canonical["criteria"]["positive_margin_wilson_lower_above_half"] is False
+    assert "positive_final_margin_wilson_95" not in summary["overall_descriptive"]
+    assert "c001_final_block_replication_count" not in summary["overall_descriptive"]
+    assert summary["overall_descriptive"]["inference_warning"] == (
+        "Templates reuse the same countries and are not independent observations; "
+        "inferential criteria are evaluated per template."
+    )
     assert summary["primary_hypothesis_supported"] is False
 
+
+def test_summary_locks_wilson_reference_and_template_conjunction() -> None:
+    canonical = [
+        CaseOutcome(str(index), "canonical", 1.0, 1.0, 3, 3, False, True)
+        for index in range(24)
+    ]
+    paraphrase = [
+        CaseOutcome(str(index), "paraphrase", 1.0, -1.0, 3, 3, False, True)
+        for index in range(24)
+    ]
+
+    summary = summarize_outcomes(
+        canonical + paraphrase,
+        required_template_ids=("canonical", "paraphrase"),
+    )
+
+    assert summary["by_template"]["canonical"]["positive_final_margin_wilson_95"][
+        "lower"
+    ] == pytest.approx(0.8620237953)
+    assert summary["by_template"]["canonical"]["criteria"][
+        "template_supports_primary_hypothesis"
+    ] is True
+    assert summary["by_template"]["paraphrase"]["criteria"][
+        "template_supports_primary_hypothesis"
+    ] is False
+    assert summary["primary_hypothesis_supported"] is False

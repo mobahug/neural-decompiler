@@ -117,6 +117,13 @@ def sample_result() -> dict[str, object]:
                 "paraphrase": template_summary,
             },
             "primary_hypothesis_supported": False,
+            "c001_confirmatory_criterion": {
+                "template": "canonical",
+                "minimum_replications": 18,
+                "observed_replications": 24,
+                "case_count": 24,
+                "criterion_met": True,
+            },
         },
         "cases": [
             {
@@ -284,6 +291,11 @@ def test_model_identity_requires_the_exact_pinned_revision() -> None:
         runner.ensure_model_identity(wrong)
 
 
+def test_c001_replication_rule_locks_17_versus_18_case_boundary() -> None:
+    assert runner.evaluate_c001_replication(17, 24)["criterion_met"] is False
+    assert runner.evaluate_c001_replication(18, 24)["criterion_met"] is True
+
+
 def test_results_json_preserves_protocol_and_case_measurements(tmp_path: Path) -> None:
     result = sample_result()
 
@@ -312,3 +324,6 @@ def test_report_writers_create_selectivity_svgs_and_self_contained_html(tmp_path
     assert "correct minus balanced-control" in report
     assert "does not identify an internal causal mechanism" in report
     assert "Final-projection validation" in report
+    assert "24 of 24" in report
+    assert "required at least 18" in report
+    assert "criterion was met" in report
