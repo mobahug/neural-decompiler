@@ -8,6 +8,7 @@ The project advances through small, reproducible experiments. It separates what 
 
 - [Research methodology](docs/RESEARCH_METHODOLOGY.md) — evidence levels, claim governance, falsification rules, and the claim template.
 - [Claim registry](research/claims/README.md) — an index of the project's scientific claims. Each claim file is the authoritative record of its evidence and current status.
+- [Anomaly registry](research/anomalies/README.md) — a lightweight inbox for unexpected measurements that merit verification, replication, or explanation before they become claims.
 
 ## Experiments
 

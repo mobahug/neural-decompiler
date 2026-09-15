@@ -170,6 +170,127 @@ A **confirmatory** result tests a prediction and outcome criteria documented in 
 
 Both forms are valuable. They must not be presented as interchangeable.
 
+## Discovery layer
+
+The evidence ladder evaluates scientific claims. A separate discovery layer records unexpected measurements before they justify a claim. Its purpose is to help the project notice, verify, and investigate surprising results without treating every unusual graph or disagreement as a discovery.
+
+The discovery flow is:
+
+```text
+experiment and measurement
+          ↓
+potential anomaly
+          ↓
+verify data, implementation, and measurement
+          ↓
+compare with a justified baseline where possible
+          ↓
+record and triage anomaly
+          ↓
+replicate and test mundane explanations
+          ↓
+explain, fail to reproduce, retire, or form a hypothesis
+          ↓
+commit prediction, protocol, and outcome criteria
+          ↓
+collect independent confirmatory evidence
+          ↓
+create or update a claim when justified
+```
+
+An anomaly is not a scientific claim and does not count as claim evidence merely because it has been recorded. Most anomalies may be explained, fail replication, or be retired without producing a claim. That is a normal research outcome.
+
+Each file under `research/anomalies/` is authoritative for that anomaly. The anomaly registry links to records without duplicating their live status.
+
+### Anomaly categories
+
+The initial categories are:
+
+- **`DATA_BEHAVIORAL`** — an input, prompt class, task, output, activation pattern, or behavior differs materially from an expected or comparison pattern.
+- **`METHOD_DISAGREEMENT`** — two measurement or interpretability methods produce materially incompatible conclusions. The record must first establish that the methods are intended to measure comparable constructs.
+- **`SCALE_TRAINING_DYNAMICS`** — a pattern unexpectedly appears, disappears, reorganizes, or changes across model sizes, checkpoints, or training stages. Relevant architectural, data, and checkpoint differences must be documented as possible confounders.
+
+Additional categories are introduced only when actual experiments require them.
+
+### Anomaly lifecycle
+
+An anomaly has one current status:
+
+```text
+OPEN
+REPRODUCED
+EXPLAINED
+NOT_REPRODUCED
+PROMOTED_TO_HYPOTHESIS
+PROMOTED_TO_CLAIM
+RETIRED
+```
+
+- **`OPEN`** — recorded and awaiting sufficient verification or triage.
+- **`REPRODUCED`** — observed again using new evidence, but not necessarily understood.
+- **`EXPLAINED`** — attributable to a documented mundane mechanism, artifact, or expected effect.
+- **`NOT_REPRODUCED`** — failed a reasonable independent replication attempt.
+- **`PROMOTED_TO_HYPOTHESIS`** — produced a falsifiable explanation and a version-controlled test protocol.
+- **`PROMOTED_TO_CLAIM`** — produced or materially contributed to an authoritative claim record.
+- **`RETIRED`** — no longer worth pursuing for the reason recorded in its resolution and status history.
+
+Promotion does not delete or rewrite the anomaly. The record remains as provenance for how a later hypothesis or claim arose.
+
+### Baselines and anomaly detection
+
+An anomaly should be defined relative to an appropriately justified baseline, comparison set, or null distribution where possible. No universal sample size is required. The comparison size depends on expected variance, available compute, experimental design, and the intended strength of the conclusion.
+
+The anomaly record documents matching variables, inclusion and exclusion criteria, sample-size rationale, known mismatches, and selection or multiple-comparison effects. If a useful comparison is unavailable, the anomaly may be recorded as provisional, but it must not use statistical language that its evidence cannot support.
+
+A detection rule defined after inspecting the data is exploratory. Data used to discover an anomaly cannot also serve as independent confirmation. Confirmation requires new evidence such as held-out examples, a fresh sample or run, another checkpoint or model, or an independently specified intervention.
+
+### Triage order
+
+Anomaly triage is qualitative initially. The project does not combine scientific interest into a numerical discovery score that could conceal weak measurement or irreproducibility.
+
+Review proceeds in this order:
+
+1. data and artifact integrity;
+2. measurement and numerical validity;
+3. plausible bugs, noise sources, and mundane confounders;
+4. reproducibility with new evidence;
+5. specificity relative to an appropriate baseline;
+6. robustness to reasonable analysis choices;
+7. scientific relevance;
+8. relationship to prior work;
+9. potential novelty if confirmed;
+10. tractability with available compute and methods.
+
+High novelty potential alone never justifies priority. A result becomes more scientifically interesting only as reasonable mundane explanations fail.
+
+### Investigation stop rule
+
+Before substantial confirmatory work begins, the anomaly record must state:
+
+- what result would justify continued investigation;
+- what result would falsify or substantially weaken the anomaly;
+- what investigation budget or stopping condition is reasonable;
+- what decision will be made when the stopping condition is reached.
+
+The budget may be expressed as a number of runs, a predefined test set, compute time, researcher time, or another auditable bound appropriate to the experiment. An anomaly should be retired when repeated reasonable tests fail to increase the evidence or distinguish between the live explanations.
+
+### Discovery provenance
+
+Every anomaly preserves the original discovery context:
+
+- source experiment ID;
+- exact source artifact path and digest;
+- analysis-code commit SHA;
+- exact model identifier, checkpoint, and revision;
+- detection-rule version or exact original wording;
+- date the anomaly was first identified.
+
+Each field must contain a concrete value when the record is created. If a value genuinely does not exist or cannot be recovered, the field must say `not applicable` or `unavailable`, explain why, and preserve the best available reconstruction information. A blank provenance field is invalid.
+
+Later analysis can append evidence and correct mistakes, but it must not silently rewrite the original context. Corrections identify the original entry, explain the change, and remain visible in status history. This makes it possible to reconstruct what was known, which code was used, and how the anomaly was recognized at the time of discovery.
+
+The [anomaly registry](../research/anomalies/README.md) defines the complete lightweight record template. No dashboard, database, generalized detector, automatic falsification generator, or checkpoint-analysis infrastructure is implied by this documentation layer.
+
 ## Promotion, contestation, and downgrade
 
 Claim review follows these rules:
@@ -265,6 +386,14 @@ Retain negative, null, anomalous, and contradicting results.
 ## Competing explanations
 
 State alternatives and tests capable of distinguishing them.
+
+## Relationship to prior work
+
+Identify the nearest relevant methods and findings.
+
+## Potential novelty if confirmed
+
+State what may be new, subject to systematic literature review and comparison.
 
 ## Supported conclusion
 
