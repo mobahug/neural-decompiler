@@ -365,7 +365,16 @@ def write_plots(result: dict[str, object], output_dir: Path) -> None:
     width = 0.34
     for offset, template_id in ((-width / 2, "canonical"), (width / 2, "paraphrase")):
         values = [model_result["summary"]["by_template"][template_id]["intended_target_top1_count"] for model_result in model_results]
-        axis.bar([value + offset for value in x], values, width=width, label=template_id)
+        bars = axis.bar([value + offset for value in x], values, width=width, label=template_id)
+        for bar, count in zip(bars, values, strict=True):
+            axis.text(
+                bar.get_x() + bar.get_width() / 2,
+                max(float(count), 0.0) + 0.35,
+                f"{count}/24",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
     axis.axhline(BEHAVIOR_MINIMUM, color="#9a3412", linestyle="--", label="canonical threshold")
     axis.set_xticks(x, labels)
     axis.set_ylim(0, 24)

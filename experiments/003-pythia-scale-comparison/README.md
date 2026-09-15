@@ -91,13 +91,31 @@ The report separates four questions:
 
 Experiment 003 cannot establish that more layers caused better recall, that a specific layer stores knowledge, that the same circuit exists in both models, or that attention or MLP components caused any measured change. Those require interventions in a later approved experiment.
 
+## Measured results
+
+The predeclared behavioral-substrate criterion was **not passed**. Neither model produced an intended capital as its actual top-1 token under either template.
+
+| Template | 70M top-1 | 160M top-1 | Median rank improvement | Rank improved/worse/tied | Median final-margin change | Paired bootstrap 95% interval |
+|---|---:|---:|---:|---:|---:|---:|
+| Canonical | 0/24 | 0/24 | +145.5 | 24/0/0 | +2.571696 | [+2.106384, +3.309774] |
+| Paraphrase | 0/24 | 0/24 | +9.0 | 21/3/0 | −0.165324 | [−0.792908, +0.337677] |
+
+For the canonical template, Pythia-160M ranked every intended capital higher than Pythia-70M and increased every correct-minus-control final margin. This did not translate into any top-1 factual completion. For the paraphrase, intended-target rank improved in 21 of 24 cases, while final-margin changes were mixed: 10 increased and 14 decreased.
+
+C001's observational raw-logit pattern appeared in all 24 canonical and all 24 paraphrase cases for both models. In contrast, final-block selectivity change was negative in all 48 cases for each model. The shared raw-logit rise therefore must not be interpreted as target-selective amplification.
+
+The fresh Pythia-70M run matched the Experiment 002 cases exactly under the frozen historical-consistency checks. Final projected logits matched actual logits exactly for all 96 model–prompt cases; target ranks and top-1 token IDs also matched. Pythia-160M predicted the token `" the"` in all 48 cases.
+
+The definitive measurement used analysis commit `5837c3058eb72a44fcca0321c2871c87af988101`. It completed in 57.16 seconds with 1,135,984,640 bytes maximum resident memory and zero swaps on the reviewed machine. The measured `results.json` SHA-256 is `30969fb8d8aaba85882d9275b8b0c0f79b24c54a711c6ebb4b04979174c03642`.
+
+No anomaly was registered. The canonical/paraphrase difference is scientifically worth reporting, but two templates do not provide a justified null distribution for an anomaly, and ordinary prompt sensitivity remains a plausible explanation.
+
 ## Completion
 
 - [x] Protocol frozen before Pythia-160M output inspection
 - [x] Unit tests added without requiring model downloads
-- [ ] Real two-model run completed
-- [ ] Historical 70M consistency gate passed
-- [ ] Final-projection validation passed for both models
-- [ ] HTML and SVG artifacts inspected
-- [ ] Claim and anomaly evidence reviewed
-
+- [x] Real two-model run completed
+- [x] Historical 70M consistency gate passed
+- [x] Final-projection validation passed for both models
+- [x] HTML and SVG artifacts inspected
+- [x] Claim and anomaly evidence reviewed

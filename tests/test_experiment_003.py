@@ -148,6 +148,8 @@ def test_write_outputs_creates_json_three_svgs_and_self_contained_html(tmp_path:
         "normalized-depth-trajectories.svg",
     ):
         assert (tmp_path / filename).read_text().lstrip().startswith("<?xml")
+    behavior_svg = (tmp_path / "behavior-comparison.svg").read_text()
+    assert "0/24" in behavior_svg
     report = (tmp_path / "report.html").read_text()
     assert "BEHAVIOR" in report
     assert "SELECTIVITY" in report
