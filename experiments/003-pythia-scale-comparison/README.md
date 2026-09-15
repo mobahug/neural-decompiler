@@ -50,7 +50,7 @@ This is a predeclared project decision threshold, not a universal scientific thr
 
 For every model × country × template case, the JSON records prompt tokenization, target and control tokens, actual top-1 output, final intended-target rank/logit/probability, raw target-logit trajectory, three-control selectivity trajectory, adjacent-stage extrema, final-block changes, normalized depth, and final-projection validation.
 
-Cross-model summaries remain separate by template and report rank improvement, selectivity-margin change, top-1 gains/losses, variation, and deterministic paired percentile-bootstrap intervals. The bootstrap uses seed `3003`, 10,000 resamples, and the median paired effect. These intervals are descriptive: the 24 countries are a small tokenization-constrained convenience sample.
+Cross-model summaries remain separate by template and report rank improvement, selectivity-margin change, top-1 gains/losses, variation, and deterministic paired percentile-bootstrap intervals. The frozen executable uses seed `3003` for canonical and `3004` for paraphrase, 10,000 resamples per template, and the median paired effect. The initial written protocol described singular seed `3003`; review found that the outcome-blind committed executable deterministically offset the second template's seed. This wording correction preserves the executed protocol rather than silently changing or rerunning it. These intervals are descriptive: the 24 countries are a small tokenization-constrained convenience sample.
 
 Normalized depth is defined as:
 
@@ -106,7 +106,7 @@ C001's observational raw-logit pattern appeared in all 24 canonical and all 24 p
 
 The fresh Pythia-70M run matched the Experiment 002 cases exactly under the frozen historical-consistency checks. Final projected logits matched actual logits exactly for all 96 model–prompt cases; target ranks and top-1 token IDs also matched. Pythia-160M predicted the token `" the"` in all 48 cases.
 
-The definitive measurement used analysis commit `5837c3058eb72a44fcca0321c2871c87af988101`. It completed in 57.16 seconds with 1,135,984,640 bytes maximum resident memory and zero swaps on the reviewed machine. The measured `results.json` SHA-256 is `30969fb8d8aaba85882d9275b8b0c0f79b24c54a711c6ebb4b04979174c03642`.
+The definitive measurement used analysis commit `5837c3058eb72a44fcca0321c2871c87af988101`. It completed in 57.16 seconds with 1,135,984,640 bytes maximum resident memory and zero swaps on the reviewed machine. The corrected-protocol-record `results.json` SHA-256 is `38da2c664e5fdee31089859f4125a28fc6d17fee0c63b1eb6511906cd1fb40e4`; only the bootstrap seed description changed after review, not the stored model measurements or interval values.
 
 No anomaly was registered. The canonical/paraphrase difference is scientifically worth reporting, but two templates do not provide a justified null distribution for an anomaly, and ordinary prompt sensitivity remains a plausible explanation.
 

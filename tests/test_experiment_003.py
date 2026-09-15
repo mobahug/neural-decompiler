@@ -49,6 +49,12 @@ def _case(country: str, template_id: str, *, top1: bool, rank: int, margin: floa
             "final_block_target_logit_change": 2.0,
             "c001_final_block_replicated": True,
         },
+        "final_projection_validation": {
+            "logits_allclose": True,
+            "target_rank_matches": True,
+            "top1_token_id_matches": True,
+            "max_abs_logit_difference": 0.0,
+        },
     }
 
 
@@ -66,7 +72,7 @@ def _model_result(model_id: str, *, canonical_top1: int, rank_shift: int, margin
                 )
             )
     return {
-        "model": {"id": model_id, "name": model_id, "n_layers": 1},
+        "model": {"id": model_id, "name": model_id, "n_layers": 1, "resolved_revision": f"{model_id}-revision"},
         "summary": {
             "by_template": {
                 "canonical": {"case_count": 24, "intended_target_top1_count": canonical_top1, "c001_final_block_replication_count": 24, "median_final_correct_minus_control_logit": 1.0 + margin_shift},
@@ -127,6 +133,10 @@ def test_assemble_results_applies_behavior_rule_and_paired_bootstrap() -> None:
     assert canonical["median_final_selectivity_margin_change"] == 2.0
     assert canonical["bootstrap"]["target_rank_improvement"]["resamples"] == 10_000
     assert canonical["bootstrap"]["target_rank_improvement"]["seed"] == 3003
+    assert result["protocol"]["bootstrap"]["seeds_by_template"] == {
+        "canonical": 3003,
+        "paraphrase": 3004,
+    }
     assert result["summary"]["c001_by_model"]["pythia-70m-deduped"]["canonical_count"] == 24
     assert result["summary"]["c001_by_model"]["pythia-160m-deduped"]["canonical_count"] == 24
 
@@ -155,5 +165,19 @@ def test_write_outputs_creates_json_three_svgs_and_self_contained_html(tmp_path:
     assert "SELECTIVITY" in report
     assert "TRAJECTORY" in report
     assert "GENERALIZATION" in report
+    assert "Historical 70M consistency" in report
+    assert "Final-projection parity" in report
+    assert "pythia-160m-deduped-revision" in report
     assert "observational" in report.lower()
     assert "<svg" in report
+
+
+def test_adjacent_extrema_do_not_mislabel_missing_signs() -> None:
+    only_positive = [
+        {"label": "embedding", "target_logit": 1.0},
+        {"label": "after_layer_0", "target_logit": 2.0},
+        {"label": "after_layer_1", "target_logit": 4.0},
+    ]
+    extrema = runner._adjacent_extrema(only_positive)
+    assert extrema["largest_positive"]["change"] == 2.0
+    assert extrema["largest_negative"] is None

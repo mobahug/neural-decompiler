@@ -120,9 +120,11 @@ def _adjacent_extrema(stages: Sequence[dict[str, object]]) -> dict[str, object]:
     ]
     if not transitions:
         raise ValueError("At least two residual stages are required")
+    positive = [row for row in transitions if float(row["change"]) > 0.0]
+    negative = [row for row in transitions if float(row["change"]) < 0.0]
     return {
-        "largest_positive": max(transitions, key=lambda row: float(row["change"])),
-        "largest_negative": min(transitions, key=lambda row: float(row["change"])),
+        "largest_positive": max(positive, key=lambda row: float(row["change"])) if positive else None,
+        "largest_negative": min(negative, key=lambda row: float(row["change"])) if negative else None,
     }
 
 
@@ -318,8 +320,16 @@ def assemble_results(
                 "the count exceeds Pythia-70M. This is a project decision threshold."
             ),
             "bootstrap": {
-                "seed": BOOTSTRAP_SEED,
+                "seeds_by_template": {
+                    template_id: BOOTSTRAP_SEED + index
+                    for index, template_id in enumerate(TEMPLATES)
+                },
                 "resamples": BOOTSTRAP_RESAMPLES,
+                "protocol_record_correction": (
+                    "The initial README described singular seed 3003, while the "
+                    "outcome-blind committed executable used 3003 for canonical and "
+                    "3004 for paraphrase. This field preserves the executed protocol."
+                ),
                 "interpretation": (
                     "Descriptive paired uncertainty only; 24 countries are a small, "
                     "tokenization-constrained convenience sample."
@@ -440,6 +450,7 @@ def write_html_report(result: dict[str, object], output_dir: Path) -> None:
 
     decision = result["summary"]["behavioral_substrate_decision"]
     model_rows = []
+    validation_rows = []
     for model_id, model_result in result["models"].items():
         canonical = model_result["summary"]["by_template"]["canonical"]
         paraphrase = model_result["summary"]["by_template"]["paraphrase"]
@@ -449,6 +460,22 @@ def write_html_report(result: dict[str, object], output_dir: Path) -> None:
             f"<td>{paraphrase['intended_target_top1_count']}/24</td>"
             f"<td>{canonical['median_final_correct_minus_control_logit']:+.6f}</td>"
             f"<td>{paraphrase['median_final_correct_minus_control_logit']:+.6f}</td></tr>"
+        )
+        cases = model_result["cases"]
+        parity_count = sum(
+            case["final_projection_validation"]["logits_allclose"]
+            and case["final_projection_validation"]["target_rank_matches"]
+            and case["final_projection_validation"]["top1_token_id_matches"]
+            for case in cases
+        )
+        maximum_difference = max(
+            float(case["final_projection_validation"]["max_abs_logit_difference"])
+            for case in cases
+        )
+        validation_rows.append(
+            f"<tr><td>{html.escape(model_id)}</td>"
+            f"<td><code>{html.escape(str(model_result['model']['resolved_revision']))}</code></td>"
+            f"<td>{parity_count}/{len(cases)}</td><td>{maximum_difference:.9g}</td></tr>"
         )
     comparison_rows = []
     for template_id, comparison in result["summary"]["paired_comparison_by_template"].items():
@@ -485,6 +512,7 @@ def write_html_report(result: dict[str, object], output_dir: Path) -> None:
 <h1>Experiment 003: Pythia Scale-and-Behavior Comparison</h1>
 <p class="outcome"><strong>Behavioral substrate criterion: {status}.</strong> 160M produced the intended capital for {decision['comparison_top1_count']} of 24 canonical prompts; the requirement was at least {decision['minimum_comparison_top1_count']} and more than 70M's {decision['baseline_top1_count']}.</p>
 <div class="notice"><strong>Interpretation boundary:</strong> This experiment is observational. Model-scale differences do not show that additional layers caused a behavior, identify a storage location or circuit, or make normalized depths functionally equivalent.</div>
+<section><h2>Measurement validity and provenance</h2><p><strong>Historical 70M consistency:</strong> {'PASSED' if result['historical_70m_consistency']['passed'] else 'FAILED'} for {result['historical_70m_consistency'].get('case_count', 'the recorded')} cases; maximum final-metric difference {result['historical_70m_consistency'].get('maximum_absolute_metric_difference', 0):.9g}.</p><table><thead><tr><th>Model</th><th>Resolved revision</th><th>Final-projection parity</th><th>Maximum logit difference</th></tr></thead><tbody>{''.join(validation_rows)}</tbody></table></section>
 <section><h2>BEHAVIOR</h2><p>Does each model actually produce the intended capital as its next token?</p><table><thead><tr><th>Model</th><th>Layers</th><th>Canonical top-1</th><th>Paraphrase top-1</th><th>Canonical median margin</th><th>Paraphrase median margin</th></tr></thead><tbody>{''.join(model_rows)}</tbody></table><div class="chart">{_inline_svg(output_dir / 'behavior-comparison.svg')}</div></section>
 <section><h2>SELECTIVITY</h2><p>Correct target logit minus the mean logit of three balanced incorrect capital controls. Bootstrap intervals are descriptive paired intervals over 24 convenience-sampled countries.</p><table><thead><tr><th>Template</th><th>Median rank improvement</th><th>Bootstrap 95%</th><th>Median margin change</th><th>Bootstrap 95%</th><th>Rank improved/worse/tied</th></tr></thead><tbody>{''.join(comparison_rows)}</tbody></table><div class="chart">{_inline_svg(output_dir / 'selectivity-comparison.svg')}</div></section>
 <section><h2>TRAJECTORY</h2><p>Normalized depth is descriptive only: embedding=0 and post-block i=(i+1)/n_layers.</p><div class="chart">{_inline_svg(output_dir / 'normalized-depth-trajectories.svg')}</div></section>
