@@ -50,6 +50,30 @@ class FinalProjectionMismatch(RuntimeError):
     """Raised when projected final logits change target rank or top-1 token."""
 
 
+def project_cached_logits(model: Any, cache: Any) -> tuple[Tensor, tuple[str, ...]]:
+    """Project each normalized accumulated residual stage into vocabulary space."""
+
+    normalized_stack, cache_labels = cache.accumulated_resid(
+        return_labels=True,
+        apply_ln=True,
+    )
+    if normalized_stack.ndim != 4:
+        raise ValueError(
+            "Expected accumulated residuals shaped [stage, batch, position, model], "
+            f"received {normalized_stack.shape}"
+        )
+    if normalized_stack.shape[1] != 1:
+        raise ValueError("Cached-logit projection analyzes exactly one prompt at a time")
+    labels = tuple(stage_labels(cache_labels, model.cfg.n_layers))
+    stage_logits = model.unembed(normalized_stack[:, 0, -1, :])
+    if stage_logits.ndim != 2 or stage_logits.shape[0] != len(labels):
+        raise ValueError(
+            "Complete unembedding must return [stage, vocabulary] logits; "
+            f"received {stage_logits.shape}"
+        )
+    return stage_logits, labels
+
+
 def stage_labels(cache_labels: Sequence[str], n_layers: int) -> list[str]:
     """Convert TransformerLens accumulated-residual labels to public labels."""
 

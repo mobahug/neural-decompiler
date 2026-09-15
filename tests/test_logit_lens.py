@@ -9,6 +9,7 @@ from neural_decompiler.logit_lens import (
     FinalProjectionMismatch,
     analyze_cached_prompt,
     metrics_from_logits,
+    project_cached_logits,
     stage_labels,
     validate_final_projection,
 )
@@ -111,6 +112,13 @@ class FakeBridge:
         weight = torch.tensor([[1.0, 0.0, 2.0], [0.0, 3.0, 1.0]])
         bias = torch.tensor([0.5, -0.5, 1.0])
         return residual @ weight + bias
+
+
+def test_project_cached_logits_unembeds_all_stages_once() -> None:
+    logits, labels = project_cached_logits(FakeBridge(), FakeCache())
+
+    assert labels == ("embedding", "after_layer_0")
+    assert logits.tolist() == [[1.5, -0.5, 3.0], [0.5, 2.5, 2.0]]
 
 
 def test_analyze_cached_prompt_normalizes_then_uses_complete_unembedding() -> None:

@@ -13,6 +13,7 @@ The project advances through small, reproducible experiments. It separates what 
 ## Experiments
 
 - [Experiment 001: Capital Recall Logit Lens](experiments/001-capital-recall/README.md) — an observational look at how target-token support changes through Pythia-70M's residual stream.
+- [Experiment 002: Held-out Capital-Target Selectivity](experiments/002-capital-selectivity/README.md) — tests whether country context favors the correct capital over balanced incorrect capital-token controls.
 
 ## Setup
 
