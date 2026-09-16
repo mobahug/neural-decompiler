@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 
-**Status:** Awaiting user review
+**Status:** Reviewed and amended after second prior-art triage
 
 **Scope:** Candidate selection before Experiment 005
 
@@ -54,11 +54,18 @@ The study follows these constraints:
   analysis, but this pass did not locate a complete component-level causal
   account matching the proposed Pythia behavior.
 
-The search was conducted on 2026-09-16 using primary paper pages from arXiv,
-ACL Anthology, PMLR, NeurIPS, and OpenReview. Search phrases combined each
-behavior name with `mechanistic interpretability`, `circuit`, `causal`,
-`transformer`, `language model`, and `Pythia`. Absence from this pass means only
-"not located yet." Every behavioral finalist requires a deeper audit.
+The initial search was conducted on 2026-09-16 using primary paper pages from
+arXiv, ACL Anthology, PMLR, NeurIPS, and OpenReview. Search phrases combined
+each behavior name with `mechanistic interpretability`, `circuit`, `causal`,
+`transformer`, `language model`, and `Pythia`.
+
+A second, synonym-based pass was completed before manifest construction. It
+combined each surviving behavior with `morphology`, `inflection`, `allomorphy`,
+`causal circuit`, `subnetwork`, `circuit probing`, `activation patching`,
+`feature`, `subspace`, and close surface-form terms. Searches included papers
+posted through 2026-09-16, with particular attention to 2025--2026 work.
+Absence from either pass means only "not located yet." Every behavioral
+finalist still requires a deeper audit.
 
 ### Initial candidate set
 
@@ -70,12 +77,12 @@ behavior name with `mechanistic interpretability`, `circuit`, `causal`,
 | `sequence-successor` | Weekday, month, alphabet, or ordinal sequence continuation | **ELIMINATE** | Prior circuit work identifies shared sequence-member detection and successor-prediction subcircuits in GPT-2 and Llama; the broader successor-head neighborhood is crowded. |
 | `literal-copying` | Literal token-sequence copying across token-frequency bands | **ELIMINATE** | A 2026 Pythia study extracts 75 circuits from 70M–1.4B, finds a shared core recovering at least 99% of circuit performance, and validates interchangeability causally. |
 | `delimiter-closure` | Quote, parenthesis, or bracket-type closure | **ELIMINATE** | Recent solver-checkable work verifies quote-closing and bracket-type circuits on bounded domains, making this an especially direct collision. |
-| `regular-plural` | Context-sensitive English plural inflection, including regular spelling allomorphs | **RETAIN** | Behavioral and morphosyntactic work exists, but this pass found no close end-to-end circuit account of plural generation in an unchanged pretrained autoregressive LM. |
-| `regular-past` | Context-sensitive English past-tense inflection, including regular spelling allomorphs | **RETAIN** | Tense localization and causal-control work exists, but this pass found no close circuit-level account of the complete regular past-tense transformation. |
-| `degree-inflection` | Comparative/superlative adjective inflection, including regular spelling changes | **RETAIN** | No close causal circuit account was located in the lightweight search. |
+| `regular-plural` | Context-sensitive English plural inflection, including regular spelling allomorphs | **RETAIN — HIGH RISK** | No end-to-end causal generation circuit was located, but Li and Subramani probe singular/plural features and report compact steerable inflection subspaces across modern LMs, including Pythia. The remaining gap is the naturally used generation mechanism. |
+| `regular-past` | Context-sensitive English past-tense inflection, including regular spelling allomorphs | **ELIMINATE** | Zhang et al. use path patching and ablation to identify English past-tense heads, copy heads, and late FFNs in pretrained transformers; Africa independently studies a GPT-2 conjugation circuit across temporal and morphological variants. This is already inside the proposed mechanism family. |
+| `degree-inflection` | Comparative/superlative adjective inflection, including regular spelling changes | **RETAIN — HIGH RISK** | No end-to-end causal generation circuit was located, but Li and Subramani probe comparative/superlative features and report compact steerable inflection subspaces across modern LMs, including Pythia. The gap is downstream generation and component-level mechanism, not representation discovery. |
 | `ordinal-suffix` | English ordinal suffix selection (`st`, `nd`, `rd`, `th`) under held-out numbers | **RETAIN** | No close causal circuit account was located; tokenizer and memorization confounds make behavioral screening essential. |
-| `reflexive-number` | Reflexive-pronoun number agreement across a distractor noun | **RETAIN — HIGH RISK** | GPT-2 behavioral and attention analyses study reflexive interference, but this pass did not locate a compact end-to-end causal circuit matching the proposed behavior. |
-| `article-allomorphy` | Preference for `a` versus `an` in matched phrase-level minimal pairs | **RETAIN** | No close causal circuit account was located; the design must rule out purely local token-frequency explanations. |
+| `reflexive-number` | Reflexive-pronoun number agreement across a distractor noun | **ELIMINATE** | Circuit Probing explicitly identifies and causally ablates circuits responsible for reflexive anaphora in GPT-2 Small and Medium. |
+| `article-allomorphy` | Preference for `a` versus `an` in matched phrase-level minimal pairs | **ELIMINATE** | Kim and Lee identify a one-dimensional phonological feature that causally drives a/an selection and trace how the forecasted trigger feature controls article prediction. This is a direct mechanistic account of the proposed behavior. |
 
 ### Triage references
 
@@ -87,10 +94,21 @@ behavior name with `mechanistic interpretability`, `circuit`, `causal`,
 - Solver-checkable quote and bracket circuits: [Somani, 2026](https://arxiv.org/abs/2605.24033)
 - Reflexive interference analysis: [Ryu and Lewis, 2021](https://aclanthology.org/2021.cmcl-1.6/)
 - Adjacent causal morphosyntax work: [Amini et al., 2023](https://aclanthology.org/2023.tacl-1.23/)
+- Reflexive-anaphora circuits: [Lepori et al., 2025](https://arxiv.org/abs/2311.04354)
+- English article allomorphy mechanism: [Kim and Lee, 2026](https://arxiv.org/abs/2609.04708)
+- English past-tense circuitry: [Zhang et al., 2024](https://arxiv.org/abs/2410.09223)
+- GPT-2 conjugation circuit: [Africa, 2025](https://arxiv.org/abs/2506.22105)
+- Behavioral English past-tense study: [Ma and Gao, 2022](https://aclanthology.org/2022.aacl-main.81/)
+- Inflectional representations and steering: [Li and Subramani, 2026](https://aclanthology.org/2026.acl-long.720/)
 
-The six retained candidates proceed to manifest construction. A candidate is
-not restored after elimination without a new version of this design and an
-explicit rationale committed before any model run.
+The three retained candidates proceed to manifest construction. The second
+pass found no close end-to-end causal generation account for regular plural,
+degree inflection, or ordinal suffix selection. It did find adjacent work on
+plural/degree representation and classifier-based steering, so those overlaps
+must be carried into any finalist audit rather than treated as novelty.
+
+A candidate is not restored after elimination without a new version of this
+design and an explicit rationale committed before any model run.
 
 ## Frozen screening protocol
 
@@ -153,30 +171,62 @@ not be selected based on model output.
 | Candidate | Template family 1 | Template family 2 | Template family 3 |
 |---|---|---|---|
 | `regular-plural` | cardinal contrast (`one NOUN`; `two NOUNS`) | quantifier contrast (`each NOUN`; `several NOUNS`) | coordinated count context with an intervening adjective |
-| `regular-past` | explicit today/yesterday contrast | earlier/later narrative contrast | temporal-adverb contrast with an intervening adverb |
 | `degree-inflection` | two-item comparative | three-item superlative | explicit base/comparative analogy with held-out adjectives |
 | `ordinal-suffix` | bare numeral plus suffix | dated-event completion | ranked-list completion without ordered-sequence context |
-| `reflexive-number` | singular antecedent plus plural distractor | plural antecedent plus singular distractor | matched no-distractor control using the same antecedent lexicon |
-| `article-allomorphy` | bare noun phrase | adjective-plus-noun phrase | matched phrase embedded in a short sentence |
-
-The article candidate is evaluated by equal-length whole-sequence minimal-pair
-scores because the article precedes the conditioning word. It is not presented
-as a next-token article-generation task.
 
 ### Primary measurements
 
-For every case the runner records:
+For every case, let `A` and `B` denote the two alternatives in a fixed canonical
+order that never changes between an original prompt and its matched
+counterfactual. Define the fixed-orientation contrast
+
+```text
+c(x) = log P(A | x) - log P(B | x)
+```
+
+and let `y(x) = +1` when `A` is intended and `y(x) = -1` when `B` is intended.
+The correctness margin is
+
+```text
+m(x) = y(x) * c(x).
+```
+
+Thus `m(x) > 0` means the model prefers the intended answer in both the
+original and counterfactual conditions. The runner records:
 
 - intended-alternative log probability;
 - foil-alternative log probability;
-- intended-minus-foil log-probability margin;
-- binary pairwise correctness (`margin > 0`);
+- fixed-orientation contrast `c(x)`;
+- intended-minus-foil correctness margin `m(x)`;
+- binary pairwise correctness (`m(x) > 0`);
 - full-vocabulary top-1 output where a single next-token target exists;
 - the matched counterfactual's corresponding measurements;
 - tokenizer and provenance fields required by the existing instrumentation.
 
-Selection is based on pairwise correctness and margins. Full-vocabulary top-1
-is descriptive because several grammatical continuations may exist.
+Selection is based on pairwise correctness and correctness margins. Any
+directional comparison across original/counterfactual prompts--including sign
+flips, cue shuffling, and activation-patching recovery--uses `c(x)`, never
+`m(x)`. Full-vocabulary top-1 is descriptive because several grammatical
+continuations may exist.
+
+For a matched pair, write `x_A` for the prompt where `A` is intended and `x_B`
+for the prompt where `B` is intended. Its full fixed-orientation contrast shift
+is
+
+```text
+d_full = c(x_A) - c(x_B).
+```
+
+The counterfactual sign-flip condition is `c(x_A) > 0` and `c(x_B) < 0`.
+For the cue-shuffle control, `s(x_A)` receives the controlling cue from `x_B`
+and vice versa while the local target region is unchanged. Its aligned cue
+effect is
+
+```text
+d_cue = 0.5 * ((c(x_A) - c(s(x_A))) + (c(s(x_B)) - c(x_B))).
+```
+
+These definitions are frozen before any model output is inspected.
 
 ### Trivial baselines and nontriviality
 
@@ -193,22 +243,20 @@ Every candidate is evaluated against all applicable baselines:
    deterministic.
 4. **Cue-shuffle control:** deterministically exchange the controlling cue
    between matched cases while leaving the local target region unchanged.
-5. **Counterfactual flip:** require the margin sign to reverse when the
-   controlling feature is minimally changed.
+5. **Counterfactual flip:** require the fixed-orientation contrast `c(x)` to
+   reverse sign when the controlling feature is minimally changed; the
+   correctness margin `m(x)` should remain positive in both conditions.
 
 The local heuristics are frozen as follows:
 
 | Candidate | Shallow heuristic deliberately stress-tested |
 |---|---|
 | `regular-plural` | append `s`, ignoring `es`, consonant-plus-`y`, and other predeclared regular spelling classes |
-| `regular-past` | append `ed`, ignoring final-`e`, consonant-plus-`y`, and predeclared consonant-doubling classes |
 | `degree-inflection` | append `er`/`est`, ignoring final-`e`, consonant-plus-`y`, and predeclared consonant-doubling classes |
 | `ordinal-suffix` | choose from the final digit only, deliberately failing the `11`/`12`/`13` exceptions |
-| `reflexive-number` | copy the number of the nearest noun rather than the grammatical antecedent |
-| `article-allomorphy` | choose from the first written letter rather than pronunciation, tested on predeclared vowel/consonant-sound exceptions |
 
-Only productive, predeclared spelling classes are eligible for the three
-inflection candidates; idiosyncratic irregular forms such as `went` or `better`
+Only productive, predeclared spelling classes are eligible for plural and
+degree inflection; idiosyncratic irregular forms such as `children` or `better`
 are excluded. This makes the shallow rule beatable without turning the task
 into arbitrary lexical memorization.
 
@@ -222,19 +270,23 @@ same version.
 A candidate passes Pythia-70M behavioral screening only if all conditions hold
 on the untouched selection-holdout split:
 
-1. overall pairwise accuracy is at least **85%**;
+1. overall pairwise accuracy is at least **85%**; with `n = 120`, the combined
+   accuracy and Wilson requirements make the effective minimum **103/120
+   correct (85.83%)**;
 2. the two-sided Wilson 95% lower confidence bound (`z =
-   1.959963984540054`) for overall pairwise accuracy is at least **78%**;
+   1.959963984540054`) for overall pairwise accuracy is at least **78%**
+   (`102/120` gives `77.5325%`, while `103/120` gives `78.4805%`);
 3. pairwise accuracy is at least **75% in each template family**;
 4. the range between best and worst template accuracy is no more than **15
    percentage points**;
 5. the development-to-holdout accuracy drop is no more than **10 percentage
    points**;
 6. mean intended-minus-foil margin is positive in every template family;
-7. counterfactual margin sign flips correctly in at least **80%** of matched
-   pairs;
+7. the fixed-orientation contrast satisfies `c(x_A) > 0` and `c(x_B) < 0` in
+   at least **80%** of matched pairs;
 8. cue shuffling reduces pairwise accuracy by at least **20 percentage points**
-   or reduces the mean paired margin by at least **50%**;
+   or the mean aligned cue effect is at least **50%** of the mean full contrast
+   shift (`mean(d_cue) >= 0.5 * mean(d_full)`);
 9. model accuracy exceeds every applicable trivial baseline by at least **15
    percentage points**;
 10. no tokenizer, leakage, duplicate-item, or case-integrity validation fails.
@@ -270,8 +322,22 @@ instrumentation:
 
 For matched counterfactual pairs, the runner performs exact activation
 replacement at the predeclared target position and measures the change in the
-behavioral margin. Singleton effects are discovery scores, not additive causal
-claims.
+fixed-orientation contrast. It evaluates both directions for every component
+set `S`:
+
+```text
+c_A       = c(x_A)
+c_B       = c(x_B)
+c_A<-B(S) = c(x_A with components S replaced from the x_B run)
+c_B<-A(S) = c(x_B with components S replaced from the x_A run)
+
+d_full       = c_A - c_B
+d_patch(S)   = 0.5 * ((c_A - c_A<-B(S)) + (c_B<-A(S) - c_B))
+```
+
+Positive `d_patch(S)` is therefore always movement in the matched
+counterfactual direction. Singleton effects are discovery scores, not additive
+causal claims.
 
 ### Discovery/validation split inside development data
 
@@ -279,14 +345,40 @@ The 120 selection-development cases are deterministically divided into 60
 compactness-discovery and 60 compactness-validation cases, stratified by
 template. Components are ranked only on compactness-discovery cases.
 
-On compactness-validation cases, cumulative replacement interventions evaluate
-the top-ranked set. A candidate passes the exploratory compactness gate if some
-set of at most **12 components**:
+Components are ranked by `mean(d_patch({component}))` on discovery cases, with
+ties broken by the canonical component identifier. On compactness-validation
+cases, cumulative replacement interventions evaluate the fixed top-`k` sets
+for `k = 1..12`.
 
-1. produces at least **70%** of the full matched-counterfactual margin shift;
-2. exceeds the median effect of 100 deterministic, size-matched random component
-   sets by at least a factor of **2**; and
-3. has the same effect direction in all three template families.
+For a validation case set `D`, recovery is the ratio of aggregate shifts, not
+the mean of per-case ratios:
+
+```text
+R_D(S) = mean_{i in D}(d_patch_i(S)) / mean_{i in D}(d_full_i).
+```
+
+The denominator must be at least **0.25 nats overall** and **0.10 nats in each
+template family**. A candidate with a smaller or non-positive denominator fails
+compactness as an insufficiently identified causal contrast; the runner never
+divides by it and never substitutes an epsilon after seeing results.
+
+For each tested `k`, the runner also draws 100 size-`k` component sets uniformly
+without replacement from the same component universe using seed **20260917**.
+Let `M_k` be the median of their raw, aligned validation recoveries. Define the
+random reference as `B_k = max(M_k, 0.05)`. This makes a zero or negative random
+median non-vacuous rather than allowing any positive effect to pass.
+
+A candidate passes the exploratory compactness gate if the smallest cumulative
+top-`k` set, for some `k <= 12`:
+
+1. has overall recovery `R_D(S) >= 0.70`;
+2. satisfies `R_D(S) >= 2 * B_k`; and
+3. has positive aggregate patched shift and positive recovery in every template
+   family.
+
+Raw recovery is reported without clipping, including values below zero or above
+one. The deterministic seed, sampled component IDs, all denominators, random
+recoveries, `M_k`, and `B_k` are retained in the result artifact.
 
 This gate is a triage heuristic. It does not establish completeness,
 minimality, self-repair robustness, or a human-readable mechanism. The future
