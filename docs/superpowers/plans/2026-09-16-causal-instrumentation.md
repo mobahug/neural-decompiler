@@ -571,11 +571,11 @@ def test_pythia_bridge_contract(pythia_bridge):
     assert torch.allclose(result.logits, direct, atol=1e-5, rtol=1e-5)
     assert torch.equal(result.logits.argmax(dim=-1), direct.argmax(dim=-1))
     assert result.activations[requests[0]].tensor.shape == (1, 1, 512)
-    assert result.activations[requests[3]].tensor.shape == (1, 1, 512)
+    assert result.activations[requests[3]].tensor.shape == (1, 1, 1, 512)
     assert result.activations[requests[12]].tensor.shape == (1, 1, 2048)
     assert result.activations[requests[13]].tensor.shape == (1, 1, 1)
 
-    captured_heads = torch.stack(
+    captured_heads = torch.cat(
         tuple(result.activations[request].tensor for request in requests[3:11]),
         dim=2,
     )
