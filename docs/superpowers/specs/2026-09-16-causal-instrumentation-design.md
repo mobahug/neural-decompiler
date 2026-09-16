@@ -96,7 +96,11 @@ The loader:
 The loader accepts an injected loader in tests so the offline suite never
 downloads a model. Supported Phase 1 devices are CPU, MPS, `cuda`, and an
 explicit `cuda:N` index when PyTorch reports them available. Unsupported or
-unavailable devices fail before model loading.
+unavailable devices fail before model loading. Validation applies to the
+device/dtype pair rather than treating the two settings independently. CPU
+float32 is the required correctness/reference path. Other backends and dtypes
+must pass an explicit capability check, and scientific artifacts record the
+exact backend and numerical tolerances used.
 
 A small seed helper sets Python and PyTorch seeds. Deterministic-algorithm mode
 is an explicit runtime choice recorded in provenance rather than silently
@@ -126,27 +130,54 @@ learned positional embedding in a rotary-only model, fails rather than
 returning an empty tensor.
 
 Resolution maps these references to documented TransformerLens hook names and
-records tensor-axis semantics. Individual head contributions use
+records tensor-axis semantics. New code uses canonical `TransformerBridge`
+sites and never emits or depends on legacy compatibility aliases:
+
+| Component | Canonical Bridge hook |
+| --- | --- |
+| token embedding | `embed.hook_out` |
+| positional embedding, when present | `pos_embed.hook_out` |
+| residual before block | `blocks.L.hook_in` |
+| whole attention contribution | `blocks.L.attn.hook_out` |
+| per-head residual contribution | `blocks.L.attn.hook_result` |
+| attention pattern | `blocks.L.attn.hook_pattern` |
+| MLP post-activation / neurons | `blocks.L.mlp.out.hook_in` |
+| whole MLP contribution | `blocks.L.mlp.hook_out` |
+| residual after block | `blocks.L.hook_out` |
+| final normalized residual | `ln_final.hook_out` |
+| logits | `unembed.hook_out` |
+
+Compatibility mode remains disabled. Individual head contributions use
 `blocks.L.attn.hook_result`, whose tensor is the per-head contribution in
-residual-stream coordinates. This hook requires TransformerLens
-`use_attn_result`; requests that need it must opt into an explicit
-instrumentation setting. The capture or intervention runner refuses a head
-request when that setting is disabled.
+residual-stream coordinates before attention output bias is added. This hook
+requires TransformerLens `use_attn_result`. A request that needs it opts into
+an explicit instrumentation setting; the runner enables it through
+`TransformerBridge.set_use_attn_result(True)`, records the requested and
+effective settings, and restores the preceding setting in a `finally` path.
+Direct mutation of the Bridge configuration is not part of the API. The runner
+refuses a head request when the setting is disabled.
 
 Attention-pattern requests are capture-only in Phase 1. Their position filter
 means query positions and may separately name key positions. Logits and final
 normalization are also capture-only. Phase 1 interventions operate only on
 well-defined additive or activation sites.
 
-Pure decomposition helpers provide:
+Phase 1 decomposition is explicitly Pythia/GPT-NeoX-first. Attention
+decomposition reports five separate quantities: per-head residual
+contributions, their sum, attention output bias when present, the reconstructed
+attention contribution (`head_sum + output_bias`), and the independently
+measured whole attention contribution. Omitting a present output bias is an
+error, not an approximation.
 
-- summing per-head residual contributions into the whole attention output;
-- reconstructing a block output from residual input plus additive attention
-  and MLP outputs;
-- numerical validation with caller-supplied absolute and relative tolerances.
+Block reconstruction reads the loaded model's declared architecture. For the
+pinned Pythia model, it requires GPT-NeoX parallel residuals and checks the
+identity `resid_post = resid_pre + attn_out + mlp_out` against the measured
+block output. A model whose declared block topology is unsupported fails
+explicitly instead of receiving a generic serial-transformer formula.
 
-These helpers report reconstruction error and never label the decomposition a
-mechanism.
+Pure decomposition helpers perform these reconstructions, report numerical
+error, and validate with caller-supplied absolute and relative tolerances. They
+never label the decomposition a mechanism.
 
 ## Selective capture
 
@@ -205,12 +236,20 @@ recorded; its dtype is not silently changed.
 
 Multiple interventions may share a hook only when their selected slices are
 provably disjoint. Duplicate or overlapping selections fail before execution.
+Negative positions are first normalized against the actual input sequence
+length; overlap validation occurs only after normalization, so positions such
+as `-1` and `sequence_length - 1` cannot be misclassified as disjoint.
 Unsupported sites and missing required hook configuration also fail before
 execution.
 
 The runner returns logits plus an intervention execution record containing the
 resolved hook, selected axes, operation, replacement source, shape, dtype, and
 device. It does not interpret the resulting behavioral change.
+
+All Phase 1 capture and intervention forwards execute under
+`torch.inference_mode()` with evaluation mode enabled. Gradient-based
+attribution and any training-time execution path are out of scope and must be
+introduced separately if a later experiment justifies them.
 
 ## Behavior declarations
 
@@ -237,10 +276,15 @@ code without prematurely designing a universal task engine.
 `provenance.py` provides stable dataclasses and canonical JSON serialization
 for:
 
-- requested and resolved model identity;
+- requested and resolved model identity and revision;
+- tokenizer identity and revision;
+- tokenization settings, BOS/EOS behavior, and whether BOS was prepended;
 - device, dtype, seed, and deterministic-algorithm setting;
+- execution backend and declared absolute/relative tolerances;
 - Python, PyTorch, TransformerLens, Transformers, and Hugging Face Hub
   versions;
+- effective Bridge optional-hook settings, including `use_attn_result`, and
+  compatibility-mode state;
 - Git commit and dirty state when obtainable;
 - exact input text, token strings, token IDs, and target positions;
 - capture and intervention definitions;
@@ -300,9 +344,33 @@ A tiny deterministic hookable transformer fixture covers end-to-end semantics:
 - output logits remain unchanged when no intervention is active;
 - invalid or overlapping declarations fail before forward execution.
 
-Model loading tests use an injected fake loader. A separately marked cached
-Pythia-70M smoke test may be added later, but Phase 1 completion does not depend
-on model downloads or CUDA.
+Model loading tests use an injected fake loader. A separately marked
+Pythia-70M `TransformerBridge` contract test is part of Phase 1 but is excluded
+from the default offline suite. It uses the exact pinned model revision and is
+runnable on CPU float32 without CUDA. Its direct, uninstrumented Bridge forward
+in the same runtime is the numerical baseline; the test does not use a brittle
+cross-platform full-logit hash.
+
+The contract test verifies:
+
+- an empty instrumentation plan and the direct baseline agree within declared
+  tolerances;
+- every Phase 1 Pythia component site actually fires and its observed shape
+  and axes match the declaration;
+- per-head result capture works only after the explicit Bridge setter enables
+  it;
+- raw-Bridge MLP post-activation and individual-neuron capture work at
+  `blocks.L.mlp.out.hook_in`;
+- same-activation replacement is a no-op;
+- attention reconstruction includes output bias and matches the measured
+  attention contribution;
+- parallel-residual block reconstruction matches the measured block output.
+
+The smoke test may download or reuse a cached model only when explicitly
+selected. Default local and CI tests remain offline. Phase 1 can be implemented
+and reviewed without a download, but the instrumentation is not scientifically
+ready and Experiment 005 must not be designed until this exact-model contract
+test passes.
 
 ## Documentation
 
@@ -346,5 +414,6 @@ After Phase 1 passes review, a separate research task must:
 6. reserve held-out inputs and intervention predictions before inspection;
 7. define necessity, sufficiency, specificity, control, reconstruction, and
    residual-unexplained-behavior criteria;
-8. only then preregister Experiment 005.
-
+8. run and pass the pinned Pythia-70M Bridge contract test on the intended
+   scientific runtime;
+9. only then preregister Experiment 005.
