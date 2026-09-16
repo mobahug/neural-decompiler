@@ -86,7 +86,7 @@ class TinyBridge:
         def emit(name: str, value: torch.Tensor) -> torch.Tensor:
             for callback in callbacks.get(name, ()):
                 self.fired_hooks.add(name)
-                replacement = callback(value, self.hook_dict[name])
+                replacement = callback(value, hook=self.hook_dict[name])
                 if replacement is not None:
                     value = replacement
             return value

@@ -164,11 +164,12 @@ def run_capture(
 
         def capture_hook(
             activation: torch.Tensor,
-            _hook: Any,
+            hook: Any,
             *,
             request: CaptureRequest = request,
             component: ResolvedComponent = component,
         ) -> torch.Tensor:
+            del hook
             selection = normalize_selection(
                 request.selection, component, activation.shape
             )

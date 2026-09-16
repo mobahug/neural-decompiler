@@ -22,3 +22,6 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "pythia_smoke: opt-in contract test for the pinned Pythia-70M TransformerBridge",
+]

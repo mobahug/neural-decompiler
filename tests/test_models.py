@@ -107,3 +107,25 @@ def test_seed_runtime_repeats_torch_random_values() -> None:
     seed_runtime(17, deterministic_algorithms=False)
     second = torch.rand(3)
     assert torch.equal(first, second)
+
+
+def test_public_instrumentation_declarations_import() -> None:
+    from neural_decompiler import (
+        BehaviorSpec,
+        CapturePlan,
+        CaptureRequest,
+        ComponentRef,
+        Intervention,
+        ModelSpec,
+        PYTHIA_70M,
+        RunProvenance,
+    )
+
+    assert BehaviorSpec.__name__ == "BehaviorSpec"
+    assert CapturePlan.__name__ == "CapturePlan"
+    assert CaptureRequest.__name__ == "CaptureRequest"
+    assert ComponentRef.__name__ == "ComponentRef"
+    assert Intervention.__name__ == "Intervention"
+    assert ModelSpec.__name__ == "ModelSpec"
+    assert PYTHIA_70M.model_id.endswith("pythia-70m-deduped")
+    assert RunProvenance.__name__ == "RunProvenance"

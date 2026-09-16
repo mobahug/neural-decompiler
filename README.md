@@ -9,12 +9,28 @@ The project advances through small, reproducible experiments. It separates what 
 - [Research methodology](docs/RESEARCH_METHODOLOGY.md) — evidence levels, claim governance, falsification rules, and the claim template.
 - [Claim registry](research/claims/README.md) — an index of the project's scientific claims. Each claim file is the authoritative record of its evidence and current status.
 - [Anomaly registry](research/anomalies/README.md) — a lightweight inbox for unexpected measurements that merit verification, replication, or explanation before they become claims.
+- [Causal instrumentation](docs/INSTRUMENTATION.md) — the Pythia-first capture, intervention, decomposition, and provenance contracts used by future experiments.
 
 ## Experiments
 
 - [Experiment 001: Capital Recall Logit Lens](experiments/001-capital-recall/README.md) — an observational look at how target-token support changes through Pythia-70M's residual stream.
 - [Experiment 002: Held-out Capital-Target Selectivity](experiments/002-capital-selectivity/README.md) — tests whether country context favors the correct capital over balanced incorrect capital-token controls.
 - [Experiment 003: Pythia Scale-and-Behavior Comparison](experiments/003-pythia-scale-comparison/README.md) — compares fresh Pythia-70M and Pythia-160M behavior, selectivity, and normalized-depth trajectories under one frozen pipeline.
+- [Experiment 004: Prompt Elicitation](experiments/004-prompt-elicitation/README.md) — tests a preregistered prompt intervention selected on development data and evaluated on held-out cases.
+
+Experiments 001–004 are preserved historical observational and infrastructure work. The project has not selected the target behavior or designed Experiment 005. The next research step is to screen simple behaviors that Pythia-70M performs reliably, audit whether their mechanisms are already mapped in the literature, and preregister a causal reverse-engineering study only after a candidate survives both checks.
+
+## Causal instrumentation
+
+The Phase 1 instrumentation layer provides pinned Pythia loading, canonical TransformerBridge component resolution, selective activation capture, exact zero/replacement interventions, Pythia-specific decomposition checks, task-independent behavior declarations, and reproducible provenance records.
+
+Its purpose is to support progressively stronger causal accounts of learned computation. A captured activation, a decomposition identity, or a behavioral change after ablation is not by itself a mechanistic explanation. Future experiments must preregister controls, competing explanations, predicted intervention outcomes, and success criteria.
+
+The default test suite is offline. The separately marked live contract test checks the exact pinned Pythia-70M adapter on CPU when the model is available:
+
+```bash
+NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 uv run pytest tests/test_pythia_bridge_contract.py -m pythia_smoke -q
+```
 
 ## Setup
 

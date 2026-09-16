@@ -228,10 +228,11 @@ def run_interventions(
 
         def intervention_hook(
             activation: torch.Tensor,
-            _hook: Any,
+            hook: Any,
             *,
             items: tuple[_PreparedIntervention, ...] = tuple(items),
         ) -> torch.Tensor:
+            del hook
             updated = activation
             for item in items:
                 before_full = updated
