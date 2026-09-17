@@ -1,0 +1,41 @@
+{
+  "regular-plural": {
+    "novelty_status": "PARTIAL_OVERLAP_WITH_EXPLICIT_GAP",
+    "searched_through": "2026-09-17",
+    "behavior_variants": [
+      "count-cued English noun number selection (one NOUN vs two NOUNS; each NOUN vs several NOUNS; coordinated count context with an intervening adjective)",
+      "regular plural inflection and spelling allomorphy (-s, -es, consonant-y to -ies)",
+      "quantifier-noun and numeral-noun number agreement",
+      "subject-verb and reflexive number agreement as the adjacent grammatical-number mechanism family",
+      "grammatical-number and inflectional features, probes, and steering directions"
+    ],
+    "model_families": [
+      "Pythia (14M-6.9B, including pinned Pythia-70M)",
+      "GPT-2 Small/Medium/XL",
+      "Gemma-2B and Gemma-2",
+      "BERT, DeBERTa, XLNet, XGLM",
+      "OLMo-2, Qwen2.5, Llama-3.1 (inflection probing)"
+    ],
+    "explanation_levels": ["component", "edge", "feature", "subspace", "program"],
+    "validation_modes": ["causal", "reconstruction", "self-repair", "held-out intervention"],
+    "primary_sources": [
+      "https://arxiv.org/abs/2506.02132",
+      "https://arxiv.org/abs/2403.19647",
+      "https://aclanthology.org/2024.acl-long.785/",
+      "https://arxiv.org/abs/2311.04354",
+      "https://aclanthology.org/2021.acl-long.144/",
+      "https://aclanthology.org/2024.findings-emnlp.591/",
+      "https://arxiv.org/abs/2210.14328"
+    ],
+    "explicit_gap": "Close work maps grammatical number either as a representation (linearly decodable, steerable inflection subspaces across models including Pythia) or as agreement circuits that read a subject's number to choose a verb or reflexive form (SAE feature circuits in Pythia-70M, causal mediation and circuit probing in GPT-2, head/neuron accounts in Gemma-2B, DAS causal variables across Pythia scales). None locates the head/MLP-level mechanism by which an unmodified Pythia-70M reads a numeral or quantifier cue and selects the inflected noun form itself, none predicts held-out multi-component interventions for that behavior prospectively, none reconstructs the behavior from the proposed components, none tests self-repair or backup paths for it, and none quantifies the unexplained residual. The proposed Experiment 005 contribution is therefore a component-level, repair-aware, reconstruction-tested causal account of count-cued noun number selection with prospectively predicted held-out interventions and explicit residual accounting; it is not a novelty claim about grammatical number representations, which are already mapped.",
+    "close_work": [
+      {"source": "https://arxiv.org/abs/2506.02132", "absent_contribution": "Li and Subramani (ACL 2026) probe and steer inflectional features including Plural across 25 models including Pythia; they establish a compact linear inflection subspace but give no head/MLP-level circuit for count-cued noun inflection, no held-out intervention predictions, no reconstruction, and no self-repair analysis."},
+      {"source": "https://arxiv.org/abs/2403.19647", "absent_contribution": "Marks et al. (ICLR 2025) discover sparse feature circuits for subject-verb number agreement in Pythia-70M with ablation-based faithfulness and completeness; the behavior is verb selection from a subject's number in an SAE feature basis, not numeral/quantifier-cued noun inflection, and the circuits are not tested for held-out intervention prediction, reconstruction, or self-repair."},
+      {"source": "https://aclanthology.org/2024.acl-long.785/", "absent_contribution": "Arora, Jurafsky, and Potts (ACL 2024) benchmark causal methods on agreement and other SyntaxGym tasks across Pythia scales using DAS-found subspaces; they localize causal variables for agreement, not a component-level generation mechanism for noun number, and report no reconstruction or self-repair analysis."},
+      {"source": "https://arxiv.org/abs/2311.04354", "absent_contribution": "Lepori et al. (circuit probing) identify and ablate subject-verb and reflexive number circuits in GPT-2 Small/Medium; different model family and agreement direction, no numeral-cued noun inflection, no held-out intervention prediction."},
+      {"source": "https://aclanthology.org/2021.acl-long.144/", "absent_contribution": "Finlayson et al. (ACL 2021) use causal mediation on GPT-2 and XLNet neurons for subject-verb agreement; neuron-level mediation for verb agreement only, no noun inflection, no circuit reconstruction."},
+      {"source": "https://aclanthology.org/2024.findings-emnlp.591/", "absent_contribution": "Ferrando and Costa-jussa (EMNLP Findings 2024) find an attention head writing a subject-number direction read by final MLP neurons in Gemma-2B for subject-verb agreement; different model, verb agreement rather than noun inflection, no repair-aware or reconstruction test."},
+      {"source": "https://arxiv.org/abs/2210.14328", "absent_contribution": "Mueller et al. (2022) analyze syntactic agreement neurons causally in multilingual models; verb agreement neurons, not count-cued noun inflection in Pythia."}
+    ]
+  }
+}

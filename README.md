@@ -38,6 +38,8 @@ uv run python screening/behavior-candidates/run.py report
 - `compactness` probes only behavioral passers with development data; holdout and future-reserve cases are never executed during selection.
 - `report` renders the candidate matrix; `report --audit-json JSON` records the finalist prior-art audits (write-once per candidate) and the final zero/one-target decision.
 
+The screen was executed once on 2026-09-17; the outcome, evidence copy, and finalist audit are recorded in [`screening/behavior-candidates/README.md`](screening/behavior-candidates/README.md): `regular-plural` (count-cued noun number selection) is the single proposed target and `ordinal-suffix` was eliminated. No Experiment 005 has been designed.
+
 Scientific phases require a clean, committed tree and run once. `--resume` continues only an interrupted, provenance-identical run. A completed screen is rerun only through `--incident-note TRACKED_PATH`, which invalidates the whole affected model screen for every candidate after a committed software fix. Generated outputs live under `outputs/behavior-candidate-screening/` (`results.json`, `report.md`) and are not committed.
 
 ## Causal instrumentation
