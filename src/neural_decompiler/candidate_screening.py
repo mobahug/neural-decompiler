@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import datetime as _datetime
 import hashlib
 import json
 import math
+import os
 import random
+import re
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
@@ -266,6 +269,13 @@ class ConditionMeasurement:
                       "contrast": self.contrast, "correctness_margin": self.correctness_margin,
                       "correct": self.correct, "top1_token_id": self.top1_token_id}, "condition_measurement")
 
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> "ConditionMeasurement":
+        measurement = cls(value["logp_a"], value["logp_b"], value["intended"], value.get("top1_token_id"))
+        if measurement.to_dict() != dict(value):
+            raise ValueError("stored condition measurement is inconsistent with its derived fields")
+        return measurement
+
 
 @dataclass(frozen=True)
 class CaseMeasurement:
@@ -320,6 +330,14 @@ class CaseMeasurement:
                       "x_b": self.x_b.to_dict(), "s_a": self.s_a.to_dict(), "s_b": self.s_b.to_dict(),
                       "primary_correct": self.primary_correct, "cue_shuffle_correct": self.cue_shuffle_correct,
                       "contrast_flip": self.contrast_flip, "d_full": self.d_full, "d_cue": self.d_cue}, "case_measurement")
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> "CaseMeasurement":
+        measurement = cls(*(ConditionMeasurement.from_dict(value[name]) for name in ("x_a", "x_b", "s_a", "s_b")),
+                          value["primary_orientation"], value["case_id"], value["template_id"])
+        if measurement.to_dict() != dict(value):
+            raise ValueError("stored case measurement is inconsistent with its derived fields")
+        return measurement
 
 
 def measure_case(logp: Mapping[str, Mapping[str, float]], primary_orientation: str, *, case_id: str = "", template_id: str = "") -> CaseMeasurement:
@@ -1407,3 +1425,469 @@ def run_compactness_probe(model: Any, manifest: ScreeningManifest, candidate_id:
         "random": {str(k): value for k, value in random_results.items()},
         "gate": gate.to_dict(),
     }, "compactness_result")
+
+
+# ---------------------------------------------------------------------------
+# Run-state integrity: one canonical JSON artifact, phase order, zero retries,
+# provenance-identical resume, and incident-only invalidation.
+
+RESULTS_SCHEMA_VERSION = 1
+MANIFEST_RELATIVE_PATH = "screening/behavior-candidates/manifest-v1.json"
+PHASES = ("behavioral", "compactness", "report")
+PHASE_STATUSES = ("not_started", "running", "complete", "invalidated")
+MODEL_ORDER = (PYTHIA_70M, PYTHIA_160M)
+_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
+_INCIDENT_FIELDS = ("run_id", "phase", "model_id", "defect", "invalid_artifact_sha256", "fix_commit", "decision")
+
+
+class PhaseError(RuntimeError):
+    """A phase was requested out of order, twice, or with mismatched provenance."""
+
+
+def canonical_json(value: Any) -> str:
+    return _canonical_json(value)
+
+
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def utc_now() -> str:
+    return _datetime.datetime.now(tz=_datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def state_digest(state: Mapping[str, Any]) -> str:
+    unsigned = {key: value for key, value in state.items() if key != "state_sha256"}
+    return sha256_text(_canonical_json(unsigned))
+
+
+def _new_run_id(seed_text: str) -> str:
+    return sha256_text(seed_text + utc_now())[:16]
+
+
+def new_results_state(*, manifest_sha256: str, protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> dict[str, Any]:
+    """Create the single machine-readable state before any scientific measurement."""
+    if not _COMMIT_SHA.fullmatch(protocol_code_commit or ""):
+        raise PhaseError("scientific execution requires a 40-character committed protocol/code SHA")
+    if git_dirty:
+        raise PhaseError("scientific execution requires a clean Git tree")
+    return {
+        "schema_version": RESULTS_SCHEMA_VERSION,
+        "run_id": _new_run_id(manifest_sha256 + protocol_code_commit),
+        "created_at": utc_now(),
+        "manifest_path": MANIFEST_RELATIVE_PATH,
+        "manifest_sha256": manifest_sha256,
+        "protocol_code_commit": protocol_code_commit,
+        "git_dirty": False,
+        "model_order": [{"model_id": spec.model_id, "revision": spec.revision} for spec in MODEL_ORDER],
+        "versions": dict(versions),
+        "phases": {phase: {"status": "not_started"} for phase in PHASES},
+        "behavioral": {},
+        "compactness": {},
+        "selection_model_id": None,
+        "audits": {},
+        "selection": None,
+        "invalidated_runs": [],
+    }
+
+
+def write_results_state(path: Path, state: Mapping[str, Any]) -> str:
+    """Serialize canonically, then replace the artifact atomically."""
+    payload = {key: value for key, value in state.items() if key != "state_sha256"}
+    validate_json_safe(payload, path="results_state")
+    payload["state_sha256"] = state_digest(payload)
+    text = _canonical_json(payload) + "\n"
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(text, encoding="utf-8")
+    os.replace(temporary, path)
+    return payload["state_sha256"]
+
+
+def load_results_state(path: Path) -> dict[str, Any]:
+    """Read the artifact and reject any edit made outside the runner."""
+    try:
+        state = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise PhaseError(f"could not read results state: {path}") from error
+    if not isinstance(state, Mapping) or state.get("schema_version") != RESULTS_SCHEMA_VERSION:
+        raise PhaseError("results state schema is not recognized")
+    expected = {"schema_version", "run_id", "created_at", "manifest_path", "manifest_sha256", "protocol_code_commit", "git_dirty", "model_order",
+                "versions", "phases", "behavioral", "compactness", "selection_model_id", "audits", "selection", "invalidated_runs", "state_sha256"}
+    if set(state) != expected:
+        raise PhaseError("results state has unknown or missing fields")
+    if state["state_sha256"] != state_digest(state):
+        raise PhaseError("results state digest mismatch: the artifact was modified outside the runner")
+    if tuple(state["phases"]) != PHASES or any(entry.get("status") not in PHASE_STATUSES for entry in state["phases"].values()):
+        raise PhaseError("results state phase records are invalid")
+    return dict(state)
+
+
+def _manifest_order(candidate_ids: Sequence[str]) -> tuple[str, ...]:
+    """Canonical JSON sorts keys, so restore the frozen candidate order explicitly."""
+    return tuple(sorted(candidate_ids, key=lambda candidate_id: (_CANDIDATE_ORDER.index(candidate_id) if candidate_id in _CANDIDATE_ORDER else len(_CANDIDATE_ORDER), candidate_id)))
+
+
+def behavioral_passers(state: Mapping[str, Any], model_id: str) -> tuple[str, ...]:
+    screen = state["behavioral"].get(model_id) or {}
+    candidates = screen.get("candidates") or {}
+    return _manifest_order([candidate_id for candidate_id, result in candidates.items() if result["gates"]["passed"]])
+
+
+def assert_phase_allowed(phase: str, state: Mapping[str, Any], *, resume: bool = False) -> None:
+    """Enforce order, single execution, and resume-only-when-running."""
+    if phase not in PHASES:
+        raise PhaseError(f"unknown phase {phase}")
+    status = state["phases"][phase]["status"]
+    if phase == "report":
+        return
+    if phase == "compactness":
+        if state["phases"]["behavioral"]["status"] != "complete":
+            raise PhaseError("compactness requires the completed behavioral phase and its gate results")
+    if status == "complete":
+        raise PhaseError(f"{phase} phase already complete; a rerun requires a tracked incident note after a committed fix")
+    if status == "running" and not resume:
+        raise PhaseError(f"{phase} phase is already running; pass --resume to continue the provenance-identical run")
+    if status == "not_started" and resume:
+        raise PhaseError(f"{phase} phase has not started; --resume is only for an interrupted running phase")
+    if status == "invalidated":
+        raise PhaseError(f"{phase} phase was invalidated; start the new run without --resume")
+
+
+def assert_provenance_identical(state: Mapping[str, Any], *, manifest_sha256: str, protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> None:
+    """Refuse execution when the frozen inputs differ from the recorded run."""
+    if git_dirty:
+        raise PhaseError("scientific execution requires a clean Git tree")
+    if not _COMMIT_SHA.fullmatch(protocol_code_commit or ""):
+        raise PhaseError("scientific execution requires a 40-character committed protocol/code SHA")
+    if state["manifest_sha256"] != manifest_sha256:
+        raise PhaseError("manifest digest differs from the recorded run")
+    if state["protocol_code_commit"] != protocol_code_commit:
+        raise PhaseError("protocol/code commit differs from the recorded run")
+    if dict(state["versions"]) != dict(versions):
+        raise PhaseError("dependency versions differ from the recorded run")
+
+
+def measurement_digest(measurement: Mapping[str, Any]) -> str:
+    return sha256_text(_canonical_json(dict(measurement)))
+
+
+def resume_pending_case_ids(screen: Mapping[str, Any], expected_case_ids: Sequence[str], *, revision: str, runtime: Mapping[str, Any]) -> tuple[str, ...]:
+    """Verify completed cases and return the canonical-order remainder."""
+    if screen.get("status") != "running":
+        raise PhaseError("only a running model screen can be resumed")
+    if screen.get("revision") != revision or dict(screen.get("runtime") or {}) != dict(runtime):
+        raise PhaseError("model revision or runtime differs from the recorded run")
+    measurements = screen.get("measurements") or {}
+    digests = screen.get("measurement_digests") or {}
+    expected = set(expected_case_ids)
+    for case_id, measurement in measurements.items():
+        if case_id not in expected:
+            raise PhaseError(f"recorded measurement {case_id} is not part of the executable manifest")
+        if digests.get(case_id) != measurement_digest(measurement):
+            raise PhaseError(f"recorded measurement {case_id} does not match its digest")
+    return tuple(case_id for case_id in expected_case_ids if case_id not in measurements)
+
+
+def parse_incident_note(text: str) -> dict[str, str]:
+    """Read the required ``key: value`` fields of a tracked incident note."""
+    fields: dict[str, str] = {}
+    for line in text.splitlines():
+        match = re.match(r"^\s*[-*]?\s*([a-z0-9_]+)\s*:\s*(.+?)\s*$", line)
+        if match and match.group(1) in _INCIDENT_FIELDS:
+            fields.setdefault(match.group(1), match.group(2))
+    missing = [name for name in _INCIDENT_FIELDS if name not in fields]
+    if missing:
+        raise PhaseError(f"incident note is missing fields: {missing}")
+    if fields["phase"] not in ("behavioral", "compactness"):
+        raise PhaseError("incident note phase must be behavioral or compactness")
+    if not _COMMIT_SHA.fullmatch(fields["fix_commit"]):
+        raise PhaseError("incident note fix_commit must be a 40-character SHA")
+    if fields["decision"].lower().replace("_", "-") != "full-rerun":
+        raise PhaseError("incident note decision must be full-rerun")
+    return fields
+
+
+def invalidate_run_with_incident(state: Mapping[str, Any], note: Mapping[str, str], *, note_path: str, artifact_sha256: str) -> dict[str, Any]:
+    """Move the whole affected screen into history for every candidate and start a new run ID."""
+    if note["run_id"] != state["run_id"]:
+        raise PhaseError("incident note names a different run ID")
+    if note["invalid_artifact_sha256"] != artifact_sha256:
+        raise PhaseError("incident note does not name the current artifact digest")
+    if note["model_id"] not in {spec.model_id for spec in MODEL_ORDER}:
+        raise PhaseError("incident note names an unknown model")
+    updated: dict[str, Any] = json.loads(_canonical_json({key: value for key, value in state.items() if key != "state_sha256"}))
+    updated["invalidated_runs"].append({
+        "run_id": state["run_id"], "invalidated_at": utc_now(), "incident_note": note_path, "phase": note["phase"],
+        "model_id": note["model_id"], "defect": note["defect"], "invalid_artifact_sha256": artifact_sha256,
+        "fix_commit": note["fix_commit"], "behavioral": updated["behavioral"], "compactness": updated["compactness"],
+        "audits": updated["audits"], "selection": updated["selection"],
+    })
+    # A defect in either phase invalidates everything downstream of it for every candidate.
+    restarted = PHASES if note["phase"] == "behavioral" else PHASES[1:]
+    if note["phase"] == "behavioral":
+        updated["behavioral"], updated["selection_model_id"] = {}, None
+    updated["compactness"], updated["audits"], updated["selection"] = {}, {}, None
+    for phase in restarted:
+        updated["phases"][phase] = {"status": "not_started", "invalidated_run_id": state["run_id"]}
+    updated["run_id"] = _new_run_id(state["run_id"] + note["fix_commit"])
+    updated["protocol_code_commit"] = note["fix_commit"]
+    return updated
+
+
+# ---------------------------------------------------------------------------
+# Finalist audit, deterministic selection, and the Markdown candidate matrix.
+
+NOVELTY_STATUSES = ("NO_CLOSE_MECHANISM_LOCATED", "PARTIAL_OVERLAP_WITH_EXPLICIT_GAP", "SUBSTANTIALLY_MAPPED")
+EXPLANATION_LEVELS = ("component", "edge", "feature", "subspace", "program")
+VALIDATION_MODES = ("causal", "reconstruction", "self-repair", "held-out intervention")
+_AUDIT_REQUIRED = {"novelty_status", "searched_through", "behavior_variants", "model_families", "explanation_levels", "validation_modes", "primary_sources", "explicit_gap"}
+_AUDIT_OPTIONAL = {"close_work"}
+SELECTION_STATUSES = ("IN_PROGRESS", "ZERO_TARGET", "PENDING_FINALIST_AUDIT", "ONE_PROPOSED_TARGET")
+
+
+def _string_list(value: Any, name: str, *, allow_empty: bool = False) -> list[str]:
+    if not isinstance(value, list) or (not value and not allow_empty) or any(not isinstance(item, str) or not item.strip() for item in value):
+        raise ValueError(f"audit {name} must be a {'possibly empty ' if allow_empty else 'nonempty '}list of nonempty strings")
+    return list(value)
+
+
+def parse_audit_json(text: str) -> dict[str, dict[str, Any]]:
+    """Parse strict finalist audit entries keyed by candidate ID."""
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ValueError("audit JSON is not valid JSON") from error
+    if not isinstance(payload, Mapping) or not payload:
+        raise ValueError("audit JSON must map candidate IDs to audit entries")
+    audits: dict[str, dict[str, Any]] = {}
+    for candidate_id, entry in payload.items():
+        if not isinstance(entry, Mapping):
+            raise ValueError(f"audit entry for {candidate_id} must be an object")
+        unknown = set(entry) - _AUDIT_REQUIRED - _AUDIT_OPTIONAL
+        missing = _AUDIT_REQUIRED - set(entry)
+        if unknown or missing:
+            raise ValueError(f"audit entry for {candidate_id} has unknown {sorted(unknown)} or missing {sorted(missing)} fields")
+        status = entry["novelty_status"]
+        if status not in NOVELTY_STATUSES:
+            raise ValueError(f"audit entry for {candidate_id} has unrecognized novelty status {status!r}")
+        if not isinstance(entry["searched_through"], str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", entry["searched_through"]):
+            raise ValueError(f"audit entry for {candidate_id} needs searched_through as YYYY-MM-DD")
+        record = {
+            "novelty_status": status, "searched_through": entry["searched_through"],
+            "behavior_variants": _string_list(entry["behavior_variants"], "behavior_variants"),
+            "model_families": _string_list(entry["model_families"], "model_families"),
+            "explanation_levels": _string_list(entry["explanation_levels"], "explanation_levels"),
+            "validation_modes": _string_list(entry["validation_modes"], "validation_modes"),
+            "primary_sources": _string_list(entry["primary_sources"], "primary_sources", allow_empty=True),
+            "explicit_gap": entry["explicit_gap"] if isinstance(entry["explicit_gap"], str) else None,
+            "close_work": [],
+        }
+        if record["explicit_gap"] is None:
+            raise ValueError(f"audit entry for {candidate_id} explicit_gap must be a string")
+        if set(record["explanation_levels"]) != set(EXPLANATION_LEVELS) or set(record["validation_modes"]) != set(VALIDATION_MODES):
+            raise ValueError(f"audit entry for {candidate_id} must cover every explanation level and validation mode")
+        if status == "PARTIAL_OVERLAP_WITH_EXPLICIT_GAP" and not record["explicit_gap"].strip():
+            raise ValueError(f"audit entry for {candidate_id} with partial overlap requires an explicit contribution gap")
+        if status != "NO_CLOSE_MECHANISM_LOCATED" and not record["primary_sources"]:
+            raise ValueError(f"audit entry for {candidate_id} with status {status} requires at least one primary source")
+        if status == "NO_CLOSE_MECHANISM_LOCATED" and not record["primary_sources"] and not record["explicit_gap"].strip():
+            raise ValueError(f"audit entry for {candidate_id} must cite a primary source or state that no close work was located after the recorded searches")
+        for item in entry.get("close_work", []):
+            if not isinstance(item, Mapping) or set(item) != {"source", "absent_contribution"} or any(not isinstance(item[key], str) or not item[key].strip() for key in item):
+                raise ValueError(f"audit entry for {candidate_id} close_work rows need source and absent_contribution")
+            record["close_work"].append({"source": item["source"], "absent_contribution": item["absent_contribution"]})
+        audits[candidate_id] = _json(record, f"audit.{candidate_id}")
+    return audits
+
+
+def compactness_passers(state: Mapping[str, Any]) -> tuple[str, ...]:
+    model_id = state.get("selection_model_id")
+    if model_id is None:
+        return ()
+    entry = state["compactness"].get(model_id) or {}
+    if entry.get("status") != "complete":
+        return ()
+    return _manifest_order([candidate_id for candidate_id, result in entry.get("candidates", {}).items() if result["gate"]["passed"]])
+
+
+def validate_finalist_audits(state: Mapping[str, Any], audits: Mapping[str, Mapping[str, Any]]) -> None:
+    """Only compactness passers of the selection model may carry an audit."""
+    passers = set(compactness_passers(state))
+    extra = sorted(set(audits) - passers)
+    if extra:
+        raise ValueError(f"audit entries exist for non-finalists: {extra}")
+
+
+def _candidate_metrics(state: Mapping[str, Any], candidate_id: str) -> dict[str, Any]:
+    model_id = state["selection_model_id"]
+    behavioral = state["behavioral"][model_id]["candidates"][candidate_id]["holdout"]
+    compactness = state["compactness"][model_id]["candidates"][candidate_id]
+    return {"worst_template_accuracy": min(behavioral["template_accuracies"].values()), "accuracy": behavioral["accuracy"],
+            "selected_k": compactness["gate"]["selected_k"], "contrast_flip_rate": behavioral["contrast_flip_rate"]}
+
+
+def select_finalist(state: Mapping[str, Any]) -> FinalistSelection:
+    """Order fully audited, non-mapped finalists by the frozen lexicographic rule."""
+    survivors = []
+    for candidate_id in compactness_passers(state):
+        audit = state["audits"].get(candidate_id)
+        if audit is None or audit["novelty_status"] == "SUBSTANTIALLY_MAPPED":
+            continue
+        metrics = _candidate_metrics(state, candidate_id)
+        survivors.append((NOVELTY_STATUSES.index(audit["novelty_status"]), -metrics["worst_template_accuracy"], -metrics["accuracy"],
+                          metrics["selected_k"], -metrics["contrast_flip_rate"], candidate_id))
+    ranking = tuple(item[-1] for item in sorted(survivors))
+    if not ranking:
+        return FinalistSelection(None, (), "no finalist survived the behavioral, compactness, and prior-art gates")
+    return FinalistSelection(ranking[0], ranking, "ordered by novelty status, worst-template holdout accuracy, overall holdout accuracy, compact component count, contrast flip rate, candidate ID")
+
+
+def finalize_selection(state: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the single reportable status: in progress, zero target, pending audit, or one target."""
+    phases = state["phases"]
+    if phases["behavioral"]["status"] != "complete":
+        return {"status": "IN_PROGRESS", "selected_candidate_id": None, "ranking": [], "rationale": "behavioral phase incomplete", "compactness_passers": [], "pending_audits": []}
+    if state["selection_model_id"] is None:
+        return {"status": "ZERO_TARGET", "selected_candidate_id": None, "ranking": [], "rationale": "no candidate passed every behavioral gate at either model scale", "compactness_passers": [], "pending_audits": []}
+    if phases["compactness"]["status"] != "complete":
+        return {"status": "IN_PROGRESS", "selected_candidate_id": None, "ranking": [], "rationale": "compactness phase incomplete", "compactness_passers": [], "pending_audits": []}
+    passers = list(compactness_passers(state))
+    pending = [candidate_id for candidate_id in passers if candidate_id not in state["audits"]]
+    if not passers:
+        return {"status": "ZERO_TARGET", "selected_candidate_id": None, "ranking": [], "rationale": "no behavioral passer passed the exploratory compactness gate", "compactness_passers": [], "pending_audits": []}
+    if pending:
+        return {"status": "PENDING_FINALIST_AUDIT", "selected_candidate_id": None, "ranking": [], "rationale": "finalist prior-art audits are outstanding", "compactness_passers": passers, "pending_audits": pending}
+    selection = select_finalist(state)
+    status = "ONE_PROPOSED_TARGET" if selection.selected_candidate_id else "ZERO_TARGET"
+    return {"status": status, "selected_candidate_id": selection.selected_candidate_id, "ranking": list(selection.ranking), "rationale": selection.rationale, "compactness_passers": passers, "pending_audits": []}
+
+
+def _pct(value: float | None) -> str:
+    return "n/a" if value is None else f"{100.0 * value:.1f}%"
+
+
+def _num(value: float | None, digits: int = 3) -> str:
+    return "n/a" if value is None else f"{value:.{digits}f}"
+
+
+def _mark(value: bool | None) -> str:
+    return "n/a" if value is None else ("pass" if value else "FAIL")
+
+
+def render_markdown_report(state: Mapping[str, Any], manifest: ScreeningManifest) -> str:
+    """Render every stored gate, control, provenance field, and the stopping decision; recompute nothing."""
+    selection = state.get("selection") or finalize_selection(state)
+    lines: list[str] = ["# Behavior Candidate Screening Report", ""]
+    lines += [f"**Final status:** `{selection['status']}`" + (f" — proposed target `{selection['selected_candidate_id']}`" if selection["selected_candidate_id"] else ""), "",
+              f"_{selection['rationale']}._", "",
+              "This is candidate selection under the frozen protocol v1. The compactness probe is an exploratory triage heuristic, not a mechanism claim. No Experiment 005 exists, and none is created by this report.", ""]
+    lines += ["## Provenance", "", f"- Run ID: `{state['run_id']}`", f"- Manifest: `{state['manifest_path']}` sha256 `{state['manifest_sha256']}`",
+              f"- Protocol/code commit: `{state['protocol_code_commit']}` (dirty: {state['git_dirty']})",
+              "- Model order: " + ", ".join(f"`{item['model_id']}` @ `{item['revision']}`" for item in state["model_order"]),
+              f"- Selection model: `{state['selection_model_id']}`",
+              "- Versions: " + ", ".join(f"{key} {value}" for key, value in state["versions"].items()), ""]
+    for phase in PHASES:
+        lines.append(f"- Phase `{phase}`: `{state['phases'][phase]['status']}`")
+    lines.append("")
+    lines += ["## Candidate matrix", "", "| Candidate | Model | Holdout accuracy | Worst template | Behavioral | Compactness | Prior-art audit | Decision |", "|---|---|---|---|---|---|---|---|"]
+    for candidate_id in manifest.candidate_ids:
+        for model in state["model_order"]:
+            screen = state["behavioral"].get(model["model_id"])
+            result = (screen or {}).get("candidates", {}).get(candidate_id)
+            if result is None:
+                lines.append(f"| `{candidate_id}` | `{model['model_id']}` | not run | not run | not run | not run | n/a | — |")
+                continue
+            holdout = result["holdout"]
+            behavioral = result["gates"]["passed"]
+            compact = (state["compactness"].get(model["model_id"]) or {}).get("candidates", {}).get(candidate_id)
+            compact_text = "not run" if compact is None else ("pass (k=%s)" % compact["gate"]["selected_k"] if compact["gate"]["passed"] else "FAIL")
+            audit = state["audits"].get(candidate_id)
+            audit_text = "n/a" if audit is None else f"`{audit['novelty_status']}`"
+            if selection["selected_candidate_id"] == candidate_id and state["selection_model_id"] == model["model_id"]:
+                decision = "proposed target"
+            elif not behavioral:
+                decision = "eliminated: " + ", ".join(result["gates"]["failed_checks"])
+            elif compact is None:
+                decision = "behavioral pass; compactness pending"
+            elif not compact["gate"]["passed"]:
+                decision = "eliminated: compactness"
+            elif audit is None:
+                decision = "pending finalist audit"
+            elif audit["novelty_status"] == "SUBSTANTIALLY_MAPPED":
+                decision = "eliminated: substantially mapped"
+            else:
+                decision = "not selected"
+            lines.append(f"| `{candidate_id}` | `{model['model_id']}` | {_pct(holdout['accuracy'])} ({holdout['primary_correct_count']}/{holdout['case_count']}) | {_pct(min(holdout['template_accuracies'].values()))} | {_mark(behavioral)} | {compact_text} | {audit_text} | {decision} |")
+    lines.append("")
+    for model in state["model_order"]:
+        screen = state["behavioral"].get(model["model_id"])
+        if screen is None:
+            continue
+        lines += [f"## Behavioral screen — `{model['model_id']}`", "", f"- Status `{screen['status']}`; revision `{screen['revision']}` (resolved `{screen['resolved_revision']}`); runtime {json.dumps(screen['runtime'], sort_keys=True)}",
+                  f"- Executed case IDs: {len(screen['executed_case_ids'])} (development + holdout only)", ""]
+        for candidate_id in _manifest_order(list(screen["candidates"])):
+            result = screen["candidates"][candidate_id]
+            lines += [f"### `{candidate_id}`", ""]
+            for split in ("development", "holdout"):
+                summary = result[split]
+                lines += [f"**{split}:** accuracy {_pct(summary['accuracy'])} ({summary['primary_correct_count']}/{summary['case_count']}); contrast flip {_pct(summary['contrast_flip_rate'])}; cue-shuffle accuracy {_pct(summary['cue_shuffle_accuracy'])}; mean d_full {_num(summary['mean_d_full'])}; mean d_cue {_num(summary['mean_d_cue'])}", "",
+                          "| Template | Accuracy | Mean margin |", "|---|---|---|"]
+                lines += [f"| `{template}` | {_pct(summary['template_accuracies'][template])} | {_num(summary['template_mean_margins'][template])} |" for template in summary["template_accuracies"]]
+                lines += ["", "Baselines: " + ", ".join(f"{key} {_pct(summary['baseline_accuracies'][key])}" for key in BASELINE_IDS if key in summary["baseline_accuracies"]), ""]
+                if summary["integrity_failures"]:
+                    lines += ["Integrity failures: " + "; ".join(summary["integrity_failures"]), ""]
+            lines += ["| Gate | Result |", "|---|---|"]
+            lines += [f"| {index}. `{name}` | {_mark(result['gates']['checks'][name])} |" for index, name in enumerate(_GATE_NAMES, start=1)]
+            lines += ["", f"Behavioral result: **{_mark(result['gates']['passed'])}**" + (f" — failed: {', '.join(result['gates']['failed_checks'])}" if result["gates"]["failed_checks"] else ""), ""]
+    for model_id, entry in state["compactness"].items():
+        lines += [f"## Exploratory compactness probe — `{model_id}`", "", f"- Status `{entry['status']}`; development data only; executed case IDs {len(entry['executed_case_ids'])}", ""]
+        for candidate_id in _manifest_order(list(entry["candidates"])):
+            result = entry["candidates"][candidate_id]
+            lines += [f"### `{candidate_id}`", ""]
+            if "integrity_error" in result:
+                lines += [f"Intervention integrity failure (candidate fails compactness): `{result['integrity_error']}`", ""]
+                continue
+            denominators = result["validation_denominators"]
+            lines += [f"- Seed {result['seed']}; universe {len(result['component_universe'])} components; {result['random_sets_per_k']} random sets per k; discovery {len(result['discovery_case_ids'])} cases; validation {len(result['validation_case_ids'])} cases",
+                      f"- Validation denominators: overall {_num(denominators['overall_denominator'])} nats; templates " + ", ".join(f"`{key}` {_num(value)}" for key, value in denominators["template_denominators"].items()) + f"; valid {denominators['valid']}",
+                      "- Discovery ranking (top 12): " + ", ".join(f"`{key}` ({_num(result['singleton_discovery'][key]['mean_d_patch'])})" for key in result["ranking"][:12]), ""]
+            if result["top_k"]:
+                lines += ["| k | Recovery | Template recoveries | Random median | Reference B_k | Denominators | ≥0.70 | ≥2·B_k | Positive templates |", "|---|---|---|---|---|---|---|---|---|"]
+                for k, evaluation in result["gate"]["evaluations"].items():
+                    checks = evaluation["checks"]
+                    random_entry = result["random"][k]
+                    templates = ", ".join(f"`{key}` {_num(value)}" for key, value in evaluation["template_recoveries"].items()) or "n/a"
+                    lines.append(f"| {k} | {_num(evaluation['recovery'])} | {templates} | {_num(random_entry['median'])} | {_num(random_entry['reference'])} | {_mark(checks['denominators'])} | {_mark(checks['overall_recovery'])} | {_mark(checks['beats_random'])} | {_mark(checks['positive_template_recovery'])} |")
+                lines.append("")
+            gate = result["gate"]
+            lines += [f"Compactness result: **{_mark(gate['passed'])}**" + (f" — smallest passing set k={gate['selected_k']}: " + ", ".join(f"`{key}`" for key in result["top_k"][str(gate["selected_k"])]["components"]) if gate["passed"] else ""), ""]
+    lines += ["## Finalist prior-art audits", ""]
+    if not state["audits"]:
+        lines += ["No finalist audits recorded." + (" Pending: " + ", ".join(f"`{item}`" for item in selection["pending_audits"]) if selection["pending_audits"] else ""), ""]
+    for candidate_id in _manifest_order(list(state["audits"])):
+        audit = state["audits"][candidate_id]
+        lines += [f"### `{candidate_id}` — `{audit['novelty_status']}` (searched through {audit['searched_through']})", "",
+                  f"- Behavior variants: {', '.join(audit['behavior_variants'])}", f"- Model families: {', '.join(audit['model_families'])}",
+                  f"- Explanation levels: {', '.join(audit['explanation_levels'])}", f"- Validation modes: {', '.join(audit['validation_modes'])}",
+                  "- Primary sources: " + (", ".join(audit["primary_sources"]) if audit["primary_sources"] else "none located after the recorded searches"),
+                  f"- Explicit gap: {audit['explicit_gap']}", ""]
+        if audit["close_work"]:
+            lines += ["| Close work | Contribution absent from it |", "|---|---|"]
+            lines += [f"| {row['source']} | {row['absent_contribution']} |" for row in audit["close_work"]]
+            lines.append("")
+    reserve_ids = {case.case_id for candidate_id in manifest.candidate_ids for case in manifest.cases_for(candidate_id, Split.FUTURE_RESERVE)}
+    executed = [case_id for screen in state["behavioral"].values() for case_id in screen["executed_case_ids"]] + [case_id for entry in state["compactness"].values() for case_id in entry["executed_case_ids"]]
+    leaked = sorted(reserve_ids & set(executed))
+    lines += ["## Future-reserve non-execution", "", f"- Reserve case IDs in manifest: {len(reserve_ids)}; executed case IDs recorded: {len(executed)}; reserve IDs executed: {len(leaked)}" + (" — **LEAK DETECTED**" if leaked else " (none)"), ""]
+    lines += ["## Invalidated runs", ""]
+    lines += [f"- `{item['run_id']}`: {item['phase']} on `{item['model_id']}` invalidated {item['invalidated_at']} by `{item['incident_note']}` (fix `{item['fix_commit']}`): {item['defect']}" for item in state["invalidated_runs"]] or ["None."]
+    lines += ["", "## Limitations", "",
+              "- Compactness is exploratory: it ranks components on discovery cases and tests fixed cumulative sets on validation cases within development data. It establishes neither completeness, minimality, self-repair robustness, nor a human-readable mechanism.",
+              "- Every matched pair differs only in its controlling cue, so the cue-shuffle condition coincides with the counterfactual prompt; gate 8 is therefore implied by the contrast measurements rather than independent of them.",
+              "- The `dated-event` ordinal template applies the frozen shared number pairs, most of which are not calendar dates.",
+              "- Behavioral screening compares the intended inflected form with its matched alternative; the spelling-change stress test enters only through the local-heuristic baseline.",
+              "- Only the two retained candidates were screened; `degree-inflection` was eliminated before any output for tokenizer infeasibility.",
+              "", "## Decision", "", f"`{selection['status']}`" + (f": `{selection['selected_candidate_id']}` is proposed as the subject of a separately designed, user-approved, preregistered Experiment 005. This report is not that experiment." if selection["selected_candidate_id"] else ". Candidate selection stops here; no Experiment 005 is designed, preregistered, or run."), ""]
+    return "\n".join(lines)

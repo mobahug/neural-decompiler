@@ -20,6 +20,26 @@ The project advances through small, reproducible experiments. It separates what 
 
 Experiments 001–004 are preserved historical observational and infrastructure work. The project has not selected the target behavior or designed Experiment 005. The next research step is to screen simple behaviors that Pythia-70M performs reliably, audit whether their mechanisms are already mapped in the literature, and preregister a causal reverse-engineering study only after a candidate survives both checks.
 
+## Behavior candidate screening
+
+The candidate-selection study is frozen in [the screening design](docs/superpowers/specs/2026-09-16-behavior-candidate-screening-design.md) and its [implementation plan](docs/superpowers/plans/2026-09-16-behavior-candidate-screening.md). It screens exactly two retained candidates, `regular-plural` and `ordinal-suffix`, against fixed behavioral gates, trivial baselines, an exploratory causal compactness probe, and a finalist prior-art audit. It can return zero or one proposed target. It is candidate selection, not Experiment 005, and it creates no Experiment 005 directory, claim, or preregistration.
+
+The committed manifest `screening/behavior-candidates/manifest-v1.json` is the sole authority for every case, split, tokenization decision, control, seed, and threshold. The runner exposes four phases and no flag that selects a candidate, model scale, threshold, or template:
+
+```bash
+uv run python screening/behavior-candidates/run.py validate
+uv run python screening/behavior-candidates/run.py behavioral
+uv run python screening/behavior-candidates/run.py compactness
+uv run python screening/behavior-candidates/run.py report
+```
+
+- `validate` checks the manifest digest, counts, split disjointness, and single-token development cases without loading a model.
+- `behavioral` runs both candidates on pinned Pythia-70M and repeats the byte-identical protocol on pinned Pythia-160M only when zero candidates pass every 70M gate.
+- `compactness` probes only behavioral passers with development data; holdout and future-reserve cases are never executed during selection.
+- `report` renders the candidate matrix; `report --audit-json JSON` records the finalist prior-art audits and the final zero/one-target decision.
+
+Scientific phases require a clean, committed tree and run once. `--resume` continues only an interrupted, provenance-identical run. A completed screen is rerun only through `--incident-note TRACKED_PATH`, which invalidates the whole affected model screen for every candidate after a committed software fix. Generated outputs live under `outputs/behavior-candidate-screening/` (`results.json`, `report.md`) and are not committed.
+
 ## Causal instrumentation
 
 The Phase 1 instrumentation layer provides pinned Pythia loading, canonical TransformerBridge component resolution, selective activation capture, exact zero/replacement interventions, Pythia-specific decomposition checks, task-independent behavior declarations, and reproducible provenance records.
