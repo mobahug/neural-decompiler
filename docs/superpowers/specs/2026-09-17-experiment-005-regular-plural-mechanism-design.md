@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 
-**Status:** Draft, revision 2 (after the first external review). Not approved.
+**Status:** Draft, revision 3 (after the second external review). Not approved.
 No Experiment 005 directory, claim, preregistration lock, extension manifest,
 or model run exists. The 120 `regular-plural` future-reserve cases remain
 unexecuted.
@@ -32,6 +32,19 @@ tokenizer-validated extension set of prompts defined below.
      therefore require prompts the model has not seen in this project; a frozen
      extension set (new frames and new cue words) is added, and every reserve
      test is relabeled as what it actually is.
+- **Revision 3 (2026-09-17).** Changes after the second review, still before
+  any Experiment 005 model output exists:
+  1. the program's readout no longer linearizes the final LayerNorm (the
+     previous fixed-denominator expression omitted the variance term and
+     `ε`); it applies the exact LayerNorm to a reconstructed residual around
+     a frozen context, so any remaining error is mechanism error, not
+     approximation error;
+  2. bands are made mechanical: each family states whether it has a band and
+     where the band comes from; X3/X4 tolerances derive from the Tier B
+     program residual and are frozen in the lock;
+  3. percentage floors with fixed denominators are restated as exact counts;
+  4. the list of deliberately ambiguous cue words is corrected to the frozen
+     twelve.
 
 ## Purpose
 
@@ -231,7 +244,7 @@ the 20 reserve nouns, and its cases are never executed before Tier C.
    is one token under the pinned tokenizer. All twenty were verified eligible
    while drafting this revision, so the frozen set is the first twelve:
    `a` through `every`. Ambiguous or non-numeric entries (`a`, `the`, `some`,
-   `all`, `any`) are deliberate: the mechanism program must predict them from
+   `all`) are deliberate: the mechanism program must predict them from
    its cue lexicon rather than from a hand-written number label, and the
    model's behavior on them is unknown.
 
@@ -529,12 +542,15 @@ Rules:
   same count), 1,000 resamples from one generator seeded with `20260918` and
   consumed in a fixed family order; the standard error is the standard
   deviation of the resampled statistic. Bands are written into the lock
-  verbatim. Bands for extension-set families are the same bands, because the
-  mechanism claims frame invariance; that claim is what the extension tests.
+  verbatim. Which families carry bands, and how the X3/X4 tolerances derive
+  from the Tier B program residual, is fixed under the prediction families.
 - For every discriminating prediction, the lock stores the band implied by
   the chosen hypothesis and the band implied by each row the tree did not
   exclude, using the same tolerance rule. A prediction counts as
   discriminating only if those bands are disjoint.
+- Tier B also evaluates the mechanism program on every single-token holdout
+  condition and records its residual `c(x) − ĉ(x)`; `RMSE_B` and the X3/X4
+  tolerance `τ` are computed from that residual and frozen in the lock.
 - The number of calibration passes and every holdout number are recorded. A
   mechanism that needed two passes is labeled as such in every report.
 
@@ -569,13 +585,13 @@ STAGES
   D  direct paths         : listed with their measured share of d_full
 
 PAIR-LEVEL PREDICTIONS
-  d_full(N) ≈ u_N · J · ( 2 · g_R · d̂_R )  ; sign(d_full) = +1 for every pair
+  ĉ(x)      = −u_N · LN( ρ + δ(x) )                  δ(x) = g_R · n_t(x) · d̂_R + declared direct terms
+  d̂_full(N) = ĉ(x_A) − ĉ(x_B)                        sign(d̂_full) = +1 for every pair
 ```
 
-where `u_N = W_U[:, plural] − W_U[:, singular]` for noun `N` and `J` is the
-locked linearization of the final LayerNorm defined under the mechanism
-program. The statement
-must also list, in plain language, what each stage does and does not explain
+where `u_N = W_U[:, plural] − W_U[:, singular]` for noun `N`, `LN` is the
+model's exact final LayerNorm, and `ρ` is the frozen context residual defined
+under the mechanism program. The statement must also list, in plain language, what each stage does and does not explain
 (for example, that the per-noun offset `b_N` — the contrast a template's
 context produces before any cue effect — is context, not mechanism, and is why
 the plural condition fails on some spelling-change nouns, if that is what
@@ -602,10 +618,12 @@ network.
   the declared E sub-modules, or any forward pass over a prompt, and its inputs
   never include activations of the prompt being predicted.
 - **Inputs.** A template identifier; the cue token id; the noun pair's token
-  ids; and, for per-condition predictions on the twelve manifest prompts only,
-  the locked context vector `ρ_{frame}` (the development mean of
-  `r_{L_R}(·, p_t)` over both cues of that frame), declared in the lock as
-  *unexplained context*.
+  ids; and a frozen context residual: for the six manifest frames
+  `ρ_{frame}`, the development mean over both cues of the residual entering
+  `ln_final` at `p_t` for that frame; for a new frame `ρ_{template}`, the mean
+  of the template's two `ρ_{frame}` vectors. Both are declared in the lock as
+  *unexplained context*: the mechanism explains the cue-dependent increment
+  on top of them, not the context itself.
 - **Frozen parameters** (all estimated in Tier A, re-estimated at most once
   after a Tier B revision, digested in the lock): the E lexicon table
   `n_c(token) = ( E(token) − μ_E ) · d̂_E / σ_E` for every vocabulary token,
@@ -617,18 +635,23 @@ network.
   justifies by claiming T attends to `p_c` independently of the cue, which A4
   measures and whose failure appears as program residual); the readout gain
   `g_R` per template; the readout direction `d̂_R`; `L_R`, the layer of the
-  earliest R component in `S_M`; and the final-LayerNorm linearization `J`
-  per frame. With `LN(r) = γ ⊙ (r − mean(r)) / std(r) + β`, `J` maps a
-  residual increment `δ` at `p_t` to its effect on the normalized vector
-  around the frame's context: `J(δ) = γ ⊙ (δ − mean(δ)) / std(ρ_frame)`,
-  where `std(ρ_frame)` is the standard deviation of the development context
-  residual at `p_t` for that frame (for new frames, the mean over the
-  template's development frames). A predicted contrast shift is then
-  `Δ̂c = −u_N · J(δ)` with `u_N = W_U[:, plural] − W_U[:, singular]` (an
-  unembedding bias, if present, is a per-noun constant that cancels in every
-  shift), and the
-  mechanism's increment is `δ = g_R · Δn_t · d̂_R` plus the declared direct
-  contributions of E and T outputs.
+  earliest R component in `S_M`; the context residuals `ρ_{frame}` and
+  `ρ_{template}`; and the final LayerNorm's own parameters `γ`, `β`, and
+  `ε` (the pinned model's `layer_norm_eps`). The readout is the model's exact
+  LayerNorm applied to a reconstructed residual — no linearization:
+
+  ```text
+  LN(r)  = γ ⊙ ( r − mean(r) ) / sqrt( var(r) + ε ) + β
+  ĉ(x)   = −u_N · LN( ρ + δ(x) )
+  δ(x)   = g_R · n_t(x) · d̂_R + declared direct contributions of E and T outputs
+  Δ̂c(w)  = ĉ(frame, w) − ĉ(frame, ref)
+  ```
+
+  with `u_N = W_U[:, plural] − W_U[:, singular]` (an unembedding bias, if
+  present, is a per-noun constant that cancels in every shift). Because `LN`
+  is exact, the only approximations in the program are the mechanism's own:
+  the lexicon, the copy gain, the readout gain and direction, and the frozen
+  context; their combined error is the program residual.
 - **Outputs.** For any (template, cue token, noun pair): the predicted
   cue-induced shift of `c` relative to the singular reference cue of that
   template — always the template's own singular cue, `one` for cardinal and
@@ -638,14 +661,18 @@ network.
   the twelve manifest prompts additionally the predicted per-condition `ĉ(x)`
   using `ρ_{frame}`. For interventions: the predicted shift produced by
   replacing E alone with the E output of another cue token — the E-route
-  contribution `Δ̂c = −u_N · J( g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R )` — which
-  is the new intervention X4 tests on unseen cue words. The E output for a
-  word is the lexicon entry, so the replacement tensor the runner uses and
-  the quantity the program reasons about are the same object.
+  increment `δ_E(w) = g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R`, read out as
+  `Δ̂c = −u_N · [ LN(ρ_{frame} + δ(ref) + δ_E(w)) − LN(ρ_{frame} + δ(ref)) ]` —
+  which is the new intervention X4 tests on unseen cue words. The runner
+  captures E's output from the word-substituted prompt's own forward pass and
+  asserts that it equals the lexicon's vector for that token within 1e-5, so
+  the replacement tensor the runner uses and the object the program reasons
+  about are verified to be the same.
 - **What it cannot do by design.** It has no per-frame context for extension
-  frames, so on new frames it predicts pair-level quantities only. That
-  limitation is a statement about the mechanism's scope and is reported as
-  such.
+  frames; there it uses `ρ_{template}`, so per-condition values on new frames
+  are approximate and only pair-level and shift quantities are predicted
+  there. That limitation is a statement about the mechanism's scope and is
+  reported as such.
 
 Program floors are part of Tier A (development) and of the X families
 (confirmation). The program's residual — measured minus predicted, per prompt
@@ -654,11 +681,25 @@ explain.
 
 ## Preregistered prediction families
 
-Each family has a **floor** fixed here, which cannot be lowered, and a
-**band** written into the lock from Tier B. A family passes its floor or
-fails it; independently it lands inside or outside its band. Families marked
-*primary* determine the outcome; *secondary* families are reported and feed
-claim review but cannot change the outcome. Families marked
+Each family has a **floor** fixed here, which cannot be lowered, and, where
+stated, a **band** written into the lock. A family passes its floor or fails
+it; independently, a family that carries a band lands inside or outside it.
+Families marked *primary* determine the outcome; *secondary* families are
+reported and feed claim review but cannot change the outcome.
+
+**Bands.** A band exists only where the lock records one; a family without a
+band is judged by its floor alone. B2, P1–P9, X1 (mean `d_full` per
+template), and X2 carry Tier B bands; X1 and X2 reuse the corresponding
+reserve bands because the mechanism claims frame invariance, and that claim is
+what they test. X3 and X4 carry per-(word, frame) tolerance intervals derived
+from the Tier B program residual: the lock stores the program's predicted
+mean shift for every cue word and frame together with `τ = max(0.5 nats,
+3 × RMSE_B)`, where `RMSE_B` is the root-mean-square of the program's
+per-condition residual `c(x) − ĉ(x)` over the 114 single-token holdout cases.
+X3 hits its band when at least 9 of the 12 words have their measured mean
+shift inside the interval in at least 5 of their 6 frames; X4 likewise for the
+measured E-patch shift. B1, S1–S3, X5, and Q1 have no band. Every floor and
+every band is stated with exact counts wherever the denominator is fixed. Families marked
 *coordinated-only* apply to the coordinated-adjective template; the rest apply
 to every template and, where stated, per rule class pooled across templates
 (reserve: simple-suffix 60, consonant-`y` 36, sibilant-`es` 24 cases).
@@ -667,11 +708,11 @@ to every template and, where stated, per rule class pooled across templates
 
 | ID | Family | Intervention | Floor | Primary |
 |---|---|---|---|---|
-| B1 | Behavior replicates on new nouns | none | primary pairwise accuracy ≥ 103/120 (as defined in the screen) and contrast flip ≥ 80% | precondition |
-| B2 | Pair-level behavior predicted | none | `d_full > 0` in ≥ 95% of pairs; mean `d_full` per template inside its band | primary |
+| B1 | Behavior replicates on new nouns | none | primary pairwise accuracy ≥ 103/120 (as defined in the screen) and contrast flip in ≥ 96/120 pairs | precondition |
+| B2 | Pair-level behavior predicted | none | `d_full > 0` in ≥ 114/120 pairs; mean `d_full` per template inside its band | primary |
 | P1 | Sufficiency of `S_M` | counterfactual replacement of `S_M` at declared positions | `R ≥ 0.70` overall, `≥ 0.60` per template and per rule class | primary |
 | P2 | Specificity | 100 random sets of size `|S_M|` drawn per position slot (seed `20260918`) | `R(S_M) ≥ 2 · max(median random recovery, 0.05)` | primary |
-| P3 | Isolation / circuit reconstruction | pair-centered neutralization of every non-`S_M` component at `p_t` (and `p_c`); the token embedding stays intact and its direct share is reported under Q1 | `F ≥ 0.50` overall, `≥ 0.40` per template; correct sign retained in both conditions for ≥ 70% of pairs | primary |
+| P3 | Isolation / circuit reconstruction | pair-centered neutralization of every non-`S_M` component at `p_t` (and `p_c`); the token embedding stays intact and its direct share is reported under Q1 | `F ≥ 0.50` overall, `≥ 0.40` per template; correct sign retained in both conditions for ≥ 84/120 pairs | primary |
 | P4 / P4′ | Cue-position encoding | P4: counterfactual replacement of E only, at `p_c`; P4′: pair-centered neutralization of every non-embedding component at `p_c` | `R ≥ 0.50` (P4) or retained shift ≥ 0.50 (P4′) | primary, coordinated-only |
 | P5 | Transport sufficiency and path | (a) counterfactual replacement of the declared T set alone at `p_t`; (b) counterfactual replacement of `r_{L_T}(·, p_c)` with T frozen at `p_t` | under H1: (a) `R ≥ 0.50` for the single T head and (b) blocked fraction ≥ 0.50; under H2: (a) `R ≥ 0.70` for the declared T set and (b) its blocked fraction inside the locked band | primary, coordinated-only |
 | P6 | Abstract number variable | cross-cue resample of E at `p_t` (`cardinal` ↔ `quantifier`, same noun) | opposite-number source `R ≥ 0.50`; same-number source `R ≤ 0.25` | primary (cue-final templates) |
@@ -680,7 +721,7 @@ to every template and, where stated, per rule class pooled across templates
 | P9 | Chain mediation | E-alone counterfactual patch with T recomputing, then with T frozen (A6 i–ii) | under H1/H2: `m_T ≥ 0.50`, `m_R ≥ 0.50`, `m_R|T ≤ 0.5 · m_R`; under H3: the H3-specific band | primary |
 | S1 | Shared number axis | none (captures only) | cosine between template-specific `d_num(L_R, p_t)` estimates ≥ 0.70 | secondary |
 | S2 | Rule-class residual | P1 and P3 restricted to spelling-change nouns | reported | secondary |
-| S3 | Failures are readout-offset failures | none (captures only) | in reserve conditions the model gets wrong, `sign(n_t)` still equals the cue number in ≥ 80% of them | secondary, discriminating |
+| S3 | Failures are readout-offset failures | none (captures only) | in the `n_wrong` reserve conditions the model gets wrong, `sign(n_t)` still equals the cue number in at least `ceil(0.8 · n_wrong)` of them | secondary, discriminating |
 | Q1 | Residual accounting | derived from P1, P3, B2, and the program | reported, never gated | report |
 
 Because activations on these prompts are identical to development
@@ -692,10 +733,10 @@ labeled readout-generalization results in every report.
 
 | ID | Family | Prompts | Floor | Primary |
 |---|---|---|---|---|
-| X1 | Frame invariance of behavior | six new frames × two cues × 20 nouns | `d_full > 0` in ≥ 90% of the 120 pairs; `sign(n_c)` and `sign(n_t)` read from the new prompts equal the cue number in at least 11 of the 12 new prompts; mean `d_full` per template inside the reserve band | primary |
+| X1 | Frame invariance of behavior | six new frames × two cues × 20 nouns | `d_full > 0` in ≥ 108/120 pairs; `sign(n_c)` and `sign(n_t)` read from the new prompts equal the cue number in at least 11 of the 12 new prompts; mean `d_full` per template inside the reserve band | primary |
 | X2 | Frame invariance of the circuit | P1, P3, P4/P4′, P5, P8, P9 repeated on the new frames | the same floors as the corresponding P family | primary |
-| X3 | Cue lexicon predicts unseen cue words (behavior) | twelve new cue words × six original frames × 20 nouns | Spearman correlation between the program's `n_c(w)` and the measured mean shift of `c` relative to the template's singular reference cue (`one` or `each`), pooled over frames and nouns, ≥ 0.70 across the twelve words; sign agreement ≥ 90% of (word, frame) combinations for words with `abs(n_c(w)) ≥ 0.5`; if any word has `abs(n_c(w)) < 0.5`, its measured mean absolute shift is below half the template's locked full shift in ≥ 75% of its (word, frame) combinations | primary |
-| X4 | Program predicts a new intervention for unseen cue words | for each word and original frame, counterfactual replacement of E alone (at `p_c`) in the singular-reference prompt with the model's E output for the word-substituted prompt; the program predicts the shift as `Δ̂c = −u_N · J( g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R )` | Spearman ≥ 0.70 between predicted and measured shifts across the twelve words; mean absolute error ≤ 0.25 × the template's locked full shift | primary |
+| X3 | Cue lexicon predicts unseen cue words (behavior) | twelve new cue words × six original frames × 20 nouns | Spearman correlation between the program's `n_c(w)` and the measured mean shift of `c` relative to the template's singular reference cue (`one` or `each`), pooled over frames and nouns, ≥ 0.70 across the twelve words; for each of the `k` words with `abs(n_c(w)) ≥ 0.5`, sign agreement in at least 5 of its 6 frames and, across those words, in at least `ceil(0.9 · 6k)` of the `6k` (word, frame) combinations; for each word with `abs(n_c(w)) < 0.5`, measured mean absolute shift below half the template's locked full shift in at least 5 of its 6 frames | primary |
+| X4 | Program predicts a new intervention for unseen cue words | for each word and original frame, counterfactual replacement of E alone (at `p_c`) in the singular-reference prompt with the model's E output for the word-substituted prompt; the program predicts the shift from `δ_E(w)` through the exact LayerNorm around `ρ_{frame}` as defined above | Spearman ≥ 0.70 between predicted and measured shifts across the twelve words; mean absolute error ≤ 0.25 × the template's locked full shift | primary |
 | X5 | Program residual | all extension prompts | mean absolute error of `Δ̂c` and `d̂_full` in nats; fraction of variance explained; reported per template and per cue word | report |
 
 X1–X4 are what distinguish "these components suffice" from "we recovered what
@@ -723,7 +764,7 @@ Overall outcome:
 - `BEHAVIOR_NOT_REPLICATED` — B1 fails. The mechanism test is inconclusive,
   not falsified; no other family is interpreted as confirmatory.
 - `MECHANISM_CONFIRMED` — `CIRCUIT_PASS`, `PROGRAM_PASS`, and every primary
-  band is hit.
+  family that carries a band hits it.
 - `MECHANISM_SUPPORTED_MISCALIBRATED` — `CIRCUIT_PASS` and `PROGRAM_PASS`; at
   least one primary band is missed. The missed bands are listed as the
   mechanism's quantitative residual.
@@ -778,10 +819,11 @@ records:
   the discriminating quantities that selected it;
 - `S_M` with each component's role and declared positions; the number-variable
   parameters (`d̂_s`, `μ_s`, `σ_s` for every site) and the program parameters
-  (`k_T`, `g_R`, `d̂_R`, `J`, `ρ_{frame}`) stored as separately named tensor
+  (`k_T`, `g_R`, `d̂_R`, `L_R`, `ρ_{frame}`, `ρ_{template}`, `γ`, `β`, `ε`)
+  stored as separately named tensor
   artifacts with shape, dtype, and SHA-256 digests;
-- the digest of `mechanism_program.py` at lock time and the program's
-  development and holdout residuals;
+- the digest of `mechanism_program.py` at lock time, the program's
+  development and holdout residuals, `RMSE_B`, and the derived tolerance `τ`;
 - every prediction family with its floor, point prediction, band, and the
   holdout numbers it came from; the program's predicted values for every X
   family, computed at lock time without running any extension prompt;
@@ -880,9 +922,9 @@ mechanism is its first instance.
 - Direct-effect decompositions through LayerNorm are exact for the measured
   run but attribute nonlinear interactions to whichever component's output
   changed; they are accounting, not mechanism.
-- The mechanism program linearizes the readout and the final LayerNorm and
-  treats the frame's context vector as unexplained; its residual is the
-  measure of that simplification.
+- The mechanism program linearizes the transport and readout stages and
+  treats the frame's context residual as unexplained; its residual is the
+  measure of that simplification. The final LayerNorm is applied exactly.
 - Cue-final templates cannot distinguish "transport" from "local encoding"
   because `p_c = p_t`; transport claims rest on the coordinated-adjective
   template alone.
