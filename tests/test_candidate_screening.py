@@ -1,8 +1,10 @@
 import copy
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+import torch
 
 import neural_decompiler.candidate_screening as candidate_screening
 from neural_decompiler.models import PYTHIA_160M, PYTHIA_70M
@@ -333,3 +335,158 @@ def test_result_declarations_reject_nonfinite_values_before_json_serialization()
     """A NaN measurement must fail at its protocol boundary, not in a later report."""
     with pytest.raises(ValueError, match="finite"):
         PairPatchMeasurement(d_full=float("nan"), d_patch=1.0, template_id="t1")
+
+
+# ---------------------------------------------------------------------------
+# Behavioral execution
+
+
+class CausalFakeModel:
+    """Prefix-sensitive causal fake: position t is peaked at (sum of tokens[:t+1]) mod vocab."""
+
+    vocab = 16
+
+    def __init__(self) -> None:
+        self.cfg = SimpleNamespace(device="cpu")
+        self.calls: list[list[int]] = []
+
+    def __call__(self, tokens: torch.Tensor, *, prepend_bos: bool = False) -> torch.Tensor:
+        assert not prepend_bos
+        self.calls.append(tokens[0].tolist())
+        sums = tokens.cumsum(dim=-1) % self.vocab
+        grid = torch.arange(self.vocab, dtype=torch.float32)
+        return -(grid.view(1, 1, -1) - sums.unsqueeze(-1).float()).abs()
+
+
+def test_teacher_forced_sequence_score_uses_each_alternatives_own_prefix() -> None:
+    model = CausalFakeModel()
+    score = candidate_screening.teacher_forced_log_probability(model, prompt_ids=(4, 5), target_ids=(6, 7))
+    full = model(torch.tensor([[4, 5, 6, 7]])).log_softmax(dim=-1)
+    assert score == pytest.approx(float(full[0, 1, 6] + full[0, 2, 7]))
+    other = candidate_screening.teacher_forced_log_probability(model, prompt_ids=(4, 5), target_ids=(9, 7))
+    assert other != pytest.approx(score)
+    with pytest.raises(ValueError, match="vocabulary"):
+        candidate_screening.teacher_forced_log_probability(model, (4,), (99,))
+
+
+def test_single_token_condition_records_top1_but_multitoken_does_not() -> None:
+    model = CausalFakeModel()
+    single = PromptCondition("p", (4, 5), (9,), (2,), a_text=" a", b_text=" b")
+    multi = PromptCondition("p", (4, 5), (9, 1), (2, 1))
+    measured_single = candidate_screening.score_condition(model, single, "A")
+    measured_multi = candidate_screening.score_condition(model, multi, "B")
+    assert measured_single.top1_token_id == 9
+    assert measured_single.logp_a > measured_single.logp_b
+    assert measured_multi.top1_token_id is None
+    assert measured_multi.intended == "B"
+
+
+def test_behavioral_screen_scores_all_and_only_development_and_holdout_cases() -> None:
+    manifest = load_manifest(MANIFEST_PATH)
+    seen: list[str] = []
+
+    def spy(model: object, case: ScreeningCase) -> candidate_screening.CaseMeasurement:
+        seen.append(case.case_id)
+        return _measurement_for(case, correct=True)
+
+    results = candidate_screening.run_behavioral_screen(object(), manifest, scorer=spy)
+    expected = [
+        case.case_id
+        for candidate_id in manifest.candidate_ids
+        for split in (Split.DEVELOPMENT, Split.HOLDOUT)
+        for case in manifest.cases_for(candidate_id, split)
+    ]
+    assert seen == expected
+    assert not any("future-reserve" in case_id for case_id in seen)
+    assert set(results) == set(manifest.candidate_ids)
+    assert all(len(results[cid][split.value]) == 120 for cid in results for split in (Split.DEVELOPMENT, Split.HOLDOUT))
+    reserve = manifest.cases_for("ordinal-suffix", Split.FUTURE_RESERVE)[0]
+    with pytest.raises(ValueError, match="not executable"):
+        candidate_screening.score_behavior_case(CausalFakeModel(), reserve)
+    with pytest.raises(ValueError, match="not executable"):
+        candidate_screening.executable_cases(manifest, "ordinal-suffix", Split.FUTURE_RESERVE)
+
+
+def _measurement_for(case: ScreeningCase, *, correct: bool, flip: bool = True, margin: float = 2.0) -> candidate_screening.CaseMeasurement:
+    """Build a measurement whose primary condition is correct/incorrect with a fixed margin."""
+    sign = 1.0 if correct else -1.0
+    a_pref = {"A": -1.0, "B": -1.0 - margin}
+    b_pref = {"A": -1.0 - margin, "B": -1.0}
+    if case.primary_orientation == "A":
+        x_a = a_pref if correct else b_pref
+        x_b = b_pref if flip else a_pref
+    else:
+        x_b = b_pref if correct else a_pref
+        x_a = a_pref if flip else b_pref
+    del sign
+    return candidate_screening.measure_case(
+        {"x_a": x_a, "x_b": x_b, "s_a": x_b, "s_b": x_a},
+        case.primary_orientation, case_id=case.case_id, template_id=case.template_id)
+
+
+def test_baselines_use_development_only_lexical_priors_and_the_manifest_heuristic() -> None:
+    manifest = load_manifest(MANIFEST_PATH)
+    lexical, backoff = candidate_screening.lexical_prior_predictions(manifest, "regular-plural")
+    assert set(lexical) == {case.lexical_key for case in manifest.cases_for("regular-plural", Split.DEVELOPMENT)}
+    assert lexical["cat"] == "A" and lexical["city"] == "B" and backoff == "A"
+    holdout = manifest.cases_for("regular-plural", Split.HOLDOUT)
+    rows = [_measurement_for(case, correct=True) for case in holdout]
+    baselines = candidate_screening.baseline_accuracies(manifest, "regular-plural", Split.HOLDOUT, rows)
+    assert set(baselines) == set(candidate_screening.BASELINE_IDS)
+    assert baselines["majority"] == pytest.approx(0.5)
+    assert baselines["lexical-prior"] == pytest.approx(0.5)
+    assert baselines["local-heuristic"] == pytest.approx(0.5)
+    assert baselines["cue-shuffle"] == pytest.approx(0.0)
+
+
+def test_integrity_failures_detect_reserve_leakage_duplicates_and_missing_rows() -> None:
+    manifest = load_manifest(MANIFEST_PATH)
+    holdout = manifest.cases_for("ordinal-suffix", Split.HOLDOUT)
+    rows = [_measurement_for(case, correct=True) for case in holdout]
+    assert candidate_screening.integrity_failures(manifest, "ordinal-suffix", Split.HOLDOUT, rows) == ()
+    reserve_row = _measurement_for(manifest.cases_for("ordinal-suffix", Split.FUTURE_RESERVE)[0], correct=True)
+    failures = candidate_screening.integrity_failures(manifest, "ordinal-suffix", Split.HOLDOUT, rows[:-1] + [reserve_row, rows[0]])
+    assert any("future-reserve" in failure for failure in failures)
+    assert any("duplicate" in failure for failure in failures)
+    assert any("missing 1" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    "correct_count,bad_template,expected_pass,expected_failed",
+    [
+        (103, None, True, ()),
+        (102, None, False, ("wilson_lower_bound",)),
+        (109, "bare-numeral", False, ("per_template_accuracy", "template_range")),
+    ],
+)
+def test_behavioral_result_reports_every_gate_and_failed_reason(correct_count, bad_template, expected_pass, expected_failed) -> None:
+    """102/120 fails only through Wilson; a 29/40 template fails even at 109/120 overall."""
+    manifest = load_manifest(MANIFEST_PATH)
+
+    def round_robin_wrong(cases: tuple[ScreeningCase, ...], count: int) -> set[str]:
+        # Spread the wrong cases over templates so only the overall gates move.
+        by_template: dict[str, list[ScreeningCase]] = {}
+        for case in cases:
+            by_template.setdefault(case.template_id, []).append(case)
+        wrong: set[str] = set()
+        while len(wrong) < count:
+            for rows in by_template.values():
+                if len(wrong) < count:
+                    wrong.add(rows.pop(0).case_id)
+        return wrong
+
+    development_cases = manifest.cases_for("ordinal-suffix", Split.DEVELOPMENT)
+    development_wrong = round_robin_wrong(development_cases, 120 - correct_count)
+    development = [_measurement_for(case, correct=case.case_id not in development_wrong) for case in development_cases]
+    holdout_cases = manifest.cases_for("ordinal-suffix", Split.HOLDOUT)
+    if bad_template is None:
+        wrong = round_robin_wrong(holdout_cases, 120 - correct_count)
+    else:
+        wrong = set(sorted(case.case_id for case in holdout_cases if case.template_id == bad_template)[:11])
+    holdout = [_measurement_for(case, correct=case.case_id not in wrong) for case in holdout_cases]
+    result = candidate_screening.behavioral_result_for_candidate(manifest, "ordinal-suffix", development, holdout)
+    assert tuple(result["gates"]["checks"]) == candidate_screening._GATE_NAMES
+    assert result["gates"]["passed"] is expected_pass
+    assert tuple(result["gates"]["failed_checks"]) == expected_failed
+    assert result["holdout"]["primary_correct_count"] == correct_count
+    assert set(result["holdout"]["baseline_accuracies"]) == set(candidate_screening.BASELINE_IDS)

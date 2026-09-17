@@ -12,6 +12,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
+import torch
+
 from .behavior import validate_json_safe
 from .models import PYTHIA_160M, PYTHIA_70M
 
@@ -68,9 +70,14 @@ class PromptCondition:
     a_token_ids: tuple[int, ...]
     b_token_ids: tuple[int, ...]
     target_position: int = -1
+    a_text: str = ""
+    b_text: str = ""
 
     def __post_init__(self) -> None:
         _require_text(self.prompt_text, "prompt_text")
+        for name in ("a_text", "b_text"):
+            if not isinstance(getattr(self, name), str):
+                raise TypeError(f"{name} must be a string")
         for name in ("prompt_token_ids", "a_token_ids", "b_token_ids"):
             tokens = tuple(getattr(self, name))
             if not tokens or any(not isinstance(token, int) or token < 0 for token in tokens):
@@ -86,7 +93,13 @@ class PromptCondition:
             "a_token_ids": list(self.a_token_ids),
             "b_token_ids": list(self.b_token_ids),
             "target_position": self.target_position,
+            "a_text": self.a_text,
+            "b_text": self.b_text,
         }, "prompt_condition")
+
+    @property
+    def single_token(self) -> bool:
+        return len(self.a_token_ids) == 1 and len(self.b_token_ids) == 1
 
 
 @dataclass(frozen=True)
@@ -859,7 +872,7 @@ def _parse_condition(value: Any, token_strings: Mapping[str, Any]) -> PromptCond
     b_ids = ids_and_strings("b_token_ids", "b_token_strings")
     if len(a_ids) != len(b_ids):
         raise ValueError("A/B token lengths differ")
-    return PromptCondition(value["prompt_text"], prompt_ids, a_ids, b_ids, value["target_position"])
+    return PromptCondition(value["prompt_text"], prompt_ids, a_ids, b_ids, value["target_position"], value["a_text"], value["b_text"])
 
 
 def validate_manifest(manifest: Mapping[str, Any] | ScreeningManifest) -> ScreeningManifest:
@@ -970,3 +983,167 @@ def load_manifest(path: Path) -> ScreeningManifest:
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"could not read manifest: {path}") from error
     return validate_manifest(payload)
+
+
+# ---------------------------------------------------------------------------
+# Behavioral execution: teacher-forced scoring, frozen baselines, and gates.
+# Future-reserve cases are loadable but no execution path below accepts them.
+
+BASELINE_IDS = ("majority", "lexical-prior", "local-heuristic", "cue-shuffle")
+EXECUTABLE_SPLITS = (Split.DEVELOPMENT, Split.HOLDOUT)
+
+
+def _model_device(model: Any) -> Any:
+    return getattr(getattr(model, "cfg", None), "device", "cpu")
+
+
+def _log_probabilities(model: Any, tokens: torch.Tensor) -> torch.Tensor:
+    with torch.inference_mode():
+        logits = model(tokens, prepend_bos=False)
+    if not isinstance(logits, torch.Tensor) or logits.ndim != 3:
+        raise ValueError("model must return [batch, position, vocabulary] logits")
+    return logits.float().log_softmax(dim=-1)
+
+
+def teacher_forced_log_probability(model: Any, prompt_ids: Sequence[int], target_ids: Sequence[int]) -> float:
+    """Sum log P(target_t | prompt, target_<t) from one forward over prompt + target."""
+    prompt, target = tuple(prompt_ids), tuple(target_ids)
+    if not prompt or not target:
+        raise ValueError("prompt_ids and target_ids must be nonempty")
+    full = torch.tensor([prompt + target], dtype=torch.long, device=_model_device(model))
+    log_probs = _log_probabilities(model, full)
+    vocabulary = int(log_probs.shape[-1])
+    if any(token >= vocabulary for token in target):
+        raise ValueError("target token ID is outside the model vocabulary")
+    start = len(prompt) - 1
+    terms = [log_probs[0, start + offset, token] for offset, token in enumerate(target)]
+    return _finite(torch.stack(terms).sum().item(), "teacher-forced log probability")
+
+
+def score_condition(model: Any, condition: PromptCondition, intended: str) -> ConditionMeasurement:
+    """Score A and B in separate teacher-forced forwards using the stored token IDs only."""
+    if not isinstance(condition, PromptCondition):
+        raise TypeError("condition must be a PromptCondition")
+    logp_a = teacher_forced_log_probability(model, condition.prompt_token_ids, condition.a_token_ids)
+    logp_b = teacher_forced_log_probability(model, condition.prompt_token_ids, condition.b_token_ids)
+    top1: int | None = None
+    if condition.single_token:
+        prompt = torch.tensor([condition.prompt_token_ids], dtype=torch.long, device=_model_device(model))
+        top1 = int(_log_probabilities(model, prompt)[0, -1].argmax().item())
+    return ConditionMeasurement(logp_a, logp_b, intended, top1)
+
+
+def score_behavior_case(model: Any, case: ScreeningCase) -> CaseMeasurement:
+    """Measure the four frozen conditions of one executable case."""
+    if not isinstance(case, ScreeningCase):
+        raise TypeError("case must be a ScreeningCase")
+    if case.split not in EXECUTABLE_SPLITS:
+        raise ValueError(f"split {case.split.value} is not executable during candidate selection")
+    return CaseMeasurement(
+        x_a=score_condition(model, case.x_a, "A"), x_b=score_condition(model, case.x_b, "B"),
+        s_a=score_condition(model, case.s_a, "A"), s_b=score_condition(model, case.s_b, "B"),
+        primary_orientation=case.primary_orientation, case_id=case.case_id, template_id=case.template_id)
+
+
+def executable_cases(manifest: ScreeningManifest, candidate_id: str, split: Split) -> tuple[ScreeningCase, ...]:
+    """Return manifest-ordered cases for one executable split; the reserve is refused."""
+    if candidate_id not in manifest.candidate_ids:
+        raise ValueError(f"unknown candidate {candidate_id}")
+    if split not in EXECUTABLE_SPLITS:
+        raise ValueError(f"split {split.value} is not executable during candidate selection")
+    return manifest.cases_for(candidate_id, split)
+
+
+def run_behavioral_screen(model: Any, manifest: ScreeningManifest, candidate_ids: Sequence[str] | None = None, *, on_case: Any = None, scorer: Any = None, completed: Mapping[str, CaseMeasurement] | None = None) -> dict[str, dict[str, tuple[CaseMeasurement, ...]]]:
+    """Score development and holdout cases in manifest order; reserve cases never reach the scorer."""
+    score = scorer or score_behavior_case
+    done = dict(completed or {})
+    ids = tuple(candidate_ids) if candidate_ids is not None else manifest.candidate_ids
+    if any(candidate_id not in manifest.candidate_ids for candidate_id in ids) or len(set(ids)) != len(ids):
+        raise ValueError("candidate_ids must be unique manifest candidates")
+    results: dict[str, dict[str, tuple[CaseMeasurement, ...]]] = {}
+    for candidate_id in manifest.candidate_ids:
+        if candidate_id not in ids:
+            continue
+        per_split: dict[str, tuple[CaseMeasurement, ...]] = {}
+        for split in EXECUTABLE_SPLITS:
+            rows: list[CaseMeasurement] = []
+            for case in executable_cases(manifest, candidate_id, split):
+                measurement = done.get(case.case_id)
+                if measurement is None:
+                    measurement = score(model, case)
+                    if not isinstance(measurement, CaseMeasurement) or measurement.case_id != case.case_id:
+                        raise ValueError("scorer must return the measurement of the requested case")
+                    if on_case is not None:
+                        on_case(measurement)
+                rows.append(measurement)
+            per_split[split.value] = tuple(rows)
+        results[candidate_id] = per_split
+    return results
+
+
+def _intended_text(case: ScreeningCase, orientation: str) -> str:
+    condition = case.x_a if orientation == "A" else case.x_b
+    return (condition.a_text if orientation == "A" else condition.b_text).strip()
+
+
+def _majority(orientations: Sequence[str]) -> str:
+    return "A" if list(orientations).count("A") >= list(orientations).count("B") else "B"
+
+
+def lexical_prior_predictions(manifest: ScreeningManifest, candidate_id: str) -> tuple[Mapping[str, str], str]:
+    """Development-only lexical majorities plus the global development majority backoff (ties favor A)."""
+    development = executable_cases(manifest, candidate_id, Split.DEVELOPMENT)
+    per_key: dict[str, list[str]] = {}
+    for case in development:
+        per_key.setdefault(case.lexical_key, []).append(case.primary_orientation)
+    return MappingProxyType({key: _majority(values) for key, values in per_key.items()}), _majority([case.primary_orientation for case in development])
+
+
+def integrity_failures(manifest: ScreeningManifest, candidate_id: str, split: Split, measurements: Sequence[CaseMeasurement]) -> tuple[str, ...]:
+    """Detect leakage, duplicates, missing cases, or mismatched case metadata."""
+    cases = {case.case_id: case for case in executable_cases(manifest, candidate_id, split)}
+    failures: list[str] = []
+    seen: set[str] = set()
+    for row in measurements:
+        if row.case_id in seen:
+            failures.append(f"duplicate measurement {row.case_id}")
+        seen.add(row.case_id)
+        case = cases.get(row.case_id)
+        if case is None:
+            failures.append(f"measurement {row.case_id} is not a {split.value} case of {candidate_id}")
+        elif row.template_id != case.template_id or row.primary_orientation != case.primary_orientation:
+            failures.append(f"measurement {row.case_id} disagrees with manifest metadata")
+    missing = sorted(set(cases) - seen)
+    if missing:
+        failures.append(f"missing {len(missing)} {split.value} measurements")
+    return tuple(failures)
+
+
+def baseline_accuracies(manifest: ScreeningManifest, candidate_id: str, split: Split, measurements: Sequence[CaseMeasurement]) -> dict[str, float]:
+    """Evaluate every frozen trivial baseline on the primary condition of each case."""
+    cases = executable_cases(manifest, candidate_id, split)
+    if not cases:
+        raise ValueError("cannot evaluate baselines without cases")
+    by_id = {row.case_id: row for row in measurements}
+    lexical, backoff = lexical_prior_predictions(manifest, candidate_id)
+    majority = _majority([case.primary_orientation for case in cases])
+    total = len(cases)
+    return {
+        "majority": sum(case.primary_orientation == majority for case in cases) / total,
+        "lexical-prior": sum(lexical.get(case.lexical_key, backoff) == case.primary_orientation for case in cases) / total,
+        "local-heuristic": sum(case.local_heuristic_choices[case.primary_orientation] == _intended_text(case, case.primary_orientation) for case in cases) / total,
+        "cue-shuffle": sum(by_id[case.case_id].cue_shuffle_correct for case in cases if case.case_id in by_id) / total,
+    }
+
+
+def behavioral_result_for_candidate(manifest: ScreeningManifest, candidate_id: str, development: Sequence[CaseMeasurement], holdout: Sequence[CaseMeasurement]) -> dict[str, Any]:
+    """Summarize both executable splits and apply every frozen gate to holdout."""
+    summaries: dict[str, CandidateBehaviorSummary] = {}
+    for split, rows in ((Split.DEVELOPMENT, development), (Split.HOLDOUT, holdout)):
+        summaries[split.value] = summarize_behavior(
+            rows, candidate_id=candidate_id, baseline_accuracies=baseline_accuracies(manifest, candidate_id, split, rows),
+            integrity_failures=integrity_failures(manifest, candidate_id, split, rows))
+    gates = evaluate_behavioral_gates(summaries[Split.DEVELOPMENT.value], summaries[Split.HOLDOUT.value])
+    return _json({"candidate_id": candidate_id, "development": summaries[Split.DEVELOPMENT.value].to_dict(),
+                  "holdout": summaries[Split.HOLDOUT.value].to_dict(), "gates": gates.to_dict()}, "behavioral_result")
