@@ -190,6 +190,17 @@ git commit -m "feat: define frozen behavior screening metrics"
 
 ### Task 2: One frozen, tokenizer-validated manifest
 
+#### Amendment — 2026-09-17: tokenizer-eligibility pool extension
+
+Before any manifest case was written or inspected and before any model weight,
+logit, probability, or scientific output was inspected, tokenizer-only
+validation of the pinned 70M and 160M revisions established that only nine
+forms in the original `regular-plural` / `future-reserve` / `simple` pool met
+the equal-length target constraint. Append these fixed literals in order after
+the existing pool: `table`, `stone`, `field`, `road`, `door`. No token-length
+rule or threshold changes. The builder still selects the first ten
+tokenizer-eligible simple forms in the exact ordered pool.
+
 **Files:**
 - Modify: `src/neural_decompiler/candidate_screening.py`
 - Modify: `src/neural_decompiler/models.py`

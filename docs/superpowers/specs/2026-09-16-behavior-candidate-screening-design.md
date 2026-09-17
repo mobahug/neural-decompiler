@@ -126,6 +126,18 @@ design and an explicit rationale committed before any model run.
 
 ### Candidate manifests
 
+#### Amendment — 2026-09-17: tokenizer-eligibility pool extension
+
+Before any manifest case was written or inspected and before any model weight,
+logit, probability, or scientific output was inspected, tokenizer-only
+validation of the pinned 70M and 160M revisions found only nine eligible forms
+in the original `regular-plural` / `future-reserve` / `simple` literal pool.
+The existing pool is therefore extended by appending, in exactly this order,
+`table`, `stone`, `field`, `road`, and `door`. This is a pre-output protocol
+amendment, not a substitution selected from model behavior. The rule remains
+unchanged: the manifest builder selects the first ten tokenizer-eligible simple
+forms in the frozen ordered pool.
+
 Each retained candidate receives exactly three predeclared template families.
 All concrete text, expected alternatives, lexical items, case IDs, tokenizer
 eligibility decisions, and split assignments are generated and committed
