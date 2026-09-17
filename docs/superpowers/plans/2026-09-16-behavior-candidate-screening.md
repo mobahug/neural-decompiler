@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build and run the frozen three-candidate Pythia behavior screen that can return zero or one proposed reverse-engineering target without creating Experiment 005.
+**Goal:** Build and run the frozen Pythia behavior screen (two candidates after the 2026-09-17 tokenizer-infeasibility amendment) that can return zero or one proposed reverse-engineering target without creating Experiment 005.
 
 **Architecture:** A single focused `candidate_screening` module owns immutable manifest parsing, scoring semantics, frozen gates, compactness arithmetic, phase-state validation, and deterministic reporting. One runner exposes only `validate`, `behavioral`, `compactness`, and `report`; it reuses the existing pinned-model, capture, intervention, component, and provenance modules. One committed JSON manifest is the authority for every concrete case, tokenization decision, split, control, seed, and threshold; one generated JSON result and one generated Markdown report are the only scientific outputs.
 
@@ -245,6 +245,30 @@ records the bare noun for the singular condition and `base + s` for the plural
 condition, so its recorded choice is wrong on exactly 20 of 40 cases per
 template, matching the ordinal final-digit rule.
 
+#### Amendment — 2026-09-17: pre-output review corrections
+
+An independent review of the implementation before any model output found
+two protocol-level defects, both corrected before the first scientific run:
+
+1. The compactness discovery/validation partition was labeled by manifest
+   order, which is not the template-stratified 60/60 split the design
+   requires. The builder now assigns even pool items to discovery and odd pool
+   items to validation within every template stratum under both surface
+   variants, giving 20/20 per template with 10 A-primary and 10 B-primary
+   cases per partition; the validator enforces this. The manifest was
+   re-frozen tokenizer-only.
+2. Accuracy gates compared floating-point rates, so an outcome sitting exactly
+   on a frozen threshold (for example a 15-point template range) could be
+   decided against the design. Summaries now carry integer counts and the
+   gates compare exact rationals; the integrity gate also covers development
+   integrity failures and requires 120 development cases.
+
+Finalist audits are write-once per candidate; changing a recorded audit
+requires a tracked report-phase incident note that moves the prior audits and
+decision into the invalidated-run history. Split membership is predeclared by
+the literal per-split pools and number pairs; the recorded seed 20260916
+selects nothing.
+
 **Files:**
 - Modify: `src/neural_decompiler/candidate_screening.py`
 - Modify: `src/neural_decompiler/models.py`
@@ -469,7 +493,7 @@ Run:
 uv run python -c 'from pathlib import Path; from transformers import AutoTokenizer; from neural_decompiler.candidate_screening import freeze_manifest; from neural_decompiler.models import PYTHIA_70M, PYTHIA_160M; t70=AutoTokenizer.from_pretrained(PYTHIA_70M.model_id, revision=PYTHIA_70M.revision); t160=AutoTokenizer.from_pretrained(PYTHIA_160M.model_id, revision=PYTHIA_160M.revision); freeze_manifest(Path("screening/behavior-candidates/manifest-v1.json"), {PYTHIA_70M.model_id: t70, PYTHIA_160M.model_id: t160})'
 ```
 
-Expected: one canonical JSON file containing 1,080 matched cases, the exact tokenizer provenance, and a valid embedded SHA-256 digest; no model is loaded and no probability is computed.
+Expected: one canonical JSON file containing 720 matched cases (two candidates after the 2026-09-17 amendment), the exact tokenizer provenance, and a valid embedded SHA-256 digest; no model is loaded and no probability is computed.
 
 - [ ] **Step 6: Add tamper, reserve, lexical-disjointness, and tokenizer-policy tests**
 
@@ -737,7 +761,7 @@ def test_behavioral_runs_160m_only_when_zero_70m_candidates_pass():
 
 - [ ] **Step 4: Implement model order and candidate eligibility**
 
-`behavioral` always runs all three candidates on 70M. It unloads the model and runs all three on 160M only if the 70M pass count is zero. `compactness` uses the model scale whose behavioral phase produced at least one passing candidate and probes only those passers. No CLI flag can choose a scale or candidate.
+`behavioral` always runs every retained candidate on 70M. It unloads the model and runs every retained candidate on 160M only if the 70M pass count is zero. `compactness` uses the model scale whose behavioral phase produced at least one passing candidate and probes only those passers. No CLI flag can choose a scale or candidate.
 
 - [ ] **Step 5: Implement zero-retry, resume, and incident behavior**
 
@@ -903,7 +927,7 @@ Expected: exact candidate/split/template counts, embedded digest, tokenizer meta
 
 Run: `uv run python screening/behavior-candidates/run.py behavioral`
 
-Expected: all three candidates are evaluated on development and holdout at 70M. The runner stops if at least one passes; otherwise it automatically repeats the byte-identical protocol for all three at 160M. It records 360 development and 360 holdout case IDs per executed model scale and zero future-reserve IDs.
+Expected: both retained candidates are evaluated on development and holdout at 70M. The runner stops if at least one passes; otherwise it automatically repeats the byte-identical protocol for both at 160M. It records 240 development and 240 holdout case IDs per executed model scale and zero future-reserve IDs.
 
 - [ ] **Step 6: Inspect integrity and gate outcomes without changing protocol code**
 

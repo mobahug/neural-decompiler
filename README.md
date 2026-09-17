@@ -36,7 +36,7 @@ uv run python screening/behavior-candidates/run.py report
 - `validate` checks the manifest digest, counts, split disjointness, and single-token development cases without loading a model.
 - `behavioral` runs both candidates on pinned Pythia-70M and repeats the byte-identical protocol on pinned Pythia-160M only when zero candidates pass every 70M gate.
 - `compactness` probes only behavioral passers with development data; holdout and future-reserve cases are never executed during selection.
-- `report` renders the candidate matrix; `report --audit-json JSON` records the finalist prior-art audits and the final zero/one-target decision.
+- `report` renders the candidate matrix; `report --audit-json JSON` records the finalist prior-art audits (write-once per candidate) and the final zero/one-target decision.
 
 Scientific phases require a clean, committed tree and run once. `--resume` continues only an interrupted, provenance-identical run. A completed screen is rerun only through `--incident-note TRACKED_PATH`, which invalidates the whole affected model screen for every candidate after a committed software fix. Generated outputs live under `outputs/behavior-candidate-screening/` (`results.json`, `report.md`) and are not committed.
 

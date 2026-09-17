@@ -354,11 +354,41 @@ def test_report_pending_audit_then_deterministic_selection(tmp_path) -> None:
         assert f"`{name}`" in text
     assert "Baselines: majority 50.0%, lexical-prior" in text and "reserve IDs executed: 0" in text and "exploratory" in text
     assert "| 1. `overall_accuracy` |" in text and "| 10. `integrity` |" in text
-    # Mapping both finalists yields zero targets even though they passed every measured gate.
-    run.report(audit_json=json.dumps({"ordinal-suffix": entry("SUBSTANTIALLY_MAPPED", ["https://example.org/ordinal"]),
-                                      "regular-plural": entry("SUBSTANTIALLY_MAPPED", ["https://example.org/plural"])}))
+    assert all("entry_sha256" in audit and "recorded_at" in audit for audit in state["audits"].values())
+    # Recorded audits are write-once: a silent re-audit that would flip the decision is refused.
+    with pytest.raises(cs.PhaseError, match="already recorded"):
+        run.report(audit_json=json.dumps({"ordinal-suffix": entry("SUBSTANTIALLY_MAPPED", ["https://example.org/ordinal"])}))
+    state = cs.load_results_state(run.results_path)
+    assert state["selection"]["status"] == "ONE_PROPOSED_TARGET"
+    # A tracked report-phase incident note moves the audits and decision into history first.
+    digest = cs.sha256_text(run.results_path.read_text())
+    note = tmp_path / "audit-incident.md"
+    note.write_text(f"- run_id: {state['run_id']}\n- phase: report\n- model_id: {PYTHIA_70M.model_id}\n- defect: missed a close prior mechanism\n"
+                    f"- invalid_artifact_sha256: {digest}\n- fix_commit: {COMMIT}\n- decision: full-rerun\n")
+    run.report(incident_note=str(note), audit_json=json.dumps({"ordinal-suffix": entry("SUBSTANTIALLY_MAPPED", ["https://example.org/ordinal"]),
+                                                              "regular-plural": entry("SUBSTANTIALLY_MAPPED", ["https://example.org/plural"])}))
     state = cs.load_results_state(run.results_path)
     assert state["selection"]["status"] == "ZERO_TARGET" and state["selection"]["selected_candidate_id"] is None
+    assert len(state["invalidated_runs"]) == 1 and state["invalidated_runs"][0]["phase"] == "report"
+    assert state["invalidated_runs"][0]["selection"]["status"] == "ONE_PROPOSED_TARGET"
+    assert state["behavioral"][PYTHIA_70M.model_id]["status"] == "complete" and state["compactness"][PYTHIA_70M.model_id]["status"] == "complete"
+    assert "Invalidated runs" in run.report_path.read_text() and "missed a close prior mechanism" in run.report_path.read_text()
+
+
+def test_resume_after_crash_between_completion_writes_restores_selection_model(tmp_path) -> None:
+    """A screen recorded complete with passers must select that model even if the crash hit before the phase closed."""
+    loads: list[str] = []
+    run = make_runner(tmp_path, pass_map=ORDINAL_PASS_70M, loads=loads)
+    run.behavioral()
+    state = cs.load_results_state(run.results_path)
+    state["selection_model_id"] = None
+    state["phases"]["behavioral"] = {"status": "running", "started_at": state["phases"]["behavioral"]["started_at"]}
+    state["state_sha256"] = cs.state_digest(state)
+    run.results_path.write_text(json.dumps(state))
+    assert run.behavioral(resume=True) == 0
+    resumed = cs.load_results_state(run.results_path)
+    assert resumed["selection_model_id"] == PYTHIA_70M.model_id
+    assert loads == [PYTHIA_70M.model_id]
 
 
 def test_selection_orders_by_worst_template_after_novelty() -> None:

@@ -41,7 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
         scientific.add_argument("--resume", action="store_true", help="continue an interrupted, provenance-identical running phase")
         scientific.add_argument("--incident-note", default=None, metavar="TRACKED_PATH", help="invalidate a completed screen after a committed software fix")
     report = phases.add_parser("report")
-    report.add_argument("--audit-json", default=None, metavar="JSON", help="finalist prior-art audit entries")
+    report.add_argument("--audit-json", default=None, metavar="JSON", help="finalist prior-art audit entries (write-once per candidate)")
+    report.add_argument("--incident-note", default=None, metavar="TRACKED_PATH", help="invalidate recorded audits and the decision after a documented audit defect")
     return parser
 
 
@@ -142,6 +143,7 @@ class Runner:
             screen = state["behavioral"].get(spec.model_id)
             if screen is not None and screen["status"] == "complete":
                 if screen["passing_candidate_ids"]:
+                    state["selection_model_id"] = spec.model_id
                     break
                 continue
             runtime = runtime_record(spec)
@@ -177,12 +179,13 @@ class Runner:
                     manifest, candidate_id, per_split[cs.Split.DEVELOPMENT.value], per_split[cs.Split.HOLDOUT.value])
             screen["passing_candidate_ids"] = list(cs.behavioral_passers(state, spec.model_id))
             screen["status"], screen["completed_at"] = "complete", cs.utc_now()
+            if screen["passing_candidate_ids"]:
+                state["selection_model_id"] = spec.model_id
             del model
             gc.collect()
             self.log(f"behavioral {spec.model_id}: passers {screen['passing_candidate_ids'] or 'none'}")
             self._write(state)
             if screen["passing_candidate_ids"]:
-                state["selection_model_id"] = spec.model_id
                 break
         state["phases"]["behavioral"] = {**state["phases"]["behavioral"], "status": "complete", "completed_at": cs.utc_now()}
         self._write(state)
@@ -211,6 +214,8 @@ class Runner:
         self._write(state)
         seed_runtime(RUNTIME_SEED, spec.deterministic_algorithms)
         model = self.model_loader(spec)
+        entry["bridge"] = {"compatibility_mode": bool(getattr(model, "compatibility_mode", False)), "use_attn_result_requested": True,
+                           "resolved_revision": resolved_revision(model) or spec.revision}
         for candidate_id in passers:
             if candidate_id in entry["candidates"]:
                 continue
@@ -220,13 +225,14 @@ class Runner:
                 if done == total or done % 10 == 0:
                     self.log(f"compactness {candidate_id}: {stage} {done}/{total}")
 
+            development_ids = [case.case_id for case in cs.executable_cases(manifest, candidate_id, cs.Split.DEVELOPMENT)]
             try:
                 result = self.probe(model, manifest, candidate_id, on_progress=on_progress)
             except cs.CompactnessIntegrityError as error:
                 gate = cs.CompactnessGateResult({"denominators": False, "overall_recovery": False, "beats_random": False, "positive_template_recovery": False}, False)
                 result = {"candidate_id": candidate_id, "integrity_error": str(error), "gate": gate.to_dict()}
             entry["candidates"][candidate_id] = result
-            entry["executed_case_ids"].extend(result.get("discovery_case_ids", []) + result.get("validation_case_ids", []))
+            entry["executed_case_ids"].extend(development_ids)
             self._write(state)
         del model
         gc.collect()
@@ -235,15 +241,16 @@ class Runner:
         self._write(state)
         return 0
 
-    def report(self, *, audit_json: str | None = None) -> int:
+    def report(self, *, audit_json: str | None = None, incident_note: str | None = None) -> int:
         manifest = cs.load_manifest(self.manifest_path)
         state = cs.load_results_state(self.results_path)
         if state["manifest_sha256"] != manifest.content_sha256:
             raise cs.PhaseError("manifest digest differs from the recorded run")
+        if incident_note is not None:
+            state = self._apply_incident(state, incident_note, "report")
+            cs.assert_provenance_identical(state, manifest_sha256=manifest.content_sha256 or "", **self._current_provenance())
         if audit_json is not None:
-            audits = cs.parse_audit_json(audit_json)
-            cs.validate_finalist_audits(state, audits)
-            state["audits"].update(audits)
+            cs.record_audits(state, cs.parse_audit_json(audit_json))
         state["selection"] = cs.finalize_selection(state)
         final = state["selection"]["status"] != "PENDING_FINALIST_AUDIT"
         state["phases"]["report"] = {"status": "complete" if final else "running", "rendered_at": cs.utc_now()}
@@ -264,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             return runner.behavioral(resume=args.resume, incident_note=args.incident_note)
         if args.phase == "compactness":
             return runner.compactness(resume=args.resume, incident_note=args.incident_note)
-        return runner.report(audit_json=args.audit_json)
+        return runner.report(audit_json=args.audit_json, incident_note=args.incident_note)
     except (cs.PhaseError, ValueError) as error:
         print(f"refused: {error}", file=sys.stderr)
         return 2

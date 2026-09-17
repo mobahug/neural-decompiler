@@ -12,6 +12,7 @@ import re
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
+from fractions import Fraction
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
@@ -377,64 +378,109 @@ def _rate(value: float, name: str) -> float:
     return value
 
 
+def _count(value: Any, name: str, *, maximum: int | None = None) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0 or (maximum is not None and value > maximum):
+        raise ValueError(f"{name} must be an integer between zero and {maximum if maximum is not None else 'infinity'}")
+    return value
+
+
 @dataclass(frozen=True)
 class CandidateBehaviorSummary:
+    """Integer counts are the authority; rates are derived so boundary gates are exact."""
+
     candidate_id: str
     case_count: int
     primary_correct_count: int
-    template_accuracies: Mapping[str, float]
+    template_case_counts: Mapping[str, int]
+    template_correct_counts: Mapping[str, int]
     template_mean_margins: Mapping[str, float]
-    contrast_flip_rate: float
-    cue_shuffle_accuracy: float
+    contrast_flip_count: int
+    cue_shuffle_correct_count: int
     mean_d_full: float
     mean_d_cue: float
-    baseline_accuracies: Mapping[str, float]
+    baseline_correct_counts: Mapping[str, int]
     integrity_failures: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _require_text(self.candidate_id, "candidate_id")
-        if not isinstance(self.case_count, int) or self.case_count < 0 or not isinstance(self.primary_correct_count, int) or not 0 <= self.primary_correct_count <= self.case_count:
-            raise ValueError("primary_correct_count must be between zero and case_count")
-        accuracies = _freeze_mapping(self.template_accuracies, "template_accuracies")
+        _count(self.case_count, "case_count")
+        _count(self.primary_correct_count, "primary_correct_count", maximum=self.case_count)
+        _count(self.contrast_flip_count, "contrast_flip_count", maximum=self.case_count)
+        _count(self.cue_shuffle_correct_count, "cue_shuffle_correct_count", maximum=self.case_count)
+        totals = _freeze_mapping(self.template_case_counts, "template_case_counts")
+        corrects = _freeze_mapping(self.template_correct_counts, "template_correct_counts")
         margins = _freeze_mapping(self.template_mean_margins, "template_mean_margins")
-        if not accuracies or set(accuracies) != set(margins):
-            raise ValueError("template accuracies and margins must have the same nonempty keys")
-        for key, value in accuracies.items():
-            _require_text(key, "template_id"); _rate(value, f"template_accuracies.{key}")
-        for key, value in margins.items():
-            _finite(value, f"template_mean_margins.{key}")
-        baselines = _freeze_mapping(self.baseline_accuracies, "baseline_accuracies")
+        if not totals or set(totals) != set(corrects) or set(totals) != set(margins):
+            raise ValueError("template counts and margins must have the same nonempty keys")
+        for key, total in totals.items():
+            _require_text(key, "template_id")
+            if _count(total, f"template_case_counts.{key}") == 0:
+                raise ValueError("template case counts must be positive")
+            _count(corrects[key], f"template_correct_counts.{key}", maximum=total)
+            _finite(margins[key], f"template_mean_margins.{key}")
+        if sum(totals.values()) != self.case_count or sum(corrects.values()) != self.primary_correct_count:
+            raise ValueError("template counts must sum to case_count and primary_correct_count")
+        baselines = _freeze_mapping(self.baseline_correct_counts, "baseline_correct_counts")
         for key, value in baselines.items():
-            _require_text(key, "baseline_id"); _rate(value, f"baseline_accuracies.{key}")
+            _require_text(key, "baseline_id"); _count(value, f"baseline_correct_counts.{key}", maximum=self.case_count)
         failures = tuple(self.integrity_failures)
         if any(not isinstance(value, str) or not value.strip() for value in failures):
             raise ValueError("integrity_failures must contain nonempty strings")
-        object.__setattr__(self, "template_accuracies", accuracies)
+        object.__setattr__(self, "template_case_counts", totals)
+        object.__setattr__(self, "template_correct_counts", corrects)
         object.__setattr__(self, "template_mean_margins", margins)
-        object.__setattr__(self, "baseline_accuracies", baselines)
+        object.__setattr__(self, "baseline_correct_counts", baselines)
         object.__setattr__(self, "integrity_failures", failures)
-        object.__setattr__(self, "contrast_flip_rate", _rate(self.contrast_flip_rate, "contrast_flip_rate"))
-        object.__setattr__(self, "cue_shuffle_accuracy", _rate(self.cue_shuffle_accuracy, "cue_shuffle_accuracy"))
         object.__setattr__(self, "mean_d_full", _finite(self.mean_d_full, "mean_d_full"))
         object.__setattr__(self, "mean_d_cue", _finite(self.mean_d_cue, "mean_d_cue"))
 
+    def _ratio(self, numerator: int) -> Fraction:
+        if not self.case_count:
+            raise ValueError("rates are undefined for zero cases")
+        return Fraction(numerator, self.case_count)
+
+    @property
+    def exact_accuracy(self) -> Fraction:
+        return self._ratio(self.primary_correct_count)
+
     @property
     def accuracy(self) -> float:
-        if not self.case_count:
-            raise ValueError("accuracy is undefined for zero cases")
-        return self.primary_correct_count / self.case_count
+        return float(self.exact_accuracy)
+
+    @property
+    def exact_template_accuracies(self) -> dict[str, Fraction]:
+        return {key: Fraction(self.template_correct_counts[key], total) for key, total in self.template_case_counts.items()}
+
+    @property
+    def template_accuracies(self) -> dict[str, float]:
+        return {key: float(value) for key, value in self.exact_template_accuracies.items()}
+
+    @property
+    def contrast_flip_rate(self) -> float:
+        return float(self._ratio(self.contrast_flip_count))
+
+    @property
+    def cue_shuffle_accuracy(self) -> float:
+        return float(self._ratio(self.cue_shuffle_correct_count))
+
+    @property
+    def baseline_accuracies(self) -> dict[str, float]:
+        return {key: float(self._ratio(value)) for key, value in self.baseline_correct_counts.items()}
 
     def to_dict(self) -> dict[str, Any]:
         return _json({"candidate_id": self.candidate_id, "case_count": self.case_count,
                       "primary_correct_count": self.primary_correct_count, "accuracy": self.accuracy,
-                      "template_accuracies": dict(self.template_accuracies), "template_mean_margins": dict(self.template_mean_margins),
-                      "contrast_flip_rate": self.contrast_flip_rate, "cue_shuffle_accuracy": self.cue_shuffle_accuracy,
+                      "template_case_counts": dict(self.template_case_counts), "template_correct_counts": dict(self.template_correct_counts),
+                      "template_accuracies": self.template_accuracies, "template_mean_margins": dict(self.template_mean_margins),
+                      "contrast_flip_count": self.contrast_flip_count, "contrast_flip_rate": self.contrast_flip_rate,
+                      "cue_shuffle_correct_count": self.cue_shuffle_correct_count, "cue_shuffle_accuracy": self.cue_shuffle_accuracy,
                       "mean_d_full": self.mean_d_full, "mean_d_cue": self.mean_d_cue,
-                      "baseline_accuracies": dict(self.baseline_accuracies), "integrity_failures": list(self.integrity_failures)}, "candidate_behavior_summary")
+                      "baseline_correct_counts": dict(self.baseline_correct_counts), "baseline_accuracies": self.baseline_accuracies,
+                      "integrity_failures": list(self.integrity_failures)}, "candidate_behavior_summary")
 
 
-def summarize_behavior(measurements: Sequence[CaseMeasurement], *, candidate_id: str, baseline_accuracies: Mapping[str, float] | None = None, integrity_failures: Sequence[str] = ()) -> CandidateBehaviorSummary:
-    """Summarize primary-only accuracy and paired effects without model work."""
+def summarize_behavior(measurements: Sequence[CaseMeasurement], *, candidate_id: str, baseline_correct_counts: Mapping[str, int] | None = None, integrity_failures: Sequence[str] = ()) -> CandidateBehaviorSummary:
+    """Summarize primary-only counts and paired effects without model work."""
     rows = tuple(measurements)
     if not rows or any(not isinstance(row, CaseMeasurement) for row in rows):
         raise ValueError("measurements must be nonempty CaseMeasurement values")
@@ -445,12 +491,13 @@ def summarize_behavior(measurements: Sequence[CaseMeasurement], *, candidate_id:
         grouped.setdefault(row.template_id, []).append(row)
     return CandidateBehaviorSummary(
         candidate_id=candidate_id, case_count=len(rows), primary_correct_count=sum(row.primary_correct for row in rows),
-        template_accuracies={key: sum(row.primary_correct for row in values) / len(values) for key, values in grouped.items()},
+        template_case_counts={key: len(values) for key, values in grouped.items()},
+        template_correct_counts={key: sum(row.primary_correct for row in values) for key, values in grouped.items()},
         template_mean_margins={key: sum(row.primary.correctness_margin for row in values) / len(values) for key, values in grouped.items()},
-        contrast_flip_rate=sum(row.contrast_flip for row in rows) / len(rows),
-        cue_shuffle_accuracy=sum(row.cue_shuffle_correct for row in rows) / len(rows),
+        contrast_flip_count=sum(row.contrast_flip for row in rows),
+        cue_shuffle_correct_count=sum(row.cue_shuffle_correct for row in rows),
         mean_d_full=sum(row.d_full for row in rows) / len(rows), mean_d_cue=sum(row.d_cue for row in rows) / len(rows),
-        baseline_accuracies=baseline_accuracies or {}, integrity_failures=tuple(integrity_failures))
+        baseline_correct_counts=baseline_correct_counts or {}, integrity_failures=tuple(integrity_failures))
 
 
 @dataclass(frozen=True)
@@ -475,22 +522,30 @@ class BehavioralGateResult:
 
 
 def evaluate_behavioral_gates(development: CandidateBehaviorSummary, holdout: CandidateBehaviorSummary) -> BehavioralGateResult:
-    """Evaluate every frozen behavioral rule; no successful later gate rescues a failure."""
+    """Evaluate every frozen behavioral rule; no successful later gate rescues a failure.
+
+    Accuracy comparisons use exact rational arithmetic on integer counts so a
+    candidate sitting exactly on a frozen threshold is decided as the design
+    states (for example a 15-point template range passes).
+    """
     if development.candidate_id != holdout.candidate_id:
         raise ValueError("development and holdout candidate IDs must match")
-    if holdout.case_count != 120:
-        raise ValueError("behavioral gate requires exactly 120 holdout cases")
+    if holdout.case_count != 120 or development.case_count != 120:
+        raise ValueError("behavioral gate requires exactly 120 development and 120 holdout cases")
+    templates = holdout.exact_template_accuracies
+    accuracy = holdout.exact_accuracy
     checks = {
-        "overall_accuracy": holdout.accuracy >= 0.85,
+        "overall_accuracy": accuracy >= Fraction(85, 100),
         "wilson_lower_bound": wilson_lower_bound(holdout.primary_correct_count, holdout.case_count) >= 0.78,
-        "per_template_accuracy": min(holdout.template_accuracies.values()) >= 0.75,
-        "template_range": max(holdout.template_accuracies.values()) - min(holdout.template_accuracies.values()) <= 0.15,
-        "development_drop": development.accuracy - holdout.accuracy <= 0.10,
+        "per_template_accuracy": min(templates.values()) >= Fraction(75, 100),
+        "template_range": max(templates.values()) - min(templates.values()) <= Fraction(15, 100),
+        "development_drop": development.exact_accuracy - accuracy <= Fraction(10, 100),
         "positive_template_margin": min(holdout.template_mean_margins.values()) > 0.0,
-        "contrast_flip": holdout.contrast_flip_rate >= 0.80,
-        "cue_dependence": holdout.accuracy - holdout.cue_shuffle_accuracy >= 0.20 or holdout.mean_d_cue >= 0.5 * holdout.mean_d_full,
-        "beats_baselines": all(holdout.accuracy - value >= 0.15 for value in holdout.baseline_accuracies.values()),
-        "integrity": not holdout.integrity_failures,
+        "contrast_flip": Fraction(holdout.contrast_flip_count, holdout.case_count) >= Fraction(80, 100),
+        "cue_dependence": (accuracy - Fraction(holdout.cue_shuffle_correct_count, holdout.case_count) >= Fraction(20, 100)
+                           or holdout.mean_d_cue >= 0.5 * holdout.mean_d_full),
+        "beats_baselines": all(accuracy - Fraction(count, holdout.case_count) >= Fraction(15, 100) for count in holdout.baseline_correct_counts.values()),
+        "integrity": not (holdout.integrity_failures or development.integrity_failures),
     }
     return BehavioralGateResult(checks, all(checks.values()))
 
@@ -854,9 +909,14 @@ def build_manifest_payload(tokenizer: Any) -> dict[str, Any]:
                         x_b = _build_condition(tokenizers, prompt_b, a_text, b_text, token_strings)
                         number = variant_index * 20 + item_index + 1
                         candidate_cases.append(_case_payload(case_id=f"{candidate_id}-{split}-{template_id}-{number:02d}", candidate_id=candidate_id, template_id=template_id, split=split, lexical_key=lexical_key, rule_class=rule_class, primary_orientation=primary, x_a=x_a, x_b=x_b, local_choices=local, compactness=None))
-        development = [case for case in candidate_cases if case["split"] == Split.DEVELOPMENT.value]
-        for number, case in enumerate(development):
-            case["compactness_partition"] = CompactnessPartition.DISCOVERY.value if number < 60 else CompactnessPartition.VALIDATION.value
+        # Stratify the compactness partition within every template stratum: even pool
+        # items go to discovery and odd items to validation under both surface variants,
+        # which keeps 5 simple/5 change (or 5 regular/5 exception) and 10 A/10 B per
+        # partition in each template.
+        for case in candidate_cases:
+            if case["split"] == Split.DEVELOPMENT.value:
+                item_index = (int(case["case_id"].rsplit("-", 1)[1]) - 1) % 20
+                case["compactness_partition"] = CompactnessPartition.DISCOVERY.value if item_index % 2 == 0 else CompactnessPartition.VALIDATION.value
         cases.extend(candidate_cases)
     payload = {"schema_version": MANIFEST_SCHEMA_VERSION, "seed": MANIFEST_SEED, "models": [{"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, {"model_id": PYTHIA_160M.model_id, "revision": PYTHIA_160M.revision}], "tokenizer_provenance": provenance, "token_string_by_id": token_strings, "protocol": {"cases_per_template": 40, "cases_per_split": 120, "single_token_development": True}, "candidates": candidates, "cases": cases}
     payload["content_sha256"] = manifest_content_digest(payload)
@@ -998,9 +1058,15 @@ def validate_manifest(manifest: Mapping[str, Any] | ScreeningManifest) -> Screen
                 rows = [case for case in cases if case.candidate_id == candidate.candidate_id and case.split is split and case.template_id == template]
                 if len(rows) != 40 or orientations[(candidate.candidate_id, split.value, template)].count("A") != 20:
                     raise ValueError("template strata require 40 cases and balanced primary orientation")
-        development = [case for case in cases if case.candidate_id == candidate.candidate_id and case.split is Split.DEVELOPMENT]
-        if sum(case.compactness_partition is CompactnessPartition.DISCOVERY for case in development) != 60 or sum(case.compactness_partition is CompactnessPartition.VALIDATION for case in development) != 60:
-            raise ValueError("development compactness partition must be 60/60")
+        for template in candidate.template_ids:
+            development = [case for case in cases if case.candidate_id == candidate.candidate_id and case.split is Split.DEVELOPMENT and case.template_id == template]
+            partitions = [case.compactness_partition for case in development]
+            if partitions.count(CompactnessPartition.DISCOVERY) != 20 or partitions.count(CompactnessPartition.VALIDATION) != 20:
+                raise ValueError("development compactness partition must be 20/20 within every template")
+            for partition in CompactnessPartition:
+                partition_orientations = [case.primary_orientation for case in development if case.compactness_partition is partition]
+                if partition_orientations.count("A") != 10:
+                    raise ValueError("compactness partitions must balance primary orientation within every template")
     return ScreeningManifest(tuple(candidates), tuple(cases), schema_version=MANIFEST_SCHEMA_VERSION, content_sha256=manifest["content_sha256"])
 
 
@@ -1148,20 +1214,19 @@ def integrity_failures(manifest: ScreeningManifest, candidate_id: str, split: Sp
     return tuple(failures)
 
 
-def baseline_accuracies(manifest: ScreeningManifest, candidate_id: str, split: Split, measurements: Sequence[CaseMeasurement]) -> dict[str, float]:
-    """Evaluate every frozen trivial baseline on the primary condition of each case."""
+def baseline_correct_counts(manifest: ScreeningManifest, candidate_id: str, split: Split, measurements: Sequence[CaseMeasurement]) -> dict[str, int]:
+    """Count primary-condition successes of every frozen trivial baseline."""
     cases = executable_cases(manifest, candidate_id, split)
     if not cases:
         raise ValueError("cannot evaluate baselines without cases")
     by_id = {row.case_id: row for row in measurements}
     lexical, backoff = lexical_prior_predictions(manifest, candidate_id)
     majority = _majority([case.primary_orientation for case in cases])
-    total = len(cases)
     return {
-        "majority": sum(case.primary_orientation == majority for case in cases) / total,
-        "lexical-prior": sum(lexical.get(case.lexical_key, backoff) == case.primary_orientation for case in cases) / total,
-        "local-heuristic": sum(case.local_heuristic_choices[case.primary_orientation] == _intended_text(case, case.primary_orientation) for case in cases) / total,
-        "cue-shuffle": sum(by_id[case.case_id].cue_shuffle_correct for case in cases if case.case_id in by_id) / total,
+        "majority": sum(case.primary_orientation == majority for case in cases),
+        "lexical-prior": sum(lexical.get(case.lexical_key, backoff) == case.primary_orientation for case in cases),
+        "local-heuristic": sum(case.local_heuristic_choices[case.primary_orientation] == _intended_text(case, case.primary_orientation) for case in cases),
+        "cue-shuffle": sum(by_id[case.case_id].cue_shuffle_correct for case in cases if case.case_id in by_id),
     }
 
 
@@ -1170,7 +1235,7 @@ def behavioral_result_for_candidate(manifest: ScreeningManifest, candidate_id: s
     summaries: dict[str, CandidateBehaviorSummary] = {}
     for split, rows in ((Split.DEVELOPMENT, development), (Split.HOLDOUT, holdout)):
         summaries[split.value] = summarize_behavior(
-            rows, candidate_id=candidate_id, baseline_accuracies=baseline_accuracies(manifest, candidate_id, split, rows),
+            rows, candidate_id=candidate_id, baseline_correct_counts=baseline_correct_counts(manifest, candidate_id, split, rows),
             integrity_failures=integrity_failures(manifest, candidate_id, split, rows))
     gates = evaluate_behavioral_gates(summaries[Split.DEVELOPMENT.value], summaries[Split.HOLDOUT.value])
     return _json({"candidate_id": candidate_id, "development": summaries[Split.DEVELOPMENT.value].to_dict(),
@@ -1385,7 +1450,8 @@ def run_compactness_probe(model: Any, manifest: ScreeningManifest, candidate_id:
     by_id = {canonical_component_id(ref): ref for ref in universe}
     capture_options = {key: options[key] for key in ("batch_size", "capture") if key in options}
     patch_options = {key: options[key] for key in ("batch_size", "intervene") if key in options}
-    sources = capture_pair_sources(model, cases, universe, **capture_options)
+    # Capture per partition so unpatched and patched contrasts come from identically formed batches.
+    sources = {**capture_pair_sources(model, discovery, universe, **capture_options), **capture_pair_sources(model, validation, universe, **capture_options)}
 
     def progress(stage: str, done: int, total: int) -> None:
         if on_progress is not None:
@@ -1600,8 +1666,8 @@ def parse_incident_note(text: str) -> dict[str, str]:
     missing = [name for name in _INCIDENT_FIELDS if name not in fields]
     if missing:
         raise PhaseError(f"incident note is missing fields: {missing}")
-    if fields["phase"] not in ("behavioral", "compactness"):
-        raise PhaseError("incident note phase must be behavioral or compactness")
+    if fields["phase"] not in PHASES:
+        raise PhaseError("incident note phase must be behavioral, compactness, or report")
     if not _COMMIT_SHA.fullmatch(fields["fix_commit"]):
         raise PhaseError("incident note fix_commit must be a 40-character SHA")
     if fields["decision"].lower().replace("_", "-") != "full-rerun":
@@ -1624,11 +1690,14 @@ def invalidate_run_with_incident(state: Mapping[str, Any], note: Mapping[str, st
         "fix_commit": note["fix_commit"], "behavioral": updated["behavioral"], "compactness": updated["compactness"],
         "audits": updated["audits"], "selection": updated["selection"],
     })
-    # A defect in either phase invalidates everything downstream of it for every candidate.
-    restarted = PHASES if note["phase"] == "behavioral" else PHASES[1:]
+    # A defect in a phase invalidates it and everything downstream of it for every candidate;
+    # a report-phase incident invalidates only the recorded audits and the decision.
+    restarted = PHASES[PHASES.index(note["phase"]):]
     if note["phase"] == "behavioral":
         updated["behavioral"], updated["selection_model_id"] = {}, None
-    updated["compactness"], updated["audits"], updated["selection"] = {}, {}, None
+    if note["phase"] != "report":
+        updated["compactness"] = {}
+    updated["audits"], updated["selection"] = {}, None
     for phase in restarted:
         updated["phases"][phase] = {"status": "not_started", "invalidated_run_id": state["run_id"]}
     updated["run_id"] = _new_run_id(state["run_id"] + note["fix_commit"])
@@ -1713,11 +1782,22 @@ def compactness_passers(state: Mapping[str, Any]) -> tuple[str, ...]:
 
 
 def validate_finalist_audits(state: Mapping[str, Any], audits: Mapping[str, Mapping[str, Any]]) -> None:
-    """Only compactness passers of the selection model may carry an audit."""
+    """Only compactness passers of the selection model may carry an audit, and only once."""
     passers = set(compactness_passers(state))
     extra = sorted(set(audits) - passers)
     if extra:
         raise ValueError(f"audit entries exist for non-finalists: {extra}")
+    repeated = sorted(set(audits) & set(state["audits"]))
+    if repeated:
+        raise PhaseError(f"audits already recorded for {repeated}; changing a recorded audit requires a tracked report-phase incident note")
+
+
+def record_audits(state: dict[str, Any], audits: Mapping[str, Mapping[str, Any]]) -> None:
+    """Append write-once audit entries with their own digest and timestamp."""
+    validate_finalist_audits(state, audits)
+    recorded_at = utc_now()
+    for candidate_id, entry in audits.items():
+        state["audits"][candidate_id] = {**entry, "recorded_at": recorded_at, "entry_sha256": sha256_text(_canonical_json(dict(entry)))}
 
 
 def _candidate_metrics(state: Mapping[str, Any], candidate_id: str) -> dict[str, Any]:
@@ -1840,7 +1920,8 @@ def render_markdown_report(state: Mapping[str, Any], manifest: ScreeningManifest
                     lines += ["Integrity failures: " + "; ".join(summary["integrity_failures"]), ""]
             lines += ["| Gate | Result |", "|---|---|"]
             lines += [f"| {index}. `{name}` | {_mark(result['gates']['checks'][name])} |" for index, name in enumerate(_GATE_NAMES, start=1)]
-            lines += ["", f"Behavioral result: **{_mark(result['gates']['passed'])}**" + (f" — failed: {', '.join(result['gates']['failed_checks'])}" if result["gates"]["failed_checks"] else ""), ""]
+            lines += ["", "Gate 8 (`cue_dependence`) is not independent evidence: the cue-shuffled prompt of a minimal pair is its counterfactual prompt, so `d_cue` equals `d_full` and cue-shuffle accuracy mirrors counterfactual correctness.", "",
+                      f"Behavioral result: **{_mark(result['gates']['passed'])}**" + (f" — failed: {', '.join(result['gates']['failed_checks'])}" if result["gates"]["failed_checks"] else ""), ""]
     for model_id, entry in state["compactness"].items():
         lines += [f"## Exploratory compactness probe — `{model_id}`", "", f"- Status `{entry['status']}`; development data only; executed case IDs {len(entry['executed_case_ids'])}", ""]
         for candidate_id in _manifest_order(list(entry["candidates"])):
@@ -1855,7 +1936,8 @@ def render_markdown_report(state: Mapping[str, Any], manifest: ScreeningManifest
                       "- Discovery ranking (top 12): " + ", ".join(f"`{key}` ({_num(result['singleton_discovery'][key]['mean_d_patch'])})" for key in result["ranking"][:12]), ""]
             if result["top_k"]:
                 lines += ["| k | Recovery | Template recoveries | Random median | Reference B_k | Denominators | ≥0.70 | ≥2·B_k | Positive templates |", "|---|---|---|---|---|---|---|---|---|"]
-                for k, evaluation in result["gate"]["evaluations"].items():
+                for k in sorted(result["gate"]["evaluations"], key=int):
+                    evaluation = result["gate"]["evaluations"][k]
                     checks = evaluation["checks"]
                     random_entry = result["random"][k]
                     templates = ", ".join(f"`{key}` {_num(value)}" for key, value in evaluation["template_recoveries"].items()) or "n/a"
@@ -1887,7 +1969,9 @@ def render_markdown_report(state: Mapping[str, Any], manifest: ScreeningManifest
               "- Compactness is exploratory: it ranks components on discovery cases and tests fixed cumulative sets on validation cases within development data. It establishes neither completeness, minimality, self-repair robustness, nor a human-readable mechanism.",
               "- Every matched pair differs only in its controlling cue, so the cue-shuffle condition coincides with the counterfactual prompt; gate 8 is therefore implied by the contrast measurements rather than independent of them.",
               "- The `dated-event` ordinal template applies the frozen shared number pairs, most of which are not calendar dates.",
-              "- Behavioral screening compares the intended inflected form with its matched alternative; the spelling-change stress test enters only through the local-heuristic baseline.",
+              "- Behavioral screening compares the intended inflected form with its matched alternative. For `regular-plural` the local heuristic's plural prediction (`citys`) is never the scored foil (` city`), so gate 9 is vacuous for that candidate and what is screened is count-cued singular/plural selection rather than `es`/`ies` allomorphy; for `ordinal-suffix` the heuristic predicts the actual foil (`st` for `11`), so gate 9 is informative.",
+              "- Ordinal manifest properties frozen before the run: the first `bare-numeral` surface variant is a single-token prompt scored at position 0 without a BOS token; development B-numbers are single tokens while most holdout B-numbers tokenize into several pieces, so the development-to-holdout drop gate is confounded with a tokenization shift for that candidate.",
+              "- Split membership is predeclared by the literal per-split pools and number pairs; the recorded seed 20260916 selects nothing.",
               "- Only the two retained candidates were screened; `degree-inflection` was eliminated before any output for tokenizer infeasibility.",
               "", "## Decision", "", f"`{selection['status']}`" + (f": `{selection['selected_candidate_id']}` is proposed as the subject of a separately designed, user-approved, preregistered Experiment 005. This report is not that experiment." if selection["selected_candidate_id"] else ". Candidate selection stops here; no Experiment 005 is designed, preregistered, or run."), ""]
     return "\n".join(lines)

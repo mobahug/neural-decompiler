@@ -63,6 +63,12 @@ def test_development_cases_are_single_token_and_partitioned() -> None:
         )
         assert sum(case.compactness_partition is CompactnessPartition.DISCOVERY for case in cases) == 60
         assert sum(case.compactness_partition is CompactnessPartition.VALIDATION for case in cases) == 60
+        for template in {case.template_id for case in cases}:
+            for partition in CompactnessPartition:
+                rows = [case for case in cases if case.template_id == template and case.compactness_partition is partition]
+                assert len(rows) == 20
+                assert sum(case.primary_orientation == "A" for case in rows) == 10
+                assert sum(case.rule_class == "simple-suffix" for case in rows) in (0, 10)
 
 
 @pytest.mark.parametrize("field", ["prompt_text", "split", "a_token_ids", "content_sha256"])
@@ -217,20 +223,23 @@ def test_frozen_case_declarations_preserve_four_conditions_and_json_values():
 
 
 def _passing_summary(*, correct_count=103, **changes):
+    """Synthetic count-based summary; template corrects are split as evenly as possible."""
+    base, extra = divmod(correct_count, 3)
     values = {
         "candidate_id": "regular-plural",
         "case_count": 120,
         "primary_correct_count": correct_count,
-        "template_accuracies": {"t1": 0.85, "t2": 0.85, "t3": 0.875},
+        "template_case_counts": {"t1": 40, "t2": 40, "t3": 40},
+        "template_correct_counts": {"t1": base, "t2": base + (extra > 1), "t3": base + (extra > 0)},
         "template_mean_margins": {"t1": 1.0, "t2": 1.0, "t3": 1.0},
-        "contrast_flip_rate": 0.80,
-        "cue_shuffle_accuracy": 0.65,
+        "contrast_flip_count": 96,
+        "cue_shuffle_correct_count": 78,
         "mean_d_full": 1.0,
         "mean_d_cue": 0.5,
-        "baseline_accuracies": {
-            "majority": 0.70,
-            "lexical-prior": 0.70,
-            "local-heuristic": 0.70,
+        "baseline_correct_counts": {
+            "majority": 84,
+            "lexical-prior": 84,
+            "local-heuristic": 84,
         },
         "integrity_failures": (),
     }
@@ -262,16 +271,17 @@ def test_behavioral_gate_records_every_frozen_rule_when_all_rules_pass():
 @pytest.mark.parametrize(
     ("changed_holdout", "changed_development", "failed_check"),
     [
-        ({"case_count": 119, "primary_correct_count": 103}, {}, "overall_accuracy"),
-        ({"primary_correct_count": 102}, {}, "wilson_lower_bound"),
-        ({"template_accuracies": {"t1": 0.74, "t2": 0.90, "t3": 0.90}}, {}, "per_template_accuracy"),
-        ({"template_accuracies": {"t1": 0.75, "t2": 0.90, "t3": 0.90}}, {}, "template_range"),
-        ({}, {"primary_correct_count": 116}, "development_drop"),
+        ({"case_count": 119, "primary_correct_count": 103, "template_case_counts": {"t1": 39, "t2": 40, "t3": 40}}, {}, "overall_accuracy"),
+        ({"primary_correct_count": 102, "template_correct_counts": {"t1": 34, "t2": 34, "t3": 34}}, {}, "wilson_lower_bound"),
+        ({"primary_correct_count": 101, "template_correct_counts": {"t1": 29, "t2": 36, "t3": 36}}, {}, "per_template_accuracy"),
+        ({"template_correct_counts": {"t1": 30, "t2": 37, "t3": 36}}, {}, "template_range"),
+        ({}, {"primary_correct_count": 116, "template_correct_counts": {"t1": 39, "t2": 38, "t3": 39}}, "development_drop"),
         ({"template_mean_margins": {"t1": -0.01, "t2": 1.0, "t3": 1.0}}, {}, "positive_template_margin"),
-        ({"contrast_flip_rate": 0.79}, {}, "contrast_flip"),
-        ({"cue_shuffle_accuracy": 0.66, "mean_d_cue": 0.49}, {}, "cue_dependence"),
-        ({"baseline_accuracies": {"majority": 0.71, "lexical-prior": 0.70, "local-heuristic": 0.70}}, {}, "beats_baselines"),
+        ({"contrast_flip_count": 95}, {}, "contrast_flip"),
+        ({"cue_shuffle_correct_count": 80, "mean_d_cue": 0.49}, {}, "cue_dependence"),
+        ({"baseline_correct_counts": {"majority": 86, "lexical-prior": 84, "local-heuristic": 84}}, {}, "beats_baselines"),
         ({"integrity_failures": ("duplicate lexical item",)}, {}, "integrity"),
+        ({}, {"integrity_failures": ("missing 1 selection-development measurements",)}, "integrity"),
     ],
 )
 def test_behavioral_gate_does_not_allow_any_later_rule_to_rescue_a_failed_rule(
@@ -288,6 +298,24 @@ def test_behavioral_gate_does_not_allow_any_later_rule_to_rescue_a_failed_rule(
     else:
         with pytest.raises(ValueError, match="exactly 120"):
             evaluate_behavioral_gates(development, holdout)
+
+
+@pytest.mark.parametrize(
+    ("changed_holdout", "changed_development", "boundary_check"),
+    [
+        ({"primary_correct_count": 102, "template_correct_counts": {"t1": 30, "t2": 36, "t3": 36}}, {}, "template_range"),  # exactly 15 points
+        ({}, {"primary_correct_count": 115, "template_correct_counts": {"t1": 38, "t2": 38, "t3": 39}}, "development_drop"),  # exactly 10 points
+        ({"baseline_correct_counts": {"majority": 85, "lexical-prior": 84, "local-heuristic": 84}}, {}, "beats_baselines"),  # exactly 15 points
+        ({"cue_shuffle_correct_count": 79, "mean_d_cue": 0.0}, {}, "cue_dependence"),  # exactly 20 points
+        ({"contrast_flip_count": 96}, {}, "contrast_flip"),  # exactly 80%
+    ],
+)
+def test_boundary_accuracies_are_decided_exactly_not_by_float_rounding(changed_holdout, changed_development, boundary_check):
+    """A candidate sitting exactly on a frozen threshold passes that gate."""
+    development = _passing_summary(correct_count=110, **changed_development)
+    holdout = _passing_summary(**changed_holdout)
+    result = evaluate_behavioral_gates(development, holdout)
+    assert result.checks[boundary_check]
 
 
 def test_compactness_uses_ratio_of_aggregate_shifts_and_never_divides_bad_denominators():
@@ -432,12 +460,9 @@ def test_baselines_use_development_only_lexical_priors_and_the_manifest_heuristi
     assert lexical["cat"] == "A" and lexical["city"] == "B" and backoff == "A"
     holdout = manifest.cases_for("regular-plural", Split.HOLDOUT)
     rows = [_measurement_for(case, correct=True) for case in holdout]
-    baselines = candidate_screening.baseline_accuracies(manifest, "regular-plural", Split.HOLDOUT, rows)
+    baselines = candidate_screening.baseline_correct_counts(manifest, "regular-plural", Split.HOLDOUT, rows)
     assert set(baselines) == set(candidate_screening.BASELINE_IDS)
-    assert baselines["majority"] == pytest.approx(0.5)
-    assert baselines["lexical-prior"] == pytest.approx(0.5)
-    assert baselines["local-heuristic"] == pytest.approx(0.5)
-    assert baselines["cue-shuffle"] == pytest.approx(0.0)
+    assert baselines == {"majority": 60, "lexical-prior": 60, "local-heuristic": 60, "cue-shuffle": 0}
 
 
 def test_integrity_failures_detect_reserve_leakage_duplicates_and_missing_rows() -> None:
