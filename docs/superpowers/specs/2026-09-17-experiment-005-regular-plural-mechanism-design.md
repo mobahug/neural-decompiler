@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-17
 
-**Status:** Draft, revision 3 (after the second external review). Not approved.
+**Status:** Draft, revision 4 (after the third external review). Not approved.
 No Experiment 005 directory, claim, preregistration lock, extension manifest,
 or model run exists. The 120 `regular-plural` future-reserve cases remain
 unexecuted.
@@ -45,6 +45,17 @@ tokenizer-validated extension set of prompts defined below.
   3. percentage floors with fixed denominators are restated as exact counts;
   4. the list of deliberately ambiguous cue words is corrected to the frozen
      twelve.
+- **Revision 4 (2026-09-17).** Changes after the third review, still before
+  any Experiment 005 model output exists:
+  1. a program-eligible encoding boundary: the mechanism program may encode
+     the cue only through token-local paths (the token embedding, `L00.MLP`,
+     or their declared combination); a context-dependent encoding component
+     may stay in the circuit account but caps the decompilation axis at
+     `CIRCUIT_ONLY` unless a further weight-only program covers it within the
+     version budget;
+  2. the E-output equality check is stated for `E_program` only;
+  3. the exact LayerNorm's variance semantics are frozen (population variance,
+     `correction=0`, `ε = 1e-5`).
 
 ## Purpose
 
@@ -396,6 +407,27 @@ and P4′ applies instead: pair-centered neutralization of every non-embedding
 component at `p_c` must retain at least half of the contrast shift. The rule
 is applied once, on development data, and recorded in the lock.
 
+**Program-eligible encoding boundary.** The circuit's E may contain any
+component at `p_c` that the rule above selects. The mechanism program's
+encoding, `E_program`, is restricted in protocol v1 to **token-local** paths:
+paths whose output at `p_c` is computable exactly from the cue token and
+frozen weights without evaluating any contextual transformer layer. Under
+Pythia's parallel-residual architecture these are exactly the token embedding
+`embed[token]`, the layer-0 MLP `MLP_0(ln2_0(embed[token]))`, and their
+declared combination. An attention head at any layer, or an MLP at layer 1 or
+above, reads a contextual residual and is therefore not program-eligible even
+if Tier A places it in E. If such a component is needed in E to satisfy the
+circuit floors, it stays in `S_M` for the circuit account, but the program
+encodes the cue from the token-local paths only, and the program's Tier A
+floors are evaluated for that `E_program`. If those floors then fail, the
+mechanism version records `PROGRAM_CAPPED`: the X families are still run and
+reported, the decompilation axis cannot exceed `PROGRAM_FAIL`, and the best
+reachable outcome is `CIRCUIT_ONLY`. The only escape is a further
+preregistered weight-only program for the contextual component, written as a
+new mechanism version within the existing three-version budget; protocol v1
+defines no such program, so a contextual cue encoding is a documented failure
+of the simple decompiler, not something the lexicon may absorb.
+
 ## Three-tier data policy
 
 ### Tier A — discovery on `selection-development` (exploratory)
@@ -627,9 +659,11 @@ network.
 - **Frozen parameters** (all estimated in Tier A, re-estimated at most once
   after a Tier B revision, digested in the lock): the E lexicon table
   `n_c(token) = ( E(token) − μ_E ) · d̂_E / σ_E` for every vocabulary token,
-  where `E(token)` is the declared E components' output for that token (for
-  `L00.MLP`: `MLP_0(ln2_0(embed[token]))`, a pure token function; if E is the
-  direct embedding path under P4′, `E(token) = embed[token]`); the copy gain
+  where `E(token)` is the output of `E_program` for that token — the
+  token-local paths declared under the program-eligible encoding boundary
+  (for `L00.MLP`: `MLP_0(ln2_0(embed[token]))`, a pure token function; if E is
+  the direct embedding path under P4′, `E(token) = embed[token]`; never a
+  contextual component); the copy gain
   `k_T` (the change in `n_t` per unit change in `n_c`, estimated by least
   squares on development prompts — a linear summary that the mechanism
   justifies by claiming T attends to `p_c` independently of the cue, which A4
@@ -641,7 +675,7 @@ network.
   LayerNorm applied to a reconstructed residual — no linearization:
 
   ```text
-  LN(r)  = γ ⊙ ( r − mean(r) ) / sqrt( var(r) + ε ) + β
+  LN(r)  = γ ⊙ ( r − mean(r) ) / sqrt( var(r) + ε ) + β     var = population variance (correction=0); ε = 1e-5
   ĉ(x)   = −u_N · LN( ρ + δ(x) )
   δ(x)   = g_R · n_t(x) · d̂_R + declared direct contributions of E and T outputs
   Δ̂c(w)  = ĉ(frame, w) − ĉ(frame, ref)
@@ -663,11 +697,13 @@ network.
   replacing E alone with the E output of another cue token — the E-route
   increment `δ_E(w) = g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R`, read out as
   `Δ̂c = −u_N · [ LN(ρ_{frame} + δ(ref) + δ_E(w)) − LN(ρ_{frame} + δ(ref)) ]` —
-  which is the new intervention X4 tests on unseen cue words. The runner
-  captures E's output from the word-substituted prompt's own forward pass and
-  asserts that it equals the lexicon's vector for that token within 1e-5, so
-  the replacement tensor the runner uses and the object the program reasons
-  about are verified to be the same.
+  which is the new intervention X4 tests on unseen cue words. The
+  intervention replaces exactly the `E_program` components. The runner
+  captures their output from the word-substituted prompt's own forward pass
+  and asserts that it equals the weight-only `E_program(token)` vector within
+  1e-5, so the replacement tensor the runner uses and the object the program
+  reasons about are verified to be the same. No such equality is asserted, or
+  possible, for a contextual component.
 - **What it cannot do by design.** It has no per-frame context for extension
   frames; there it uses `ρ_{template}`, so per-condition values on new frames
   are approximate and only pair-level and shift quantities are predicted
@@ -736,7 +772,7 @@ labeled readout-generalization results in every report.
 | X1 | Frame invariance of behavior | six new frames × two cues × 20 nouns | `d_full > 0` in ≥ 108/120 pairs; `sign(n_c)` and `sign(n_t)` read from the new prompts equal the cue number in at least 11 of the 12 new prompts; mean `d_full` per template inside the reserve band | primary |
 | X2 | Frame invariance of the circuit | P1, P3, P4/P4′, P5, P8, P9 repeated on the new frames | the same floors as the corresponding P family | primary |
 | X3 | Cue lexicon predicts unseen cue words (behavior) | twelve new cue words × six original frames × 20 nouns | Spearman correlation between the program's `n_c(w)` and the measured mean shift of `c` relative to the template's singular reference cue (`one` or `each`), pooled over frames and nouns, ≥ 0.70 across the twelve words; for each of the `k` words with `abs(n_c(w)) ≥ 0.5`, sign agreement in at least 5 of its 6 frames and, across those words, in at least `ceil(0.9 · 6k)` of the `6k` (word, frame) combinations; for each word with `abs(n_c(w)) < 0.5`, measured mean absolute shift below half the template's locked full shift in at least 5 of its 6 frames | primary |
-| X4 | Program predicts a new intervention for unseen cue words | for each word and original frame, counterfactual replacement of E alone (at `p_c`) in the singular-reference prompt with the model's E output for the word-substituted prompt; the program predicts the shift from `δ_E(w)` through the exact LayerNorm around `ρ_{frame}` as defined above | Spearman ≥ 0.70 between predicted and measured shifts across the twelve words; mean absolute error ≤ 0.25 × the template's locked full shift | primary |
+| X4 | Program predicts a new intervention for unseen cue words | for each word and original frame, counterfactual replacement of the `E_program` components alone (at `p_c`) in the singular-reference prompt with their output for the word-substituted prompt; the program predicts the shift from `δ_E(w)` through the exact LayerNorm around `ρ_{frame}` as defined above | Spearman ≥ 0.70 between predicted and measured shifts across the twelve words; mean absolute error ≤ 0.25 × the template's locked full shift | primary |
 | X5 | Program residual | all extension prompts | mean absolute error of `Δ̂c` and `d̂_full` in nats; fraction of variance explained; reported per template and per cue word | report |
 
 X1–X4 are what distinguish "these components suffice" from "we recovered what
@@ -756,8 +792,9 @@ Applied mechanically after the single confirmation run, on two axes:
 
 - Circuit axis: `CIRCUIT_PASS` if every primary P/B floor passes, else
   `CIRCUIT_FAIL` naming the families.
-- Decompilation axis: `PROGRAM_PASS` if every primary X floor passes, else
-  `PROGRAM_FAIL` naming the families.
+- Decompilation axis: `PROGRAM_PASS` if every primary X floor passes and the
+  lock is not `PROGRAM_CAPPED`, else `PROGRAM_FAIL` naming the families or
+  the cap.
 
 Overall outcome:
 
@@ -770,7 +807,8 @@ Overall outcome:
   mechanism's quantitative residual.
 - `CIRCUIT_ONLY` — `CIRCUIT_PASS` but `PROGRAM_FAIL`. The components are
   sufficient and specific, but the explicit computation attributed to them is
-  wrong or incomplete; the failing X families name where.
+  wrong or incomplete; the failing X families, or the `PROGRAM_CAPPED` flag,
+  name where.
 - `MECHANISM_CONTESTED` — both axes pass but at least one discriminating
   prediction lands outside the chosen hypothesis's band and inside a rejected
   hypothesis's band. A result outside both bands is a missed band
@@ -817,7 +855,10 @@ records:
 - pinned model identifier and revision; runtime and seeds;
 - the mechanism statement text and its digest; the chosen hypothesis row and
   the discriminating quantities that selected it;
-- `S_M` with each component's role and declared positions; the number-variable
+- `S_M` with each component's role and declared positions; the `E_program`
+  declaration (which token-local paths it uses) and, when applicable, the
+  `PROGRAM_CAPPED` flag with the contextual component that caused it; the
+  number-variable
   parameters (`d̂_s`, `μ_s`, `σ_s` for every site) and the program parameters
   (`k_T`, `g_R`, `d̂_R`, `L_R`, `ρ_{frame}`, `ρ_{template}`, `γ`, `β`, `ε`)
   stored as separately named tensor
