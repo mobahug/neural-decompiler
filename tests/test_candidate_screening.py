@@ -1,6 +1,11 @@
+import copy
 import json
+from pathlib import Path
 
 import pytest
+
+import neural_decompiler.candidate_screening as candidate_screening
+from neural_decompiler.models import PYTHIA_160M, PYTHIA_70M
 
 from neural_decompiler.candidate_screening import (
     CandidateBehaviorSummary,
@@ -20,7 +25,120 @@ from neural_decompiler.candidate_screening import (
     random_reference,
     required_random_beating_recovery,
     wilson_lower_bound,
+    load_manifest,
+    validate_manifest,
 )
+
+
+MANIFEST_PATH = Path(__file__).parents[1] / "screening/behavior-candidates/manifest-v1.json"
+
+
+def test_committed_manifest_has_exact_candidates_splits_and_counts() -> None:
+    """A missing, reordered, or incompletely stratified frozen case set is invalid."""
+    manifest = load_manifest(MANIFEST_PATH)
+    assert manifest.candidate_ids == ("regular-plural", "ordinal-suffix")
+    assert len(manifest.cases) == 720
+    for candidate in manifest.candidates:
+        assert len(candidate.template_ids) == 3
+        for split in Split:
+            assert len(manifest.cases_for(candidate.candidate_id, split)) == 120
+            assert all(
+                len(manifest.cases_for(candidate.candidate_id, split, template)) == 40
+                for template in candidate.template_ids
+            )
+
+
+def test_development_cases_are_single_token_and_partitioned() -> None:
+    """Development compactness may not consume holdout/reserve cases or multi-token rows."""
+    manifest = load_manifest(MANIFEST_PATH)
+    for candidate_id in manifest.candidate_ids:
+        cases = manifest.cases_for(candidate_id, Split.DEVELOPMENT)
+        assert all(
+            len(condition.a_token_ids) == len(condition.b_token_ids) == 1
+            for case in cases
+            for condition in (case.x_a, case.x_b, case.s_a, case.s_b)
+        )
+        assert sum(case.compactness_partition is CompactnessPartition.DISCOVERY for case in cases) == 60
+        assert sum(case.compactness_partition is CompactnessPartition.VALIDATION for case in cases) == 60
+
+
+@pytest.mark.parametrize("field", ["prompt_text", "split", "a_token_ids", "content_sha256"])
+def test_manifest_validation_rejects_tampering(field: str) -> None:
+    """Changing scientific content or its digest cannot pass integrity validation."""
+    payload = json.loads(MANIFEST_PATH.read_text())
+    changed = copy.deepcopy(payload)
+    if field == "content_sha256":
+        changed[field] = "0" * 64
+    elif field == "split":
+        changed["cases"][0][field] = Split.HOLDOUT.value
+    elif field == "prompt_text":
+        changed["cases"][0]["conditions"]["x_a"][field] += " altered"
+    else:
+        changed["cases"][0]["conditions"]["x_a"][field][0] += 1
+    with pytest.raises(ValueError):
+        validate_manifest(changed)
+
+
+def test_development_word_eligibility_rejects_equal_length_multitoken_targets() -> None:
+    """A two-token/two-token row cannot enter the single-token compactness split."""
+    class TwoTokenNounTokenizer:
+        def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
+            assert not add_special_tokens
+            if text.endswith((" quilt", " quilts")):
+                return [1, 2, 3]
+            return [1]
+
+        def convert_ids_to_tokens(self, ids: list[int]) -> list[str]:
+            return [f"token-{token}" for token in ids]
+
+        def convert_tokens_to_ids(self, token: str) -> int:
+            return int(token.removeprefix("token-"))
+
+    tokenizers = {
+        PYTHIA_70M.model_id: TwoTokenNounTokenizer(),
+        PYTHIA_160M.model_id: TwoTokenNounTokenizer(),
+    }
+
+    assert not candidate_screening._word_eligible(tokenizers, Split.DEVELOPMENT.value, "quilt")
+    assert candidate_screening._word_eligible(tokenizers, Split.HOLDOUT.value, "quilt")
+
+
+def test_local_heuristic_is_wrong_on_exactly_half_of_every_template_stratum() -> None:
+    """The shallow rule must fail on the 20 predeclared exception cases per template, never more or fewer."""
+    manifest = load_manifest(MANIFEST_PATH)
+    payload = json.loads(MANIFEST_PATH.read_text())
+    intended = {
+        (case["case_id"], "A"): case["conditions"]["x_a"]["a_text"].strip()
+        for case in payload["cases"]
+    } | {
+        (case["case_id"], "B"): case["conditions"]["x_b"]["b_text"].strip()
+        for case in payload["cases"]
+    }
+    for candidate in manifest.candidates:
+        for split in Split:
+            for template in candidate.template_ids:
+                rows = manifest.cases_for(candidate.candidate_id, split, template)
+                wrong = [
+                    case for case in rows
+                    if case.local_heuristic_choices[case.primary_orientation]
+                    != intended[(case.case_id, case.primary_orientation)]
+                ]
+                assert len(rows) == 40 and len(wrong) == 20
+                assert all(case.primary_orientation == "B" for case in wrong)
+                assert all(case.rule_class != "simple-suffix" for case in wrong)
+
+
+def test_split_lexical_keys_are_pairwise_disjoint_and_reserve_is_enumerable() -> None:
+    manifest = load_manifest(MANIFEST_PATH)
+    for candidate_id in manifest.candidate_ids:
+        keys = [
+            {case.lexical_key for case in manifest.cases_for(candidate_id, split)}
+            for split in Split
+        ]
+        assert all(len(values) == 20 for values in keys)
+        assert not (keys[0] & keys[1]) and not (keys[0] & keys[2]) and not (keys[1] & keys[2])
+        reserve = manifest.cases_for(candidate_id, Split.FUTURE_RESERVE)
+        assert len(reserve) == 120 and all(case.compactness_partition is None for case in reserve)
 
 
 def test_fixed_contrast_and_correctness_margin_do_not_conflate_orientation():

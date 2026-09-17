@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from neural_decompiler.models import (
+    PYTHIA_160M,
     PYTHIA_70M,
     ModelSpec,
     load_model,
@@ -38,6 +39,14 @@ def test_pinned_pythia_spec_is_exact_and_immutable() -> None:
     )
     with pytest.raises(FrozenInstanceError):
         PYTHIA_70M.device = "mps"  # type: ignore[misc]
+
+
+def test_pythia_160m_fallback_is_exact_and_immutable() -> None:
+    """The fallback checkpoint must not drift to a mutable model revision."""
+    assert PYTHIA_160M.model_id == "EleutherAI/pythia-160m-deduped"
+    assert PYTHIA_160M.revision == "582159a2dfe3e712a8d47ae83dec95ae3bde8e7e"
+    with pytest.raises(FrozenInstanceError):
+        PYTHIA_160M.device = "mps"  # type: ignore[misc]
 
 
 def test_load_model_passes_explicit_runtime_and_requires_raw_bridge() -> None:

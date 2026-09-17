@@ -50,6 +50,11 @@ PYTHIA_70M = ModelSpec(
     revision="e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
 )
 
+PYTHIA_160M = ModelSpec(
+    model_id="EleutherAI/pythia-160m-deduped",
+    revision="582159a2dfe3e712a8d47ae83dec95ae3bde8e7e",
+)
+
 
 def resolve_dtype(name: str) -> torch.dtype:
     """Resolve the deliberately small Phase 1 dtype vocabulary."""

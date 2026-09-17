@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Sequence
 
 from .behavior import validate_json_safe
+from .models import PYTHIA_160M, PYTHIA_70M
 
 
 _GATE_NAMES = (
@@ -604,3 +608,365 @@ class FinalistSelection:
 
     def to_dict(self) -> dict[str, Any]:
         return _json({"selected_candidate_id": self.selected_candidate_id, "ranking": list(self.ranking), "rationale": self.rationale}, "finalist_selection")
+
+
+# The manifest below is deliberately generated from literal, closed pools.  The
+# builder may inspect tokenizer behavior but it has no model or logit dependency.
+MANIFEST_SCHEMA_VERSION = 1
+MANIFEST_SEED = 20260916
+# degree-inflection was eliminated pre-output on 2026-09-17 (tokenizer infeasibility).
+_CANDIDATE_ORDER = ("regular-plural", "ordinal-suffix")
+MANIFEST_CASE_COUNT = 720
+TEMPLATES = {
+    "regular-plural": {
+        "cardinal": (("The display contains one", "The display contains two"), ("The tray holds one", "The tray holds two")),
+        "quantifier": (("The catalog lists each", "The catalog lists several"), ("The inventory records each", "The inventory records several")),
+        "coordinated-adjective": (("Mira and Noah packed one bright", "Mira and Noah packed two bright"), ("Lena and Omar displayed one small", "Lena and Omar displayed two small")),
+    },
+    "ordinal-suffix": {
+        "bare-numeral": (("NUMBER", "NUMBER"), ("No. NUMBER", "No. NUMBER")),
+        "dated-event": (("The event happened on September NUMBER", "The event happened on September NUMBER"), ("The meeting occurred on March NUMBER", "The meeting occurred on March NUMBER")),
+        "ranked-list": (("Her final rank was NUMBER", "Her final rank was NUMBER"), ("The athlete placed NUMBER", "The athlete placed NUMBER")),
+    },
+}
+
+PLURAL_POOLS = {
+    "selection-development": {"simple": ("cat", "dog", "book", "lamp", "chair", "river", "cloud", "train", "spoon", "cup", "garden", "window", "planet", "robot", "candle"), "change": ("city", "baby", "story", "party", "berry", "box", "bus", "dish", "watch", "class", "puppy", "brush", "fox", "church", "bench")},
+    "selection-holdout": {"simple": ("island", "pencil", "button", "ticket", "basket", "mirror", "camera", "tunnel", "village", "jacket", "carpet", "bottle", "blanket", "ladder", "rocket"), "change": ("family", "lady", "hobby", "cherry", "country", "glass", "kiss", "match", "peach", "wish", "library", "factory", "mystery", "gallery", "branch")},
+    "future-reserve": {"simple": ("anchor", "beacon", "castle", "desert", "engine", "forest", "harbor", "insect", "kernel", "market", "needle", "ocean", "pocket", "quilt", "ribbon", "table", "stone", "field", "road", "door"), "change": ("army", "diary", "enemy", "fairy", "glory", "sky", "fly", "ally", "penny", "reply", "beach", "bush", "cross", "dress", "inch")},
+}
+ORDINAL_NUMBER_PAIRS = {
+    "selection-development": ((21, 11), (22, 12), (23, 13), (31, 111), (32, 112), (33, 113), (41, 211), (42, 212), (43, 213), (51, 311), (52, 312), (53, 313), (61, 411), (62, 412), (63, 413), (71, 511), (72, 512), (73, 513), (81, 611), (82, 612)),
+    "selection-holdout": ((91, 711), (92, 712), (93, 713), (101, 811), (102, 812), (103, 813), (121, 911), (122, 912), (123, 913), (131, 1011), (132, 1012), (133, 1013), (141, 1111), (142, 1112), (143, 1113), (151, 1211), (152, 1212), (153, 1213), (161, 1311), (162, 1312)),
+    "future-reserve": ((163, 1313), (171, 1411), (172, 1412), (173, 1413), (181, 1511), (182, 1512), (183, 1513), (191, 1611), (192, 1612), (193, 1613), (201, 1711), (202, 1712), (203, 1713), (221, 1811), (222, 1812), (223, 1813), (231, 1911), (232, 1912), (233, 1913), (241, 2011)),
+}
+def regular_plural(base: str) -> str:
+    if base.endswith("y") and base[-2] not in "aeiou":
+        return base[:-1] + "ies"
+    if base.endswith(("s", "x", "z", "ch", "sh")):
+        return base + "es"
+    return base + "s"
+
+
+def _canonical_json(value: Mapping[str, Any]) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def manifest_content_digest(payload: Mapping[str, Any]) -> str:
+    unsigned = dict(payload)
+    unsigned.pop("content_sha256", None)
+    return hashlib.sha256(_canonical_json(unsigned).encode("utf-8")).hexdigest()
+
+
+def _tokenizer_mapping(tokenizers: Any) -> dict[str, Any]:
+    if isinstance(tokenizers, Mapping):
+        result = dict(tokenizers)
+    else:
+        result = {PYTHIA_70M.model_id: tokenizers}
+    expected = {PYTHIA_70M.model_id, PYTHIA_160M.model_id}
+    if set(result) != expected:
+        raise ValueError("manifest freezing requires tokenizers for both pinned Pythia models")
+    return result
+
+
+def _token_ids(tokenizer: Any, text: str) -> list[int]:
+    encoded = tokenizer.encode(text, add_special_tokens=False)
+    if not isinstance(encoded, Sequence) or any(not isinstance(value, int) for value in encoded):
+        raise ValueError("tokenizer must return integer IDs")
+    return list(encoded)
+
+
+def _assert_tokenizer_compatibility(tokenizers: Mapping[str, Any]) -> dict[str, Any]:
+    first = tokenizers[PYTHIA_70M.model_id]
+    second = tokenizers[PYTHIA_160M.model_id]
+    first_vocab, second_vocab = first.get_vocab(), second.get_vocab()
+    if first_vocab != second_vocab:
+        raise ValueError("pinned tokenizer vocabularies are incompatible")
+    first_special = getattr(first, "special_tokens_map", {})
+    second_special = getattr(second, "special_tokens_map", {})
+    if first_special != second_special or tuple(getattr(first, "all_special_ids", ())) != tuple(getattr(second, "all_special_ids", ())):
+        raise ValueError("pinned tokenizer special-token settings are incompatible")
+    vocabulary = _canonical_json(dict(sorted(first_vocab.items())))
+    return {"model_ids": [PYTHIA_70M.model_id, PYTHIA_160M.model_id], "vocabulary_sha256": hashlib.sha256(vocabulary.encode("utf-8")).hexdigest(), "special_tokens": first_special, "special_token_ids": list(getattr(first, "all_special_ids", ())) }
+
+
+def _word_rule(base: str, kind: str) -> str:
+    if kind == "simple":
+        return "simple-suffix"
+    return "consonant-y" if base.endswith("y") else "sibilant-es"
+
+
+def _ordinal_suffix(number: int) -> str:
+    if number % 100 in {11, 12, 13}:
+        return "th"
+    return {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+
+
+def _build_condition(tokenizers: Mapping[str, Any], prompt: str, a_text: str, b_text: str, token_strings: dict[str, str]) -> dict[str, Any]:
+    first = tokenizers[PYTHIA_70M.model_id]
+    prompt_ids = _token_ids(first, prompt)
+    if not prompt_ids:
+        raise ValueError("prompt must not encode to an empty token sequence")
+    alternatives: dict[str, list[int]] = {}
+    for label, alternative in (("A", a_text), ("B", b_text)):
+        full_ids = _token_ids(first, prompt + alternative)
+        if full_ids[:len(prompt_ids)] != prompt_ids:
+            raise ValueError("contextual retokenization prevents frozen target suffixes")
+        suffix = full_ids[len(prompt_ids):]
+        if not suffix:
+            raise ValueError("target suffix must not be empty")
+        alternatives[label] = suffix
+    if len(alternatives["A"]) != len(alternatives["B"]):
+        raise ValueError("A/B alternatives must have equal token lengths")
+    for tokenizer in tokenizers.values():
+        if _token_ids(tokenizer, prompt) != prompt_ids:
+            raise ValueError("pinned tokenizer encodings differ")
+        for label, alternative in (("A", a_text), ("B", b_text)):
+            if _token_ids(tokenizer, prompt + alternative) != prompt_ids + alternatives[label]:
+                raise ValueError("pinned tokenizer encodings differ")
+    def strings(ids: Sequence[int]) -> list[str]:
+        values = list(first.convert_ids_to_tokens(list(ids)))
+        if len(values) != len(ids) or any(first.convert_tokens_to_ids(value) != token for token, value in zip(ids, values)):
+            raise ValueError("token-string roundtrip failed")
+        for token, value in zip(ids, values):
+            prior = token_strings.setdefault(str(token), value)
+            if prior != value:
+                raise ValueError("token ID has inconsistent token string")
+        return values
+    return {"prompt_text": prompt, "prompt_token_ids": prompt_ids, "prompt_token_strings": strings(prompt_ids), "a_text": a_text, "b_text": b_text, "a_token_ids": alternatives["A"], "b_token_ids": alternatives["B"], "a_token_strings": strings(alternatives["A"]), "b_token_strings": strings(alternatives["B"]), "target_position": -1}
+
+
+def _word_eligible(tokenizers: Mapping[str, Any], split: str, base: str) -> bool:
+    """Check every frozen plural template before a pool item is selected."""
+    token_strings: dict[str, str] = {}
+    a, b = base, regular_plural(base)
+    try:
+        for variants in TEMPLATES["regular-plural"].values():
+            for prompts in variants:
+                for prompt in prompts:
+                    condition = _build_condition(tokenizers, prompt, " " + a, " " + b, token_strings)
+                    if split == Split.DEVELOPMENT.value and (
+                        len(condition["a_token_ids"]) != 1 or len(condition["b_token_ids"]) != 1
+                    ):
+                        return False
+    except ValueError as error:
+        message = str(error)
+        if "pinned tokenizer" in message or "roundtrip" in message:
+            raise
+        return False
+    return True
+
+
+def _selected_words(tokenizers: Mapping[str, Any], split: str) -> list[tuple[str, str]]:
+    selected: list[tuple[str, str]] = []
+    for kind in ("simple", "change"):
+        eligible = [(base, kind) for base in PLURAL_POOLS[split][kind] if _word_eligible(tokenizers, split, base)]
+        if len(eligible) < 10:
+            raise ValueError(f"curated regular-plural {split} {kind} pool cannot meet tokenizer constraints")
+        selected.extend(eligible[:10])
+    return selected
+
+
+def _case_payload(*, case_id: str, candidate_id: str, template_id: str, split: str, lexical_key: str, rule_class: str, primary_orientation: str, x_a: dict[str, Any], x_b: dict[str, Any], local_choices: Mapping[str, Any], compactness: str | None) -> dict[str, Any]:
+    # The local target remains fixed while the cue is exchanged in s_a/s_b.
+    return {"case_id": case_id, "candidate_id": candidate_id, "template_id": template_id, "split": split, "lexical_key": lexical_key, "rule_class": rule_class, "primary_orientation": primary_orientation, "conditions": {"x_a": x_a, "x_b": x_b, "s_a": x_b, "s_b": x_a}, "local_heuristic_choices": dict(local_choices), "compactness_partition": compactness}
+
+
+def build_manifest_payload(tokenizer: Any) -> dict[str, Any]:
+    """Build, but never score, the complete manifest from closed pools and tokenizers."""
+    tokenizers = _tokenizer_mapping(tokenizer)
+    provenance = _assert_tokenizer_compatibility(tokenizers)
+    token_strings: dict[str, str] = {}
+    cases: list[dict[str, Any]] = []
+    candidates = [
+        {"candidate_id": "regular-plural", "template_ids": list(TEMPLATES["regular-plural"]), "local_heuristic": "append-s"},
+        {"candidate_id": "ordinal-suffix", "template_ids": list(TEMPLATES["ordinal-suffix"]), "local_heuristic": "final-digit-suffix"},
+    ]
+    for candidate_id in _CANDIDATE_ORDER:
+        candidate_cases: list[dict[str, Any]] = []
+        for split in (member.value for member in Split):
+            if candidate_id == "ordinal-suffix":
+                selected: list[tuple[Any, str]] = [(pair, "ordinal-" + _ordinal_suffix(pair[0])) for pair in ORDINAL_NUMBER_PAIRS[split]]
+            else:
+                selected = _selected_words(tokenizers, split)
+            for template_id, variants in TEMPLATES[candidate_id].items():
+                for variant_index, prompts in enumerate(variants):
+                    for item_index, item in enumerate(selected):
+                        primary = "A" if item_index < 10 else "B"
+                        if candidate_id == "ordinal-suffix":
+                            (number_a, number_b), rule_class = item
+                            prompt_a = prompts[0].replace("NUMBER", str(number_a))
+                            prompt_b = prompts[1].replace("NUMBER", str(number_b))
+                            a_text, b_text = _ordinal_suffix(number_a), _ordinal_suffix(number_b)
+                            local = {"A": _ordinal_suffix(number_a % 10), "B": _ordinal_suffix(number_b % 10)}
+                            lexical_key = f"{number_a}:{number_b}"
+                        else:
+                            base, kind = item
+                            prompt_a, prompt_b = prompts
+                            a_word, b_word = base, regular_plural(base)
+                            # The shallow rule follows the count cue and appends a bare "s".
+                            local = {"A": base, "B": base + "s"}
+                            a_text, b_text = " " + a_word, " " + b_word
+                            rule_class = _word_rule(base, kind)
+                            lexical_key = base
+                        x_a = _build_condition(tokenizers, prompt_a, a_text, b_text, token_strings)
+                        x_b = _build_condition(tokenizers, prompt_b, a_text, b_text, token_strings)
+                        number = variant_index * 20 + item_index + 1
+                        candidate_cases.append(_case_payload(case_id=f"{candidate_id}-{split}-{template_id}-{number:02d}", candidate_id=candidate_id, template_id=template_id, split=split, lexical_key=lexical_key, rule_class=rule_class, primary_orientation=primary, x_a=x_a, x_b=x_b, local_choices=local, compactness=None))
+        development = [case for case in candidate_cases if case["split"] == Split.DEVELOPMENT.value]
+        for number, case in enumerate(development):
+            case["compactness_partition"] = CompactnessPartition.DISCOVERY.value if number < 60 else CompactnessPartition.VALIDATION.value
+        cases.extend(candidate_cases)
+    payload = {"schema_version": MANIFEST_SCHEMA_VERSION, "seed": MANIFEST_SEED, "models": [{"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, {"model_id": PYTHIA_160M.model_id, "revision": PYTHIA_160M.revision}], "tokenizer_provenance": provenance, "token_string_by_id": token_strings, "protocol": {"cases_per_template": 40, "cases_per_split": 120, "single_token_development": True}, "candidates": candidates, "cases": cases}
+    payload["content_sha256"] = manifest_content_digest(payload)
+    validate_manifest(payload)
+    return payload
+
+
+def freeze_manifest(path: Path, tokenizer: Any) -> None:
+    """Write one canonical self-digesting artifact after tokenizer-only validation."""
+    payload = build_manifest_payload(tokenizer)
+    payload["content_sha256"] = manifest_content_digest(payload)
+    validate_manifest(payload)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_canonical_json(payload) + "\n", encoding="utf-8")
+
+
+def _require_exact_keys(value: Mapping[str, Any], expected: set[str], path: str) -> None:
+    unknown = set(value) - expected
+    missing = expected - set(value)
+    if unknown or missing:
+        raise ValueError(f"{path} has unknown or missing fields: unknown={sorted(unknown)}, missing={sorted(missing)}")
+
+
+def _parse_condition(value: Any, token_strings: Mapping[str, Any]) -> PromptCondition:
+    if not isinstance(value, Mapping):
+        raise ValueError("condition must be an object")
+    _require_exact_keys(value, {"prompt_text", "prompt_token_ids", "prompt_token_strings", "a_text", "b_text", "a_token_ids", "b_token_ids", "a_token_strings", "b_token_strings", "target_position"}, "condition")
+    for text_key in ("prompt_text", "a_text", "b_text"):
+        _require_text(value[text_key], text_key)
+    def ids_and_strings(id_key: str, string_key: str) -> tuple[int, ...]:
+        ids, strings = value[id_key], value[string_key]
+        if not isinstance(ids, list) or not ids or any(not isinstance(token, int) or token < 0 for token in ids):
+            raise ValueError(f"{id_key} must be nonempty nonnegative integer IDs")
+        if not isinstance(strings, list) or len(strings) != len(ids) or any(not isinstance(token, str) or not token for token in strings):
+            raise ValueError(f"{string_key} must align with {id_key}")
+        if any(token_strings.get(str(token)) != string for token, string in zip(ids, strings)):
+            raise ValueError("stored token IDs and token strings disagree")
+        return tuple(ids)
+    prompt_ids = ids_and_strings("prompt_token_ids", "prompt_token_strings")
+    a_ids = ids_and_strings("a_token_ids", "a_token_strings")
+    b_ids = ids_and_strings("b_token_ids", "b_token_strings")
+    if len(a_ids) != len(b_ids):
+        raise ValueError("A/B token lengths differ")
+    return PromptCondition(value["prompt_text"], prompt_ids, a_ids, b_ids, value["target_position"])
+
+
+def validate_manifest(manifest: Mapping[str, Any] | ScreeningManifest) -> ScreeningManifest:
+    """Validate every declarative integrity invariant without loading model weights."""
+    if isinstance(manifest, ScreeningManifest):
+        return manifest
+    if not isinstance(manifest, Mapping):
+        raise TypeError("manifest must be a mapping or ScreeningManifest")
+    _require_exact_keys(manifest, {"schema_version", "seed", "models", "tokenizer_provenance", "token_string_by_id", "protocol", "candidates", "cases", "content_sha256"}, "manifest")
+    if manifest["schema_version"] != MANIFEST_SCHEMA_VERSION or manifest["seed"] != MANIFEST_SEED:
+        raise ValueError("manifest schema version or seed is not frozen")
+    digest = manifest_content_digest(manifest)
+    if manifest["content_sha256"] != digest:
+        raise ValueError("manifest content_sha256 does not match canonical payload")
+    models = manifest["models"]
+    expected_models = [{"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, {"model_id": PYTHIA_160M.model_id, "revision": PYTHIA_160M.revision}]
+    if models != expected_models:
+        raise ValueError("manifest model provenance is incompatible")
+    provenance = manifest["tokenizer_provenance"]
+    if not isinstance(provenance, Mapping):
+        raise ValueError("tokenizer provenance must be an object")
+    _require_exact_keys(provenance, {"model_ids", "vocabulary_sha256", "special_tokens", "special_token_ids"}, "tokenizer_provenance")
+    if provenance["model_ids"] != [PYTHIA_70M.model_id, PYTHIA_160M.model_id] or not isinstance(provenance["vocabulary_sha256"], str):
+        raise ValueError("tokenizer provenance is incompatible")
+    if not isinstance(manifest["token_string_by_id"], Mapping):
+        raise ValueError("token_string_by_id must be an object")
+    protocol = manifest["protocol"]
+    if protocol != {"cases_per_template": 40, "cases_per_split": 120, "single_token_development": True}:
+        raise ValueError("manifest protocol is not frozen")
+    candidates_raw = manifest["candidates"]
+    if not isinstance(candidates_raw, list) or len(candidates_raw) != len(_CANDIDATE_ORDER):
+        raise ValueError("manifest requires exactly the two frozen candidates")
+    candidates: list[CandidateDefinition] = []
+    for raw, expected_id in zip(candidates_raw, _CANDIDATE_ORDER):
+        if not isinstance(raw, Mapping):
+            raise ValueError("candidate must be an object")
+        _require_exact_keys(raw, {"candidate_id", "template_ids", "local_heuristic"}, "candidate")
+        if raw["candidate_id"] != expected_id or raw["template_ids"] != list(TEMPLATES[expected_id]):
+            raise ValueError("candidate IDs or template order is not canonical")
+        candidates.append(CandidateDefinition(raw["candidate_id"], tuple(raw["template_ids"]), raw["local_heuristic"]))
+    cases_raw = manifest["cases"]
+    if not isinstance(cases_raw, list) or len(cases_raw) != MANIFEST_CASE_COUNT:
+        raise ValueError(f"manifest requires exactly {MANIFEST_CASE_COUNT} cases")
+    cases: list[ScreeningCase] = []
+    case_ids: set[str] = set()
+    lexical: dict[tuple[str, str], set[str]] = {}
+    orientations: dict[tuple[str, str, str], list[str]] = {}
+    for raw in cases_raw:
+        if not isinstance(raw, Mapping):
+            raise ValueError("case must be an object")
+        _require_exact_keys(raw, {"case_id", "candidate_id", "template_id", "split", "lexical_key", "rule_class", "primary_orientation", "conditions", "local_heuristic_choices", "compactness_partition"}, "case")
+        if raw["case_id"] in case_ids:
+            raise ValueError("case IDs must be unique")
+        case_ids.add(raw["case_id"])
+        try:
+            split = Split(raw["split"])
+        except (TypeError, ValueError) as error:
+            raise ValueError("case split is invalid") from error
+        if raw["candidate_id"] not in _CANDIDATE_ORDER or raw["template_id"] not in TEMPLATES[raw["candidate_id"]]:
+            raise ValueError("case candidate/template is invalid")
+        conditions = raw["conditions"]
+        if not isinstance(conditions, Mapping) or set(conditions) != {"x_a", "x_b", "s_a", "s_b"}:
+            raise ValueError("case must contain exactly four conditions")
+        parsed = {name: _parse_condition(conditions[name], manifest["token_string_by_id"]) for name in conditions}
+        if split is Split.DEVELOPMENT and any(len(condition.a_token_ids) != 1 or len(condition.b_token_ids) != 1 for condition in parsed.values()):
+            raise ValueError("development alternatives must be single tokens")
+        compactness_raw = raw["compactness_partition"]
+        if split is Split.FUTURE_RESERVE:
+            if compactness_raw is not None:
+                raise ValueError("future-reserve cases cannot have compactness labels")
+            compactness = None
+        else:
+            if split is Split.HOLDOUT and compactness_raw is not None:
+                raise ValueError("holdout cases cannot have compactness labels")
+            try:
+                compactness = CompactnessPartition(compactness_raw) if compactness_raw is not None else None
+            except ValueError as error:
+                raise ValueError("compactness partition is invalid") from error
+            if split is Split.DEVELOPMENT and compactness is None:
+                raise ValueError("development cases require a compactness partition")
+        choices = raw["local_heuristic_choices"]
+        if not isinstance(choices, Mapping) or set(choices) != {"A", "B"}:
+            raise ValueError("local heuristic choices must be A/B")
+        cases.append(ScreeningCase(raw["case_id"], raw["candidate_id"], raw["template_id"], split, raw["lexical_key"], raw["rule_class"], raw["primary_orientation"], parsed["x_a"], parsed["x_b"], parsed["s_a"], parsed["s_b"], choices, compactness))
+        lexical.setdefault((raw["candidate_id"], split.value), set()).add(raw["lexical_key"])
+        orientations.setdefault((raw["candidate_id"], split.value, raw["template_id"]), []).append(raw["primary_orientation"])
+    for candidate in candidates:
+        split_sets = [lexical.get((candidate.candidate_id, split.value), set()) for split in Split]
+        if any(len(values) != 20 for values in split_sets) or any(left & right for index, left in enumerate(split_sets) for right in split_sets[index + 1:]):
+            raise ValueError("split lexical keys must be 20 and pairwise disjoint")
+        for split in Split:
+            if len([case for case in cases if case.candidate_id == candidate.candidate_id and case.split is split]) != 120:
+                raise ValueError("candidate split must contain exactly 120 cases")
+            for template in candidate.template_ids:
+                rows = [case for case in cases if case.candidate_id == candidate.candidate_id and case.split is split and case.template_id == template]
+                if len(rows) != 40 or orientations[(candidate.candidate_id, split.value, template)].count("A") != 20:
+                    raise ValueError("template strata require 40 cases and balanced primary orientation")
+        development = [case for case in cases if case.candidate_id == candidate.candidate_id and case.split is Split.DEVELOPMENT]
+        if sum(case.compactness_partition is CompactnessPartition.DISCOVERY for case in development) != 60 or sum(case.compactness_partition is CompactnessPartition.VALIDATION for case in development) != 60:
+            raise ValueError("development compactness partition must be 60/60")
+    return ScreeningManifest(tuple(candidates), tuple(cases), schema_version=MANIFEST_SCHEMA_VERSION, content_sha256=manifest["content_sha256"])
+
+
+def load_manifest(path: Path) -> ScreeningManifest:
+    """Read the committed sole-authority JSON and reject all malformed variants."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"could not read manifest: {path}") from error
+    return validate_manifest(payload)
