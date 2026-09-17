@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-16
 
-**Status:** Reviewed and amended after second prior-art triage
+**Status:** Reviewed and amended after second prior-art triage; `degree-inflection` eliminated on 2026-09-17 for tokenizer infeasibility (pre-output amendment)
 
 **Scope:** Candidate selection before Experiment 005
 
@@ -101,7 +101,7 @@ finalist still requires a deeper audit.
 - Behavioral English past-tense study: [Ma and Gao, 2022](https://aclanthology.org/2022.aacl-main.81/)
 - Inflectional representations and steering: [Li and Subramani, 2026](https://aclanthology.org/2026.acl-long.720/)
 
-The three retained candidates proceed to manifest construction. The second
+The three retained candidates proceeded to manifest construction; `degree-inflection` was subsequently eliminated before any output by the tokenizer-infeasibility amendment below, leaving two candidates. The second
 pass found no close end-to-end causal generation account for regular plural,
 degree inflection, or ordinal suffix selection. It did find adjacent work on
 plural/degree representation and classifier-based steering, so those overlaps
@@ -164,6 +164,40 @@ and append the following fixed ordered lists. Development/simple: `black`,
 `spicy`, `itchy`, `witty`, `silly`, `jolly`, `nasty`, `thirsty`, `filthy`,
 `stormy`. These forms were fixed before encoding; the first-ten-eligible and
 all other frozen rules remain unchanged.
+
+#### Amendment — 2026-09-17: `degree-inflection` eliminated for tokenizer infeasibility
+
+After the three pool extensions above, and still before any manifest case,
+model weight, logit, probability, or scientific output was inspected, an
+exhaustive tokenizer-only census of the shared pinned Pythia vocabulary showed
+that the frozen rules cannot all hold for `degree-inflection`. The protocol
+requires ten predeclared spelling-change adjectives per split, and every
+`selection-development` alternative must be exactly one token so that the
+compactness probe can intervene at one final prompt position. Under the pinned
+tokenizer only four ordinary spelling-change adjectives (`large`, `easy`,
+`big`, `simple`) have single-token comparative and superlative forms in every
+frozen template variant; every consonant-plus-`y` comparative or superlative
+(for example ` happier`, ` happiest`) is two tokens, and no further disjoint
+ordinary final-`e`, consonant-plus-`y`, or consonant-doubling adjective exists
+in the compatible single-token vocabulary. The alternative of defining a
+multi-token, teacher-forced compactness intervention was rejected before any
+output because protocol v1 deliberately has no multi-token compactness path.
+
+`degree-inflection` is therefore **ELIMINATED — TOKENIZER INFEASIBLE** in
+protocol v1. This is a pre-output amendment: no behavioral information
+influenced it, and it cannot be reversed in this protocol version. The retained
+candidate set is exactly `regular-plural` and `ordinal-suffix`, in that order.
+Every per-candidate rule is unchanged; the committed manifest therefore
+contains 720 cases (two candidates, three splits of 120). The `regular-plural`
+and `ordinal-suffix` pools already satisfy every tokenizer rule without
+further extension. Compactness cases remain single-token only.
+
+The local-heuristic baseline is clarified, not changed: it reads the controlling
+cue and applies the shallow surface rule, so it predicts the bare noun in a
+singular context and `base + s` in a plural context, and the final-digit suffix
+for ordinals. It is therefore wrong on exactly the 20 spelling-change or
+`11`/`12`/`13` primary cases in each 40-case template stratum, which is what
+"at least half of each split" requires.
 
 Each retained candidate receives exactly three predeclared template families.
 All concrete text, expected alternatives, lexical items, case IDs, tokenizer

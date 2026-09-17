@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- The candidate set is exactly `regular-plural`, `degree-inflection`, and `ordinal-suffix`; eliminated candidates cannot re-enter this protocol version.
+- The candidate set is exactly `regular-plural` and `ordinal-suffix`; `degree-inflection` was eliminated by the 2026-09-17 tokenizer-infeasibility amendment recorded under Task 2, and eliminated candidates cannot re-enter this protocol version.
 - Primary execution is pinned `EleutherAI/pythia-70m-deduped` revision `e93a9faa9c77e5d09219f6c868bfc7a1bd65593c`, CPU float32.
 - Run pinned `EleutherAI/pythia-160m-deduped` revision `582159a2dfe3e712a8d47ae83dec95ae3bde8e7e` only when zero candidates pass every 70M behavioral gate; use byte-identical cases, metrics, baselines, and thresholds.
 - Use exactly three template families per candidate and 40 cases per template in each of `selection-development`, `selection-holdout`, and `future-reserve`.
@@ -226,6 +226,24 @@ append development/change: `rainy`, `windy`, `tidy`, `crazy`, `lively`,
 `witty`, `silly`, `jolly`, `nasty`, `thirsty`, `filthy`, `stormy`. These are
 fixed before tokenizer testing. The first-ten-eligible, templates, token
 lengths, seed, and thresholds are otherwise unchanged.
+
+#### Amendment — 2026-09-17: `degree-inflection` eliminated for tokenizer infeasibility
+
+With the corrected one-token predicate, and still before any manifest,
+weight, logit, or probability was inspected, the `degree-inflection` /
+`selection-development` / `change` stratum has only four eligible forms
+(`large`, `easy`, `big`, `simple`) and an exhaustive scan of the compatible
+single-token vocabulary yields no further ordinary disjoint spelling-change
+adjective. The design's candidate set is amended to exactly `regular-plural`
+and `ordinal-suffix`. Remove the degree templates, pools, and spelling function
+from the builder; the manifest validator requires exactly two candidates in
+that order and exactly 720 cases. All other rules — three templates per
+candidate, 40 cases per template stratum, single-token development
+alternatives, the 60/60 compactness partition, seeds, and thresholds — are
+unchanged. The `regular-plural` local heuristic follows the count cue: it
+records the bare noun for the singular condition and `base + s` for the plural
+condition, so its recorded choice is wrong on exactly 20 of 40 cases per
+template, matching the ordinal final-digit rule.
 
 **Files:**
 - Modify: `src/neural_decompiler/candidate_screening.py`
