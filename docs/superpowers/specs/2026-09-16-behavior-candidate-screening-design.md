@@ -138,6 +138,19 @@ amendment, not a substitution selected from model behavior. The rule remains
 unchanged: the manifest builder selects the first ten tokenizer-eligible simple
 forms in the frozen ordered pool.
 
+#### Amendment — 2026-09-17: complete-census degree-pool extension
+
+The complete tokenizer-only census, still before any manifest output or any
+weight, logit, or probability inspection, found two deficient degree spelling-
+change pools: seven eligible forms in `selection-development` and nine in
+`future-reserve`. Before encoding or testing any new form, append the following
+fixed literals in the listed order. For development: `gentle`, `noble`,
+`humble`, `simple`, `dense`, `loose`, `sane`, `stale`, `rude`, `crude`,
+`angry`, `dirty`. For future reserve: `polite`, `remote`, `mature`, `severe`,
+`vague`, `acute`, `fierce`, `huge`, `lame`, `empty`, `ugly`, `sleepy`. This
+does not change the first-ten-eligible selection rule, token-length policy,
+templates, seed, or any threshold.
+
 Each retained candidate receives exactly three predeclared template families.
 All concrete text, expected alternatives, lexical items, case IDs, tokenizer
 eligibility decisions, and split assignments are generated and committed

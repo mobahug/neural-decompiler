@@ -201,6 +201,19 @@ the existing pool: `table`, `stone`, `field`, `road`, `door`. No token-length
 rule or threshold changes. The builder still selects the first ten
 tokenizer-eligible simple forms in the exact ordered pool.
 
+#### Amendment — 2026-09-17: complete-census degree-pool extension
+
+The complete tokenizer-only census found seven eligible forms in
+`degree-inflection` / `selection-development` / `change` and nine in
+`degree-inflection` / `future-reserve` / `change`, before any manifest output
+or model weight, logit, or probability inspection. Before encoding or testing
+new forms, append these fixed ordered literals: development — `gentle`,
+`noble`, `humble`, `simple`, `dense`, `loose`, `sane`, `stale`, `rude`,
+`crude`, `angry`, `dirty`; future reserve — `polite`, `remote`, `mature`,
+`severe`, `vague`, `acute`, `fierce`, `huge`, `lame`, `empty`, `ugly`,
+`sleepy`. All template, token-length, seed, threshold, and first-ten-eligible
+rules remain unchanged.
+
 **Files:**
 - Modify: `src/neural_decompiler/candidate_screening.py`
 - Modify: `src/neural_decompiler/models.py`
