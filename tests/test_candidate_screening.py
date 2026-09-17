@@ -1,5 +1,6 @@
 import copy
 import json
+import math
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -490,3 +491,143 @@ def test_behavioral_result_reports_every_gate_and_failed_reason(correct_count, b
     assert tuple(result["gates"]["failed_checks"]) == expected_failed
     assert result["holdout"]["primary_correct_count"] == correct_count
     assert set(result["holdout"]["baseline_accuracies"]) == set(candidate_screening.BASELINE_IDS)
+
+
+# ---------------------------------------------------------------------------
+# Exploratory compactness probe
+
+from neural_decompiler.components import ComponentKind, ComponentRef  # noqa: E402
+from instrumentation_fakes import TinyBridge  # noqa: E402
+
+
+def _contrast_bridge() -> TinyBridge:
+    """TinyBridge whose A/B contrast depends on the final token and on patched activations."""
+    return TinyBridge(readout=lambda normalized: torch.cat((normalized, (normalized[..., :2] * 4.0) ** 2), dim=-1))
+
+
+def _dev_case(number: int, *, last_a: int, last_b: int, template: str = "t1", partition: CompactnessPartition = CompactnessPartition.DISCOVERY, length: int = 3) -> ScreeningCase:
+    """Single-token development case for the TinyBridge vocabulary of five tokens."""
+    prompt_a = tuple([1] * (length - 1) + [last_a])
+    prompt_b = tuple([1] * (length - 1) + [last_b])
+    x_a = PromptCondition(f"a{number}", prompt_a, (3,), (0,), a_text=" a", b_text=" b")
+    x_b = PromptCondition(f"b{number}", prompt_b, (3,), (0,), a_text=" a", b_text=" b")
+    return ScreeningCase(
+        case_id=f"fake-selection-development-{template}-{number:03d}", candidate_id="fake", template_id=template,
+        split=Split.DEVELOPMENT, lexical_key=f"k{number}", rule_class="simple-suffix",
+        primary_orientation="A" if number % 2 else "B", x_a=x_a, x_b=x_b, s_a=x_b, s_b=x_a,
+        local_heuristic_choices={"A": "a", "B": "b"}, compactness_partition=partition)
+
+
+def test_component_universe_is_all_heads_then_whole_mlps_in_canonical_order() -> None:
+    universe = candidate_screening.component_universe(TinyBridge())
+    assert universe == (
+        ComponentRef(ComponentKind.ATTN_HEAD, layer=0, head=0), ComponentRef(ComponentKind.ATTN_HEAD, layer=0, head=1),
+        ComponentRef(ComponentKind.MLP_OUT, layer=0),
+        ComponentRef(ComponentKind.ATTN_HEAD, layer=1, head=0), ComponentRef(ComponentKind.ATTN_HEAD, layer=1, head=1),
+        ComponentRef(ComponentKind.MLP_OUT, layer=1),
+    )
+    assert [candidate_screening.canonical_component_id(ref) for ref in universe] == ["L00.H00", "L00.H01", "L00.MLP", "L01.H00", "L01.H01", "L01.MLP"]
+
+
+def test_compactness_rejects_multitoken_holdout_or_unpartitioned_cases() -> None:
+    manifest = load_manifest(MANIFEST_PATH)
+    holdout = manifest.cases_for("regular-plural", Split.HOLDOUT)[0]
+    with pytest.raises(ValueError, match="selection-development"):
+        candidate_screening.validate_compactness_cases((holdout,))
+    multi = PromptCondition("p", (1, 2), (3, 4), (0, 4))
+    case = _dev_case(1, last_a=2, last_b=4)
+    bad = ScreeningCase(case.case_id, case.candidate_id, case.template_id, case.split, case.lexical_key, case.rule_class,
+                        case.primary_orientation, multi, multi, multi, multi, dict(case.local_heuristic_choices), case.compactness_partition)
+    with pytest.raises(ValueError, match="single-token"):
+        candidate_screening.validate_compactness_cases((bad,))
+    with pytest.raises(ValueError, match="target_position"):
+        PromptCondition("p", (1,), (2,), (3,), target_position=2)
+
+
+def test_bidirectional_patch_shift_matches_single_case_runs_and_is_exact() -> None:
+    model = _contrast_bridge()
+    cases = [_dev_case(number, last_a=4, last_b=2, length=3 + number % 2) for number in range(1, 21)]
+    universe = candidate_screening.component_universe(model)
+    sources = candidate_screening.capture_pair_sources(model, cases, universe)
+    assert model.cfg.use_attn_result is False
+    assert all(sources[case.case_id].d_full != 0.0 for case in cases)
+    batched = candidate_screening.patched_pair_shifts(model, cases, sources, universe[:3])
+    single = tuple(candidate_screening.patched_pair_shifts(model, (case,), sources, universe[:3])[0] for case in cases)
+    assert [row.to_dict() for row in batched] == [row.to_dict() for row in single]
+    assert all(row.d_full > 0.0 and row.d_patch != 0.0 and row.d_patch != row.d_full for row in batched)
+    everything = candidate_screening.patched_pair_shifts(model, cases, sources, universe)
+    # Replacing the entire final-position universe from the counterpart still leaves the
+    # token embedding, so the shift is not forced to equal d_full; it must be finite and stored raw.
+    assert all(math.isfinite(row.d_patch) for row in everything)
+
+
+def test_patch_integrity_failure_raises_instead_of_zero_effect() -> None:
+    model = _contrast_bridge()
+    cases = [_dev_case(1, last_a=4, last_b=2)]
+    universe = candidate_screening.component_universe(model)
+    sources = candidate_screening.capture_pair_sources(model, cases, universe)
+
+    def leaky(model_, tokens, plan, *, prepend_bos):
+        result = candidate_screening.run_interventions(model_, tokens, plan, prepend_bos=prepend_bos)
+        execution = result.executions[0]
+        tampered = type(execution)(**{**execution.__dict__, "outside_max_abs_change": 0.5})
+        return type(result)(result.logits, (tampered,), result.hook_settings)
+
+    with pytest.raises(candidate_screening.CompactnessIntegrityError, match="outside change"):
+        candidate_screening.patched_pair_shifts(model, cases, sources, universe[:1], intervene=leaky)
+
+
+def test_discovery_ranking_and_random_sets_are_deterministic() -> None:
+    rows = {
+        "L00.MLP": (PairPatchMeasurement(1.0, 0.5, "t1"), PairPatchMeasurement(1.0, 0.5, "t1")),
+        "L00.H01": (PairPatchMeasurement(1.0, 0.5, "t1"), PairPatchMeasurement(1.0, 0.5, "t1")),
+        "L01.H00": (PairPatchMeasurement(1.0, 0.9, "t1"), PairPatchMeasurement(1.0, 0.1, "t1")),
+        "L00.H00": (PairPatchMeasurement(1.0, -0.2, "t1"), PairPatchMeasurement(1.0, 0.0, "t1")),
+    }
+    assert candidate_screening.rank_discovery_components(rows) == ("L00.H01", "L00.MLP", "L01.H00", "L00.H00")
+    universe = tuple(f"c{i}" for i in range(10))
+    first = candidate_screening.deterministic_random_sets(universe, 3, count=5)
+    assert first == candidate_screening.deterministic_random_sets(universe, 3, count=5)
+    assert all(len(set(members)) == 3 and list(members) == sorted(members) for members in first)
+    with pytest.raises(ValueError):
+        candidate_screening.deterministic_random_sets(universe, 11)
+
+
+def test_compactness_probe_uses_discovery_for_ranking_and_validation_for_recovery(monkeypatch) -> None:
+    monkeypatch.setattr(candidate_screening, "COMPACTNESS_MAX_K", 3)
+    monkeypatch.setattr(candidate_screening, "COMPACTNESS_RANDOM_SETS", 4)
+    model = _contrast_bridge()
+    cases = []
+    for number in range(1, 121):
+        template = ("t1", "t2", "t3")[(number - 1) % 3]
+        partition = CompactnessPartition.DISCOVERY if number <= 60 else CompactnessPartition.VALIDATION
+        cases.append(_dev_case(number, last_a=4, last_b=2, template=template, partition=partition, length=3 + number % 2))
+    manifest = candidate_screening.ScreeningManifest((candidate_screening.CandidateDefinition("fake", ("t1", "t2", "t3")),), tuple(cases))
+    seen: list[tuple[str, tuple[str, ...]]] = []
+
+    def spy(model_, tokens, plan, *, prepend_bos):
+        seen.append(("patch", tuple(candidate_screening.canonical_component_id(item.component) for item in plan.interventions)))
+        return candidate_screening.run_interventions(model_, tokens, plan, prepend_bos=prepend_bos)
+
+    discovery_ids = {case.case_id for case in cases[:60]}
+    validation_ids = {case.case_id for case in cases[60:]}
+    calls: list[tuple[str, set[str]]] = []
+    original = candidate_screening.patched_contrasts
+
+    def tracking(model_, cases_, sources, components, **options):
+        calls.append((",".join(candidate_screening.canonical_component_id(ref) for ref in components), {case.case_id for case in cases_}))
+        return original(model_, cases_, sources, components, **options)
+
+    monkeypatch.setattr(candidate_screening, "patched_contrasts", tracking)
+    result = candidate_screening.run_compactness_probe(model, manifest, "fake", intervene=spy)
+    singleton_calls = [ids for label, ids in calls if "," not in label]
+    assert all(ids == discovery_ids for ids in singleton_calls[: 6 * 2])
+    later_calls = [ids for label, ids in calls][6 * 2:]
+    assert later_calls and all(ids == validation_ids for ids in later_calls)
+    assert result["discovery_case_ids"] == sorted(discovery_ids, key=lambda c: int(c[-3:]))
+    assert set(result["validation_case_ids"]) == validation_ids
+    assert result["ranking"] and set(result["ranking"]) == set(result["component_universe"])
+    assert set(result["top_k"]) == {"1", "2", "3"} and set(result["random"]) == {"1", "2", "3"}
+    assert all(len(result["random"][k]["recoveries"]) == 4 for k in result["random"])
+    assert set(result["gate"]["checks"]) == {"denominators", "overall_recovery", "beats_random", "positive_template_recovery"}
+    assert json.dumps(result, allow_nan=False)

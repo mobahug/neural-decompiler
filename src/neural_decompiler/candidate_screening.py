@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import random
 import statistics
 from dataclasses import dataclass, field
 from enum import Enum
@@ -15,6 +16,15 @@ from typing import Any, Mapping, Sequence
 import torch
 
 from .behavior import validate_json_safe
+from .capture import CapturePlan, CaptureRequest, InstrumentationSettings, run_capture
+from .components import ComponentKind, ComponentRef, resolve_component
+from .interventions import (
+    Intervention,
+    InterventionOperation,
+    InterventionPlan,
+    ReplacementSource,
+    run_interventions,
+)
 from .models import PYTHIA_160M, PYTHIA_70M
 
 
@@ -1147,3 +1157,253 @@ def behavioral_result_for_candidate(manifest: ScreeningManifest, candidate_id: s
     gates = evaluate_behavioral_gates(summaries[Split.DEVELOPMENT.value], summaries[Split.HOLDOUT.value])
     return _json({"candidate_id": candidate_id, "development": summaries[Split.DEVELOPMENT.value].to_dict(),
                   "holdout": summaries[Split.HOLDOUT.value].to_dict(), "gates": gates.to_dict()}, "behavioral_result")
+
+
+# ---------------------------------------------------------------------------
+# Exploratory compactness probe: exact bidirectional replacement at the final
+# prompt position over the closed head/MLP universe, development data only.
+
+COMPACTNESS_SEED = 20260917
+COMPACTNESS_MAX_K = 12
+COMPACTNESS_RANDOM_SETS = 100
+COMPACTNESS_BATCH_SIZE = 16
+_ATTN_SETTINGS = InstrumentationSettings(use_attn_result=True)
+
+
+class CompactnessIntegrityError(RuntimeError):
+    """An intervention did not perform the exact declared replacement."""
+
+
+def canonical_component_id(ref: ComponentRef) -> str:
+    if ref.kind is ComponentKind.ATTN_HEAD:
+        return f"L{ref.layer:02d}.H{ref.head:02d}"
+    if ref.kind is ComponentKind.MLP_OUT:
+        return f"L{ref.layer:02d}.MLP"
+    raise ValueError("compactness components are attention heads and whole MLP outputs only")
+
+
+def component_universe(model: Any) -> tuple[ComponentRef, ...]:
+    """Every attention-head result then the whole MLP output, layer by layer."""
+    cfg = getattr(model, "cfg", None)
+    n_layers, n_heads = int(getattr(cfg, "n_layers", 0)), int(getattr(cfg, "n_heads", 0))
+    if n_layers <= 0 or n_heads <= 0:
+        raise ValueError("model cfg must declare positive n_layers and n_heads")
+    universe: list[ComponentRef] = []
+    for layer in range(n_layers):
+        universe.extend(ComponentRef(ComponentKind.ATTN_HEAD, layer=layer, head=head) for head in range(n_heads))
+        universe.append(ComponentRef(ComponentKind.MLP_OUT, layer=layer))
+    return tuple(universe)
+
+
+def validate_compactness_cases(cases: Sequence[ScreeningCase]) -> tuple[ScreeningCase, ...]:
+    """Only partitioned, single-token, final-position development cases may be probed."""
+    rows = tuple(cases)
+    if not rows:
+        raise ValueError("compactness requires cases")
+    for case in rows:
+        if not isinstance(case, ScreeningCase) or case.split is not Split.DEVELOPMENT or case.compactness_partition is None:
+            raise ValueError("compactness accepts only partitioned selection-development cases")
+        for condition in (case.x_a, case.x_b):
+            if not condition.single_token:
+                raise ValueError("compactness requires single-token A/B alternatives")
+            if condition.target_position != -1:
+                raise ValueError("compactness requires target position -1")
+    return rows
+
+
+@dataclass(frozen=True)
+class PairSources:
+    """Unpatched contrasts and final-position activations of one matched pair."""
+
+    case_id: str
+    template_id: str
+    c_a: float
+    c_b: float
+    a_slices: Mapping[str, torch.Tensor]
+    b_slices: Mapping[str, torch.Tensor]
+
+    @property
+    def d_full(self) -> float:
+        return self.c_a - self.c_b
+
+
+def _contrast_from_logits(logits: torch.Tensor, condition: PromptCondition) -> float:
+    log_probs = logits.float().log_softmax(dim=-1)
+    return fixed_contrast(float(log_probs[condition.a_token_ids[0]]), float(log_probs[condition.b_token_ids[0]]))
+
+
+def _batches(cases: Sequence[ScreeningCase], batch_size: int) -> list[tuple[ScreeningCase, ...]]:
+    groups: dict[tuple[int, int], list[ScreeningCase]] = {}
+    for case in cases:
+        groups.setdefault((len(case.x_a.prompt_token_ids), len(case.x_b.prompt_token_ids)), []).append(case)
+    batches: list[tuple[ScreeningCase, ...]] = []
+    for key in sorted(groups):
+        rows = groups[key]
+        batches.extend(tuple(rows[start:start + batch_size]) for start in range(0, len(rows), batch_size))
+    return batches
+
+
+def capture_pair_sources(model: Any, cases: Sequence[ScreeningCase], universe: Sequence[ComponentRef], *, batch_size: int = COMPACTNESS_BATCH_SIZE, capture: Any = None) -> dict[str, PairSources]:
+    """Capture every universe component at position -1 for x_A and x_B of each pair."""
+    run = capture or run_capture
+    rows = validate_compactness_cases(cases)
+    requests = tuple(CaptureRequest(ref, positions=(-1,)) for ref in universe)
+    plan = CapturePlan(requests, _ATTN_SETTINGS)
+    device = _model_device(model)
+    contrasts: dict[str, dict[str, float]] = {}
+    slices: dict[str, dict[str, dict[str, torch.Tensor]]] = {}
+    for batch in _batches(rows, batch_size):
+        for side in ("a", "b"):
+            conditions = [case.x_a if side == "a" else case.x_b for case in batch]
+            tokens = torch.tensor([condition.prompt_token_ids for condition in conditions], dtype=torch.long, device=device)
+            result = run(model, tokens, plan, prepend_bos=False)
+            if not result.hook_settings.effective_use_attn_result or result.hook_settings.compatibility_mode:
+                raise CompactnessIntegrityError("capture must run with use_attn_result and without compatibility mode")
+            for index, (case, condition) in enumerate(zip(batch, conditions)):
+                contrasts.setdefault(case.case_id, {})[side] = _contrast_from_logits(result.logits[index, -1], condition)
+                slices.setdefault(case.case_id, {})[side] = {
+                    canonical_component_id(request.component): result.activations[request].tensor[index:index + 1].clone()
+                    for request in requests}
+    return {case.case_id: PairSources(case.case_id, case.template_id, contrasts[case.case_id]["a"], contrasts[case.case_id]["b"],
+                                      MappingProxyType(slices[case.case_id]["a"]), MappingProxyType(slices[case.case_id]["b"]))
+            for case in rows}
+
+
+def _check_execution(model: Any, execution: Any, ref: ComponentRef, replacement: torch.Tensor, sequence_length: int) -> None:
+    expected_hook = resolve_component(ref, model).hook_name
+    problems = []
+    if execution.component != ref or execution.hook_name != expected_hook:
+        problems.append("component/hook mismatch")
+    if execution.operation is not InterventionOperation.REPLACE or execution.source is not ReplacementSource.REFERENCE:
+        problems.append("operation/source mismatch")
+    if tuple(execution.shape) != tuple(replacement.shape) or execution.dtype != str(replacement.dtype):
+        problems.append("shape/dtype mismatch")
+    if tuple(execution.normalized_positions) != (sequence_length - 1,):
+        problems.append("position mismatch")
+    if execution.outside_max_abs_change != 0.0:
+        problems.append("outside change")
+    if not torch.equal(execution.after.to(replacement.device), replacement):
+        problems.append("inexact replacement")
+    if problems:
+        raise CompactnessIntegrityError(f"{canonical_component_id(ref)}: {', '.join(problems)}")
+
+
+def patched_contrasts(model: Any, cases: Sequence[ScreeningCase], sources: Mapping[str, PairSources], components: Sequence[ComponentRef], *, direction: str, batch_size: int = COMPACTNESS_BATCH_SIZE, intervene: Any = None) -> dict[str, float]:
+    """Contrast of each pair's target prompt with components replaced from its counterpart run."""
+    if direction not in {"a_from_b", "b_from_a"}:
+        raise ValueError("direction must be a_from_b or b_from_a")
+    run = intervene or run_interventions
+    device = _model_device(model)
+    refs = tuple(components)
+    if len({canonical_component_id(ref) for ref in refs}) != len(refs):
+        raise ValueError("component set must not repeat components")
+    results: dict[str, float] = {}
+    for batch in _batches(cases, batch_size):
+        conditions = [case.x_a if direction == "a_from_b" else case.x_b for case in batch]
+        tokens = torch.tensor([condition.prompt_token_ids for condition in conditions], dtype=torch.long, device=device)
+        replacements = []
+        for ref in refs:
+            key = canonical_component_id(ref)
+            side = "b_slices" if direction == "a_from_b" else "a_slices"
+            replacements.append(torch.cat([getattr(sources[case.case_id], side)[key] for case in batch], dim=0).to(device))
+        plan = InterventionPlan(tuple(Intervention(ref, (-1,), InterventionOperation.REPLACE, replacement, ReplacementSource.REFERENCE)
+                                      for ref, replacement in zip(refs, replacements)), _ATTN_SETTINGS)
+        result = run(model, tokens, plan, prepend_bos=False) if refs else None
+        if result is None:
+            with torch.inference_mode():
+                logits = model(tokens, prepend_bos=False)
+        else:
+            if len(result.executions) != len(refs) or result.hook_settings.compatibility_mode or not result.hook_settings.effective_use_attn_result:
+                raise CompactnessIntegrityError("intervention run did not execute every declared replacement")
+            for ref, replacement, execution in zip(refs, replacements, result.executions):
+                _check_execution(model, execution, ref, replacement, int(tokens.shape[1]))
+            logits = result.logits
+        for index, (case, condition) in enumerate(zip(batch, conditions)):
+            results[case.case_id] = _contrast_from_logits(logits[index, -1], condition)
+    return results
+
+
+def patched_pair_shifts(model: Any, cases: Sequence[ScreeningCase], sources: Mapping[str, PairSources], components: Sequence[ComponentRef], **options: Any) -> tuple[PairPatchMeasurement, ...]:
+    """Bidirectional aligned shift d_patch(S) for every case, in manifest order."""
+    a_from_b = patched_contrasts(model, cases, sources, components, direction="a_from_b", **options)
+    b_from_a = patched_contrasts(model, cases, sources, components, direction="b_from_a", **options)
+    rows = []
+    for case in cases:
+        source = sources[case.case_id]
+        shift = aligned_patch_shift(source.c_a, source.c_b, a_from_b[case.case_id], b_from_a[case.case_id])
+        rows.append(PairPatchMeasurement(source.d_full, shift, case.template_id))
+    return tuple(rows)
+
+
+def rank_discovery_components(singleton_effects: Mapping[str, Sequence[PairPatchMeasurement]]) -> tuple[str, ...]:
+    """Descending mean discovery effect; exact ties break by canonical component ID."""
+    means = {key: statistics.fmean(row.d_patch for row in rows) for key, rows in singleton_effects.items()}
+    return tuple(sorted(means, key=lambda key: (-means[key], key)))
+
+
+def deterministic_random_sets(universe_ids: Sequence[str], size: int, *, count: int = COMPACTNESS_RANDOM_SETS, seed: int = COMPACTNESS_SEED) -> tuple[tuple[str, ...], ...]:
+    rng = random.Random(seed)
+    ordered = list(universe_ids)
+    if not 1 <= size <= len(ordered):
+        raise ValueError("random set size must be between 1 and the universe size")
+    return tuple(tuple(sorted(rng.sample(ordered, size))) for _ in range(count))
+
+
+def _validation_denominators(rows: Sequence[PairPatchMeasurement]) -> DenominatorValidation:
+    templates: dict[str, list[float]] = {}
+    for row in rows:
+        templates.setdefault(row.template_id, []).append(row.d_full)
+    return evaluate_compactness_denominators(statistics.fmean(row.d_full for row in rows), {key: statistics.fmean(values) for key, values in templates.items()})
+
+
+def run_compactness_probe(model: Any, manifest: ScreeningManifest, candidate_id: str, *, on_progress: Any = None, **options: Any) -> dict[str, Any]:
+    """Discovery-only ranking, validation-only cumulative and random recovery, one frozen gate."""
+    cases = validate_compactness_cases(executable_cases(manifest, candidate_id, Split.DEVELOPMENT))
+    discovery = tuple(case for case in cases if case.compactness_partition is CompactnessPartition.DISCOVERY)
+    validation = tuple(case for case in cases if case.compactness_partition is CompactnessPartition.VALIDATION)
+    if len(discovery) != 60 or len(validation) != 60:
+        raise ValueError("compactness requires a 60/60 discovery/validation partition")
+    universe = component_universe(model)
+    by_id = {canonical_component_id(ref): ref for ref in universe}
+    capture_options = {key: options[key] for key in ("batch_size", "capture") if key in options}
+    patch_options = {key: options[key] for key in ("batch_size", "intervene") if key in options}
+    sources = capture_pair_sources(model, cases, universe, **capture_options)
+
+    def progress(stage: str, done: int, total: int) -> None:
+        if on_progress is not None:
+            on_progress(stage, done, total)
+
+    singleton: dict[str, tuple[PairPatchMeasurement, ...]] = {}
+    for index, ref in enumerate(universe):
+        singleton[canonical_component_id(ref)] = patched_pair_shifts(model, discovery, sources, (ref,), **patch_options)
+        progress("discovery", index + 1, len(universe))
+    ranking = rank_discovery_components(singleton)
+    validation_rows = tuple(PairPatchMeasurement(sources[case.case_id].d_full, 0.0, case.template_id) for case in validation)
+    denominators = _validation_denominators(validation_rows)
+    top_k: dict[int, tuple[PairPatchMeasurement, ...]] = {}
+    random_results: dict[int, dict[str, Any]] = {}
+    random_recoveries: dict[int, list[float]] = {}
+    if denominators.valid:
+        for k in range(1, COMPACTNESS_MAX_K + 1):
+            top_k[k] = patched_pair_shifts(model, validation, sources, tuple(by_id[key] for key in ranking[:k]), **patch_options)
+            progress("top-k", k, COMPACTNESS_MAX_K)
+        for k in range(1, COMPACTNESS_MAX_K + 1):
+            sets = deterministic_random_sets(tuple(by_id), k, count=COMPACTNESS_RANDOM_SETS)
+            recoveries = [aggregate_recovery(patched_pair_shifts(model, validation, sources, tuple(by_id[key] for key in members), **patch_options)) for members in sets]
+            random_recoveries[k] = recoveries
+            random_results[k] = {"sets": [list(members) for members in sets], "recoveries": recoveries, "median": statistics.median(recoveries), "reference": random_reference(recoveries)}
+            progress("random", k, COMPACTNESS_MAX_K)
+        gate = evaluate_compactness_gate(top_k, random_recoveries)
+    else:
+        gate = CompactnessGateResult({"denominators": False, "overall_recovery": False, "beats_random": False, "positive_template_recovery": False}, False)
+    return _json({
+        "candidate_id": candidate_id, "seed": COMPACTNESS_SEED, "max_k": COMPACTNESS_MAX_K, "random_sets_per_k": COMPACTNESS_RANDOM_SETS,
+        "component_universe": list(by_id), "discovery_case_ids": [case.case_id for case in discovery], "validation_case_ids": [case.case_id for case in validation],
+        "unpatched": {case.case_id: {"c_a": sources[case.case_id].c_a, "c_b": sources[case.case_id].c_b, "d_full": sources[case.case_id].d_full, "template_id": case.template_id} for case in cases},
+        "validation_denominators": denominators.to_dict(),
+        "singleton_discovery": {key: {"mean_d_patch": statistics.fmean(row.d_patch for row in rows), "effects": [row.to_dict() for row in rows]} for key, rows in singleton.items()},
+        "ranking": list(ranking),
+        "top_k": {str(k): {"components": list(ranking[:k]), "measurements": [row.to_dict() for row in rows]} for k, rows in top_k.items()},
+        "random": {str(k): value for k, value in random_results.items()},
+        "gate": gate.to_dict(),
+    }, "compactness_result")

@@ -15,7 +15,9 @@ class FakeHook:
 class TinyBridge:
     """Deterministic Bridge-shaped model for instrumentation semantics."""
 
-    def __init__(self) -> None:
+    def __init__(self, readout: Callable[[torch.Tensor], torch.Tensor] | None = None) -> None:
+        # An optional nonlinear readout gives input-dependent logit contrasts for patching tests.
+        self.readout = readout
         self.cfg = SimpleNamespace(
             n_layers=2,
             n_heads=2,
@@ -131,7 +133,10 @@ class TinyBridge:
                 f"blocks.{layer}.hook_out", resid_pre + attention + mlp_output
             )
         normalized = emit("ln_final.hook_out", resid / 10.0)
-        logits = torch.cat((normalized, normalized[..., :2] + 1.0), dim=-1)
+        if self.readout is not None:
+            logits = self.readout(normalized)
+        else:
+            logits = torch.cat((normalized, normalized[..., :2] + 1.0), dim=-1)
         return emit("unembed.hook_out", logits)
 
 
