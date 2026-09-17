@@ -18,7 +18,7 @@ The project advances through small, reproducible experiments. It separates what 
 - [Experiment 003: Pythia Scale-and-Behavior Comparison](experiments/003-pythia-scale-comparison/README.md) — compares fresh Pythia-70M and Pythia-160M behavior, selectivity, and normalized-depth trajectories under one frozen pipeline.
 - [Experiment 004: Prompt Elicitation](experiments/004-prompt-elicitation/README.md) — tests a preregistered prompt intervention selected on development data and evaluated on held-out cases.
 
-Experiments 001–004 are preserved historical observational and infrastructure work. The project has not selected the target behavior or designed Experiment 005. The next research step is to screen simple behaviors that Pythia-70M performs reliably, audit whether their mechanisms are already mapped in the literature, and preregister a causal reverse-engineering study only after a candidate survives both checks.
+Experiments 001–004 are preserved historical observational and infrastructure work. The behavior candidate screen below has since been executed once: it proposes `regular-plural` (count-cued noun number selection in Pythia-70M) as the single target and eliminates `ordinal-suffix`. Experiment 005 has not been designed; it requires its own design, explicit held-out intervention predictions, user approval, and a preregistration commit before any confirmatory run.
 
 ## Behavior candidate screening
 

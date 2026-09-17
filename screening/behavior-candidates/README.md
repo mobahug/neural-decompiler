@@ -41,43 +41,72 @@ number selection in pinned Pythia-70M).
 
 What the evidence does and does not show:
 
-- Pythia-70M selects the correctly inflected noun after a count cue on untouched
-  held-out lexical items at 88.3% pairwise accuracy (Wilson 95% lower bound
-  above 78%), in every template family, with the fixed-orientation contrast
-  flipping sign in 81.7% of matched pairs, and above every frozen trivial
-  baseline. Development accuracy was lower (84.2%), so there is no
-  development-to-holdout drop.
+- Pythia-70M prefers the correctly inflected noun form over its matched
+  alternative on untouched held-out lexical items in 106/120 primary
+  conditions (88.3%; Wilson 95% lower bound 81.4%, above the 78% gate), in
+  every template family, above every frozen trivial baseline, with the
+  fixed-orientation contrast flipping sign in 98/120 matched pairs (81.7%).
+  Development accuracy was lower (101/120, 84.2%), so there is no
+  development-to-holdout drop. The headline number blends two very different
+  conditions: by the frozen manifest, the primary condition is the singular
+  prompt for every simple-suffix noun and the plural prompt for every
+  spelling-change noun. Stored per-condition results: singular condition
+  120/120 in both splits; plural condition 98/120 on holdout (52/60 for
+  simple nouns, 46/60 = 76.7% for spelling-change nouns) and 87/120 on
+  development. The flip rate is numerically the plural-condition accuracy
+  because the singular condition never fails. This is a pairwise preference
+  measurement: the full-vocabulary top-1 continuation is one of the two noun
+  forms in only one of the 228 single-token held-out conditions.
 - The exploratory compactness probe found that exact replacement of only two
   components at the final position — the layer-0 MLP output and attention head
   L03.H04 — recovers 90.5% of the aggregate counterfactual contrast shift on the
   60 validation development cases (cardinal 0.998, coordinated-adjective 0.809,
-  quantifier 0.914), against a random two-component median of 0.006. The
-  layer-0 MLP alone recovers 61.6% overall but 0.000 on the
-  coordinated-adjective template, where the cue is not the final token. This is
-  a triage signal about where the computation may live, not a mechanism claim:
-  it establishes neither completeness, minimality, self-repair robustness, nor
-  a human-readable account.
+  quantifier 0.914). The random two-component median recovery is 0.006, floored
+  to the reference B_2 = 0.05, so the applied threshold was 0.10. The layer-0 MLP
+  alone recovers 61.6% overall and exactly 0.000 on every coordinated-adjective
+  case: in Pythia's rotary, parallel-residual architecture the layer-0 MLP output
+  at the final position depends only on the final token, which both members of
+  a pair share there (the adjective), so that replacement is a structural
+  no-op rather than a localization finding; its near-total recovery on the
+  cardinal and quantifier templates is the cue token's own embedding pathway,
+  because there the cue is the final token. This is a triage signal about where
+  the computation may live, not a mechanism claim: it establishes neither
+  completeness, minimality, self-repair robustness, nor a human-readable
+  account.
 - Ordinal-suffix selection is not a reliable Pythia-70M behavior under this
-  protocol: 51.7% on held-out numbers, with a large development-to-holdout
-  drop that the frozen manifest confounds with a tokenization shift (single-
-  token development B-numbers versus multi-piece held-out B-numbers) and with
-  a position-0, no-BOS bare-numeral variant. The candidate is eliminated in
-  protocol v1 regardless of the reason.
-- The finalist audit found no component-level causal account of count-cued
-  noun inflection in an unmodified Pythia model. Grammatical number is,
-  however, well mapped as a representation (steerable inflection subspaces
-  including Pythia) and as agreement circuits (Pythia-70M subject–verb sparse
-  feature circuits; GPT-2 causal mediation and circuit probing; Gemma-2B head
-  and neuron accounts; DAS causal variables across Pythia scales). Any
-  Experiment 005 must position itself against that work, not claim novelty
-  about number representations.
+  protocol. The model shows a `th` preference: on single-token development
+  numbers it was correct on 60/60 `th`-primary cases but only 29/60
+  `st`/`nd`/`rd`-primary cases (mean fixed-orientation contrast -0.007), with
+  the contrast flipping in 55/120 pairs against the 80% gate, so the
+  non-`th` side was at chance before any held-out number was seen. The
+  held-out drop (74.2% to 51.7%) additionally reflects the `th` side falling to
+  43/60 where most held-out B-numbers tokenize into several pieces; that
+  tokenization shift is a confound of gate 5 only. The position-0, no-BOS
+  bare-numeral variant scored identically in both splits (12/20 primary,
+  5/20 flips) and explains none of the drop; it remains a validity limitation
+  of that variant. The candidate is eliminated in protocol v1 regardless of the
+  reason.
+- The finalist audit (searches conducted on 2026-09-17 during the compactness
+  run, before its outcome was known, and recorded once immediately after it)
+  found no component-level causal account of count-cued noun inflection in an
+  unmodified Pythia model. Grammatical number is, however, well mapped as a
+  representation (steerable inflection subspaces including Pythia) and as
+  agreement circuits (Pythia-70M subject–verb sparse feature circuits; GPT-2
+  causal mediation and circuit probing; Gemma-2B head and neuron accounts; DAS
+  causal variables across Pythia scales). A head-plus-MLP account of number
+  agreement is exactly the mechanism family that eliminated `sva-attractor` in
+  triage. Any Experiment 005 must therefore claim neither novelty about number
+  representations nor about number-agreement circuits in Pythia-70M; its gap is
+  behavior-specific (the cue-to-noun-inflection mechanism at the noun position)
+  and validation-specific (prospective held-out intervention prediction,
+  reconstruction, self-repair, and residual accounting).
 - Protocol limitations recorded before the run: the cue-shuffle control
   coincides with the counterfactual prompt for minimal pairs (gate 8 is not
-  independent), the plural local heuristic never predicts the scored foil (gate
-  9 is vacuous for `regular-plural`; what was screened is count-cued
-  singular/plural selection rather than `es`/`ies` allomorphy), split membership
-  is pool-predeclared rather than seeded, and `degree-inflection` was eliminated
-  pre-output for tokenizer infeasibility.
+  independent); the plural local heuristic never predicts the scored foil, so
+  gate 9 passed (88.3% against 50%) without testing `es`/`ies` allomorphy —
+  what was screened is count-cued singular/plural selection; split membership
+  is pool-predeclared rather than seeded; and `degree-inflection` was
+  eliminated pre-output for tokenizer infeasibility.
 
 ## Pre-output amendments
 
