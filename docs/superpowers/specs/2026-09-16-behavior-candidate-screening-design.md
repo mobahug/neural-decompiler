@@ -151,6 +151,20 @@ fixed literals in the listed order. For development: `gentle`, `noble`,
 does not change the first-ten-eligible selection rule, token-length policy,
 templates, seed, or any threshold.
 
+#### Amendment — 2026-09-17: corrected development eligibility census
+
+The prior complete census correctly checked equality for every split, but did
+not apply the stricter development-only one-token rule while classifying word
+eligibility. Before encoding or testing these new forms, correct that predicate
+and append the following fixed ordered lists. Development/simple: `black`,
+`brown`, `green`, `round`, `straight`, `narrow`, `quiet`, `brisk`, `faint`,
+`harsh`, `cheap`, `dear`, `full`, `hollow`, `smart`, `solid`, `strict`,
+`swift`, `tight`, `tough`. Development/change: `rainy`, `windy`, `tidy`,
+`crazy`, `lively`, `merry`, `cheery`, `cloudy`, `dusty`, `frosty`, `silky`,
+`spicy`, `itchy`, `witty`, `silly`, `jolly`, `nasty`, `thirsty`, `filthy`,
+`stormy`. These forms were fixed before encoding; the first-ten-eligible and
+all other frozen rules remain unchanged.
+
 Each retained candidate receives exactly three predeclared template families.
 All concrete text, expected alternatives, lexical items, case IDs, tokenizer
 eligibility decisions, and split assignments are generated and committed

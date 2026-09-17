@@ -214,6 +214,19 @@ new forms, append these fixed ordered literals: development — `gentle`,
 `sleepy`. All template, token-length, seed, threshold, and first-ten-eligible
 rules remain unchanged.
 
+#### Amendment — 2026-09-17: corrected development eligibility census
+
+The previous census omitted development's stricter one-token predicate from
+word eligibility. Before encoding or testing the following fixed forms, append
+development/simple in this order: `black`, `brown`, `green`, `round`,
+`straight`, `narrow`, `quiet`, `brisk`, `faint`, `harsh`, `cheap`, `dear`,
+`full`, `hollow`, `smart`, `solid`, `strict`, `swift`, `tight`, `tough`; then
+append development/change: `rainy`, `windy`, `tidy`, `crazy`, `lively`,
+`merry`, `cheery`, `cloudy`, `dusty`, `frosty`, `silky`, `spicy`, `itchy`,
+`witty`, `silly`, `jolly`, `nasty`, `thirsty`, `filthy`, `stormy`. These are
+fixed before tokenizer testing. The first-ten-eligible, templates, token
+lengths, seed, and thresholds are otherwise unchanged.
+
 **Files:**
 - Modify: `src/neural_decompiler/candidate_screening.py`
 - Modify: `src/neural_decompiler/models.py`
