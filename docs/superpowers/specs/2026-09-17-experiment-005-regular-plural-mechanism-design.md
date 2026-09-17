@@ -2,13 +2,36 @@
 
 **Date:** 2026-09-17
 
-**Status:** Draft for review. Not approved. No Experiment 005 directory,
-claim, preregistration lock, or model run exists. The 120 `regular-plural`
-future-reserve cases remain unexecuted.
+**Status:** Draft, revision 2 (after the first external review). Not approved.
+No Experiment 005 directory, claim, preregistration lock, extension manifest,
+or model run exists. The 120 `regular-plural` future-reserve cases remain
+unexecuted.
 
 **Scope:** `regular-plural` (count-cued English noun number selection) in the
-pinned `EleutherAI/pythia-70m-deduped` checkpoint, using only the frozen
-screening manifest `screening/behavior-candidates/manifest-v1.json`.
+pinned `EleutherAI/pythia-70m-deduped` checkpoint, using the frozen screening
+manifest `screening/behavior-candidates/manifest-v1.json` plus one frozen,
+tokenizer-validated extension set of prompts defined below.
+
+## Revision history
+
+- **Revision 1 (2026-09-17, commit `a414cc8`).** Initial draft.
+- **Revision 2 (2026-09-17).** Changes after the first review, all made before
+  any Experiment 005 model output exists:
+  1. the number variable now has a frozen origin and scale (centered, scaled
+     projection) instead of a bare direction;
+  2. the mediation family is a chain test (patch E alone, let T recompute,
+     then repeat with T frozen) instead of a joint E∪T patch;
+  3. the midpoint replacement is renamed *pair-centered neutralization* and
+     necessity conclusions are scoped to that replacement distribution;
+  4. an explicit, separately executable **mechanism program** is required, and
+     the outcome rule has a second axis that distinguishes "these components
+     are sufficient" from "we recovered what they compute";
+  5. a structural fact of the manifest was recognized while addressing item 4:
+     every split shares the same twelve prompts, so the reserve's only novelty
+     is twenty new nouns (unembedding rows). Prompt-side prospective tests
+     therefore require prompts the model has not seen in this project; a frozen
+     extension set (new frames and new cue words) is added, and every reserve
+     test is relabeled as what it actually is.
 
 ## Purpose
 
@@ -32,15 +55,17 @@ behind Neural Decompiler:
 > mechanism that is specified before, and then tested on, untouched examples
 > and interventions it was not built from?
 
-The experiment therefore has two halves that the methodology keeps separate:
+The experiment has two halves that the methodology keeps separate:
 
 1. **Discovery (exploratory):** trace the pathway on already-exposed data,
    choose between competing mechanisms using predeclared discriminating
-   measurements, and write the mechanism down as an explicit statement with
-   named components, variables, and transformations.
-2. **Confirmation (prospective):** freeze that statement together with numeric
-   predictions about unseen behavior and unseen interventions in a committed
-   preregistration lock, then execute the untouched future-reserve cases once.
+   measurements, write the mechanism down as an explicit statement with named
+   components, variables, and transformations, and implement that statement as
+   a program that runs without the network.
+2. **Confirmation (prospective):** freeze the statement, the program, and
+   numeric predictions about unseen nouns, unseen prompts, and unseen
+   interventions in a committed preregistration lock, then execute the
+   confirmation set once.
 
 Success is a mechanism that predicts what it did not see. Failure is equally
 informative: it identifies which stage of the proposed decompilation is wrong.
@@ -67,9 +92,12 @@ code commit `e610c5f`) and constrain this design:
   values below 0.10. Singleton effects sum to far more than the 4.639-nat
   denominator, so they overlap; they are discovery scores, not additive
   causal shares.
-- **Known structural artifact.** Pythia-70M has parallel residual blocks and
-  rotary attention, so the layer-0 MLP output at a position is a function of
-  that position's token only. In the cardinal and quantifier templates the cue
+- **Known structural artifact.** Pythia-70M has GPT-NeoX parallel residual
+  blocks (`resid_post = resid_pre + attn(ln1(resid_pre)) + mlp(ln2(resid_pre))`,
+  both sub-blocks reading the block *input*) and rotary attention with no
+  additive positional embedding, so the layer-0 MLP output at a position is a
+  function of that position's token embedding only; the screen confirmed this
+  empirically with the exactly-zero coordinated-adjective result below. In the cardinal and quantifier templates the cue
   *is* the final token, so replacing `L00.MLP` at the final position replaces
   the cue token's own embedding pathway (recovery 1.022 and 0.890 alone). In
   the coordinated-adjective template the final token is the shared adjective,
@@ -87,17 +115,60 @@ code commit `e610c5f`) and constrain this design:
   contribution is the specific cue-to-noun-inflection computation, validated
   prospectively with reconstruction, self-repair, and residual accounting.
 
+### Structural fact: twelve prompts
+
+The noun never appears in a prompt; it is only the scored next token. Every
+`regular-plural` case in every split is one of exactly twelve prompts (three
+templates × two frames × two cues):
+
+```text
+cardinal               The display contains one|two      The tray holds one|two
+quantifier             The catalog lists each|several    The inventory records each|several
+coordinated-adjective  Lena and Omar displayed one|two small
+                       Mira and Noah packed one|two bright
+```
+
+Consequently every activation, every residual, and every component-level
+intervention outcome is identical across the 20 nouns of a split. A case's
+contrast is the readout of one of twelve final-position residuals through the
+noun pair's unembedding rows. The reserve therefore contributes exactly one new
+thing: twenty unembedding row pairs the project has never scored. It
+contributes no new prompt-side computation, and any intervention run on the
+reserve has a residual-level outcome already known from Tier A on the same
+twelve prompts.
+
+Two consequences shape the rest of this design:
+
+- Tests on reserve nouns are **readout-generalization** tests: they ask
+  whether the shift the mechanism produces lies along a direction that unseen
+  nouns' singular–plural unembedding differences read with the predicted sign
+  and size. That is a real and necessary test of the readout stage. It is not
+  a prospective test of the encoding or transport stages.
+- Prospective tests of encoding, transport, frame invariance, and the
+  mechanism program require prompts the project has never run. The
+  **extension set** below supplies them: new sentence frames for each template
+  and new cue words in the existing frames, frozen by tokenizer-only rules
+  before Experiment 005 executes anything.
+
+Compute also collapses: one forward pass per prompt scores every noun, so a
+full intervention family costs tens of forward passes, not thousands.
+
 ### Exposure ledger
 
-| Split | Cases | Behavioral output inspected | Intervention output inspected | Role in Experiment 005 |
+| Set | Cases | Behavioral output inspected | Intervention output inspected | Role in Experiment 005 |
 |---|---|---|---|---|
-| `selection-development` | 120 | yes | yes (component ranking and top-`k` validation) | Tier A discovery data; treated as fully exposed |
-| `selection-holdout` | 120 (114 single-token; 6 `peach` cases are two-token) | yes (contrasts known) | no | Tier B calibration data; one or two passes |
-| `future-reserve` | 120 (all single-token) | no | no | Tier C confirmation; executed exactly once after the lock commit |
+| `selection-development` | 120 cases (6 frame pairs × 20 nouns; 240 conditions over the 12 prompts) | yes | yes (component ranking and top-`k` validation) | Tier A discovery data; treated as fully exposed |
+| `selection-holdout` | 120 (114 single-token; 6 `peach` cases are two-token) | yes (contrasts known) | no | Tier B calibration data (readout generalization and bands); one or two passes |
+| `future-reserve` | 120 (all single-token; 20 new nouns) | no | no | Tier C readout-generalization confirmation; executed exactly once after the lock commit |
+| extension set | 6 new frames × 2 cues, plus 6 original frames × up to 12 new cue words; scored with the 20 reserve nouns | no | no | Tier C prompt-side confirmation; frozen before Tier A; executed exactly once after the lock commit |
 
-No prompt outside the manifest is executed in Experiment 005. New template
-families, longer cue-to-noun distances, other cue words, Pythia-160M, and other
-model families are excluded and listed under future work.
+The reserve nouns were fixed by the screening design before any model run:
+per-split literal pools, disjoint across splits, with a first-ten-eligible
+tokenizer rule and pre-output amendments recorded in that design. No prompt
+outside the manifest and the frozen extension set is executed in
+Experiment 005. Longer cue-to-noun distances, new nouns beyond the reserve,
+Pythia-160M, and other model families are excluded and listed under future
+work.
 
 ## Fixed coordinates
 
@@ -107,11 +178,11 @@ model families are excluded and listed under future work.
   enabled explicitly; every forward under `torch.inference_mode()`.
 - Manifest: `screening/behavior-candidates/manifest-v1.json`, content sha256
   `1c50c2e8bbf95f9aa4331ac57899f77c2a6be6b17d4cb2a5ac4ecc332c5e703c`. Only
-  `regular-plural` cases are read. Cases are batched by identical prompt
-  length, exactly as in the screen; no padding is ever introduced.
+  `regular-plural` cases are read. Prompts are batched by identical length;
+  no padding is ever introduced.
 - Runtime seed `20260916` (as in the screen, so baseline contrasts replicate);
-  control-sampling seed `20260918` for every random component set drawn in
-  this experiment.
+  control-sampling seed `20260918` for every random component set and every
+  bootstrap drawn in this experiment.
 - Positions, zero-indexed from the first prompt token:
 
 | Template | Example prompt | Tokens | Cue position `p_c` | Target position `p_t` |
@@ -120,12 +191,13 @@ model families are excluded and listed under future work.
 | `quantifier` | `The catalog lists each` / `several` | 4 | 3 | 3 |
 | `coordinated-adjective` | `Mira and Noah packed one bright` / `two bright` | 7 | 5 | 6 |
 
-  The two frames of every template have identical token counts, and every
-  noun appears once in each frame of each template in each split. Positions
-  before `p_c` are token-identical within a matched pair; the runner asserts
-  that every captured activation there is bitwise identical between pair
-  members, which makes any intervention there a no-op by construction, and it
-  never spends forward passes on those positions.
+  For every prompt, including extension prompts, `p_c` is the index of the
+  cue token and `p_t` is the final prompt position; both are derived from the
+  tokenization and stored per prompt. Positions before `p_c` are
+  token-identical within a matched pair; the runner asserts that every
+  captured activation there is bitwise identical between pair members, which
+  makes any intervention there a no-op by construction, and it never spends
+  forward passes on those positions.
 - Metric definitions are reused verbatim from the screening design:
   `c(x)`, `m(x) = y(x) c(x)`, `d_full = c(x_A) - c(x_B)`, the bidirectional
   aligned patched shift `d_patch(S)`, and aggregate recovery
@@ -134,6 +206,38 @@ model families are excluded and listed under future work.
   Raw recoveries are reported without clipping. Patched and unpatched
   contrasts of one stratum always come from identical batch compositions so
   that an exact replacement yields an exactly zero shift.
+
+### Extension set
+
+`experiments/005-regular-plural-mechanism/extension-v1.json` is frozen by
+tokenizer-only rules and committed before the `discover` phase can run; the
+results state records its digest and every scientific phase refuses to run
+without it. It contains no new nouns: every extension prompt is scored with
+the 20 reserve nouns, and its cases are never executed before Tier C.
+
+1. **New frames** — two per template, fixed here. Cardinal: `The basket
+   carries {cue}`, `The museum owns {cue}`. Quantifier: `The menu offers
+   {cue}`, `The report cites {cue}`. Coordinated-adjective: `Ana and Luis
+   painted {cue} tiny`, `Kai and Sara carried {cue} heavy`. Cues are the
+   template's original pair (`one`/`two`, `each`/`several`, `one`/`two`).
+   Every frame was checked to tokenize with a single-token cue and, for the
+   coordinated frames, a single-token adjective after it; total length is not
+   constrained.
+2. **New cue words** — the first twelve tokenizer-eligible entries of this
+   fixed ordered list, each substituted into the cue slot of all six original
+   frames: `a`, `the`, `three`, `four`, `five`, `ten`, `many`, `few`, `some`,
+   `all`, `both`, `every`, `any`, `no`, `another`, `single`, `multiple`,
+   `numerous`, `twelve`, `hundred`. Eligibility means the space-prefixed word
+   is one token under the pinned tokenizer. All twenty were verified eligible
+   while drafting this revision, so the frozen set is the first twelve:
+   `a` through `every`. Ambiguous or non-numeric entries (`a`, `the`, `some`,
+   `all`, `any`) are deliberate: the mechanism program must predict them from
+   its cue lexicon rather than from a hand-written number label, and the
+   model's behavior on them is unknown.
+
+The extension set is built once by a tokenizer-only builder, digested, and
+committed. No model output influences it, and it cannot be edited after the
+`discover` phase has run.
 
 ## Component universe and intervention vocabulary
 
@@ -149,20 +253,22 @@ direct path from the token embedding to the logits is accounted analytically
 Replacement sources, each with a written justification:
 
 - **Counterfactual (reference):** the matched pair's other member, the same
-  case and frame. This is the sufficiency-oriented source used throughout the
-  screen.
-- **Pair mean (mean):** `0.5 * (act(x_A) + act(x_B))` for the same case,
-  frame, and position. It removes exactly the cue-dependent part of an
-  activation while preserving everything the pair shares (noun, frame,
-  position). It is the necessity-oriented source; zero ablation is not used
-  because it is off-distribution for this architecture.
-- **Cross-frame resample (resampled):** the same noun and split in the other
-  frame of the same template, with either the same cue (predicted to move the
-  contrast little) or the opposite cue (predicted to move it like the
-  counterfactual). This distinguishes number information from frame or
-  lexical-context information.
-- **Cross-cue resample (resampled):** the same noun in the other cue-final
-  template (`cardinal` ↔ `quantifier`), so the cue *token* differs (`two` vs
+  frame. This is the sufficiency-oriented source used throughout the screen.
+- **Pair-centered neutralization (mean):** `0.5 * (act(x_A) + act(x_B))` for
+  the same frame and position — the midpoint of the two observed states. It
+  is the necessity-oriented source. In a nonlinear network the midpoint is
+  not equivalent to removing "the cue-dependent component"; it is one
+  specific, on-manifold-adjacent replacement distribution, chosen because it
+  preserves everything the pair shares and is symmetric between the two cues.
+  Zero ablation is not used because it is off-distribution for this
+  architecture. Every necessity or isolation conclusion is scoped to this
+  replacement distribution.
+- **Cross-frame resample (resampled):** the other frame of the same template,
+  with either the same cue (predicted to move the contrast little) or the
+  opposite cue (predicted to move it like the counterfactual). This
+  distinguishes number information from frame or lexical-context information.
+- **Cross-cue resample (resampled):** the other cue-final template
+  (`cardinal` ↔ `quantifier`), so the cue *token* differs (`two` vs
   `several`, `one` vs `each`) while the cue *number* is the same or opposite.
   This tests whether the encoded variable is number rather than token
   identity.
@@ -173,7 +279,7 @@ disjoint slices. No new hook kinds are introduced. The "freeze" operation used
 in path tests is a `REPLACE` with the component's own clean activation from the
 unpatched run of the same prompt.
 
-## Stage vocabulary and competing mechanisms
+## Stage vocabulary, number variable, and competing mechanisms
 
 A mechanism statement names components in four roles:
 
@@ -188,35 +294,70 @@ A mechanism statement names components in four roles:
   logits when `p_c = p_t`, and the direct logit contributions of E and T
   outputs. D is measured, not intervened.
 
-The number variable is operationalized as a direction. For a residual site
-`r_L(x, p)` (input of block `L` at position `p`), the template's number axis is
+### Number variable
+
+For a residual site `r_L(x, p)` (input of block `L` at position `p`), the
+number axis is the mean pair difference over development prompts:
 
 ```text
-d_num(L, p) = mean over development pairs of ( r_L(x_B, p) - r_L(x_A, p) )
+d_num(L, p) = mean over development pairs of ( r_L(x_B, p) − r_L(x_A, p) )
 ```
 
-and a component's number contribution at `p` is the mean projection of its
-own `x_B − x_A` output difference onto the unit vector of `d_num` at the
-readout input layer `L_R` (the layer of the earliest R component). Because the
-residual stream is an exact sum of component outputs plus the embedding,
-these contributions sum to the whole axis magnitude at `L_R`; they are an exact
-decomposition of *what arrives*, not a causal claim.
+A bare direction does not define where zero is, so every stage variable is a
+**centered, scaled projection** with three frozen parameters — a unit
+direction `d̂_s`, an origin `μ_s`, and a scale `σ_s`:
+
+```text
+n_s(x) = ( a_s(x) − μ_s ) · d̂_s / σ_s
+```
+
+where `a_s(x)` is the activation at site `s`, `μ_s` is the mean of `a_s` over
+all development prompts of the relevant templates (both cues, balanced by
+construction), and `σ_s` is half the mean projected pair difference, so that
+the development cues map to approximately `−1` (singular) and `+1` (plural).
+The binary variable is `sign(n_s)`, with threshold `0` after centering. The
+three sites are:
+
+- `s = E`: the E components' summed output at `p_c` → `n_c(x)`;
+- `s = T`: the T heads' summed output at `p_t` (cue-final templates: the E
+  output at `p_t`) → `n_t(x)`;
+- `s = R_in`: `r_{L_R}(x, p_t)`, the residual read by the earliest R component.
+
+`d̂_s`, `μ_s`, and `σ_s` are estimated once on development data (Tier A), may
+be re-estimated at most once after a Tier B revision, and are stored in the
+lock with digests. On the twelve manifest prompts the reserve activations are
+identical to development activations, so `n_s` there is a fixed number per
+prompt; the variables are informative only on extension prompts, and the
+prediction families use them there.
+
+A component's number contribution at `p` is the mean projection of its own
+`x_B − x_A` output difference onto `d̂_{R_in}`. Because the residual stream is
+an exact sum of component outputs plus the embedding, these contributions sum
+to the whole axis magnitude at `L_R`; they are an exact decomposition of *what
+arrives*, not a causal claim.
+
+### Competing mechanisms
 
 Three competing mechanisms are stated now, before discovery data are
-inspected, together with the measurements that decide between them:
+inspected, together with the measurements that decide between them. The chain
+quantities are defined under A6: `m_T` is the fraction of T's counterfactual
+number change reproduced when E alone is patched and T recomputes; `m_R` is
+the fraction of R's counterfactual number change reproduced by the same
+E-alone patch; `m_R|T` is `m_R` with T frozen to its clean output.
 
-| ID | Mechanism | Predicts on development data |
+| ID | Mechanism | Predicts on development data (coordinated-adjective) |
 |---|---|---|
-| **H1 — dedicated transport** | E writes number at `p_c`; one or two heads (T) copy it to `p_t`; R reads it. | In coordinated-adjective: the top head at `p_t` alone recovers ≥ 0.50; freezing it blocks ≥ 0.50 of the effect of a counterfactual residual patch at `p_c`; patching E∪T reproduces ≥ 0.50 of the counterfactual change in R outputs' number projections (mediation). |
-| **H2 — distributed transport / local amplification** | Number reaches `p_t` through many weak heads (or, when `p_c = p_t`, needs no transport); no head is individually decisive; R reads a pooled signal. | Top head < 0.50 but cumulative top-3 heads ≥ 0.70; freezing any single head blocks < 0.50; mediation still ≥ 0.50. |
-| **H3 — late computation** | R components compute number from cue-dependent inputs not captured by the E/T number axis; E/T are correlates or partial routes. | Patching E∪T reproduces < 0.50 of R outputs' counterfactual number change while patching R outputs alone recovers ≥ 0.70. |
+| **H1 — dedicated transport** | E writes number at `p_c`; one or two heads (T) copy it to `p_t`; R reads it. | Top head at `p_t` alone recovers ≥ 0.50; freezing it blocks ≥ 0.50 of the effect of a counterfactual residual patch at `p_c`; `m_T ≥ 0.50`, `m_R ≥ 0.50`, and `m_R|T ≤ 0.5 · m_R`. |
+| **H2 — distributed transport / local amplification** | Number reaches `p_t` through many weak heads (or, when `p_c = p_t`, needs no transport); no head is individually decisive; R reads a pooled signal. | Top head < 0.50 but cumulative top-3 heads ≥ 0.70; freezing any single head blocks < 0.50; `m_R ≥ 0.50` with the top-3 frozen jointly giving `m_R|T ≤ 0.5 · m_R`. |
+| **H3 — late computation** | R components compute number from cue-dependent inputs not captured by the E/T number axis; E/T are correlates or partial routes. | `m_R < 0.50` while patching R outputs alone recovers ≥ 0.70. |
 | **H0 — no compact account** | No set of ≤ 6 components at `p_t` plus ≤ 2 at `p_c` meets the Tier A floors. | Tier A floors fail after the iteration budget. |
 
 The hypothesis selection rule is a total, deterministic decision tree over
 five development-data quantities from the coordinated-adjective template:
 `q1` = recovery of the top-ranked head alone at `p_t`; `q2` = blocked fraction
-of that head (A6); `q3` = mediation fraction for E∪T (A6); `q4` = recovery of
-the R outputs alone; `q5` = cumulative recovery of the top three heads.
+of that head (A6); `q3` = `m_R`, the E-alone mediation fraction to R (A6);
+`q4` = recovery of the R outputs alone; `q5` = cumulative recovery of the top
+three heads.
 
 ```text
 if q3 < 0.50 and q4 ≥ 0.70:            H3
@@ -227,30 +368,30 @@ else:                                  H2 as the working row, flag HYPOTHESIS_AM
 
 The tree is applied once to the recorded numbers and the mechanism statement
 is written for the resulting row. A flagged lock must carry a discriminating
-reserve prediction for every row the tree did not exclude. The hypotheses are
-not exclusive across templates: the cue-final templates need no T, and the
-statement must cover both regimes.
+confirmation prediction for every row the tree did not exclude. The
+hypotheses are not exclusive across templates: the cue-final templates need no
+T, and the statement must cover both regimes.
 
 Encoding has one predeclared branch. Let `L_T` be the layer of the earliest
 declared T head. The number axis at the input of that layer at `p_c`,
-`d_num(L_T, p_c)`, decomposes exactly into the cue token
-embedding difference plus the outputs of components at `p_c` below `L_T`. If
-`L00.MLP` (with any other declared E component) carries at least half of that
-axis, E is those components and prediction family P4 applies. If the embedding
-difference alone carries more than half, the mechanism declares E as the
-direct embedding path and P4′ applies instead: pair-mean ablation of every
-non-embedding component at `p_c` must retain at least half of the contrast
-shift. The rule is applied once, on development data, and recorded in the
-lock.
+`d_num(L_T, p_c)`, decomposes exactly into the cue token embedding difference
+plus the outputs of components at `p_c` below `L_T`. If `L00.MLP` (with any
+other declared E component) carries at least half of that axis, E is those
+components and prediction family P4 applies. If the embedding difference alone
+carries more than half, the mechanism declares E as the direct embedding path
+and P4′ applies instead: pair-centered neutralization of every non-embedding
+component at `p_c` must retain at least half of the contrast shift. The rule
+is applied once, on development data, and recorded in the lock.
 
 ## Three-tier data policy
 
 ### Tier A — discovery on `selection-development` (exploratory)
 
-All 120 development cases are discovery data. The compactness partition from
-the screen is no longer a validation boundary because both halves were
-inspected during the screen. Every Tier A number is exploratory and none is
-confirmatory evidence for the mechanism.
+All 120 development cases (twelve prompts, twenty nouns) are discovery data.
+The compactness partition from the screen is no longer a validation boundary
+because both halves were inspected during the screen. Every Tier A number is
+exploratory and none is confirmatory evidence for the mechanism. Extension
+prompts are never run in Tier A.
 
 Ordered protocol; each step writes its measurements to the results artifact
 before the next step is interpreted:
@@ -258,20 +399,19 @@ before the next step is interpreted:
 - **A0 — runtime contract.** Run the pinned Pythia-70M Bridge contract test on
   the scientific runtime and record its pass in provenance.
 - **A1 — baseline replication.** Recompute `c(x_A)`, `c(x_B)`, `d_full` for
-  all 120 development cases and 114 single-token holdout cases. Development
-  aggregates must match the screening report (mean `d_full` 5.231 development;
-  validation denominators 4.639 overall, cardinal 4.606,
-  coordinated-adjective 4.969, quantifier 4.343) within 1e-3 nats, and match
-  the screening `results.json` (sha256
+  all 120 development cases and 114 single-token holdout cases (behavioral
+  only). Development aggregates must match the screening report (mean
+  `d_full` 5.231 development; validation denominators 4.639 overall, cardinal
+  4.606, coordinated-adjective 4.969, quantifier 4.343) within 1e-3 nats, and
+  match the screening `results.json` (sha256
   `62c48c890d3d9ffab265bab24bf0b8039a05317cce46c22337afe277aa57b3f8`) per case
   within 1e-6 when that artifact is available. A mismatch stops the experiment
   as a software incident.
 - **A2 — position-resolved patching map.** For every component and every
   position `p ≥ p_c`, singleton counterfactual replacement in both directions,
-  `d_patch({j}, p)`. Positions `< p_c` are asserted to be exact no-ops. In the
-  coordinated-adjective template this yields separate maps at `p_c = 5` and
-  `p_t = 6`. Start with the coordinated-adjective template, because it
-  separates the cue from the prediction position.
+  `d_patch({j}, p)`. In the coordinated-adjective template this yields separate
+  maps at `p_c = 5` and `p_t = 6`. Start with the coordinated-adjective
+  template, because it separates the cue from the prediction position.
 - **A3 — layer-resolved cue-position residual patching.** For the
   coordinated-adjective template, replace `r_L(·, p_c)` with the counterfactual
   for `L = 0..5`. `L = 0` is the full counterfactual (recovery 1 by
@@ -281,40 +421,50 @@ before the next step is interpreted:
   in the coordinated-adjective template; record attention to `p_c` and to
   every other key position. Rank heads by attention to `p_c`. Patterns are
   measurements, not explanations.
-- **A5 — number-axis analysis.** Compute `d_num(L, p)` for every layer at `p_c`
-  and `p_t` per template; component number contributions at `L_R`; cosine
-  similarity of number axes across templates, across cue words (`two` vs
-  `several`), and across the two frames. Compute each component's direct
-  effect on the contrast through the final LayerNorm (bias-aware; the
-  per-component direct effects plus bias terms must reconstruct `c(x)` within
-  1e-4 nats on every case, and a violation is a software incident that stops
-  the experiment exactly as an A1 mismatch does), and its indirect effect as
-  total minus direct.
-- **A6 — path and mediation tests.** For the H1/H2/H3 rule: (i) counterfactual
-  replacement of the residual at `p_c` at the input of the candidate T head's
-  layer (`r_{L_T}(·, p_c)`, the tensor that head reads), once alone and once
-  with the candidate T head frozen at `p_t` to its clean output; the blocked
-  fraction is `(R_unfrozen − R_frozen) / R_unfrozen`; (ii) patch E∪T and
-  measure the reproduced fraction of R outputs' counterfactual
-  number-projection change (mediation); (iii) patch R outputs alone.
+- **A5 — number-axis analysis.** Estimate `d̂_s`, `μ_s`, `σ_s` for every site;
+  compute `d_num(L, p)` for every layer at `p_c` and `p_t` per template;
+  component number contributions at `L_R`; cosine similarity of number axes
+  across templates, across cue words (`two` vs `several`), and across the two
+  frames. Compute each component's direct effect on the contrast through the
+  final LayerNorm (bias-aware; the per-component direct effects plus bias
+  terms must reconstruct `c(x)` within 1e-4 nats on every case, and a
+  violation is a software incident that stops the experiment exactly as an A1
+  mismatch does), and its indirect effect as total minus direct.
+- **A6 — chain, path, and mediation tests.** (i) Counterfactual replacement of
+  E alone at `p_c` (cue-final templates: at `p_t`), letting everything
+  downstream recompute; capture the T outputs and R outputs and compute `m_T`
+  and `m_R` as the fractions of their counterfactual number changes
+  (projections onto the site axes) that this patch reproduces, plus the
+  contrast recovery. (ii) The same patch with each candidate T head frozen at
+  `p_t` to its clean output, giving `m_R|T` — the share of R's change that
+  arrives through routes other than T, such as other heads at `p_t` reading
+  `p_c` — and the contrast drop. (iii)
+  Counterfactual replacement of `r_{L_T}(·, p_c)` (the tensor T reads), once
+  alone and once with the candidate T head frozen; the blocked fraction is
+  `(R_unfrozen − R_frozen) / R_unfrozen`. (iv) Patch R outputs alone. Joint
+  E∪T patching is also recorded as a sufficiency measure but establishes no
+  chain.
 - **A7 — abstractness tests.** Cross-cue and cross-frame resample replacements
   of E at `p_t` in the cue-final templates and of T at `p_t` in the
   coordinated-adjective template; same-number sources are predicted to move
   the contrast little, opposite-number sources like the counterfactual.
-- **A8 — necessity and self-repair.** Pair-mean ablation of each candidate
-  component and of the candidate set; loss of contrast; the change in every
-  other component's direct effect after ablation (compensation ratio, defined
-  under residual accounting); conditional co-ablation of the top compensator
-  with the ablated component to expose backup routes.
-- **A9 — isolation (reconstruction) test.** With the candidate set `S_M` held
-  at its clean activations, replace every other universe component at `p_t`
-  (and at `p_c` when `p_c ≠ p_t`) with the pair mean; measure the retained
-  contrast difference `d_iso` and the fraction of pairs that keep the correct
-  sign in both conditions.
+- **A8 — necessity and self-repair.** Pair-centered neutralization of each
+  candidate component and of the candidate set; loss of contrast; the change
+  in every other component's direct effect after neutralization (compensation
+  ratio, defined under residual accounting); conditional co-neutralization of
+  the top compensator with the neutralized component to expose backup routes.
+- **A9 — isolation (circuit reconstruction) test.** With the candidate set
+  `S_M` held at its clean activations, replace every other universe component
+  at `p_t` (and at `p_c` when `p_c ≠ p_t`) with its pair-centered
+  neutralization; measure the retained contrast difference `d_iso` and the
+  fraction of pairs that keep the correct sign in both conditions.
 - **A10 — mechanism statement and set selection.** Apply the hypothesis rule,
   then choose `S_M` as the smallest set satisfying the Tier A floors below,
   breaking ties by the canonical component order. Write the mechanism
   statement (format below) as mechanism version `M1`.
+- **A11 — mechanism program.** Implement the statement as the program defined
+  below, fit its frozen parameters on development data only, and record its
+  development residuals. The program is part of the mechanism version.
 
 Tier A floors (a mechanism that fails them cannot proceed to Tier B):
 
@@ -325,18 +475,21 @@ Tier A floors (a mechanism that fails them cannot proceed to Tier B):
   24 cases) — the same strata P1 tests on the reserve;
 - isolation faithfulness `F = mean(d_iso) / mean(d_full)` ≥ 0.50 overall;
 - every declared role has at least one component with a number contribution
-  or direct effect of the declared sign.
+  or direct effect of the declared sign;
+- the mechanism program reproduces the development `d_full` sign in every
+  pair and its mean per template within 1.0 nats.
 
 Budget and stop rule: at most three mechanism versions (`M1`–`M3`) may be
 written in Tier A. Every version, including rejected ones, is retained in the
 results artifact. If no version passes the floors, the experiment ends with
-outcome `NO_COMPACT_MECHANISM`, no lock is written, and the reserve stays
-untouched. Tier A is bounded to one M1 8 GB Mac on CPU; a single discovery
-pass is estimated at well under 10,000 short forward passes.
+outcome `NO_COMPACT_MECHANISM`, no lock is written, and the reserve and
+extension sets stay untouched. Tier A is bounded to one M1 8 GB Mac on CPU;
+because there are twelve prompts, a full discovery pass is a few thousand
+short forward passes at most.
 
 A later version never re-runs discovery from scratch and never changes the
 hypothesis-rule quantities, which are recorded once. It is produced by one of
-two mechanical revisions of A10, chosen by which family failed:
+two mechanical revisions of A10/A11, chosen by which family failed:
 
 - if a set-level family failed (P1–P4, P6–P8 analogues), `S_M` is extended in
   the development singleton-ranking order at the failing role's position, one
@@ -345,8 +498,11 @@ two mechanical revisions of A10, chosen by which family failed:
   shortfall;
 - if a hypothesis-specific family failed (P5, P9 analogues), the mechanism
   adopts the next row of the decision tree that the recorded quantities did
-  not exclude, and its statement and discriminating predictions are rewritten
-  for that row.
+  not exclude, and its statement, program, and discriminating predictions are
+  rewritten for that row;
+- if only the mechanism program's floors failed, the program's fitted
+  parameters are re-estimated with the extended `S_M` or the new row; its
+  functional form (below) does not change.
 
 If neither revision is possible within the budget, the version is recorded as
 rejected.
@@ -355,9 +511,9 @@ rejected.
 
 The 114 single-token holdout cases (the six two-token `peach` cases are
 scored behaviorally only and excluded from interventions) were never used for
-component ranking. They serve two purposes: to check that the mechanism found
-on development data reproduces on nouns it was not built from, and to turn
-the prediction families below into numeric predictions with tolerance bands.
+component ranking. Because they share the twelve prompts, they test only
+readout generalization to twenty nouns the mechanism was not built from, and
+they set the numeric bands for the reserve.
 
 Rules:
 
@@ -368,12 +524,13 @@ Rules:
 - Numeric predictions for the reserve are the holdout point estimates. Each
   prediction's band is `± max(0.10, 1.5 × the holdout bootstrap standard
   error)` for recoveries and fractions, and `± 0.5 nats` for mean `d_full`.
-  The bootstrap resamples matched pairs with replacement, stratified by
-  template (38 single-token holdout pairs per template, resampled to the same
-  count), 1,000 resamples from one generator seeded with `20260918` and
+  The bootstrap resamples matched pairs (nouns) with replacement, stratified
+  by template (38 single-token holdout pairs per template, resampled to the
+  same count), 1,000 resamples from one generator seeded with `20260918` and
   consumed in a fixed family order; the standard error is the standard
   deviation of the resampled statistic. Bands are written into the lock
-  verbatim.
+  verbatim. Bands for extension-set families are the same bands, because the
+  mechanism claims frame invariance; that claim is what the extension tests.
 - For every discriminating prediction, the lock stores the band implied by
   the chosen hypothesis and the band implied by each row the tree did not
   exclude, using the same tolerance rule. A prediction counts as
@@ -381,41 +538,119 @@ Rules:
 - The number of calibration passes and every holdout number are recorded. A
   mechanism that needed two passes is labeled as such in every report.
 
-### Tier C — confirmation on `future-reserve` (exactly once)
+### Tier C — confirmation (exactly once)
 
-The reserve is executed only by the `confirm` phase, which refuses to run
-unless the committed preregistration lock validates. It runs the behavioral
-measurement and every locked prediction family, in one pass, and never
+The reserve and the extension set are executed only by the `confirm` phase,
+which refuses to run unless the committed preregistration lock validates. It
+runs the behavioral measurement and every locked prediction family on the
+reserve (twelve prompts, twenty new nouns), on the new frames (twelve new
+prompts, reserve nouns), and the behavioral, E-patch, and program families on
+the cue-word prompts (72 prompts, reserve nouns), in one pass, and never
 re-ranks, re-selects, or refits anything. A second scientific attempt requires
 a new protocol version; the first result remains reported.
 
 ## Mechanism statement format
 
 The lock carries the mechanism as text in a fixed form. Every symbol names a
-concrete component, position, direction, or scalar that is stored in the lock
-with its digest. Illustrative form (the content is decided in Tier A, not
-here):
+concrete component, position, direction, origin, scale, or gain that is stored
+in the lock with its digest. Illustrative form (the content is decided in
+Tier A, not here):
 
 ```text
 VARIABLES
-  n_c(x)  number at the cue position: sign of ( E-output(x, p_c) · d_E )
-  n_t(x)  number at the target position: sign of ( Σ_{j ∈ T ∪ E@p_t} o_j(x, p_t) · d_T )
-  c(x)    log P(singular | x) − log P(plural | x)
+  n_c(x)  = ( E-output(x, p_c) − μ_E ) · d̂_E / σ_E          number at the cue position
+  n_t(x)  = ( T-output(x, p_t) − μ_T ) · d̂_T / σ_T          number at the target position
+  c(x)    = log P(singular | x) − log P(plural | x)
 
 STAGES
-  E  <components at p_c>  : cue token → n_c along d_E                   (encoding)
-  T  <heads at p_t>       : n_t := n_c  when p_c ≠ p_t; identity otherwise (transport)
-  R  <components at p_t>  : c(x) ≈ b_N − g_template · n_t                   (readout)
+  E  <components at p_c>  : cue token → n_c                                (encoding; a lexicon over tokens)
+  T  <heads at p_t>       : n_t := k_T · n_c  when p_c ≠ p_t; n_t := n_c otherwise (transport; copy gain k_T)
+  R  <components at p_t>  : Δr(x) = g_R · n_t · d̂_R  added at the readout output     (readout; gain g_R per template)
   D  direct paths         : listed with their measured share of d_full
 
 PAIR-LEVEL PREDICTIONS
-  d_full  ≈ 2 · g_template ; sign(d_full) = sign(n_t(x_A) − n_t(x_B)) with n_t(x_A) = −1, n_t(x_B) = +1
+  d_full(N) ≈ u_N · J · ( 2 · g_R · d̂_R )  ; sign(d_full) = +1 for every pair
 ```
 
-The statement must also list, in plain language, what each stage does and
-does not explain (for example, that `b_N` — the per-noun offset — is not
-predicted by the mechanism and is why the plural condition fails on some
-spelling-change nouns, if that is what Tier A shows).
+where `u_N = W_U[:, plural] − W_U[:, singular]` for noun `N` and `J` is the
+locked linearization of the final LayerNorm defined under the mechanism
+program. The statement
+must also list, in plain language, what each stage does and does not explain
+(for example, that the per-noun offset `b_N` — the contrast a template's
+context produces before any cue effect — is context, not mechanism, and is why
+the plural condition fails on some spelling-change nouns, if that is what
+Tier A shows).
+
+## Mechanism program
+
+The mechanism program is the decompilation deliverable: a separately
+implemented function that reproduces the mechanism statement literally and
+predicts the model's behavior and intervention outcomes without running the
+network.
+
+- **Location and independence.** One module,
+  `experiments/005-regular-plural-mechanism/mechanism_program.py`, importing
+  neither the capture nor the intervention runner. It may load model
+  *weights* — the token embedding, the declared E components' parameters, the
+  final LayerNorm parameters, and the unembedding — because a token-level
+  lexicon and a readout are weights, not activations. It may evaluate the
+  declared E components' own sub-modules on a single token embedding (for
+  `L00.MLP`: block 0's second LayerNorm — `post_attention_layernorm` in
+  GPT-NeoX, `ln2` in TransformerLens — followed by block 0's MLP, with no
+  attention involved), and it does so once for the entire vocabulary to
+  produce a stored lexicon table. It must not run attention, any block beyond
+  the declared E sub-modules, or any forward pass over a prompt, and its inputs
+  never include activations of the prompt being predicted.
+- **Inputs.** A template identifier; the cue token id; the noun pair's token
+  ids; and, for per-condition predictions on the twelve manifest prompts only,
+  the locked context vector `ρ_{frame}` (the development mean of
+  `r_{L_R}(·, p_t)` over both cues of that frame), declared in the lock as
+  *unexplained context*.
+- **Frozen parameters** (all estimated in Tier A, re-estimated at most once
+  after a Tier B revision, digested in the lock): the E lexicon table
+  `n_c(token) = ( E(token) − μ_E ) · d̂_E / σ_E` for every vocabulary token,
+  where `E(token)` is the declared E components' output for that token (for
+  `L00.MLP`: `MLP_0(ln2_0(embed[token]))`, a pure token function; if E is the
+  direct embedding path under P4′, `E(token) = embed[token]`); the copy gain
+  `k_T` (the change in `n_t` per unit change in `n_c`, estimated by least
+  squares on development prompts — a linear summary that the mechanism
+  justifies by claiming T attends to `p_c` independently of the cue, which A4
+  measures and whose failure appears as program residual); the readout gain
+  `g_R` per template; the readout direction `d̂_R`; `L_R`, the layer of the
+  earliest R component in `S_M`; and the final-LayerNorm linearization `J`
+  per frame. With `LN(r) = γ ⊙ (r − mean(r)) / std(r) + β`, `J` maps a
+  residual increment `δ` at `p_t` to its effect on the normalized vector
+  around the frame's context: `J(δ) = γ ⊙ (δ − mean(δ)) / std(ρ_frame)`,
+  where `std(ρ_frame)` is the standard deviation of the development context
+  residual at `p_t` for that frame (for new frames, the mean over the
+  template's development frames). A predicted contrast shift is then
+  `Δ̂c = −u_N · J(δ)` with `u_N = W_U[:, plural] − W_U[:, singular]` (an
+  unembedding bias, if present, is a per-noun constant that cancels in every
+  shift), and the
+  mechanism's increment is `δ = g_R · Δn_t · d̂_R` plus the declared direct
+  contributions of E and T outputs.
+- **Outputs.** For any (template, cue token, noun pair): the predicted
+  cue-induced shift of `c` relative to the singular reference cue of that
+  template — always the template's own singular cue, `one` for cardinal and
+  coordinated-adjective and `each` for quantifier, regardless of the cue word
+  being predicted — `Δ̂c`, and the predicted pair `d̂_full` for any two cue
+  tokens. For
+  the twelve manifest prompts additionally the predicted per-condition `ĉ(x)`
+  using `ρ_{frame}`. For interventions: the predicted shift produced by
+  replacing E alone with the E output of another cue token — the E-route
+  contribution `Δ̂c = −u_N · J( g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R )` — which
+  is the new intervention X4 tests on unseen cue words. The E output for a
+  word is the lexicon entry, so the replacement tensor the runner uses and
+  the quantity the program reasons about are the same object.
+- **What it cannot do by design.** It has no per-frame context for extension
+  frames, so on new frames it predicts pair-level quantities only. That
+  limitation is a statement about the mechanism's scope and is reported as
+  such.
+
+Program floors are part of Tier A (development) and of the X families
+(confirmation). The program's residual — measured minus predicted, per prompt
+and per noun — is the quantitative statement of what the mechanism does not
+explain.
 
 ## Preregistered prediction families
 
@@ -428,74 +663,107 @@ claim review but cannot change the outcome. Families marked
 to every template and, where stated, per rule class pooled across templates
 (reserve: simple-suffix 60, consonant-`y` 36, sibilant-`es` 24 cases).
 
-| ID | Family | Intervention on reserve | Floor | Primary |
+### Circuit axis — reserve nouns on the twelve manifest prompts (readout generalization)
+
+| ID | Family | Intervention | Floor | Primary |
 |---|---|---|---|---|
-| B1 | Behavior replicates | none | primary pairwise accuracy ≥ 103/120 (as defined in the screen) and contrast flip ≥ 80% | precondition |
-| B2 | Pair-level behavior predicted | none (captures only) | `n_t` read from the locked components and axis equals the cue number in ≥ 95% of conditions; `d_full > 0` in ≥ 95% of pairs; mean `d_full` per template inside its band | primary |
+| B1 | Behavior replicates on new nouns | none | primary pairwise accuracy ≥ 103/120 (as defined in the screen) and contrast flip ≥ 80% | precondition |
+| B2 | Pair-level behavior predicted | none | `d_full > 0` in ≥ 95% of pairs; mean `d_full` per template inside its band | primary |
 | P1 | Sufficiency of `S_M` | counterfactual replacement of `S_M` at declared positions | `R ≥ 0.70` overall, `≥ 0.60` per template and per rule class | primary |
 | P2 | Specificity | 100 random sets of size `|S_M|` drawn per position slot (seed `20260918`) | `R(S_M) ≥ 2 · max(median random recovery, 0.05)` | primary |
-| P3 | Isolation / reconstruction | pair-mean replacement of every non-`S_M` component at `p_t` (and `p_c`); the token embedding stays intact and its direct share is reported under Q1 | `F ≥ 0.50` overall, `≥ 0.40` per template; correct sign retained in both conditions for ≥ 70% of pairs | primary |
-| P4 / P4′ | Cue-position encoding (new intervention position) | P4: counterfactual replacement of E only, at `p_c`; P4′: pair-mean ablation of every non-embedding component at `p_c` | `R ≥ 0.50` (P4) or retained shift ≥ 0.50 (P4′) | primary, coordinated-only |
+| P3 | Isolation / circuit reconstruction | pair-centered neutralization of every non-`S_M` component at `p_t` (and `p_c`); the token embedding stays intact and its direct share is reported under Q1 | `F ≥ 0.50` overall, `≥ 0.40` per template; correct sign retained in both conditions for ≥ 70% of pairs | primary |
+| P4 / P4′ | Cue-position encoding | P4: counterfactual replacement of E only, at `p_c`; P4′: pair-centered neutralization of every non-embedding component at `p_c` | `R ≥ 0.50` (P4) or retained shift ≥ 0.50 (P4′) | primary, coordinated-only |
 | P5 | Transport sufficiency and path | (a) counterfactual replacement of the declared T set alone at `p_t`; (b) counterfactual replacement of `r_{L_T}(·, p_c)` with T frozen at `p_t` | under H1: (a) `R ≥ 0.50` for the single T head and (b) blocked fraction ≥ 0.50; under H2: (a) `R ≥ 0.70` for the declared T set and (b) its blocked fraction inside the locked band | primary, coordinated-only |
 | P6 | Abstract number variable | cross-cue resample of E at `p_t` (`cardinal` ↔ `quantifier`, same noun) | opposite-number source `R ≥ 0.50`; same-number source `R ≤ 0.25` | primary (cue-final templates) |
 | P7 | Cross-frame control | cross-frame resample of `S_M` (same noun, other frame); for E this is a structural no-op because the layer-0 MLP output depends only on the cue token, so the control is informative for T and R | same-cue `R ≤ 0.25`; opposite-cue `R ≥ 0.5 · R(S_M)` | primary |
-| P8 | Necessity and self-repair | pair-mean ablation of T (coordinated) or of E (cue-final) | contrast loss `1 − d_ablated / d_full ≥ 0.30`; compensation ratio inside its band | primary for loss, secondary for compensation |
-| P9 | Mediation | counterfactual replacement of E∪T; number projections of R outputs | reproduced fraction ≥ 0.50 (H1/H2) or the H3-specific band | primary |
-| S1 | Shared number axis | none (captures only) | cosine between template-specific `d_num(L_R, p_t)` estimates on reserve ≥ 0.70 | secondary |
+| P8 | Necessity and self-repair | pair-centered neutralization of T (coordinated) or of E (cue-final) | contrast loss `1 − d_neutralized / d_full ≥ 0.30`; compensation ratio inside its band | primary for loss, secondary for compensation |
+| P9 | Chain mediation | E-alone counterfactual patch with T recomputing, then with T frozen (A6 i–ii) | under H1/H2: `m_T ≥ 0.50`, `m_R ≥ 0.50`, `m_R|T ≤ 0.5 · m_R`; under H3: the H3-specific band | primary |
+| S1 | Shared number axis | none (captures only) | cosine between template-specific `d_num(L_R, p_t)` estimates ≥ 0.70 | secondary |
 | S2 | Rule-class residual | P1 and P3 restricted to spelling-change nouns | reported | secondary |
-| S3 | Failures are readout-offset failures | none (captures only) | in reserve conditions the model gets wrong, `n_t` still equals the cue number in ≥ 80% of them | secondary, discriminating |
-| Q1 | Residual accounting | derived from P1, P3, B2 | reported, never gated | report |
+| S3 | Failures are readout-offset failures | none (captures only) | in reserve conditions the model gets wrong, `sign(n_t)` still equals the cue number in ≥ 80% of them | secondary, discriminating |
+| Q1 | Residual accounting | derived from P1, P3, B2, and the program | reported, never gated | report |
+
+Because activations on these prompts are identical to development
+activations, P1–P9 on the reserve test whether the locked component-level
+effects read out correctly through twenty new unembedding row pairs. They are
+labeled readout-generalization results in every report.
+
+### Decompilation axis — extension prompts with reserve nouns (prompt-side generalization)
+
+| ID | Family | Prompts | Floor | Primary |
+|---|---|---|---|---|
+| X1 | Frame invariance of behavior | six new frames × two cues × 20 nouns | `d_full > 0` in ≥ 90% of the 120 pairs; `sign(n_c)` and `sign(n_t)` read from the new prompts equal the cue number in at least 11 of the 12 new prompts; mean `d_full` per template inside the reserve band | primary |
+| X2 | Frame invariance of the circuit | P1, P3, P4/P4′, P5, P8, P9 repeated on the new frames | the same floors as the corresponding P family | primary |
+| X3 | Cue lexicon predicts unseen cue words (behavior) | twelve new cue words × six original frames × 20 nouns | Spearman correlation between the program's `n_c(w)` and the measured mean shift of `c` relative to the template's singular reference cue (`one` or `each`), pooled over frames and nouns, ≥ 0.70 across the twelve words; sign agreement ≥ 90% of (word, frame) combinations for words with `abs(n_c(w)) ≥ 0.5`; if any word has `abs(n_c(w)) < 0.5`, its measured mean absolute shift is below half the template's locked full shift in ≥ 75% of its (word, frame) combinations | primary |
+| X4 | Program predicts a new intervention for unseen cue words | for each word and original frame, counterfactual replacement of E alone (at `p_c`) in the singular-reference prompt with the model's E output for the word-substituted prompt; the program predicts the shift as `Δ̂c = −u_N · J( g_R · k_T · (n_c(w) − n_c(ref)) · d̂_R )` | Spearman ≥ 0.70 between predicted and measured shifts across the twelve words; mean absolute error ≤ 0.25 × the template's locked full shift | primary |
+| X5 | Program residual | all extension prompts | mean absolute error of `Δ̂c` and `d̂_full` in nats; fraction of variance explained; reported per template and per cue word | report |
+
+X1–X4 are what distinguish "these components suffice" from "we recovered what
+they compute". They are evaluated once, on prompts the project has never run.
 
 Discriminating predictions: the lock must contain at least one prediction
-whose band differs between the chosen hypothesis and each rejected one (P5 and
-P9 are designed for this; S3 separates "the cue is misread" from "the number
-is read correctly but the readout gain does not overcome the noun's prior").
-A reserve result that falls inside the rejected hypothesis's band and outside
-the chosen one contests the mechanism even when P1–P3 pass.
+whose band differs between the chosen hypothesis and each rejected one (P5,
+P9, and X4 are designed for this; S3 separates "the cue is misread" from "the
+number is read correctly but the readout gain does not overcome the noun's
+prior"). A reserve or extension result that falls inside a rejected
+hypothesis's band and outside the chosen one contests the mechanism even when
+P1–P3 pass.
 
 ### Outcome rule
 
-Applied mechanically after the single reserve run:
+Applied mechanically after the single confirmation run, on two axes:
+
+- Circuit axis: `CIRCUIT_PASS` if every primary P/B floor passes, else
+  `CIRCUIT_FAIL` naming the families.
+- Decompilation axis: `PROGRAM_PASS` if every primary X floor passes, else
+  `PROGRAM_FAIL` naming the families.
+
+Overall outcome:
 
 - `BEHAVIOR_NOT_REPLICATED` — B1 fails. The mechanism test is inconclusive,
   not falsified; no other family is interpreted as confirmatory.
-- `MECHANISM_CONFIRMED` — every primary floor passes and every primary band
-  is hit.
-- `MECHANISM_SUPPORTED_MISCALIBRATED` — every primary floor passes; at least
-  one primary band is missed. The missed bands are listed as the mechanism's
-  quantitative residual.
-- `MECHANISM_CONTESTED` — every primary floor passes but at least one
-  discriminating prediction lands outside the chosen hypothesis's band and
-  inside a rejected hypothesis's band. A result outside both bands is a
-  missed band (miscalibration), not a contest.
-- `MECHANISM_NOT_SUPPORTED` — at least one primary floor fails. The failing
-  families name the falsified stage (encoding, transport, readout, isolation,
-  specificity, or abstraction).
+- `MECHANISM_CONFIRMED` — `CIRCUIT_PASS`, `PROGRAM_PASS`, and every primary
+  band is hit.
+- `MECHANISM_SUPPORTED_MISCALIBRATED` — `CIRCUIT_PASS` and `PROGRAM_PASS`; at
+  least one primary band is missed. The missed bands are listed as the
+  mechanism's quantitative residual.
+- `CIRCUIT_ONLY` — `CIRCUIT_PASS` but `PROGRAM_FAIL`. The components are
+  sufficient and specific, but the explicit computation attributed to them is
+  wrong or incomplete; the failing X families name where.
+- `MECHANISM_CONTESTED` — both axes pass but at least one discriminating
+  prediction lands outside the chosen hypothesis's band and inside a rejected
+  hypothesis's band. A result outside both bands is a missed band
+  (miscalibration), not a contest.
+- `MECHANISM_NOT_SUPPORTED` — `CIRCUIT_FAIL`. The failing families name the
+  falsified stage (encoding, transport, readout, isolation, specificity, or
+  abstraction).
 
 There are no scientific retries. A software defect discovered after the
-reserve run follows the screening incident rule: incident note, invalidation
-of the affected artifacts, committed fix, and a rerun of the *entire*
-confirmation only under a new protocol version whose report also carries the
-invalidated result.
+confirmation run follows the screening incident rule: incident note,
+invalidation of the affected artifacts, committed fix, and a rerun of the
+*entire* confirmation only under a new protocol version whose report also
+carries the invalidated result.
 
 ## Residual accounting and self-repair definitions
 
 - **Unexplained sufficiency residual:** `1 − R(S_M)` overall, per template,
   and per rule class.
 - **Unexplained isolation residual:** `1 − F(S_M)` on the same strata.
-- **Behavioral residual:** the fraction of reserve pairs whose `d_full` sign
-  or band the mechanism mispredicts, and the mean absolute error of the
-  pair-level `d_full` prediction in nats.
+- **Behavioral residual:** the fraction of pairs whose `d_full` sign or band
+  the mechanism mispredicts, and the mean absolute error of the pair-level
+  `d_full` prediction in nats, on the reserve and on each extension family.
+- **Program residual:** measured minus program-predicted `Δc` per prompt and
+  noun, summarized per template, per frame, and per cue word.
 - **Direct-effect decomposition:** for each component `j` at `p_t`, the direct
   effect `DE_j(x)` is its output's contribution to `c(x)` through the actual
   final LayerNorm statistics of that run and the complete unembedding; bias
   terms are reported separately; `Σ_j DE_j + biases = c(x)` is verified to
   1e-4 nats on every case.
-- **Compensation ratio:** after pair-mean ablation of a component `k`,
-  `Σ_{j ≠ k} (DE_j' − DE_j) / DE_k`, computed on the pair difference. Values
-  near 0 mean no repair; values near 1 mean full backup. Conditional
-  co-ablation of `k` with its top compensator reports how much the necessity
-  effect grows.
+- **Compensation ratio:** after pair-centered neutralization of a component
+  `k`, `Σ_{j ≠ k} (DE_j' − DE_j) / DE_k`, computed on the pair difference.
+  Values near 0 mean no repair; values near 1 mean full backup. Conditional
+  co-neutralization of `k` with its top compensator reports how much the
+  necessity effect grows.
 
 ## Preregistration lock
 
@@ -503,25 +771,30 @@ invalidated result.
 hard integrity boundary in the style of the Experiment 004 selection lock. It
 records:
 
-- manifest path and digest; the exact case IDs of the three splits and a
-  digest of the reserve cases in manifest order;
+- manifest path and digest; the extension-set path and digest; the exact case
+  IDs of the three splits and a digest of the reserve cases in manifest order;
 - pinned model identifier and revision; runtime and seeds;
 - the mechanism statement text and its digest; the chosen hypothesis row and
   the discriminating quantities that selected it;
-- `S_M` with each component's role and declared positions; the number axes
-  (`d_E`, `d_T`, `d_num(L_R, p_t)`) stored as separately named tensor
+- `S_M` with each component's role and declared positions; the number-variable
+  parameters (`d̂_s`, `μ_s`, `σ_s` for every site) and the program parameters
+  (`k_T`, `g_R`, `d̂_R`, `J`, `ρ_{frame}`) stored as separately named tensor
   artifacts with shape, dtype, and SHA-256 digests;
+- the digest of `mechanism_program.py` at lock time and the program's
+  development and holdout residuals;
 - every prediction family with its floor, point prediction, band, and the
-  holdout numbers it came from;
+  holdout numbers it came from; the program's predicted values for every X
+  family, computed at lock time without running any extension prompt;
 - the Tier A results-artifact digest, the Tier B results-artifact digest, the
   number of calibration passes, and the mechanism version;
 - the protocol/code commit at lock time and the lock creation timestamp.
 
-The `confirm` phase verifies schema and content, recomputes the manifest and
-artifact digests, checks that the lock file is tracked and committed, that the
-working tree is clean, that the current code commit is the lock commit or a
-descendant whose diff touches no scientific path, and that the reserve has
-never been executed. It has no override flag. It never regenerates the lock.
+The `confirm` phase verifies schema and content, recomputes the manifest,
+extension, program, and artifact digests, checks that the lock file is tracked
+and committed, that the working tree is clean, that the current code commit is
+the lock commit or a descendant whose diff touches no scientific path, and
+that neither the reserve nor any extension prompt has ever been executed. It
+has no override flag. It never regenerates the lock.
 
 ## Claim and anomaly handling
 
@@ -530,18 +803,22 @@ never been executed. It has no override flag. It never regenerates the lock.
   disposition `ACTIVE`, origin `confirmatory`, with the mechanism statement as
   its hypothesis and the prediction families as its predictions. Its gates
   cite Tier A and Tier B evidence as exploratory and methodological only.
-- After the reserve run, claim review follows the methodology: the reserve
+- After the confirmation run, claim review follows the methodology: the
   evidence can support at most `CAUSAL_EVIDENCE` (Level 3) and
-  `FALSIFICATION_TESTED` (Level 4). Level 5 may be claimed only along the axis
-  "new lexical items within the same three templates". Level 6 gates are
-  reviewed individually (mechanism specified; unseen behavior predicted;
-  unseen interventions predicted; reconstruction retained; residual
-  quantified) and the claim states which are met; `ALGORITHMIC_EXPLANATION`
-  is not asserted merely because all six are checked within one behavior.
+  `FALSIFICATION_TESTED` (Level 4). Level 5 may be claimed only along the axes
+  "new lexical items", "new frames of the same three templates", and "new cue
+  words in the original frames", each stated separately with where it failed.
+  Level 6 gates are reviewed individually (mechanism specified; unseen
+  behavior predicted; unseen interventions predicted; reconstruction retained;
+  residual quantified) and the claim states which are met;
+  `ALGORITHMIC_EXPLANATION` is not asserted merely because all six are checked
+  within one behavior. A `CIRCUIT_ONLY` outcome caps the claim below Level 6
+  by construction.
 - An unexpected measurement (for example a component with a large negative
-  number contribution, or self-repair that exceeds the removed effect) is
-  recorded under `research/anomalies/` with full discovery provenance rather
-  than folded into the mechanism silently.
+  number contribution, self-repair that exceeds the removed effect, or a cue
+  word whose measured shift opposes its lexicon sign) is recorded under
+  `research/anomalies/` with full discovery provenance rather than folded into
+  the mechanism silently.
 
 ## Relationship to prior work and novelty boundary
 
@@ -574,12 +851,13 @@ and the compensation ratio are part of the design rather than optional.
 
 What this experiment adds, if it succeeds, is the full prospective chain for
 one naturally learned computation in an unmodified pretrained model: exposed
-data → explicit mechanism statement → committed numeric predictions about
-untouched examples, including interventions at positions and with replacement
-sources that the behavior-selecting screen never used → one execution →
-residual accounting and self-repair bounds. The mechanism is built on
-development data, calibrated once or twice on holdout data, and tested once
-on reserve data; the reserve is the only evidence that counts as confirmatory.
+data → explicit mechanism statement → a program that runs without the network
+→ committed numeric predictions about unseen nouns, unseen prompts, and
+interventions at positions and with replacement sources that the
+behavior-selecting screen never used → one execution → residual accounting
+and self-repair bounds. The mechanism is built on development data,
+calibrated once or twice on holdout data, and tested once on reserve and
+extension data; only that last execution counts as confirmatory.
 "Prospective neural decompilation" is the protected idea; the plural
 mechanism is its first instance.
 
@@ -588,20 +866,29 @@ mechanism is its first instance.
 - The behavior is pairwise preference between two noun forms; the mechanism
   does not predict full-vocabulary top-1 output and the experiment does not
   test it.
-- Number axes are mean-difference directions estimated on development data;
-  they are analysis coordinates, not claimed model features.
-- Pair-mean and resample replacements are justified for these matched pairs
-  only; conclusions about necessity are scoped to those replacement
-  distributions.
+- All prompt-side computation in the manifest lives in twelve prompts. Reserve
+  results are readout-generalization results; prompt-side generalization
+  rests on six new frames and twelve new cue words, all with the cue one
+  token (cue-final) or two tokens (coordinated) from the prediction position.
+- Number variables are centered, scaled projections onto mean-difference
+  directions estimated from four cue tokens and twelve prompts; they are
+  analysis coordinates, not claimed model features.
+- Pair-centered neutralization and resample replacements are justified for
+  these matched pairs only; necessity and isolation conclusions are scoped to
+  those replacement distributions and do not transfer to other ablation
+  schemes.
 - Direct-effect decompositions through LayerNorm are exact for the measured
   run but attribute nonlinear interactions to whichever component's output
   changed; they are accounting, not mechanism.
+- The mechanism program linearizes the readout and the final LayerNorm and
+  treats the frame's context vector as unexplained; its residual is the
+  measure of that simplification.
 - Cue-final templates cannot distinguish "transport" from "local encoding"
   because `p_c = p_t`; transport claims rest on the coordinated-adjective
-  template alone, with a cue-to-noun distance of exactly one token.
+  template alone.
 - Nothing here generalizes beyond the pinned checkpoint, the three templates,
-  the two frames per template, the cue words `one`/`two`/`each`/`several`,
-  and single-token nouns of three regular rule classes.
+  the frozen frames and cue words, and single-token nouns of three regular
+  rule classes.
 
 ## Outputs
 
@@ -609,6 +896,8 @@ mechanism is its first instance.
 experiments/005-regular-plural-mechanism/
     README.md
     run.py                       # phases: validate, discover, calibrate, lock, confirm, report
+    extension-v1.json            # frozen before discover; tokenizer-only construction
+    mechanism_program.py         # the decompiled computation; runs without the network
     preregistration-lock.json    # committed before confirm; absent until then
     evidence/                    # verbatim copies of the reports actually used for claims
 
@@ -616,8 +905,8 @@ outputs/experiment-005/          # generated, gitignored
     discovery-results.json       # every Tier A measurement, every mechanism version
     calibration-results.json     # every Tier B pass
     candidate-lock.json          # written by `lock`, reviewed and moved by hand
-    confirmation-results.json    # the single reserve run
-    axes/                        # number-axis tensors with digests
+    confirmation-results.json    # the single reserve + extension run
+    parameters/                  # number-variable and program tensors with digests
     report.md
 ```
 
@@ -632,30 +921,45 @@ After approval, implementation is limited to:
 1. one experiment module (for example `plural_mechanism.py`) that reuses
    `candidate_screening` manifest loading, contrast and recovery arithmetic,
    deterministic random sets, and the component universe, and adds
-   position-indexed capture/patching, pair-mean and resample sources, freeze
-   interventions, number-axis and direct-effect analysis, the hypothesis rule,
-   prediction-family evaluation, band computation, and the lock schema;
-2. one runner with the six phases above, phase isolation enforced through the
+   prompt-level (rather than case-level) execution with all-noun readout,
+   position-indexed capture/patching, pair-centered and resample sources,
+   freeze interventions, number-variable and direct-effect analysis, the
+   hypothesis rule, prediction-family evaluation, band computation, the
+   extension-set builder, and the lock schema;
+2. the mechanism program module, kept free of capture/intervention imports;
+3. one runner with the six phases above, phase isolation enforced through the
    results state exactly as in the screen (a `confirm` without a committed
-   lock, a second `confirm`, or a third `calibrate` refuses to run);
-3. focused offline tests for position normalization, structural no-op
-   assertions, exact decomposition identities, pair-mean and resample
-   construction, freeze correctness, hypothesis-rule determinism, band
-   arithmetic, lock validation, reserve non-execution, and phase refusal;
-4. one Markdown report renderer.
+   lock, a second `confirm`, a third `calibrate`, or any phase without the
+   committed extension digest refuses to run);
+4. focused offline tests for position normalization, structural no-op
+   assertions, exact decomposition identities, pair-centered and resample
+   construction, freeze correctness, number-variable centering, hypothesis-rule
+   determinism, chain-mediation arithmetic, program independence from the
+   runner, band arithmetic, extension-set immutability, lock validation,
+   reserve and extension non-execution, and phase refusal;
+5. one Markdown report renderer.
 
 It must not introduce sparse autoencoders, automated circuit search beyond the
 enumerated 54-component universe, gradient attribution, path patching through
-attention keys/queries, new prompts, Pythia-160M, a plugin system, a database,
-or a dashboard. The instrumentation modules are extended only if a narrow
-defect is found.
+attention keys/queries, prompts beyond the manifest and the frozen extension
+set, Pythia-160M, a plugin system, a database, or a dashboard. The
+instrumentation modules are extended only if a narrow defect is found.
+
+## Future work explicitly deferred
+
+Cue-to-noun distances beyond two tokens, nouns outside the reserve, cue words
+beyond the frozen twelve, other templates, other checkpoints, and other model
+families are each a separate design with their own frozen prompts. None may
+be added to Experiment 005 after the `discover` phase has run.
 
 ## Approval and stopping condition
 
 This design is complete when it has been reviewed against the research
 methodology and the screening evidence, amended where the review requires,
 and explicitly approved by the user. Only then is an implementation plan
-written and the experiment directory created. Tier C may begin only after the
-preregistration lock is committed. The experiment stops after the single
-reserve run, the outcome rule, the claim review, and the evidence copies, with
-every rejected mechanism version and every missed band retained in the record.
+written and the experiment directory created. The extension set is frozen
+before `discover`; Tier C may begin only after the preregistration lock is
+committed. The experiment stops after the single confirmation run, the
+outcome rule, the claim review, and the evidence copies, with every rejected
+mechanism version, every missed band, and every program residual retained in
+the record.
