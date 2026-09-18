@@ -73,4 +73,32 @@ own mechanism description (its component order fixes float summation order); `ex
 and context tensor, and the gains `g_R` printed in the 005 lock statement to be reproduced (an incident otherwise)
 and records whether the whole parameter index digest equals the 005 lock's.
 
-## Status — 2026-09-18: implemented; Tier A not yet run
+## Status — 2026-09-18: Tier A executed once; the pre-lock quality gate passed; candidate lock awaiting installation
+
+`explore` ran once on protocol/code commit `cc56014` (run `81e578c5e6d41814`; A0 passed; CPU float32, 4 BLAS threads). The
+rendered Tier A report is copied verbatim to
+[`evidence/exploration-report-2026-09-18.md`](evidence/exploration-report-2026-09-18.md). Ledger: 36 prompt keys (the
+twelve exposed frames' cue prompts and reference prompts), 60 noun keys; no confirmation prompt, fresh noun, fresh
+frame, or fresh cue token was executed.
+
+- Inherited responses: the recomputed 192 E-patch mean shifts match Experiment 006 exactly (max deviation 0.0;
+  informational residual-norm deviation 1.8e-6).
+- Leave-one-cue-out (supervised cross-moment SVD, cue-level MAE ± SE over the 16 held-out tokens): r1 1.079 ± 0.198,
+  r2 1.156 ± 0.195, r3 1.176 ± 0.200, r4 1.061 ± 0.204. Eligible {1} (no rank reaches 0.8 × error₁ = 0.863);
+  **selected r = 1**. Every fold: rank(C) ≥ 5, all gaps ≥ 1e-8, rank(Z_T) = r in every template; final fit rank(C) 15,
+  gaps 0.454 / 0.363 / 0.078 / 0.0061.
+- Quality gate **passed**: Spearman 0.765 (≥ 0.70), normalized LOCO RMSE 0.320 (≤ 0.50); τ = 3.972 nats (3 × RMSE of
+  the cue-level errors; dominated by `a` 3.46, `all` 1.84, `every` 1.74, `both` 1.64).
+- Comparison (recorded, not gating): the supervised subspace beats `PCA-006` at every rank by about 50% (ratios
+  0.47–0.51; the stated ≥ 20% prediction is met). `Ridge-full` LOCO error 0.860 (ratio 0.80 to the selected rank;
+  the smallest grid multiplier 0.01 was chosen in all sixteen outer folds). `E005-scalar` cue-level error 1.410.
+- `E005-scalar` refit with the 005 lock's mechanism order reproduces the frozen Experiment 005 program exactly: every
+  parameter tensor digest and k_T match, and the parameter file's text digest `c51f8fed…` equals the 005 lock's
+  `parameters_index_sha256`. (The results state's `matches_experiment_005_lock: False` flag compares a canonical-JSON
+  digest with that file digest — a convention mismatch inherited from Experiment 006's code, not a difference in
+  parameters.)
+- `calibrate` and `lock` ran at the same commit. Candidate lock: `outputs/experiment-007/candidate-lock.json`,
+  content sha256 `de0ae866a5625811ef8fcf01f60c0b563aeebb03f7c3f80e058a0bf82216dd96` (rank 1, τ 3.972; predictions for
+  all 24 fresh tokens × 6 fresh frames × 20 fresh nouns and the 6 fresh-frame cue pairs, for `selected`, `pca-006`,
+  `e005-scalar`, and `ridge-full`). Installing it as `preregistration-lock.json` and committing it is the
+  preregistration act; `confirm` then runs once.
