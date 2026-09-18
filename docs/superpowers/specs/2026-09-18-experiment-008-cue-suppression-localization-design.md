@@ -2,9 +2,9 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 2, approved for implementation planning (the reviewer approved revision 1's direction subject to
-the two corrections listed under "Revision history", which this revision makes). No Experiment 008 directory or model
-run exists. Experiments 005–007 are closed and are not amended by this document.
+**Status:** Revision 3 (pre-measurement clarification of M3's baseline, made during implementation planning; no
+threshold, label, or other measurement changed). Revision 2 was approved for implementation planning. No Experiment
+008 model run exists. Experiments 005–007 are closed and are not amended by this document.
 
 **Kind:** Discovery-only, discriminating. No confirmation set is frozen, no lock is written, no claim is promoted.
 The deliverable is a mechanically derived localization statement that becomes the hypothesis of a later prospective
@@ -133,11 +133,20 @@ Run two more E-patches in the reference prompt: `E(ref_T) + ΔE_∥` (axis compo
 
 ### M3 — Cross-context patching (all 40 tokens × 18 frames)
 
-Two runs per (token, frame): (i) the prompt with `w` as the actual cue token (its embedding and layer-0 attention
-context) with the `L00.MLP` output at `p_c` replaced by `E(pl_T)`, the template's plural cue encoding; (ii) the prompt
-with `pl_T` as the actual cue with the `L00.MLP` output replaced by `E(w)`. Each is compared with the clean run of the
-same prompt. Prompts with `w` as the cue are built from the frame and the token id exactly as the 006/007 token prompts
-were; the clean behavioral shift `Δc_beh(w, f)` of every such prompt is recorded as well.
+The encoding swap is measured inside a fixed context, so that context effects and encoding effects do not mix. With
+`prompt_w` the prompt that has `w` as the actual cue token (its embedding and layer-0 attention context) and
+`prompt_pl` the template's plural-cue prompt, four patched runs per (token, frame):
+
+```text
+x_in  numerator:  c[prompt_w  with E(pl_T)] − c[prompt_w  with E(ref_T)]    the plural encoding's effect inside w's context
+x_out numerator:  c[prompt_pl with E(w)]    − c[prompt_pl with E(ref_T)]    w's encoding's effect inside the plural cue's context
+context-only:     c[prompt_w  with E(ref_T)] − c_ref                         w's embedding/attention context with the reference encoding
+```
+
+(the `prompt_pl with E(ref_T)` run is shared by every token of a frame; for `w = ref_T` the `prompt_w with E(ref_T)`
+run is the clean reference run by the zero-by-definition convention). Prompts with `w` as the cue are built from the
+frame and the token id exactly as the 006/007 token prompts were; the clean behavioral shift
+`Δc_beh(w, f) = c[prompt_w] − c_ref` of every such prompt is recorded as well.
 
 ### M4 — Direct-effect delta decomposition (all 40 tokens × 18 frames, from M1's runs)
 
@@ -167,8 +176,10 @@ terms of the two LayerNorms differ, so each run is decomposed with its own scale
   and on the downstream causal deltas (`R2`, `R3`, the direct effects).
 - **Component fractions.** `r_∥ = Δc_∥ / Δc(pl_T, f)`, `r_⊥ = Δc_⊥ / Δc(pl_T, f)`, `r_full = ŝ_c`; additivity gap
   `g = r_full − (r_∥ + r_⊥)`.
-- **Context fractions.** `x_in(w, f) = Δc[E(pl_T) in the w-cue prompt] / Δc(pl_T, f)` (does an ordinary plural
-  encoding survive in `w`'s context?), `x_out(w, f) = Δc[E(w) in the pl_T-cue prompt] / Δc(pl_T, f)`.
+- **Context fractions.** `x_in(w, f)` = the `x_in` numerator above `/ Δc(pl_T, f)` (does an ordinary plural encoding
+  produce its effect inside `w`'s context?), `x_out(w, f)` = the `x_out` numerator `/ Δc(pl_T, f)` (does `w`'s
+  encoding produce its (lack of) effect inside an ordinary plural context?); the context-only shift is reported as a
+  fraction of `Δc(pl_T, f)` as well.
 - **Cancellation index.** `C(w, f) = Σ_k |ΔDE_k| / |Σ_k ΔDE_k|` over the terms `k` at `p_t`, with the denominator
   floored at `0.25 |Δc(pl_T, f)|`; the two largest opposing terms are named.
 - **Aggregation.** Token-level values are means over the eighteen frames (and over each template's frames
@@ -179,8 +190,8 @@ terms of the two LayerNorms differ, so each run is decomposed with its own scale
 Constants: `s_min = 0.3`, `κ = 0.5`, `g_max = 0.25`, `x_min = 0.5`, `C_min = 2.0`, probe-validity floor `0.5`,
 consensus fraction `0.75`.
 
-1. **Probe validity (checked first, on the four original cues in every frame).** The axis-only patch of the plural cue
-   must reproduce its own effect: `r_∥(pl_T, f) ≥ 0.5` in at least 75% of frames, else the component-patching probe
+1. **Probe validity (checked first, on the template's plural cue in every frame).** The axis-only patch of the
+   plural cue must reproduce its own effect: `r_∥(pl_T, f) ≥ 0.5` in at least 75% of frames, else the component-patching probe
    (M2) is `PROBE_INVALID` and rules 3–4 are withheld (the trace and the other measurements are still reported). The
    identity `Δ_{R0} = ΔE_T(w)` must hold to 1e-4 in every run (else incident), and the direct-effect identity and
    model gap must hold within Experiment 005's tolerances in every run (else incident).
@@ -276,3 +287,10 @@ the per-token table are the deliverable; the localization statement is then hand
   (2) The anomaly score is sign-normalized, `a = sign(p) × (m − p)`, so suppression is negative and amplification
   positive for either orientation; the mean `|p|` is recorded beside it. (3) The attention fraction is declared
   descriptive supporting evidence throughout. No threshold, measurement, or label changed.
+- **Revision 3** (pre-measurement, during implementation planning): M3's baseline is the same prompt patched with the
+  reference encoding rather than its clean run, so that `x_in` and `x_out` measure the encoding swap inside a fixed
+  context (with the clean-run baseline, `x_in` of the plural cue itself would be identically zero and `x_in` of other
+  tokens would mix their context effect with the encoding effect); the context-only shift is recorded separately.
+  Probe validity is stated on the plural cue (the singular cue's axis-only patch is the identity). Stage fractions
+  and `ŝ_c` use the same uninformative-denominator convention (`|Δc(pl_T, f)| < 0.25` nats → `None`). No threshold,
+  label, or other measurement changed.
