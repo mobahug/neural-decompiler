@@ -107,6 +107,9 @@ with `PROGRAM_CAPPED`; its prospective question is whether the E → T → R cir
 unseen frames. The first continuation selection (`M2`, k = 2, isolation overall 0.513 but 0.365 on the
 coordinated-adjective template) was superseded before Tier B when the eligibility rule was corrected to apply
 the P3 per-template isolation floor; `M3` = k = 3 (E `L00.MLP`, T `L03.H04`, R `L04.MLP` + `L05.MLP`) is the
-mechanical choice under the amended rule. Diagnostic only: the clean model flips 87/120 development pairs and
-the k = 3 isolation retains 80 (≈ 92% conditional retention). Reserve nouns and extension prompts were
-unexecuted when the continuation was adopted.
+mechanical choice under the amended rule (`continue` run 2, results state sha256
+`b8e89bbdd54fc0cdee3ae04461a53eda4d883608851d9e29408e1f1baddfe263`). Diagnostic only: the clean model flips
+87/120 development pairs and the k = 3 isolation retains 80 (≈ 92% conditional retention); the
+`retention_diagnostic` field stored inside the M3 version record double-counted holdout flips (185) because of a
+filter bug fixed immediately afterwards — the lock and the report recompute it correctly, and the field is not
+a selection criterion. Reserve nouns and extension prompts were unexecuted when the continuation was adopted.

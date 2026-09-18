@@ -189,3 +189,12 @@ def test_loading_a_revision_4_state_adds_the_continuation_phase(tmp_path):
     pm.write_results_state(tmp_path / "results.json", state)
     loaded = pm.load_results_state(tmp_path / "results.json")
     assert loaded["phases"]["continue"] == {"status": "not_started"}
+
+
+def test_retention_diagnostic_counts_only_development_flips():
+    measurements = {"regular-plural-selection-development-cardinal-01": {"contrast_flip": True},
+                    "regular-plural-selection-development-cardinal-02": {"contrast_flip": False},
+                    "regular-plural-selection-holdout-cardinal-01": {"contrast_flip": True}}
+    attempt = {"isolation": {"sign_retention": {"retained": 1, "total": 2}}}
+    diagnostic = pm.retention_diagnostic({"discovery": {"a1": {"measurements": measurements}}}, attempt)
+    assert diagnostic["clean_development_flips"] == 1 and diagnostic["conditional_retention"] == 1.0

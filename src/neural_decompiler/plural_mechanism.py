@@ -3022,6 +3022,7 @@ def build_candidate_lock(*, state: Mapping[str, Any], version: Mapping[str, Any]
         "calibration": {"passes": len(state["calibration"]["passes"]), "floors": calibration["floors"], "n_cases": calibration["n_cases"]},
         "x_predictions": x_predictions,
         "tier_a_results_sha256": state.get("state_sha256"), "discovery_steps": sorted(state["discovery"]),
+        "retention_diagnostic": retention_diagnostic(state, state["discovery"]["a10_selection"]["attempts"][version["k"]]) if version.get("continuation") else None,
     }
     lock["content_sha256"] = sha256_text(canonical_json({key: value for key, value in lock.items() if key != "content_sha256"}))
     return lock
@@ -3273,6 +3274,16 @@ def continuation_eligible(attempt: Mapping[str, Any]) -> tuple[bool, list[str]]:
     return not failures, failures
 
 
+def retention_diagnostic(state: Mapping[str, Any], attempt: Mapping[str, Any]) -> dict[str, Any]:
+    """Isolation sign retention relative to the clean model's own development flips; never a selection criterion."""
+    measurements = state["discovery"].get("a1", {}).get("measurements") or {}
+    development = [case for case_id, case in measurements.items() if f"-{Split.DEVELOPMENT.value}-" in case_id]
+    clean_flips = sum(1 for case in development if case.get("contrast_flip")) if development else None
+    retention = attempt["isolation"]["sign_retention"]
+    return {"clean_development_flips": clean_flips, "isolation_retained": retention["retained"], "total": retention["total"],
+            "conditional_retention": (retention["retained"] / clean_flips) if clean_flips else None, "note": "diagnostic only; not a selection criterion"}
+
+
 def continuation_attempt(state: Mapping[str, Any]) -> dict[str, Any]:
     """The smallest recorded v1 selection attempt eligible under the amended rule; no new search."""
     attempts = state["discovery"]["a10_selection"]["attempts"]
@@ -3322,10 +3333,7 @@ def adopt_continuation(ctx: DiscoveryContext, *, state: dict[str, Any], results_
     cap_reason = PROTOCOL_V2_CAP_REASON + f"; recorded quantities: " + ", ".join(
         f"{template} gap {entry['gap']:.3f}" for template, entry in attempt["program_floors"].get("templates", {}).items())
     statement = render_mechanism_statement(mechanism, parameters, hypothesis=hypothesis["row"], flagged=hypothesis["flagged"], capped=True, encoding=encoding, cap_reason=cap_reason)
-    clean_flips = sum(1 for case in state["discovery"].get("a1", {}).get("measurements", {}).values() if case.get("contrast_flip")) if state["discovery"].get("a1", {}).get("measurements") else None
-    retention = attempt["isolation"]["sign_retention"]
-    diagnostic = {"clean_development_flips": clean_flips, "isolation_retained": retention["retained"], "total": retention["total"],
-                  "conditional_retention": (retention["retained"] / clean_flips) if clean_flips else None, "note": "diagnostic only; not a selection criterion"}
+    diagnostic = retention_diagnostic(state, attempt)
     version = {
         "version": f"M{int(previous['version'][1:]) + 1}", "status": "candidate", "continuation": True, "protocol_version": 2,
         "continuation_rule": CONTINUATION_RULE_ID, "continuation_of": previous["version"], "adopted_attempt_k": attempt["k"],
