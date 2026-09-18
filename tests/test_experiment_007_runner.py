@@ -13,6 +13,7 @@ import pytest
 from neural_decompiler import cue_decompilation as cd
 from neural_decompiler import plural_mechanism as pm
 from neural_decompiler import supervised_subspace as ss
+from neural_decompiler.models import PYTHIA_70M
 from plural_fakes import TinyPlural
 
 ROOT = Path(__file__).parents[1]
@@ -57,7 +58,7 @@ def sandbox(tmp_path):
     recorded = {f"{token}|{frame_id}": {"template_id": r.template_id, "mean_shift": pm._mean(list(r.shifts.values())), "delta_norm": float(r.delta_residual.norm()), "circuit_share": r.circuit_share}
                 for (token, frame_id), r in responses.items()}
     payload = ss.inherited_extract_payload(recorded, source={"path": "fake", "file_sha256": "0" * 64, "state_sha256": "1" * 64, "run_id": "fake", "protocol_code_commit": "b" * 40, "explore_completed_at": "t"},
-                                           manifest_sha256=manifest_sha256, extension_sha256=extension.content_sha256, confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": "fake", "revision": "0"})
+                                           manifest_sha256=manifest_sha256, extension_sha256=extension.content_sha256, confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision})
     (tmp_path / ss.INHERITED_EXTRACT_RELATIVE_PATH).write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
     return tmp_path
 
@@ -123,7 +124,7 @@ def test_explore_stops_as_an_incident_when_the_inherited_responses_do_not_replic
     monkeypatch.setattr(ss, "RANKS", (1, 2))
     assert runner.explore() == 2
     state = cd.load_results_state(runner.results_path)
-    assert state["phases"]["explore"]["status"] == "running" and "deviates" in state["exploration"]["incident"]["message"]
+    assert state["phases"]["explore"]["status"] == "running" and "deviates" in state["exploration"]["incidents"][-1]["message"]
     assert "selection" not in state["exploration"]
     with pytest.raises(cd.PhaseError):
         runner.calibrate()
@@ -194,3 +195,101 @@ def test_full_state_machine_on_the_fake(sandbox, monkeypatch):
     assert runner.report() == 0
     text = runner.report_path.read_text()
     assert "## Confirmation — outcome" in text and "Rank selection" in text and "Circuit families (reported; not in the outcome)" in text
+
+
+def test_quality_gate_failure_closes_tier_a(sandbox, monkeypatch):
+    runner, logs = make_runner(sandbox, monkeypatch)
+    monkeypatch.setattr(ss, "RANKS", (1, 2))
+    monkeypatch.setattr(cd, "QUALITY_SPEARMAN_FLOOR", 1.1)  # unreachable: forces the gate to fail on the fake
+    assert runner.explore() == 0
+    state = cd.load_results_state(runner.results_path)
+    assert not state["exploration"]["quality_gate"]["passed"] and state["exploration"]["outcome"]["label"] == "QUALITY_GATE_FAILED"
+    with pytest.raises(ss.PhaseError, match="QUALITY_GATE_FAILED"):
+        runner.calibrate()
+    with pytest.raises(cd.PhaseError):
+        runner.lock()
+    assert runner.report() == 0
+    text = runner.report_path.read_text()
+    assert "Outcome at explore: `QUALITY_GATE_FAILED`" in text
+
+
+def test_singular_gap_incident_is_recorded_and_blocks_a_rerun_at_the_same_commit(sandbox, monkeypatch):
+    runner, logs = make_runner(sandbox, monkeypatch)
+    monkeypatch.setattr(ss, "RANKS", (1, 2))
+    monkeypatch.setattr(ss, "GAP_MIN", 2.0)  # every fold violates the gap rule
+    assert runner.explore() == 2
+    state = cd.load_results_state(runner.results_path)
+    incident = state["exploration"]["incidents"][-1]
+    assert "singular gap" in incident["message"] and incident["commit"] == "a" * 40 and state["phases"]["explore"]["status"] == "running"
+    assert "selection" not in state["exploration"]
+    with pytest.raises(ss.PhaseError, match="incident is recorded at this commit"):
+        runner.explore()
+    assert runner.report() == 0 and "## Incidents" in runner.report_path.read_text()
+    # After a committed fix (a different commit) explore may run again; the state records the new commit.
+    monkeypatch.setattr(ss, "GAP_MIN", 1e-8)
+    runner.git_state = lambda: {"commit": "b" * 40, "dirty": False}
+    assert runner.explore() == 0
+    state = cd.load_results_state(runner.results_path)
+    assert state["protocol_code_commit"] == "b" * 40 and state["phases"]["explore"]["attempt_commits"] == ["a" * 40, "b" * 40]
+    assert state["phases"]["explore"]["status"] == "complete" and len(state["exploration"]["incidents"]) == 1
+
+
+def test_validate_lock_refusals(sandbox, monkeypatch):
+    runner, logs = make_runner(sandbox, monkeypatch)
+    monkeypatch.setattr(ss, "RANKS", (1, 2))
+    assert runner.explore() == 0
+    state = cd.load_results_state(runner.results_path)
+    if not state["exploration"]["quality_gate"]["passed"]:
+        state["exploration"]["quality_gate"]["passed"] = True
+        state["exploration"]["outcome"] = {"label": None, "note": "forced for the fake"}
+        cd.write_results_state(runner.results_path, state)
+    assert runner.calibrate() == 0 and runner.lock() == 0
+    candidate = runner.results_path.parent / "candidate-lock.json"
+    installed = sandbox / ss.LOCK_RELATIVE_PATH
+    manifest, manifest_sha256, extension = pm.load_inputs(sandbox)
+    confirmation = cd.load_confirmation(sandbox / ss.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
+    inherited = ss.load_inherited_extract(sandbox / ss.INHERITED_EXTRACT_RELATIVE_PATH, manifest_sha256=manifest_sha256, extension_sha256=extension.content_sha256, confirmation_sha256=confirmation.content_sha256)
+    state = cd.load_results_state(runner.results_path)
+
+    def validate(lock, **overrides):
+        arguments = dict(state=state, manifest_sha256=manifest_sha256, extension=extension, confirmation=confirmation, inherited=inherited, parameters_dir=runner.parameters_dir,
+                         program_path=runner.program_path, program_005_path=runner.program_005_path, git_state={"commit": "a" * 40, "dirty": False}, tracked=True, changed_paths=[])
+        arguments.update(overrides)
+        ss.validate_lock(lock, **arguments)
+
+    lock = json.loads(candidate.read_text())
+    validate(lock)
+    validate(lock, changed_paths=[ss.LOCK_RELATIVE_PATH, "experiments/007-supervised-cue-subspace/README.md", "experiments/007-supervised-cue-subspace/evidence/x.md", "docs/a.md"])
+    with pytest.raises(ss.PhaseError, match="scientific paths"):
+        validate(lock, changed_paths=["experiments/005-regular-plural-mechanism/preregistration-lock.json"])
+    with pytest.raises(ss.PhaseError, match="clean Git tree"):
+        validate(lock, git_state={"commit": "a" * 40, "dirty": True})
+    with pytest.raises(ss.PhaseError, match="tracked"):
+        validate(lock, tracked=False)
+    with pytest.raises(ss.PhaseError, match="ancestor"):
+        validate(lock, changed_paths=None)
+
+    def resigned(**changes):
+        edited = {**lock, **changes}
+        unsigned = {k: v for k, v in edited.items() if k != "content_sha256"}
+        edited["content_sha256"] = pm.sha256_text(pm.canonical_json(unsigned))
+        return edited
+
+    with pytest.raises(ss.PhaseError, match="candidate lock written by the lock phase"):
+        validate(resigned(tau=lock["tau"] * 10))
+    with pytest.raises(ss.PhaseError, match="digest mismatch"):
+        validate({**lock, "tau": lock["tau"] * 10})
+    with pytest.raises(ss.PhaseError, match="parameters differ"):
+        index_path = runner.parameters_dir / "pca-006" / "parameters.json"
+        original = index_path.read_text()
+        index_path.write_text(original + "\n")
+        try:
+            validate(lock)
+        finally:
+            index_path.write_text(original)
+    with pytest.raises(ss.PhaseError, match="program source"):
+        validate(lock, program_path=ROOT / "experiments/006-low-rank-cue-decompilation/low_rank_program.py")
+    with pytest.raises(ss.PhaseError, match="inherited extract differs"):
+        validate(lock, inherited={**inherited, "content_sha256": "0" * 64})
+    with pytest.raises(ss.PhaseError, match="not match the results state"):
+        validate(lock, state={**state, "run_id": "other"})

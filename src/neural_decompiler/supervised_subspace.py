@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -49,7 +50,13 @@ PROGRAM_NAMES = ("selected", "pca-006", "e005-scalar", "ridge-full")
 PCA_IMPROVEMENT_PREDICTION = 0.8  # stated prediction: supervised LOCO error ≤ 0.8 × PCA-006 at the same rank (not a gate)
 SCIENTIFIC_PATH_PREFIXES = ("src/", "experiments/007-supervised-cue-subspace/", "experiments/006-low-rank-cue-decompilation/",
                             "experiments/005-regular-plural-mechanism/", "screening/behavior-candidates/manifest-v1.json")
+# Documentation under the Experiment 007 directory and the lock itself may change between the lock commit and confirm.
+NON_SCIENTIFIC_PATHS = (LOCK_RELATIVE_PATH, f"{EXPERIMENT_DIR}/README.md")
+NON_SCIENTIFIC_PREFIXES = (f"{EXPERIMENT_DIR}/evidence/",)
 OUTCOME_LABELS = ("QUALITY_GATE_FAILED", "CUE_EFFECT_NOT_REPLICATED", "DECOMPILED", "DECOMPILED_MISCALIBRATED", "PROGRAM_NOT_SUPPORTED")
+PROGRAM_FAILURE_WHERE = {"Y1": "encoding subspace", "Y2": "transport/readout linearity", "Y3": "frame context"}
+LOCK_PREDICTION_TOLERANCE = 1e-9  # confirm recomputes every locked prediction from the on-disk programs and requires agreement
+E005_GAIN_TOLERANCE = 1e-3  # the refit's g_R must reproduce the Experiment 005 lock statement's printed gains
 
 
 class PhaseError(cd.PhaseError):
@@ -91,6 +98,8 @@ def load_inherited_extract(path: Path, *, manifest_sha256: str, extension_sha256
         raise ValueError("the inherited extract or the confirmation set does not carry the frozen Experiment 006 confirmation digest")
     if (payload["manifest_sha256"], payload["extension_sha256"]) != (manifest_sha256, extension_sha256):
         raise ValueError("inherited extract was recorded against different frozen inputs")
+    if dict(payload["model"]) != {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}:
+        raise ValueError("inherited extract was recorded for a different pinned model")
     if len(payload["responses"]) != 16 * 12:
         raise ValueError(f"inherited extract must hold 192 responses, found {len(payload['responses'])}")
     return payload
@@ -102,16 +111,18 @@ def check_inherited_responses(responses: Mapping[tuple[str, str], cd.EPatchRespo
     keys = {f"{token}|{frame_id}" for token, frame_id in responses}
     if keys != set(recorded):
         raise pm.IncidentError("recomputed E-patch responses do not cover exactly the inherited (token, frame) pairs")
-    deviations = {}
+    deviations, norm_deviations = {}, {}
     for (token, frame_id), response in responses.items():
         key = f"{token}|{frame_id}"
         if recorded[key]["template_id"] != response.template_id:
             raise pm.IncidentError(f"{key}: template disagrees with the inherited record")
         deviations[key] = abs(pm._mean(list(response.shifts.values())) - recorded[key]["mean_shift"])
+        norm_deviations[key] = abs(float(response.delta_residual.double().norm()) - recorded[key]["delta_norm"])
     worst = max(deviations, key=deviations.get)
     if deviations[worst] > INHERITED_EPATCH_TOLERANCE:
         raise pm.IncidentError(f"{worst}: recomputed E-patch mean shift deviates from Experiment 006 by {deviations[worst]:.3e} (> {INHERITED_EPATCH_TOLERANCE:.0e})")
     return {"passed": True, "n": len(deviations), "max_abs_deviation": deviations[worst], "worst_key": worst, "tolerance": INHERITED_EPATCH_TOLERANCE,
+            "max_abs_delta_norm_deviation_informational": max(norm_deviations.values()),
             "extract_content_sha256": extract["content_sha256"], "source": dict(extract["source"])}
 
 
@@ -413,7 +424,7 @@ def comparison_record(tables: Mapping[str, Any], selection: Mapping[str, Any], *
     return {"per_rank": per_rank, "selected_rank": selected, "selected_error": selected_error, "ridge_full_error": ridge_error,
             "ridge_over_selected": ridge_error / selected_error if selected_error > 0 else None, "e005_scalar_error": e005_error,
             "ridge_multipliers_by_fold": {token: fold["ridge"]["multiplier"] for token, fold in tables["folds"].items()},
-            "reading": "supervised ≈ ridge: compact dimensionality plausible; ridge ≪ supervised: linear but not ≤ 4-dimensional; both poor: linear generalization from E(w) questionable"}
+            "reading": "supervised error ≈ ridge error: compact dimensionality plausible; ridge error ≪ supervised error: linear but not ≤ 4-dimensional; both poor: linear generalization from E(w) questionable"}
 
 
 # ---------------------------------------------------------------------------
@@ -506,8 +517,38 @@ def e005_cue_level(program: Any, pool: cd.ExposedPool, responses: Mapping[tuple[
     return values
 
 
+def e005_refit_circuit(lock_005: Mapping[str, Any], circuit: pm.MechanismSet) -> pm.MechanismSet:
+    """The Experiment 005 lock's own mechanism description (its component order fixes float summation order), checked to be the fixed circuit."""
+    mechanism = (lock_005.get("mechanism") or {}).get("mechanism")
+    if not mechanism:
+        return circuit
+    locked = pm.MechanismSet(mechanism["branch"], tuple(mechanism["e_keys"]), tuple(mechanism["t_keys"]), tuple(mechanism["r_keys"]))
+    if (locked.branch, set(locked.e_keys), set(locked.t_keys), set(locked.r_keys)) != (circuit.branch, set(circuit.e_keys), set(circuit.t_keys), set(circuit.r_keys)):
+        raise pm.IncidentError("the Experiment 005 lock's mechanism is not the fixed circuit inherited by Experiments 006 and 007")
+    return locked
+
+
+def e005_frozen_check(record: Mapping[str, Any], index: Mapping[str, Any], lock_005: Mapping[str, Any]) -> dict[str, Any]:
+    """The refit must be the frozen Experiment 005 program: k_T, the axes, the contexts, and the printed gains of the lock statement."""
+    if not lock_005:
+        return {"checked": False, "reason": "no Experiment 005 lock available"}
+    locked_index = lock_005["parameters_index"]
+    mismatched = sorted(name for name, entry in locked_index["tensors"].items() if index["tensors"].get(name, {}).get("sha256") != entry["sha256"])
+    extra = sorted(set(index["tensors"]) - set(locked_index["tensors"]))
+    k_t_ok = abs(float(index["k_t"]) - float(locked_index["k_t"])) <= 1e-12
+    printed = {template: float(value) for template, value in re.findall(r"(cardinal|quantifier|coordinated-adjective) ([0-9.]+)", lock_005["statement"].split("g_R = |v_T|:", 1)[1].split("\n", 1)[0])}
+    gains_ok = set(printed) == set(record["gains"]) and all(abs(record["gains"][template] - printed[template]) <= E005_GAIN_TOLERANCE for template in printed)
+    non_gain_mismatch = [name for name in mismatched if not name.startswith("v_t.")]
+    passed = k_t_ok and gains_ok and not non_gain_mismatch and not extra
+    verdict = {"checked": True, "passed": passed, "index_sha256_matches_lock": record["parameters_index_sha256"] == lock_005["parameters_index_sha256"], "k_t_ok": k_t_ok, "gains_ok": gains_ok,
+               "printed_gains": printed, "refit_gains": dict(record["gains"]), "mismatched_tensors": mismatched, "extra_tensors": extra}
+    if not passed:
+        raise pm.IncidentError(f"the E005-scalar refit is not the frozen Experiment 005 program: {verdict}")
+    return verdict
+
+
 def run_exploration(model: Any, pool: cd.ExposedPool, *, state: dict[str, Any], results_path: Path | None, parameters_dir: Path, program_path: Path, program_005_path: Path,
-                    e005_index_sha256: str | None, inherited: Mapping[str, Any], circuit: pm.MechanismSet = cd.FIXED_CIRCUIT, ranks: Sequence[int] | None = None,
+                    lock_005: Mapping[str, Any], inherited: Mapping[str, Any], circuit: pm.MechanismSet = cd.FIXED_CIRCUIT, ranks: Sequence[int] | None = None,
                     development_ctx_factory: Any = None, log: Any = None) -> dict[str, Any]:
     """Tier A: E-patch responses (replicated against Experiment 006), LOCO tables for every family, rank selection, gate, τ, exports."""
     say = log or (lambda message: None)
@@ -518,7 +559,10 @@ def run_exploration(model: Any, pool: cd.ExposedPool, *, state: dict[str, Any], 
     ctx_dev = development_ctx_factory() if development_ctx_factory else None
     if ctx_dev is None:
         raise ValueError("a development context factory is required for the E005-scalar baseline")
-    e005_program, e005_record = cd.e005_scalar_baseline(ctx_dev, parameters_dir=parameters_dir / "e005-scalar", program_path=program_005_path, expected_index_sha256=e005_index_sha256, circuit=circuit)
+    e005_program, e005_record = cd.e005_scalar_baseline(ctx_dev, parameters_dir=parameters_dir / "e005-scalar", program_path=program_005_path,
+                                                        expected_index_sha256=lock_005.get("parameters_index_sha256"), circuit=e005_refit_circuit(lock_005, circuit))
+    e005_index = json.loads((parameters_dir / "e005-scalar" / "parameters.json").read_text(encoding="utf-8"))
+    e005_record["frozen_check"] = e005_frozen_check(e005_record, e005_index, lock_005)
     state["exploration"]["e005_scalar"] = e005_record
     cache = pm.PromptCache(model, tuple(pool.nouns))
     say("E-patch residual responses (12 frames × 16 tokens)")
@@ -579,6 +623,8 @@ def build_candidate_lock(*, state: Mapping[str, Any], manifest: ScreeningManifes
         raise PhaseError("the pre-lock quality gate failed; no lock may be written")
     if confirmation.content_sha256 != INHERITED_CONFIRMATION_SHA256:
         raise PhaseError("the confirmation set is not the frozen Experiment 006 set")
+    if inherited["content_sha256"] != exploration["inherited_check"]["extract_content_sha256"]:
+        raise PhaseError("the inherited extract differs from the one replicated at explore")
     tau = float(exploration["tau"])
     lock = {
         "schema_version": 1, "experiment": "007", "created_at": pm.utc_now(), "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
@@ -625,6 +671,11 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], manifest
         raise PhaseError("the inherited extract differs from the locked digest")
     if lock["run_id"] != state["run_id"] or lock["rank"] != state["exploration"]["selection"]["selected"]:
         raise PhaseError("lock does not match the results state")
+    if not state.get("lock") or lock["content_sha256"] != state["lock"]["content_sha256"]:
+        raise PhaseError("the installed lock is not the candidate lock written by the lock phase")
+    exploration = state["exploration"]
+    if lock["tau"] != exploration["tau"] or lock["selection"] != exploration["selection"] or lock["quality_gate"] != exploration["quality_gate"]:
+        raise PhaseError("the lock's τ, selection, or quality gate differ from the results state")
     if not lock["quality_gate"]["passed"]:
         raise PhaseError("the locked quality gate did not pass")
     for name in PROGRAM_NAMES:
@@ -634,7 +685,7 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], manifest
         raise PhaseError("a program source differs from the locked source")
     if changed_paths is None:
         raise PhaseError("the lock commit is not an ancestor of the current commit")
-    scientific = [path for path in changed_paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and not path.endswith("preregistration-lock.json")]
+    scientific = [path for path in changed_paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and path not in NON_SCIENTIFIC_PATHS and not path.startswith(NON_SCIENTIFIC_PREFIXES)]
     if scientific:
         raise PhaseError(f"scientific paths changed since the lock commit: {scientific}")
     cd.assert_confirmation_untouched(state, confirmation)
@@ -650,7 +701,9 @@ def outcome(*, fresh_floors: Mapping[str, Any], program_floors: Mapping[str, Any
         label = "DECOMPILED"
     else:
         label = "DECOMPILED_MISCALIBRATED"
-    return {"label": label, "program": "PROGRAM_PASS" if program_floors["passed"] else "PROGRAM_FAIL", "program_failures": list(program_floors["failures"]), "bands_hit": bool(bands["hit"]),
+    failures = list(program_floors["failures"])
+    return {"label": label, "program": "PROGRAM_PASS" if program_floors["passed"] else "PROGRAM_FAIL", "program_failures": failures,
+            "program_failure_where": [PROGRAM_FAILURE_WHERE[family] for family in failures], "bands_hit": bool(bands["hit"]),
             "fresh_cue_effect_passed": bool(fresh_floors["cue_effect"]["passed"])}
 
 
@@ -658,6 +711,18 @@ def circuit_report(manifest_floors: Mapping[str, Any], fresh_floors: Mapping[str
     both = bool(manifest_floors["passed"] and fresh_floors["passed"])
     return {"manifest_passed": bool(manifest_floors["passed"]), "fresh_passed": bool(fresh_floors["passed"]), "manifest_failures": list(manifest_floors["failures"]),
             "fresh_failures": list(fresh_floors["failures"]), "c002_review_eligible": both, "enters_outcome": False}
+
+
+def check_locked_predictions(measurements: Mapping[str, Any], lock: Mapping[str, Any]) -> None:
+    """Every per-(token, frame, program) mean prediction recomputed at confirm must equal the preregistered one."""
+    worst = 0.0
+    for word, data in measurements["per_token"].items():
+        for frame_id, entry in data["frames"].items():
+            locked = lock["predictions"]["tokens"][word]["frames"][frame_id]["predicted"]
+            for name, value in locked.items():
+                worst = max(worst, abs(entry[f"predicted:{name}"] - value["mean"]))
+    if worst > LOCK_PREDICTION_TOLERANCE:
+        raise pm.IncidentError(f"confirm-time predictions differ from the preregistered lock by up to {worst:.3e}")
 
 
 def run_confirmation(model: Any, pool: cd.ExposedPool, confirmation: cd.Confirmation, programs: Mapping[str, Any], lock: Mapping[str, Any], *, circuit: pm.MechanismSet = cd.FIXED_CIRCUIT,
@@ -678,6 +743,7 @@ def run_confirmation(model: Any, pool: cd.ExposedPool, confirmation: cd.Confirma
     fresh_floors = cd.circuit_floors(fresh_results, fresh=True)
     say("fresh cue tokens: behavior and E-patch (Y families)")
     measurements = cd.measure_confirmation_families(model, weights, confirmation, programs, cache=cache_fresh)
+    check_locked_predictions(measurements, lock)
     tau = float(lock["tau"])
     program_floors = cd.y_floors(measurements, tau=tau)
     bands = cd.y_band_hits(measurements["per_token"], tau=tau)
@@ -700,6 +766,9 @@ def render_report(state: Mapping[str, Any]) -> str:
              f"- Protocol/code commit at explore: `{state['protocol_code_commit']}`", ""]
     lines += ["## Phases", ""] + [f"- `{phase}`: `{entry['status']}`" for phase, entry in state["phases"].items()] + [""]
     exploration = state.get("exploration", {})
+    incidents = list(exploration.get("incidents", [])) + ([state["confirmation"]["incident"]] if isinstance(state.get("confirmation"), dict) and "incident" in state["confirmation"] else [])
+    if incidents:
+        lines += ["## Incidents", ""] + [f"- `{entry['phase']}` at commit `{entry.get('commit', '?')}` ({entry['at']}): {entry['message']}" for entry in incidents] + [""]
     if "inherited_check" in exploration:
         check = exploration["inherited_check"]
         lines += ["## Tier A — inherited responses", "", f"- Recomputed E-patch mean shifts match Experiment 006 on {check['n']} (token, frame) pairs; max deviation {check['max_abs_deviation']:.2e} (tolerance {check['tolerance']:.0e})", ""]
@@ -730,9 +799,9 @@ def render_report(state: Mapping[str, Any]) -> str:
     if state.get("lock"):
         lines += ["## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}` (rank {state['lock']['rank']}, τ {f(state['lock']['tau'])})", ""]
     confirmation = state.get("confirmation")
-    if confirmation:
+    if confirmation and "outcome" in confirmation:
         verdict = confirmation["outcome"]
-        lines += [f"## Confirmation — outcome `{verdict['label']}`", "", f"- Program `{verdict['program']}` (failures {verdict['program_failures'] or 'none'}); bands hit {verdict['bands_hit']}; fresh cue effect {verdict['fresh_cue_effect_passed']}", ""]
+        lines += [f"## Confirmation — outcome `{verdict['label']}`", "", f"- Program `{verdict['program']}` (failures {verdict['program_failures'] or 'none'}; where {verdict['program_failure_where'] or 'n/a'}); bands hit {verdict['bands_hit']}; fresh cue effect {verdict['fresh_cue_effect_passed']}", ""]
         program_floors = confirmation["program_floors"]
         lines += ["### Program (Y families)", "", f"- Y1 {'pass' if program_floors['Y1']['passed'] else 'FAIL'}: Spearman {program_floors['Y1']['spearman']:.3f}, MAE {program_floors['Y1']['mae']:.3f} (τ {program_floors['tau']:.3f}), confident-sign ok {program_floors['Y1']['signs_ok']}",
                   f"- Y2 {'pass' if program_floors['Y2']['passed'] else 'FAIL'}: Spearman {program_floors['Y2']['spearman']:.3f}, MAE {program_floors['Y2']['mae']:.3f}",

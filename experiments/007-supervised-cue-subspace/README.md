@@ -8,7 +8,8 @@ Implements the approved design
 ## Inputs
 
 - Exploratory pool (all exposed by Experiment 005 and reused by Experiment 006): the six manifest frames and six
-  extension frames, the sixteen exposed cue tokens, and the sixty nouns.
+  extension frames, the sixteen exposed cue tokens, and the sixty nouns (59 are single-token on both forms and enter
+  every statistic; `peach` is two tokens and is skipped everywhere, as in Experiments 005 and 006).
 - The confirmation set is Experiment 006's
   [`confirmation-v1.json`](../006-low-rank-cue-decompilation/confirmation-v1.json), content sha256
   `dbb8dbcef9ab201cb5555a3c1d988e3ca8ab70f742f10b12f80a856c9ebf5521`, read in place. It has never produced a model
@@ -61,7 +62,15 @@ uv run python experiments/007-supervised-cue-subspace/run.py report
 - `report` renders `outputs/experiment-007/report.md`.
 
 Boundaries: the confirmation set is never executed before `confirm`; every phase refuses to run out of order,
-twice, or on a dirty tree; numerical and identifiability failures are incidents, never outcome labels;
-`linear_cue_program.py` loads only exported tensors and never imports the network stack.
+twice, or on a dirty tree; numerical and identifiability failures are incidents, never outcome labels (an explore
+incident is recorded with its commit and blocks another `explore` at that commit; a confirm incident blocks any
+re-run in this protocol version); `confirm` recomputes every preregistered prediction from the on-disk programs and
+stops as an incident if any differs from the lock by more than `1e-9`; `linear_cue_program.py` loads only exported
+tensors and never imports the network stack.
+
+The `E005-scalar` baseline is refit deterministically on the Experiment 005 development data using the 005 lock's
+own mechanism description (its component order fixes float summation order); `explore` requires `k_T`, every axis
+and context tensor, and the gains `g_R` printed in the 005 lock statement to be reproduced (an incident otherwise)
+and records whether the whole parameter index digest equals the 005 lock's.
 
 ## Status — 2026-09-18: implemented; Tier A not yet run

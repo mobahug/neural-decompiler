@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+import torch
+
 from neural_decompiler import cue_decompilation as cd
 from neural_decompiler import plural_mechanism as pm
 from neural_decompiler import supervised_subspace as ss
@@ -83,7 +85,8 @@ def _run_contract_test() -> dict[str, Any]:
 
 def runtime_record(spec: ModelSpec) -> dict[str, Any]:
     runtime = validate_runtime(spec)
-    return {"device": runtime.device, "backend": runtime.backend, "dtype": runtime.dtype_name, "seed": ss.RUNTIME_SEED, "deterministic_algorithms": spec.deterministic_algorithms}
+    return {"device": runtime.device, "backend": runtime.backend, "dtype": runtime.dtype_name, "seed": ss.RUNTIME_SEED, "deterministic_algorithms": spec.deterministic_algorithms,
+            "torch_num_threads": int(torch.get_num_threads())}
 
 
 @dataclass
@@ -168,35 +171,48 @@ class Runner:
     def _lock_005(self) -> dict[str, Any]:
         return json.loads(self.lock_005_path.read_text(encoding="utf-8")) if self.lock_005_path.exists() else {}
 
+    def _record_incident(self, state: dict[str, Any], phase: str, error: Exception) -> None:
+        entry = {"message": str(error), "at": pm.utc_now(), "phase": phase, "commit": self._provenance()["protocol_code_commit"]}
+        if phase == "explore":
+            state["exploration"].setdefault("incidents", []).append(entry)
+        else:
+            state["confirmation"] = {"incident": entry}
+        cd.write_results_state(self.results_path, state)
+        self.log(f"INCIDENT ({phase}): {error}")
+
     def explore(self) -> int:
         manifest, manifest_sha256, extension, confirmation, inherited = self._inputs()
         state = self._state_for("explore", manifest_sha256, extension.content_sha256, confirmation.content_sha256)
+        commit = self._provenance()["protocol_code_commit"]
+        incidents = state["exploration"].get("incidents", [])
+        if incidents and incidents[-1]["commit"] == commit:
+            raise ss.PhaseError("an explore incident is recorded at this commit; a committed fix or documented amendment is required before explore runs again")
         contract = dict(self.contract_runner())
         state["exploration"]["a0_contract_test"] = contract
         if not contract.get("passed"):
+            cd.write_results_state(self.results_path, state)
             self.log("A0 contract test failed; refusing to explore")
             return 1
         pool = cd.exposed_pool(manifest, extension)
         state["exploration"]["inherited_source_local"] = self._local_source_record(inherited)
+        state["protocol_code_commit"] = commit  # the commit of the attempt that produced the recorded data
         state["phases"]["explore"] = {"status": "running", "started_at": pm.utc_now(), "runtime": runtime_record(PYTHIA_70M),
-                                      "attempts": int(state["phases"]["explore"].get("attempts", 0)) + 1}
+                                      "attempts": int(state["phases"]["explore"].get("attempts", 0)) + 1,
+                                      "attempt_commits": list(state["phases"]["explore"].get("attempt_commits", [])) + [commit]}
+        pm.record_execution(state, pm.manifest_prompts(pool.frames) + tuple(pool.reference_prompt(frame) for frame in pool.frames), pool.nouns)
+        cd.assert_confirmation_untouched(state, confirmation)
         cd.write_results_state(self.results_path, state)
         seed_runtime(ss.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
         model = self.model_loader(PYTHIA_70M)
         try:
-            pm.record_execution(state, pm.manifest_prompts(pool.frames) + tuple(pool.reference_prompt(frame) for frame in pool.frames), pool.nouns)
-            cd.assert_confirmation_untouched(state, confirmation)
             development = pm.nouns_for(manifest, pm.Split.DEVELOPMENT)
             factory = lambda: pm.DiscoveryContext(model, pm.Weights.from_model(model), manifest, pool.manifest_frames, development, pm.PromptCache(model, development))
-            lock_005 = self._lock_005()
             try:
                 ss.run_exploration(model, pool, state=state, results_path=self.results_path, parameters_dir=self.parameters_dir, program_path=self.program_path,
-                                   program_005_path=self.program_005_path, e005_index_sha256=lock_005.get("parameters_index_sha256"), inherited=inherited, circuit=self.circuit,
+                                   program_005_path=self.program_005_path, lock_005=self._lock_005(), inherited=inherited, circuit=self.circuit,
                                    development_ctx_factory=factory, log=self.log)
             except pm.IncidentError as error:
-                state["exploration"]["incident"] = {"message": str(error), "at": pm.utc_now(), "phase": "explore"}
-                cd.write_results_state(self.results_path, state)
-                self.log(f"INCIDENT: {error}")
+                self._record_incident(state, "explore", error)
                 return 2
         finally:
             del model
@@ -253,7 +269,11 @@ class Runner:
         seed_runtime(ss.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
         model = self.model_loader(PYTHIA_70M)
         try:
-            results = ss.run_confirmation(model, pool, confirmation, programs, lock, circuit=self.circuit, axes_dir=self.parameters_dir / "e005-scalar", log=self.log)
+            try:
+                results = ss.run_confirmation(model, pool, confirmation, programs, lock, circuit=self.circuit, axes_dir=self.parameters_dir / "e005-scalar", log=self.log)
+            except pm.IncidentError as error:
+                self._record_incident(state, "confirm", error)  # the phase stays "running": confirm never re-runs in this protocol version
+                return 2
         finally:
             del model
             gc.collect()
@@ -265,6 +285,13 @@ class Runner:
 
     def report(self) -> int:
         manifest, manifest_sha256, extension, confirmation, inherited = self._inputs()
+        if self.results_path.exists():
+            state = cd.load_results_state(self.results_path)
+            if state["phases"]["explore"]["status"] != "complete" and state["exploration"].get("incidents"):
+                self.report_path.parent.mkdir(parents=True, exist_ok=True)
+                self.report_path.write_text(ss.render_report(state), encoding="utf-8")
+                self.log(f"incident report written to {self.report_path}")
+                return 0
         state = self._state_for("report", manifest_sha256, extension.content_sha256, confirmation.content_sha256)
         self.report_path.parent.mkdir(parents=True, exist_ok=True)
         self.report_path.write_text(ss.render_report(state), encoding="utf-8")

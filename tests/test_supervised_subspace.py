@@ -8,6 +8,7 @@ import torch
 from neural_decompiler import cue_decompilation as cd
 from neural_decompiler import plural_mechanism as pm
 from neural_decompiler import supervised_subspace as ss
+from neural_decompiler.models import PYTHIA_70M
 from plural_fakes import make_context
 
 FAKE_CIRCUIT = pm.MechanismSet("L00.MLP", ("L00.MLP",), ("L01.H00",), ("L01.MLP",))
@@ -219,7 +220,7 @@ def test_inherited_check_passes_on_identical_values_and_raises_beyond_tolerance(
     recorded = {f"{token}|{frame_id}": {"template_id": r.template_id, "mean_shift": pm._mean(list(r.shifts.values())), "delta_norm": float(r.delta_residual.norm()), "circuit_share": r.circuit_share}
                 for (token, frame_id), r in responses.items()}
     extract = ss.inherited_extract_payload(recorded, source={"path": "x", "file_sha256": "0" * 64, "state_sha256": "1" * 64, "run_id": "r", "protocol_code_commit": "c" * 40, "explore_completed_at": "t"},
-                                           manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": "fake", "revision": "0"})
+                                           manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision})
     verdict = ss.check_inherited_responses(responses, extract)
     assert verdict["passed"] and verdict["max_abs_deviation"] == 0.0 and verdict["n"] == len(responses)
     key = next(iter(extract["responses"]))
@@ -234,7 +235,7 @@ def test_inherited_check_passes_on_identical_values_and_raises_beyond_tolerance(
 def test_inherited_extract_loads_only_with_the_frozen_confirmation_digest(tmp_path):
     recorded = {f"t{i}|f{j}": {"template_id": "cardinal", "mean_shift": 0.1 * i, "delta_norm": 1.0, "circuit_share": 0.5} for i in range(16) for j in range(12)}
     source = {"path": "x", "file_sha256": "0" * 64, "state_sha256": "1" * 64, "run_id": "r", "protocol_code_commit": "c" * 40, "explore_completed_at": "t"}
-    good = ss.inherited_extract_payload(recorded, source=source, manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": "fake", "revision": "0"})
+    good = ss.inherited_extract_payload(recorded, source=source, manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256, model={"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision})
     path = tmp_path / "extract.json"
     path.write_text(pm.canonical_json(good) + "\n", encoding="utf-8")
     loaded = ss.load_inherited_extract(path, manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256)
@@ -243,7 +244,7 @@ def test_inherited_extract_loads_only_with_the_frozen_confirmation_digest(tmp_pa
         ss.load_inherited_extract(path, manifest_sha256="other", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256)
     with pytest.raises(ValueError, match="confirmation digest"):
         ss.load_inherited_extract(path, manifest_sha256="m", extension_sha256="e", confirmation_sha256="f" * 64)
-    bad = ss.inherited_extract_payload(recorded, source=source, manifest_sha256="m", extension_sha256="e", confirmation_sha256="f" * 64, model={"model_id": "fake", "revision": "0"})
+    bad = ss.inherited_extract_payload(recorded, source=source, manifest_sha256="m", extension_sha256="e", confirmation_sha256="f" * 64, model={"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision})
     path.write_text(pm.canonical_json(bad) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="confirmation digest"):
         ss.load_inherited_extract(path, manifest_sha256="m", extension_sha256="e", confirmation_sha256=ss.INHERITED_CONFIRMATION_SHA256)
@@ -289,3 +290,68 @@ def test_frozen_constants_match_the_design():
     assert ss.PROGRAM_NAMES == ("selected", "pca-006", "e005-scalar", "ridge-full") and ss.PCA_IMPROVEMENT_PREDICTION == 0.8
     assert cd.RANK_IMPROVEMENT_FACTOR == 0.8 and cd.QUALITY_SPEARMAN_FLOOR == 0.70 and cd.QUALITY_NORMALIZED_RMSE_CEILING == 0.50
     assert cd.P3_CORRELATION == 0.90 and cd.CUE_EFFECT_FRESH == 108 / 120
+
+
+def test_predictions_are_invariant_to_basis_column_signs(setting):
+    ctx, references, tokens, responses, ev = setting
+    names = [token for token, _ in tokens]
+    rows = ss.design_rows(e_vectors=ev.e_vectors, reference_vectors=ev.reference_vectors, responses=responses, frames=ctx.frames, tokens=names)
+    svd = ss.cross_moment_svd(rows.X, rows.Y, ranks=(1, 2))
+    flipped = ss.CrossMomentSVD(svd.P * -1.0, svd.singular_values, svd.rank_C, svd.gaps)
+    fit = ss.fit_supervised(rows, 2, reference_ids=references, svd=svd)
+    fit_flipped = ss.fit_supervised(rows, 2, reference_ids=references, svd=flipped)
+    for token in names[:4]:
+        assert ss.cue_level_values(fit, ev, token)["predicted"] == pytest.approx(ss.cue_level_values(fit_flipped, ev, token)["predicted"], abs=1e-12)
+
+
+def test_inner_ridge_grid_is_scaled_by_the_inner_training_rows_only(setting, monkeypatch):
+    ctx, references, tokens, responses, ev = setting
+    names = [token for token, _ in tokens]
+    training = names[1:]
+    seen: list[tuple[tuple[str, ...], float]] = []
+    original = ss.ridge_maps
+
+    def spy(rows, lam):
+        seen.append((rows.tokens, lam))
+        return original(rows, lam)
+
+    monkeypatch.setattr(ss, "ridge_maps", spy)
+    ss.select_ridge_multiplier(ev, training)
+    assert len(seen) == len(training) * len(ss.RIDGE_MULTIPLIERS)
+    for inner_tokens, lam in seen:
+        assert len(inner_tokens) == len(training) - 1 and names[0] not in inner_tokens
+        inner_rows = ss.design_rows(e_vectors=ev.e_vectors, reference_vectors=ev.reference_vectors, responses=responses, frames=ctx.frames, tokens=list(inner_tokens))
+        assert any(lam == pytest.approx(multiplier * ss.trace_scale(inner_rows.X)) for multiplier in ss.RIDGE_MULTIPLIERS)
+
+
+def test_e005_frozen_check_reads_the_lock_statement():
+    lock = {"parameters_index_sha256": "x", "statement": "R  [L05.MLP, L04.MLP] at p_t : δ(x) = n_t(x) · v_T with g_R = |v_T|: cardinal 5.158, quantifier 7.900, coordinated-adjective 3.800\nREADOUT",
+            "parameters_index": {"k_t": 0.5, "tensors": {"W_E": {"sha256": "a"}, "v_t.cardinal": {"sha256": "b"}}},
+            "mechanism": {"mechanism": {"branch": "L00.MLP", "e_keys": ["L00.MLP"], "t_keys": ["L03.H04"], "r_keys": ["L05.MLP", "L04.MLP"]}}}
+    record = {"parameters_index_sha256": "y", "gains": {"cardinal": 5.1580, "quantifier": 7.8999, "coordinated-adjective": 3.8005}}
+    index = {"k_t": 0.5, "tensors": {"W_E": {"sha256": "a"}, "v_t.cardinal": {"sha256": "c"}}}
+    verdict = ss.e005_frozen_check(record, index, lock)
+    assert verdict["passed"] and verdict["mismatched_tensors"] == ["v_t.cardinal"] and not verdict["index_sha256_matches_lock"]
+    with pytest.raises(pm.IncidentError):
+        ss.e005_frozen_check(record, {"k_t": 0.6, "tensors": index["tensors"]}, lock)
+    with pytest.raises(pm.IncidentError):
+        ss.e005_frozen_check({**record, "gains": {**record["gains"], "cardinal": 5.2}}, index, lock)
+    with pytest.raises(pm.IncidentError):
+        ss.e005_frozen_check(record, {"k_t": 0.5, "tensors": {"W_E": {"sha256": "z"}, "v_t.cardinal": {"sha256": "c"}}}, lock)
+    circuit = ss.e005_refit_circuit(lock, cd.FIXED_CIRCUIT)
+    assert circuit.r_keys == ("L05.MLP", "L04.MLP") and set(circuit.r_keys) == set(cd.FIXED_CIRCUIT.r_keys)
+    assert ss.e005_refit_circuit({}, cd.FIXED_CIRCUIT) is cd.FIXED_CIRCUIT
+    with pytest.raises(pm.IncidentError):
+        ss.e005_refit_circuit({"mechanism": {"mechanism": {"branch": "L00.MLP", "e_keys": ["L00.MLP"], "t_keys": ["L02.H01"], "r_keys": ["L05.MLP"]}}}, cd.FIXED_CIRCUIT)
+    assert ss.e005_frozen_check(record, index, {}) == {"checked": False, "reason": "no Experiment 005 lock available"}
+
+
+def test_program_failure_where_and_lock_prediction_check():
+    verdict = ss.outcome(fresh_floors={"cue_effect": {"passed": True}}, program_floors={"passed": False, "failures": ["Y1", "Y3"]}, bands={"hit": False})
+    assert verdict["program_failure_where"] == ["encoding subspace", "frame context"]
+    measurements = {"per_token": {"w": {"frames": {"f": {"predicted:selected": 1.0, "predicted:pca-006": 2.0}}}}}
+    lock = {"predictions": {"tokens": {"w": {"frames": {"f": {"predicted": {"selected": {"mean": 1.0}, "pca-006": {"mean": 2.0}}}}}}}}
+    ss.check_locked_predictions(measurements, lock)
+    lock["predictions"]["tokens"]["w"]["frames"]["f"]["predicted"]["pca-006"]["mean"] = 2.0 + 1e-6
+    with pytest.raises(pm.IncidentError, match="preregistered"):
+        ss.check_locked_predictions(measurements, lock)
