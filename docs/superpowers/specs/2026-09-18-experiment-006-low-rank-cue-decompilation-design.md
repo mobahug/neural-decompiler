@@ -2,9 +2,25 @@
 
 **Date:** 2026-09-18
 
-**Status:** Draft for review. Not approved. No Experiment 006 directory,
-confirmation manifest, lock, or model run exists. Experiment 005 is closed and
-is not amended by this document.
+**Status:** Draft, revision 2 (after the first external review). Not
+approved. No Experiment 006 directory, confirmation manifest, lock, or model
+run exists. Experiment 005 is closed and is not amended by this document.
+
+## Revision history
+
+- **Revision 1 (2026-09-18, commit `df89964`).** Initial draft.
+- **Revision 2 (2026-09-18).** After the first review, before any Experiment
+  006 model run: (1) P3 fidelity is stated on the paired cue effect
+  (`d_iso` versus `d_clean`), not on absolute contrast signs; (2) the rank-1
+  member of the low-rank family (`R1-PCA`) is distinguished from the frozen
+  Experiment 005 mean-difference baseline (`E005-scalar`), and the SVD
+  orientation is stated; (3) the 20% rule moves entirely into pre-lock rank
+  selection, with the cue token as the unit of the one-standard-error rule,
+  and Y4 only reports; (4) fresh cue tokens and nouns are category-balanced by
+  frozen quotas; (5) the transport/readout map is fitted to the measured
+  E-patch residual response, which includes the deterministic recomputation
+  outside the named circuit; (6) a pre-lock model-quality gate independent of
+  τ is added.
 
 **Scope:** the count-cued singular/plural contrast in pinned
 `EleutherAI/pythia-70m-deduped`, restricted to the circuit Experiment 005
@@ -96,10 +112,11 @@ and tolerance in Experiment 006 uses only this pool.
 Built by tokenizer-only rules and committed before the first Experiment 006
 model run; never executed before the `confirm` phase. It contains:
 
-1. **Fresh nouns:** the first twenty tokenizer-eligible entries (singular and
-   regular plural both single tokens with a leading space) of a frozen ordered
-   pool disjoint from all sixty Experiment 005 nouns, stratified 10 simple, 5
-   sibilant-`es`, 5 consonant-`y`. Candidate pool, in order: simple — `stone`,
+1. **Fresh nouns:** the first ten tokenizer-eligible simple nouns, the first
+   five eligible sibilant-`es` nouns, and the first five eligible consonant-`y`
+   nouns (singular and regular plural both single tokens with a leading
+   space) of three frozen ordered pools, each disjoint from all sixty
+   Experiment 005 nouns. Pools, in order: simple — `stone`,
    `field`, `road`, `door`, `window`, `bridge`, `tower`, `planet`, `letter`,
    `wheel`, `candle`, `branch`; sibilant — `patch`, `coach`, `church`, `tax`,
    `boss`, `lens`, `arch`, `flash`; consonant-`y` — `body`, `copy`, `duty`,
@@ -111,15 +128,20 @@ model run; never executed before the `confirm` phase. It contains:
    {cue}`, `The archive keeps {cue}`; coordinated-adjective — `Ravi and Elena
    sorted {cue} plain`, `Nora and Felix stacked {cue} heavy`. Cue and adjective
    must be single tokens; positions are derived per prompt.
-3. **Fresh cue tokens:** the eight never-executed Experiment 005 tokens plus
-   the first sixteen tokenizer-eligible entries of a frozen ordered list, for
-   twenty-four in total, grouped for reporting only: numerals — `six`, `seven`,
-   `eight`, `nine`, `twenty`, `fifty`, `thousand`; quantity words — `dozen`,
-   `countless`, `various`, `fewer`, `more`, `most`, `enough`, `plenty`;
-   determiners — `this`, `that`, `these`, `those`, `either`, `neither`, `an`,
-   `my`, `our`, `their`; non-cue controls — `big`, `red`, `old`, `fresh`,
-   `only`, `very`. The program's prediction is unconditional: it is made for
-   every token in the cue slot, control or not.
+3. **Fresh cue tokens:** the eight never-executed Experiment 005 tokens
+   (`any`, `no`, `another`, `single`, `multiple`, `numerous`, `twelve`,
+   `hundred`) plus sixteen tokens taken by frozen quota — the first four
+   tokenizer-eligible entries of each of four ordered category lists —
+   for twenty-four in total: numerals — `six`, `seven`, `eight`, `nine`,
+   `twenty`, `fifty`, `thousand`; quantity words — `dozen`, `countless`,
+   `various`, `fewer`, `more`, `most`, `enough`, `plenty`; determiners —
+   `this`, `that`, `these`, `those`, `either`, `neither`, `an`, `my`, `our`,
+   `their`; non-cue controls — `big`, `red`, `old`, `fresh`, `only`, `very`.
+   Every listed entry was verified single-token while drafting, so the frozen
+   sixteen are `six seven eight nine`, `dozen countless various fewer`,
+   `this that these those`, and `big red old fresh`; the quotas, not the
+   list order, guarantee the category balance. The program's prediction is
+   unconditional: it is made for every token in the cue slot, control or not.
 
 Confirmation prompts are every fresh cue token in every fresh frame (24 × 6 =
 144 prompts) plus the original four cue tokens in the fresh frames (12
@@ -133,37 +155,70 @@ The decompiled computation is a weight-only program with these frozen parts:
 - `E(w) = MLP_0(ln2_0(embed[w]))`, the exact token-local output of the layer-0
   MLP for token `w` (weights only, as in Experiment 005).
 - `z(w) = U_rᵀ (E(w) − μ_E) ∈ ℝ^r`, with `μ_E` the mean of `E` over the
-  exposed cue tokens and `U_r` the top-`r` left singular vectors of the
-  centered matrix of exposed `E(w)` vectors; `r ∈ {1, 2, 3, 4}` is selected as
-  below and frozen.
-- Transport and readout as one linear map per template from `z` to the
-  residual increment at the noun position: `δ_T(w) = V_T z(w)`, with `V_T ∈
-  ℝ^{d_model × r}` fitted by least squares to the measured increment of the
-  summed T ∪ R outputs (coordinated frames) or E ∪ T ∪ R outputs (cue-final
-  frames) at the noun position, relative to the frame context, over the
-  exposed cue tokens and frames of that template.
-- Readout: `ĉ_N(w; frame) = −u_N · LN(ρ + δ_T(w))`, exact LayerNorm; `ρ` is
+  exposed cue tokens. Stack the centered exposed vectors as rows of
+  `X ∈ ℝ^{16 × d_model}` and take the thin SVD `X = A Σ Bᵀ`; `U_r ∈
+  ℝ^{d_model × r}` is the first `r` columns of `B` — the leading PCA feature
+  directions in `ℝ^{d_model}`. `r ∈ {1, 2, 3, 4}` is selected as below and
+  frozen.
+- The causal map: one linear map per template from `z` to the **measured
+  E-patch residual response** at the noun position. For every exposed cue
+  token `w` and exposed frame `f` of template `T`, `Δr_Epatch(w, f)` is the
+  change of the final pre-LayerNorm residual at the noun position caused by
+  replacing `E(ref)` by `E(w)` in the frame's reference prompt (an
+  intervention on the exposed prompts; it includes the deterministic
+  recomputation of every component downstream of E, inside and outside the
+  named circuit). `V_T ∈ ℝ^{d_model × r}` is fitted by least squares to
+  `Δr_Epatch(w, f) ≈ V_T z(w)` over the exposed tokens and frames of `T`. The
+  share of `Δr_Epatch` carried by the named T ∪ R outputs versus auxiliary
+  components is decomposed and reported, not fitted separately.
+- Readout: `ĉ_N(w; frame) = −u_N · LN(ρ + V_T z(w))`, exact LayerNorm; `ρ` is
   the frozen context residual of a known frame or the template mean for a
-  fresh frame; shifts are always relative to the template's singular reference
-  cue (`one` or `each`).
+  fresh frame; shifts are always relative to the template's singular
+  reference cue (`one` or `each`).
 - E-patch prediction: replacing `E` alone in the reference prompt by `E(w)`
   is predicted to shift the contrast by `−u_N · [LN(ρ + V_T z(w)) − LN(ρ +
-  V_T z(ref))]`.
+  V_T z(ref))]`. Behavioral prediction uses the same expression; the
+  difference between the two measured quantities (routes that do not pass
+  through E) is residual.
 
-The rank-1 program of Experiment 005 is the special case `r = 1` with `U_1`
-the mean-difference direction; Experiment 006 reports it as a baseline.
+Two explicitly different baselines are carried: `R1-PCA`, the `r = 1` member
+of this family (leading PCA direction), and `E005-scalar`, the frozen
+Experiment 005 program whose axis is the mean-difference direction of four
+cue tokens and whose readout is the additive `S_M` increment. They are not
+the same object and neither is a special case of the other.
 
 ### Rank selection (Tier A, exploratory, frozen before confirmation)
 
 Leave-one-cue-out over the sixteen exposed cue tokens: for each `r` and each
 held-out token, fit `μ_E`, `U_r`, and `V_T` on the other fifteen (all exposed
-frames) and predict the held-out token's E-patch shifts and behavioral shifts
-in every exposed frame. Score each `r` by the mean absolute error of the
-E-patch prediction over held-out tokens, frames, and nouns. Select the
-smallest `r` whose error is within one standard error of the best `r`; ties
-resolve to the smaller rank. The selection rule, the scores for every `r`,
-and the chosen `r` are recorded; the final parameters are then fitted on all
-sixteen tokens and frozen in the lock before any fresh token is executed.
+frames) and predict the held-out token's E-patch shifts in every exposed
+frame and noun. The unit of analysis is the cue token: each held-out token
+yields one aggregate error (its mean absolute E-patch error over frames and
+nouns), and the mean and standard error of a rank's LOCO error are computed
+over the sixteen held-out tokens, never over the hundreds of frame–noun
+predictions. Selection is mechanical and entirely pre-lock:
+
+1. compute the LOCO error of `R1-PCA` and of ranks 2–4;
+2. a rank `r > 1` is eligible only if its LOCO error is at least 20% lower
+   than `R1-PCA`'s; otherwise `r = 1` is selected;
+3. among eligible ranks apply the one-standard-error rule: the smallest rank
+   whose LOCO error is within one standard error of the best; ties resolve to
+   the smaller rank.
+
+The rule, every rank's per-token errors, the selected `r`, and the
+`E005-scalar` LOCO error are recorded; the final parameters are then fitted
+on all sixteen tokens and frozen in the lock before any fresh token is
+executed. Nothing in Tier C can change `r`.
+
+### Pre-lock model-quality gate (independent of τ)
+
+The lock may be written only if the selected model, under LOCO on the exposed
+tokens, (a) satisfies the 20% rule when `r > 1`, (b) has Spearman correlation
+≥ 0.70 between predicted and measured per-token E-patch shifts across the
+sixteen held-out tokens, and (c) has normalized LOCO RMSE — its RMSE divided
+by the root-mean-square of the measured E-patch effects — at most 0.50. These
+gates are what make the program scientifically usable; τ below measures its
+calibration only.
 
 ## Split-invariant criteria
 
@@ -176,10 +231,14 @@ nouns a split contains. Experiment 006 replaces them:
   denominator above the floors. Absolute correctness (primary accuracy and
   flips) is reported descriptively and gates nothing.
 - **Fidelity instead of label retention (P3):** the isolated circuit must
-  reproduce the clean model's contrasts, including its mistakes:
-  `sign(c_iso(x)) = sign(c_clean(x))` in at least 108/120 conditions per cue
-  and the correlation between `c_iso` and `c_clean` across conditions at
-  least 0.90, in addition to `F ≥ 0.50` overall and `≥ 0.40` per template.
+  reproduce the clean model's *cue-induced computation*, including whatever
+  noun baseline made the clean model right or wrong. With `d_clean(N, f) =
+  c_clean(singular cue) − c_clean(plural cue)` and `d_iso(N, f)` the same
+  difference under isolation, require, separately on the manifest frames and
+  on the fresh frames (120 pairs each): `F ≥ 0.50` overall and `≥ 0.40` per
+  template; `sign(d_iso) = sign(d_clean)` in at least 114/120 pairs; and
+  `corr(d_iso, d_clean) ≥ 0.90` across the 120 pairs. Absolute contrast signs
+  play no role.
 - **Circuit families kept:** P1 (recovery 0.70 / 0.60 / 0.60), P4 (E-only at
   the cue position, coordinated, ≥ 0.50), P5 (T alone ≥ 0.50; blocked fraction
   ≥ 0.50), P7 (cross-frame control), P9 (chain: `m_T`, `m_R` ≥ 0.50,
@@ -191,14 +250,16 @@ nouns a split contains. Experiment 006 replaces them:
 ## Prediction families (decompilation axis)
 
 Floors are fixed here; tolerances come from the leave-one-cue-out residuals
-(τ = max(0.5 nats, 3 × the LOCO root-mean-square error of the selected rank)).
+(τ = max(0.5 nats, 3 × the LOCO root-mean-square error of the selected rank),
+computed with the cue token as the unit); τ is a calibration width and never a
+quality criterion — the pre-lock gate above is.
 
 | ID | Family | Prompts | Floor |
 |---|---|---|---|
 | Y1 | E-patch prediction for fresh cue tokens | 24 tokens × 6 fresh frames × 20 nouns; replace E alone in the frame's reference prompt with `E(w)` | Spearman ≥ 0.80 between predicted and measured per-token mean shifts; mean absolute error ≤ τ; sign agreement in ≥ 5/6 frames for every token whose predicted magnitude is ≥ 1.0 nat |
 | Y2 | Behavioral shift prediction for fresh cue tokens | the same prompts, no intervention | Spearman ≥ 0.70; mean absolute error ≤ 1.5 τ (the difference from Y1 is the non-E route, reported as residual) |
 | Y3 | Frame invariance of the pair shift | four original cues × 6 fresh frames × 20 nouns | predicted mean `d_full` per template within τ of the measured mean; `d_full > 0` in ≥ 108/120 pairs |
-| Y4 | Rank-1 baseline comparison | Y1 and Y2 recomputed with the `r = 1` program | reported; the selected rank must beat the rank-1 baseline on Y1's error by at least 20% or the selected rank is 1 |
+| Y4 | Baselines | Y1 and Y2 recomputed with `R1-PCA` and with `E005-scalar` | reported only; the rank is frozen in the lock and Y4 never changes it |
 | Y5 | Residual accounting | all | reported, never gated |
 
 Y1–Y3 are primary; a `PROGRAM_PASS` requires all three floors. Bands: each
@@ -208,17 +269,21 @@ per-token prediction carries `± τ`; the program hits its bands when at least
 ## Tiers and execution boundary
 
 - **Tier A (exploratory):** on the exploratory pool, verify the fixed circuit
-  once (P1, P3-fidelity, P4, P5, P9 on the 60 nouns and the 12 frames), fit
-  the program, run the rank selection, and record the rank-1 baseline. No
-  fresh noun, frame, or cue token is executed.
+  once (P1, P3-fidelity, P4, P5, P9 on the 60 nouns and the 12 frames),
+  measure `Δr_Epatch` for every exposed token and frame, fit the program, run
+  the rank selection and the pre-lock quality gate, and record the `R1-PCA`
+  and `E005-scalar` baselines. No fresh noun, frame, or cue token is
+  executed.
 - **Tier B (calibration):** LOCO residuals of the selected rank define τ and
   the per-token bands; the fixed-circuit families' bands are the Experiment
   005 calibration bands carried over, because the circuit is unchanged.
 - **Lock:** `experiments/006-low-rank-cue-decompilation/preregistration-lock.json`
   records the confirmation-set digest, the circuit, `r`, `μ_E`, `U_r`, every
-  `V_T`, the context residuals, the LOCO scores, τ, and the program's
-  predictions for every confirmation prompt computed before execution; it is
-  installed and committed by hand.
+  `V_T`, the context residuals, every rank's per-token LOCO errors, the
+  selection rule's verdict, the pre-lock quality-gate values, τ, the frozen
+  `R1-PCA` and `E005-scalar` baseline parameters, and the program's
+  predictions (and both baselines' predictions) for every confirmation prompt
+  computed before execution; it is installed and committed by hand.
 - **Tier C (confirmation, once):** the fresh set is executed exactly once
   after the lock validates (digests, unchanged scientific paths, clean tree,
   execution ledger without any confirmation prompt or fresh noun).
