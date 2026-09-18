@@ -2,10 +2,10 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 2 — conceptually approved at revision 1 subject to the three corrections under "Revision
-history", which this revision makes (the exact P1 functional with the frozen reference statistics, a gross/cumulative
-relay criterion, and a deterministic neuron-concentration definition). No Experiment 010 model run exists.
-Experiments 005–009 are closed and are not amended by this document.
+**Status:** Revision 3 — pre-measurement clarifications from the independent implementation review (the reference
+cues' own-reference frames, the reference cues' exclusion from the strata, undefined concentration on zero mass, and
+three frozen readings). Revision 2 was conceptually approved. No Experiment 010 model run exists. Experiments 005–009
+are closed and are not amended by this document.
 
 **Kind:** Discovery-only, exact attribution. No predictor is fitted; every number reported is an exact linear
 decomposition of a measured quantity, normalized against the template's plural cue. No confirmation set is frozen and
@@ -96,9 +96,15 @@ functional, the component split, the results-state, ledger, and incident convent
 - **Frames (24):** the eighteen of Experiment 008 and the six of Experiment 009's confirmation set.
 - **Nouns:** the eighty exposed nouns (79 single-token), used only for the contrast means that the replication checks
   compare (Experiments 006, 007, and 009 recorded E-patch means on their own frame–token–noun subsets).
-- **Data-derived strata (no grammar):** tokens are grouped by their measured Experiment 008/009 transport fraction
-  `q_T` (24-frame means recomputed here): **low** `q_T ≤ 0.35`, **mid** `0.35 < q_T < 0.65`, **high** `q_T ≥ 0.65`. The
-  strata organize the report; every rule applies to all 63 tokens.
+- **Data-derived strata (no grammar):** tokens are grouped by their measured transport fraction `q_T` (means over
+  their informative frames, recomputed here): **low** `q_T ≤ 0.35`, **mid** `0.35 < q_T < 0.65`, **high** `q_T ≥ 0.65`.
+  The strata organize the report; every rule applies to every token that has a stratum. **The two reference cues**
+  (`one`, `each`) are attributed and reported like every other token but are **excluded from the strata, the
+  consensus counts, the neuron overlap, and the concentration flag**: in their own templates their E-patch is the
+  identity (nothing to attribute), and in the other templates their `ΔE` is a singular-versus-singular difference,
+  not the cue-versus-reference contrast the strata are about.
+- **Own-reference frames are uninformative.** A frame in which the token is the frame's reference cue (`ΔE ≡ 0`) is
+  excluded from that token's informative frames and from its per-template neuron statistics.
 
 ## Measurements (`explore`, once)
 
@@ -112,8 +118,11 @@ functional, the component split, the results-state, ledger, and incident convent
   weight-only `g_E` per token and template.
 - **Replication:** the E-patch mean shifts of the 16 × 12 (Experiment 006 extract), 24 × 6 (Experiment 007 extract),
   and 23 × 6 (a committed extract of Experiment 009's confirmation) pairs must match within 1e-6; the identity
-  `Δ_{R0} = ΔE` (1e-4) and the ρ-identity (1e-4 relative to the plural cue's `ρ(Δr_c)`) hold in every run; otherwise
-  incidents.
+  `Δ_{R0} = ΔE` (1e-4) and the ρ-identity (1e-4 relative to the plural cue's `ρ_f(Δr_c)` in the frame) hold in every
+  run; the P1 cross-check `ρ_f(Δr_c) = ⟨ΔT₁, d̂_T⟩` (1e-6 relative) and the neuron-sum identity `Σ_j c_j = ρ_f(ΔE)`
+  (1e-4 relative to the functional's natural scale `(A_c^ref/σ_c^ref)·‖γ₃ ⊙ m‖·max(‖E(w)‖, ‖E(ref_T)‖)`, because `ΔE`
+  is a float32 quantity) hold in every run; otherwise incidents. Per (token, frame) the raw `ρ_f(ΔE)`, every
+  `ρ_f(Δout_k)`, `ρ_f(Δr_c)`, the measured head change, both denominators, and the identity errors are recorded.
 
 ## Definitions
 
@@ -125,13 +134,16 @@ functional, the component split, the results-state, ledger, and incident convent
   frozen component order `L01.H00 … L01.H07, L01.MLP, L02.H00 … L02.H07, L02.MLP` (heads in index order, then the MLP,
   a convention — within a layer the attention heads and the MLP act in parallel on the same input),
   `D = max_j |Σ_{k ≤ j} f_k|`, the maximum cumulative deviation of the read score from `f_E` while the residual updates
-  accumulate. Layer-level cumulative values `|f_L1|` and `|f_L1 + f_L2|` are reported as well.
+  accumulate. Layer-level cumulative values `|f_L1|` and `|f_L1 + f_L2|` are reported as well. **Token-level `G` and
+  `D` are the means over the token's informative frames of the per-frame values** (the stricter relay test: the mean
+  of absolute values bounds the absolute value of the mean).
 - **Neuron concentration (deterministic).** For each token and frame, `c_j = Δa_j · ρ_f(W_out[j])`; the neurons are
   sorted by `|c_j|` descending with ties broken by neuron index ascending; `n_80` is the smallest `n` such that
-  `Σ_{top-n} |c_j| ≥ 0.8 · Σ_j |c_j|` (absolute attribution mass, so cancellation cannot shrink it). Reported per token
-  and template (means over the template's frames): `n_80`, the positive mass `Σ_{c_j > 0} c_j`, the negative mass
-  `Σ_{c_j < 0} c_j`, and the top-20 neurons by `|c_j|` on the template's mean `c_j` (one deterministic set per token
-  and template) with their signed mean contributions.
+  `Σ_{top-n} |c_j| ≥ 0.8 · Σ_j |c_j|` (absolute attribution mass, so cancellation cannot shrink it); `n_80` is
+  undefined (`None`) when `Σ_j |c_j| = 0`. Reported per token and template on the template's mean `c_j` over the
+  token's informative frames of that template (one deterministic set per token and template): `n_80`, the positive
+  mass `Σ_{c_j > 0} c_j`, the negative mass `Σ_{c_j < 0} c_j`, and the top-20 neurons by `|c_j|` with their signed
+  mean contributions; the per-frame `n_80` mean is reported beside it.
 - **Top-20 overlap.** For each template, the top-20 set of the template's plural cue (from its mean `c_j`) is compared
   with the top-20 set of every token of the frozen low-`q_T` stratum by Jaccard index; the per-template mean Jaccard
   over the low stratum and the same statistic for the high stratum are reported. "Suppressed" always means the frozen
@@ -157,8 +169,9 @@ Constants: `s_min = 0.35`, `s_high = 0.65`, `c_min = 0.10` (net), `g_max = 0.25`
    stratum and of the high stratum (rule above), with the components' identities.
 3. **Experiment-level summary** over the low stratum: `E_BORNE` if ≥ 75% of its tokens are `E_BORNE`; `LAYER_BORNE`
    (naming the consistent opposers) if ≥ 75% are `LAYER_BORNE` and at least one consistent opposer exists;
-   `MIXED` otherwise. `CONCENTRATED_ENCODING` is appended if, for the plural cues and for the low stratum alike,
-   `n_80 ≤ 40` in every template.
+   `MIXED` otherwise. `CONCENTRATED_ENCODING` is appended if `n_80 ≤ 40` for **each plural cue in its own template
+   (`two` in cardinal and coordinated-adjective, `several` in quantifier) and for every low-stratum token in every
+   template** (undefined values count as not concentrated).
 4. **Descriptive predictor check (no fitting, reported only):** the Spearman correlation and MAE between `f_E(w)`
    (weight-only) and the measured `q_T(w)` over the 63 tokens, and the same for `f_total(w)`. These numbers seed
    Experiment 011's prospective test of the zero-parameter rule if `E_BORNE`; they gate nothing.
@@ -193,6 +206,14 @@ table and the summary are the deliverable; the summary's hypothesis (and, if `E_
 
 ## Revision history
 
+- **Revision 3** (pre-measurement, from the independent implementation review): the reference cues' own-reference
+  frames are uninformative for them (their E-patch is the identity), and the two reference cues are excluded from the
+  strata, consensus counts, neuron overlap, and concentration flag — with the pool as frozen they would otherwise have
+  entered the low stratum with structurally zero records and made the 75% consensus unreachable; `n_80` is undefined
+  on zero mass; token-level `G`/`D` are means of per-frame values; the concentration flag's token set is fixed (each
+  plural cue in its own template, every low-stratum token in every template); the neuron-sum identity is normalized
+  by the functional's natural scale rather than by the token's own `|ρ_f(ΔE)|` (which can be small by hypothesis);
+  the raw per-frame records are persisted. No threshold or measurement changed.
 - **Revision 1** (commit `a8d422f`): initial draft. Reviewed: direction approved with three corrections — the read
   functional omitted P1's frozen reference scalars `A_c^ref` and `1/σ_c^ref` while claiming to equal 009's P1
   fraction; `E_BORNE` inferred "layers relay" from a small *net* layer contribution, which large cancelling layer
