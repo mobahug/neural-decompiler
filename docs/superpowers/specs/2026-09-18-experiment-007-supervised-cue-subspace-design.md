@@ -2,9 +2,12 @@
 
 **Date:** 2026-09-18
 
-**Status:** Draft for review. Not approved. No Experiment 007 directory, lock,
-or model run exists. Experiment 006 is closed at `QUALITY_GATE_FAILED` and is
-not amended by this document.
+**Status:** Revision 2, for review. Not approved. No Experiment 007
+directory, lock, or model run exists. Experiment 006 is closed at
+`QUALITY_GATE_FAILED` and is not amended by this document. Revision 2 changes
+only the three items listed under "Revision history"; the hypothesis, the
+folds, the rank rule, the quality gate, τ, the confirmation set, and the
+outcome rule are unchanged from revision 1.
 
 **Scope:** the same count-cued singular/plural contrast in pinned
 `EleutherAI/pythia-70m-deduped`, the same inherited circuit (E = `L00.MLP` at
@@ -80,30 +83,88 @@ The subspace is learned to predict the response. Stack, over every exposed
 token `w` and frame `f`, the predictor rows `x(w, f) = ΔE_T(w)` and response
 rows `y(w, f) = Δr_Epatch(w, f)` into `X, Y ∈ ℝ^{n × d_model}` with
 `n = 16 × 12 = 192` (the reference token's rows are zero on both sides and are
-kept). `U_r` is the first `r` weight directions of **uncentered SIMPLS**
-(partial least squares, multi-response) on `(X, Y)`: the deterministic
-sequence of unit vectors `u_k` maximizing the covariance `‖Yᵀ X u_k‖` subject
-to orthogonality to the earlier score directions, orthonormalized. No
-intercept and no centering, because the coordinates are already
-reference-relative. `V_T` is then the ordinary least-squares map, without
-intercept, from `z(w, T)` to `Δr_Epatch(w, f)` over the exposed tokens and the
-frames of template `T` (at most `r = 4` coefficients per output coordinate
-from 64 rows, so no regularization is needed at that stage). Because SIMPLS
-has no penalty parameter, nothing is tuned inside or outside the folds;
-`r ∈ {1, 2, 3, 4}` is the only choice and it is made by the rule below.
+kept). Neither matrix is centered and no intercept is fitted anywhere,
+because the coordinates are already reference-relative: the zero point is
+meaningful, but the sample means are not zero, so the matrix `XᵀY` below is an
+**uncentered cross-moment**, not a covariance.
+
+`U_r` is the **supervised cross-moment SVD subspace**:
+
+```text
+C   = Xᵀ Y                 ∈ ℝ^{d_model × d_model}, the uncentered cross-moment
+C   = P Σ Qᵀ               singular value decomposition, σ₁ ≥ σ₂ ≥ … (float64)
+U_r = P[:, :r]             the first r left singular vectors of C
+```
+
+equivalently `U_r = argmax_{UᵀU = I_r} ‖Uᵀ XᵀY‖²_F`. There is no deflation
+and no iteration, so there is no partial-least-squares variant to choose
+between: the estimator is the leading left singular subspace of the
+cross-moment. It is response-supervised (directions of `ΔE` that carry the
+largest uncentered cross-moment with the measured E-patch response), shared
+across templates, orthonormal by construction, and nested — `U_r` is the
+first `r` columns of `U_4`, so ranks 1–4 share directions. Every prediction
+of the program depends only on the span of `U_r` (`V_T` absorbs any rotation
+or sign change within it); for reproducible exported tensors, each column's
+sign is fixed so that its largest-magnitude entry is positive. The span is
+ill-defined only if `σ_r = σ_{r+1}`; a relative gap
+`(σ_r − σ_{r+1}) / σ_1 < 1e-8` at the selected rank is recorded as an incident
+(not expected with `d_model = 512` and `n = 192`).
+
+`V_T` is then the ordinary least-squares map, without intercept, from
+`z(w, T) = U_rᵀ ΔE_T(w)` to `Δr_Epatch(w, f)` over the exposed tokens and the
+frames of template `T`:
+
+```text
+Z_T  = X_T U_r             ∈ ℝ^{64 × r}, one row per (token, frame of T)
+V_T  = argmin_V ‖Y_T − Z_T Vᵀ‖²_F   ⇔   V_Tᵀ = (Z_Tᵀ Z_T)⁻¹ Z_Tᵀ Y_T
+```
+
+(at most `r = 4` coefficients per output coordinate from 64 rows, so no
+regularization is needed at that stage). Neither step has a penalty
+parameter, so nothing is tuned inside or outside the folds; `r ∈ {1, 2, 3, 4}`
+is the only choice and it is made by the rule below.
 
 ### Baselines (frozen, reported, never selected against)
 
 - `PCA-006(r)`: the Experiment 006 family at the same rank, refitted on the
   same folds (reference-relative `Δz`, unsupervised `U_r`).
 - `E005-scalar`: the frozen Experiment 005 scalar program.
-- `Ridge-full`: the full linear map `Δr̂ = B ΔE_T(w)` with `B` estimated by
-  ridge regression, the ridge parameter chosen by an inner leave-one-cue-out
-  over the fifteen training tokens of each outer fold from the fixed grid
-  `λ ∈ {10⁻², 10⁻¹, 1, 10, 10²} × tr(XᵀX)/d_model`; nothing about `λ` is ever
-  chosen using the confirmation set. This baseline answers whether the
-  limitation is low dimensionality or the instability of any linear map from
-  `E(w)` across unseen tokens.
+- `Ridge-full`: the full-dimensional regularized linear baseline
+  `Δr̂(w, f) = B_T ΔE_T(w)` with **one map per template**,
+  `B_T ∈ ℝ^{d_model × d_model}`, the full-rank analogue of the primary
+  family's `V_T U_rᵀ` (a single shared `B` would be a stricter model than the
+  decompiler and could not answer the intended question). Each `B_T` is a
+  ridge regression without intercept, `B_Tᵀ = (X_Tᵀ X_T + λ I)⁻¹ X_Tᵀ Y_T`,
+  with one `λ` shared by the three templates within a fold and chosen by a
+  fully nested cue-group procedure. For each outer held-out cue token:
+  1. remove every row of that token (all twelve frames) from `X` and `Y`;
+  2. over the remaining fifteen training tokens, run an inner
+     leave-one-cue-out;
+  3. in each inner fold, form the grid
+     `λ ∈ {10⁻², 10⁻¹, 1, 10, 10²} × tr(X_innerᵀ X_inner)/d_model` from the
+     inner-training rows only (`X_inner` = the pooled rows of the fourteen
+     inner-training tokens across the three templates), fit the three `B_T`
+     on those rows at every grid position, and predict the inner held-out
+     token's E-patch shift in every exposed frame and noun;
+  4. score each grid position by the mean, over the fifteen inner held-out
+     tokens, of the same per-token aggregate mean absolute error used for the
+     primary family;
+  5. select the grid position (the multiplier) with the smallest inner score;
+     ties go to the larger multiplier;
+  6. refit the three `B_T` on all fifteen outer-training tokens at
+     `λ = multiplier × tr(X_outerᵀ X_outer)/d_model`, the trace taken over
+     those fifteen tokens' pooled rows;
+  7. predict the outer held-out token.
+  The selected multiplier of every outer fold is recorded. Nothing about `λ`
+  is ever chosen using the outer held-out token or the confirmation set, and
+  because the grid is a fixed set of multipliers of the training trace, even
+  the scale of the grid is leakage-free. For the confirmation report (Y4),
+  `Ridge-full` is fitted once on all sixteen exposed tokens with the
+  multiplier chosen by the same procedure run as a leave-one-cue-out over the
+  sixteen tokens, and the resulting `B_T` are frozen in the lock. This
+  baseline tests whether a full-dimensional regularized linear map
+  generalizes materially better than the selected low-rank map under the
+  same outer folds; it is not a bound on all linear maps.
 
 ## Rank selection and the pre-lock quality gate (unchanged from Experiment 006)
 
@@ -128,11 +189,13 @@ with `QUALITY_GATE_FAILED` and the confirmation set stays untouched, exactly
 as in Experiment 006. τ = max(0.5 nats, 3 × RMSE of the sixteen cue-level
 errors of the selected rank), a calibration width only.
 
-The same LOCO table is computed for `PCA-006(r)` and `Ridge-full`, and the
-comparison is recorded before the lock: the supervised model is expected to
-beat `PCA-006` at the same rank by at least 20% on LOCO error (a stated
-prediction, not a gate), and `Ridge-full`'s LOCO error is the reference for
-"low dimensionality versus linear instability".
+The same LOCO table is computed for `PCA-006(r)` and `Ridge-full` (its outer
+folds are the same sixteen held-out tokens; the nested `λ` selection lives
+inside each fold), and the comparison is recorded before the lock: the
+supervised model is expected to beat `PCA-006` at the same rank by at least
+20% on LOCO error (a stated prediction, not a gate), and `Ridge-full`'s LOCO
+error is recorded next to the selected rank's for the three-way reading given
+under "Interpretation limits".
 
 ## Confirmation (once, after the lock)
 
@@ -142,8 +205,11 @@ fresh nouns; Spearman ≥ 0.80, MAE ≤ τ, confident-token sign agreement in
 ≥ 5/6 frames), Y2 (behavioral shift; Spearman ≥ 0.70, MAE ≤ 1.5 τ), Y3
 (template-specific original cue pair in each fresh frame; per-template mean
 within τ; `d_full > 0` in ≥ 108/120), bands (≥ 18 of 24 tokens inside ± τ in
-≥ 5 of 6 frames on Y1), Y4 (all baselines' Y1/Y2 statistics, reported), Y5
-(residuals, including the E-route versus behavioral difference). The
+≥ 5 of 6 frames on Y1), Y4 (the Y1/Y2 statistics of `PCA-006` at the
+selected rank, `E005-scalar`, and the template-specific `Ridge-full`, each
+fitted on all sixteen exposed tokens and frozen in the lock; reported, never
+selected against), Y5 (residuals, including the E-route versus behavioral
+difference). The
 cue-effect gate on the fresh frames (`d_full > 0` in ≥ 108/120 pairs) is the
 precondition.
 
@@ -171,8 +237,16 @@ C002 is reviewed for promotion citing them; otherwise C002 is unchanged.
   downstream-relevant directions of `E`, not a claim about how the model
   represents number in general.
 - The program is linear from `z` to the residual increment; nonlinearity
-  appears as residual. `Ridge-full` bounds what any linear map achieves under
-  the same folds.
+  appears as residual.
+- `Ridge-full` is a full-dimensional regularized linear baseline, not a bound
+  on all linear maps: a finite-grid ridge estimator is one estimator, and
+  other regularizers or estimators could generalize better. It tests whether
+  a full-dimensional regularized linear map generalizes materially better
+  than the selected low-rank map under the same outer folds. Reading:
+  supervised low-rank ≈ `Ridge-full` — compact dimensionality is plausible;
+  `Ridge-full` ≫ low-rank — the relevant mapping may be linear but not
+  ≤ 4-dimensional; both poor — linear generalization from `E(w)` itself is
+  questionable.
 - Nothing generalizes beyond the pinned checkpoint, the three template
   families, single-token regular nouns, and the tokens tested.
 
@@ -181,10 +255,13 @@ C002 is reviewed for promotion citing them; otherwise C002 is unchanged.
 Reuse the Experiment 006 module for the exposed pool, E-patch responses, LOCO
 scaffolding, cue-level statistics, the rank rule, the quality gate, τ, the
 confirmation measurements, Y floors, bands, lock validation, and the report;
-add the SIMPLS subspace estimator and the ridge baseline (nested-fold λ) as
-pure tensor functions with tests (recovery of a planted low-rank supervised
-map; orthonormality; determinism; zero prediction at the reference), a
-program module that loads only exported tensors, and a runner with phases
+add the cross-moment SVD subspace estimator and the template-specific ridge
+baseline (nested cue-group `λ`) as pure tensor functions with tests (recovery
+of a planted low-rank supervised map; orthonormality; nestedness
+`U_r = U_4[:, :r]`; determinism and sign convention; invariance of predictions
+to column signs; zero prediction at the reference; `λ` grid computed from the
+inner-training rows only and one `B_T` per template), a program module that
+loads only exported tensors, and a runner with phases
 `validate`, `explore`, `calibrate`, `lock`, `confirm`, `report` (no freeze
 phase: the confirmation set is inherited). No new prompts, no component
 search, no other model.
@@ -194,3 +271,29 @@ search, no other model.
 Design first; no implementation until approved. The confirmation set is
 already frozen. Tier C runs once after the lock commit, and only if the
 pre-lock quality gate passes.
+
+## Revision history
+
+- **Revision 1** (commit `10c8faf`): initial draft. Reviewed: not approved,
+  with one main blocker (the supervised estimator named "uncentered SIMPLS"
+  was specified verbally; partial-least-squares variants differ in their
+  normalization and orthogonality constraints, so two implementations could
+  both claim to follow the text and produce different `U_r`), one secondary
+  blocker (`Ridge-full` read as a single shared `B`, a stricter model than the
+  decompiler), and one wording error ("bounds what any linear map achieves").
+- **Revision 2**: (1) the estimator is now the explicit supervised
+  cross-moment SVD subspace — `U_r` = first `r` left singular vectors of the
+  uncentered cross-moment `XᵀY`, equivalently
+  `argmax_{UᵀU = I} ‖Uᵀ XᵀY‖²_F` — with no deflation, a fixed sign convention,
+  nested ranks, and `V_T` by no-intercept least squares from `z`; `XᵀY` is
+  described as an uncentered cross-moment, not a covariance. (2) `Ridge-full`
+  is template-specific (`B_T` per template) with a fully nested cue-group `λ`
+  selection: the grid is a fixed set of multipliers of
+  `tr(X_trainᵀ X_train)/d_model` computed from the inner-training rows only,
+  the multiplier is chosen by inner leave-one-cue-out over the fifteen
+  training tokens, and the three `B_T` are refitted on the outer-training
+  tokens before predicting the outer held-out token; the lock-time fit for Y4
+  is defined the same way over the sixteen exposed tokens. (3) The
+  interpretation of `Ridge-full` is corrected to "full-dimensional
+  regularized linear baseline" with the three-way reading. No other element
+  changed.
