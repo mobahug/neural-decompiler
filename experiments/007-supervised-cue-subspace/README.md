@@ -73,7 +73,42 @@ own mechanism description (its component order fixes float summation order); `ex
 and context tensor, and the gains `g_R` printed in the 005 lock statement to be reproduced (an incident otherwise)
 and records whether the whole parameter index digest equals the 005 lock's.
 
-## Status — 2026-09-18: Tier A executed once; the pre-lock quality gate passed; candidate lock awaiting installation
+## Status — 2026-09-18: complete; the single confirmation ended in `PROGRAM_NOT_SUPPORTED`
+
+Experiment 007 is closed. The preregistration lock (content sha256 `de0ae866…dd96`) was committed at `ede0f53`;
+`confirm` ran once at that commit on a clean tree (results state sha256
+`118dffa052244bafa473b2e74c8964a0403f4d80bd9ca9696cbe3202f9aaa7c0`; every preregistered prediction was reproduced
+from the on-disk programs before any fresh prompt ran, max difference 0.0). The final report is copied verbatim to
+[`evidence/final-report-2026-09-18.md`](evidence/final-report-2026-09-18.md). Ledger after confirm: 198 prompt keys,
+80 noun keys. The outcome is final and is not amended or rerun.
+
+- Precondition: the fresh-frame cue effect held, 120/120 pairs positive (floor 108); on the fresh nouns over the
+  manifest frames 120/120 (floor 114).
+- **Y1 (E-patch prediction, the decompiler's own route) failed**: Spearman 0.785 over the 24 fresh tokens (floor
+  0.80); MAE 1.071 nats (within τ = 3.972); the confident-token sign rule failed for `another` (measured −0.32,
+  predicted −2.76; signs agree in 3/6 frames) and `this` (measured +0.01, predicted −2.80; 3/6). Per category the
+  Y1 MAE was numeral 0.70, control 0.74, quantity 0.75, inherited 0.89, determiner 1.68.
+- Y2 (behavioral shift) passed: Spearman 0.801, MAE 1.195 (≤ 1.5 τ). Y3 passed: every template's fresh-frame cue-pair
+  mean within τ (cardinal 4.55 vs 5.30 measured, quantifier 5.68 vs 5.40, coordinated 4.37 vs 4.37) and 120/120
+  positive. Bands: 24/24 tokens inside ± τ in ≥ 5/6 frames (τ is wide).
+- Outcome rule: a Y floor failed → `PROGRAM_NOT_SUPPORTED`, failing family Y1, located at the encoding subspace.
+- Y4 baselines (reported, never selected against): `Ridge-full` Y1 Spearman 0.796, MAE 1.049 (Y2 0.795 / 1.182);
+  `E005-scalar` 0.781 / 1.744 (Y2 0.793 / 1.854); `PCA-006` (rank 1) 0.610 / 2.708 (Y2 0.611 / 2.813). `Ridge-full`
+  and `E005-scalar` fail the same two confident tokens (`another`, `this`).
+- Circuit families (reported; not in the outcome): on both fresh sets P1, P4, P5, P7, P8, P9 passed and P3 failed on
+  its correlation floor (0.696 on the fresh nouns × manifest frames, 0.840 on the fresh frames; floor 0.90; F 0.78 /
+  0.77 with 120/120 paired signs). C002 is not eligible for review and stays at `LOCALIZED`.
+
+What the result says, within the design's limits: the rank-1 response-supervised direction of `L00.MLP` generalizes
+to unseen tokens, frames, and nouns about as well as a full-dimensional regularized linear map (Y1 MAE 1.07 vs 1.05;
+LOCO 1.08 vs 0.86) and far better than the leading unsupervised direction (2.71) or the scalar program (1.74), so
+"compact dimensionality" is not what fails. What fails, for every linear map from the token-local `E(w)`, is a small set
+of singular-selecting determiners (`this`, `another`) whose E-patch response is near zero while their `E(w)` projects
+onto the plural side of the learned direction; with them the Y1 rank correlation misses the 0.80 floor by 0.015 and the
+confident-sign rule fails. Nothing here generalizes beyond the pinned checkpoint, the three templates, single-token
+regular nouns, and the tokens tested.
+
+### Tier A (2026-09-18, for the record)
 
 `explore` ran once on protocol/code commit `cc56014` (run `81e578c5e6d41814`; A0 passed; CPU float32, 4 BLAS threads). The
 rendered Tier A report is copied verbatim to
