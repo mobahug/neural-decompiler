@@ -131,6 +131,22 @@
 - [ ] **Step 2: Implement; document commands and boundaries in both READMEs.**
 - [ ] **Step 3: Full offline suite green.** Commit `feat: add confirmation, outcome rule, and report for experiment 005`.
 
+#### Amendment — 2026-09-18: instrumented-path numerics (pre-conclusion)
+
+The first `discover` attempt stopped in A1 before any mechanism version was
+written: the prompt-level readout differed from the case-level teacher-forced
+contrast by up to 4.5e-3 nats against the plan's 1e-4 tolerance. The cause is
+numerical, not scientific: every Experiment 005 measurement runs through the
+instrumented forward with `use_attn_result=True`, which computes attention
+through per-head results and changes float32 rounding (Pythia-70M logits reach
+~1.6e3 in magnitude), while the screen's teacher-forced scoring and the plain
+forward agree bitwise. The per-case comparison against the screen (1e-6)
+passed. The prompt-level tolerance is set to 1e-2 — the same tolerance the
+design already applies to the LayerNorm reconstruction's model gap — and the
+measured gap is recorded in the A1 result. All Experiment 005 quantities are
+consistent within the instrumented path; `discover` restarts under the
+crash-recovery rule because nothing had been concluded.
+
 ### Task 7: Independent review, then Tier A execution
 
 - [ ] **Step 1: Subagent review of the implementation against the spec** (definitions, floors, seeds, phase isolation, non-execution, program independence, LayerNorm semantics). Fix findings; commit.

@@ -61,8 +61,11 @@ uv run python experiments/005-regular-plural-mechanism/run.py report
   declared token-local `E_program` sub-modules (the token embedding and the layer-0 MLP) on single tokens, and
   never imports TransformerLens, Transformers, or the instrumentation modules. The exact final LayerNorm uses
   population variance and the pinned `ε = 1e-5`.
-- Numerical note: the direct-effect decomposition is stated in float64 on the reconstructed residual and
-  reproduces the contrast to 1e-4 nats by identity; the model's own float32 unembedding GEMM differs from that
-  reconstruction by up to about 3e-3 nats, which is recorded as `max_model_gap` with a 1e-2 tolerance.
+- Numerical note: every measurement runs through the instrumented forward (`use_attn_result=True`), whose
+  float32 rounding differs from the plain forward by up to a few 1e-3 nats on ~5-nat contrasts (Pythia-70M logits
+  reach ~1.6e3); the A1 prompt-level check tolerates 1e-2 and records the gap. The direct-effect decomposition
+  is stated in float64 on the reconstructed residual and reproduces the contrast to 1e-4 nats by identity; the
+  model's own float32 unembedding GEMM differs from that reconstruction by up to about 3e-3 nats, recorded as
+  `max_model_gap` with a 1e-2 tolerance.
 - Generated outputs live under `outputs/experiment-005/` and are not committed; evidence copies of the final
   reports go under `evidence/` with the claim.

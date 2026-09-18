@@ -1252,7 +1252,9 @@ SCREENING_REPORT_CONSTANTS = {  # from screening/behavior-candidates/report-2026
 }
 A1_CASE_TOLERANCE = 1e-6
 A1_AGGREGATE_TOLERANCE = 1e-3
-A1_PROMPT_LEVEL_TOLERANCE = 1e-4
+# Prompt-level readouts come from the instrumented forward (use_attn_result=True), whose float32
+# numerics differ from the plain forward the screen used by up to a few 1e-3 nats on ~5-nat contrasts.
+A1_PROMPT_LEVEL_TOLERANCE = 1e-2
 A3_FULL_COUNTERFACTUAL_TOLERANCE = 1e-4
 AXIS_SUM_TOLERANCE = 1e-3
 
