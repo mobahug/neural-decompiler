@@ -2,10 +2,10 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 2, for review. Not approved. No Experiment 007
+**Status:** Revision 3, for review. Not approved. No Experiment 007
 directory, lock, or model run exists. Experiment 006 is closed at
-`QUALITY_GATE_FAILED` and is not amended by this document. Revision 2 changes
-only the three items listed under "Revision history"; the hypothesis, the
+`QUALITY_GATE_FAILED` and is not amended by this document. Revisions 2 and 3
+change only the items listed under "Revision history"; the hypothesis, the
 folds, the rank rule, the quality gate, τ, the confirmation set, and the
 outcome rule are unchanged from revision 1.
 
@@ -105,24 +105,56 @@ across templates, orthonormal by construction, and nested — `U_r` is the
 first `r` columns of `U_4`, so ranks 1–4 share directions. Every prediction
 of the program depends only on the span of `U_r` (`V_T` absorbs any rotation
 or sign change within it); for reproducible exported tensors, each column's
-sign is fixed so that its largest-magnitude entry is positive. The span is
-ill-defined only if `σ_r = σ_{r+1}`; a relative gap
-`(σ_r − σ_{r+1}) / σ_1 < 1e-8` at the selected rank is recorded as an incident
-(not expected with `d_model = 512` and `n = 192`).
+sign is fixed so that its largest-magnitude entry is positive.
 
-`V_T` is then the ordinary least-squares map, without intercept, from
-`z(w, T) = U_rᵀ ΔE_T(w)` to `Δr_Epatch(w, f)` over the exposed tokens and the
-frames of template `T`:
+**Singular-gap rule.** The span of `U_r` is ill-defined when `σ_r = σ_{r+1}`,
+and a rank whose prediction is not uniquely defined in some fold could decide
+the selection. So the check applies to every SVD that contributes to
+selection, not only to the final one:
 
 ```text
-Z_T  = X_T U_r             ∈ ℝ^{64 × r}, one row per (token, frame of T)
-V_T  = argmin_V ‖Y_T − Z_T Vᵀ‖²_F   ⇔   V_Tᵀ = (Z_Tᵀ Z_T)⁻¹ Z_Tᵀ Y_T
+for every outer LOCO fold (16 fits on fifteen tokens) and for the final fit on all sixteen tokens:
+    require rank(C) ≥ 5                              (σ₅ must exist; the exposed X spans ≤ 15 dimensions, so this is generic)
+    for every evaluated r ∈ {1, 2, 3, 4}:
+        gap_r = (σ_r − σ_{r+1}) / σ_1
+        require gap_r ≥ 1e-8
 ```
 
-(at most `r = 4` coefficients per output coordinate from 64 rows, so no
-regularization is needed at that stage). Neither step has a penalty
-parameter, so nothing is tuned inside or outside the folds; `r ∈ {1, 2, 3, 4}`
-is the only choice and it is made by the rule below.
+`rank(C)` is the number of singular values exceeding
+`max(C.shape) × eps(float64) × σ_1`. Every `gap_r` is recorded. Any violation
+is a numerical/identifiability incident (see "Incidents"), never
+`QUALITY_GATE_FAILED`; none is expected with `d_model = 512` and `n = 192`.
+
+`V_T` is then the least-squares map, without intercept, from
+`z(w, T) = U_rᵀ ΔE_T(w)` to `Δr_Epatch(w, f)` over the exposed tokens and the
+frames of template `T`, solved deterministically by the Moore–Penrose
+pseudoinverse in float64 rather than by the normal equations, so that the
+solve is defined without a full-column-rank assumption:
+
+```text
+Z_T   = X_T U_r                              one row per (training token, frame of T): 60 × r in a fold, 64 × r in the final fit
+V_Tᵀ  = pinv(Z_T) Y_T                        SVD pseudoinverse, rcond = max(Z_T.shape) × eps(float64)
+rank(Z_T) = #{ singular values of Z_T > rcond × σ_max(Z_T) }
+```
+
+`rank(Z_T)` is recorded for every template in every fold and in the final
+fit. **Identifiability rule:** `rank(Z_T) < r` for any template, in any fold
+or in the final fit, is an incident. This is part of the hypothesis, not a
+numerical convenience: `r` is meant to be an actual shared `r`-dimensional
+representation read by every template, so every coordinate of `z` must be
+identifiable inside each template's own rows (`Z_T` has at least fourteen
+distinct nonzero rows in every fold — far more than `r ≤ 4` — so the rule is
+generically satisfied). When `rank(Z_T) = r` the pseudoinverse
+solution coincides with the ordinary least-squares solution
+`(Z_Tᵀ Z_T)⁻¹ Z_Tᵀ Y_T`; at most `r = 4` coefficients per output coordinate
+are estimated from 64 rows, so no regularization is needed at that stage.
+The same pseudoinverse solve, tolerance, and rank recording are used for the
+`V_T` of the `PCA-006(r)` baseline; a rank deficiency there is reported, not
+an incident, because the baseline is never selected against.
+
+Neither step has a penalty parameter, so nothing is tuned inside or outside
+the folds; `r ∈ {1, 2, 3, 4}` is the only choice and it is made by the rule
+below.
 
 ### Baselines (frozen, reported, never selected against)
 
@@ -228,6 +260,24 @@ C002 is reviewed for promotion citing them; otherwise C002 is unchanged.
 - `PROGRAM_NOT_SUPPORTED` — a Y floor fails; the failing family names where
   (encoding subspace, transport/readout linearity, or frame context).
 
+### Incidents
+
+An incident is not an outcome label. The frozen incidents are: an exposed
+E-patch response that fails to match Experiment 006's recorded mean to 1e-6;
+`rank(C) < 5` or a singular gap `gap_r < 1e-8` in any contributing SVD;
+`rank(Z_T) < r` for any template in any fold or the final fit; a lock digest
+or confirmation-set digest mismatch; and any software defect. An incident
+stops the phase where it occurs and is recorded in the results state and the
+report. It follows the incident rule of Experiments 005 and 006: incident
+note, invalidation of the affected artifacts, a committed fix or a documented
+protocol amendment made before any data beyond the incident is looked at,
+and a rerun of the affected phase only under that amendment; a defect found
+after the confirmation run invalidates it and permits a rerun of the entire
+confirmation only under a new protocol version whose report also carries the
+invalidated result. Resolving an incident never touches the confirmation set
+and never changes a threshold, the rank rule, or the quality gate. There are
+no scientific retries.
+
 ## Interpretation limits
 
 - Sixteen exposed cue tokens define the subspace; the outer leave-one-cue-out
@@ -259,9 +309,12 @@ add the cross-moment SVD subspace estimator and the template-specific ridge
 baseline (nested cue-group `λ`) as pure tensor functions with tests (recovery
 of a planted low-rank supervised map; orthonormality; nestedness
 `U_r = U_4[:, :r]`; determinism and sign convention; invariance of predictions
-to column signs; zero prediction at the reference; `λ` grid computed from the
-inner-training rows only and one `B_T` per template), a program module that
-loads only exported tensors, and a runner with phases
+to column signs; zero prediction at the reference; the singular-gap check
+raising on a planted tie in a fold; the pseudoinverse solve with the frozen
+`rcond` and `rank(Z_T)` recording, raising on a planted rank-deficient
+template; `λ` grid computed from the inner-training rows only and one `B_T`
+per template), a program module that loads only exported tensors, and a
+runner with phases
 `validate`, `explore`, `calibrate`, `lock`, `confirm`, `report` (no freeze
 phase: the confirmation set is inherited). No new prompts, no component
 search, no other model.
@@ -296,4 +349,21 @@ pre-lock quality gate passes.
   is defined the same way over the sixteen exposed tokens. (3) The
   interpretation of `Ridge-full` is corrected to "full-dimensional
   regularized linear baseline" with the three-way reading. No other element
-  changed.
+  changed. Reviewed: scientifically sound; two numerical identifiability
+  ambiguities remained (the `V_T` solve assumed full column rank of `Z_T`;
+  the singular-gap check covered only the final fit although sixteen
+  outer-fold SVDs per rank feed the selection).
+- **Revision 3** (commit `f64a609` reviewed): (1) `V_T` is solved by the
+  float64 Moore–Penrose pseudoinverse with `rcond = max(Z_T.shape) × eps(float64)`,
+  `rank(Z_T)` is recorded for every template in every fold and the final fit,
+  and `rank(Z_T) < r` anywhere is an identifiability incident (the stricter
+  option: all `r` coordinates must be identifiable in every template because
+  `r` denotes a shared representation read by every template); the same solve
+  is used for the `PCA-006(r)` readout, where a deficiency is reported only.
+  (2) The singular-gap rule `gap_r = (σ_r − σ_{r+1})/σ_1 ≥ 1e-8` applies to
+  every evaluated `r ∈ {1..4}` in every outer LOCO fold and in the final
+  sixteen-token fit, with `rank(C) ≥ 5` required so that `σ_{r+1}` exists; any
+  violation is a numerical/identifiability incident, not
+  `QUALITY_GATE_FAILED`. (3) An "Incidents" subsection freezes what an
+  incident is and how it is resolved, mirroring Experiments 005 and 006. No
+  other element changed.
