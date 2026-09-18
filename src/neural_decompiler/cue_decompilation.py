@@ -961,7 +961,8 @@ def run_exploration(model: Any, pool: ExposedPool, *, state: dict[str, Any], res
             response = responses[(token, frame.frame_id)]
             for noun in pool.nouns:
                 if noun.single_token:
-                    predicted.append(e005_program.predict_epatch_shift(frame.template_id, frame.frame_id if frame.origin == "manifest" else None, token_id, pool.reference_ids[frame.template_id], noun.sg_ids[0], noun.pl_ids[0]))
+                    # The 005 program falls back to its template context for frames outside its own rho_frame set.
+                    predicted.append(e005_program.predict_epatch_shift(frame.template_id, frame.frame_id, token_id, pool.reference_ids[frame.template_id], noun.sg_ids[0], noun.pl_ids[0]))
                     measured.append(response.shifts[noun.lexical_key])
         e005_values[token] = {"predicted": pm._mean(predicted), "measured": pm._mean(measured), "mae": pm._mean([abs(p - m) for p, m in zip(predicted, measured)])}
     e005_error = pm._mean([entry["mae"] for entry in e005_values.values()])
