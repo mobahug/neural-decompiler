@@ -711,3 +711,191 @@ def tolerance_tau(per_token: Mapping[str, Mapping[str, float]]) -> float:
     """τ = max(0.5 nats, 3 × RMSE of the cue-level errors of the selected rank)."""
     errors = [entry["mae"] for entry in per_token.values()]
     return max(TAU_MIN_NATS, TAU_RMSE_MULTIPLIER * math.sqrt(pm._mean([error * error for error in errors])))
+
+
+# ---------------------------------------------------------------------------
+# Split-invariant circuit families, the cue-effect gate, and the Y families.
+
+
+def eval_context(model: Any, weights: pm.Weights, frames: Sequence[pm.Frame], nouns: Sequence[pm.Noun], site_axes: Mapping[str, pm.SiteAxis], *, cache: pm.PromptCache | None = None) -> pm.EvalContext:
+    return pm.EvalContext(model, weights, FIXED_CIRCUIT, None, tuple(frames), tuple(nouns), cache or pm.PromptCache(model, tuple(nouns)), dict(site_axes), "H1")
+
+
+def _pearson(xs: Sequence[float], ys: Sequence[float]) -> float:
+    mx, my = pm._mean(xs), pm._mean(ys)
+    numerator = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    denominator = math.sqrt(sum((x - mx) ** 2 for x in xs) * sum((y - my) ** 2 for y in ys))
+    return numerator / denominator if denominator else 0.0
+
+
+def p3_fidelity(ev: pm.EvalContext) -> dict[str, Any]:
+    """Isolation must reproduce the clean model's paired cue effect: F strata, sign agreement, correlation."""
+    rows: list[pm.CaseRow] = []
+    for frame in ev.frames:
+        kept = list(ev.mechanism.role_sites())
+        if frame.p_c == frame.p_t:
+            kept = list(dict.fromkeys((key, "p_t") for key, _ in kept))
+        runs = pm.isolation_runs(ev.model, ev.cache, frame, kept)
+        sg, pl = pm.frame_prompts(frame)
+        c_a, c_b = ev.cache.c(sg), ev.cache.c(pl)
+        c_a_i, c_b_i = pm.contrasts(runs["sg"].logits, ev.nouns), pm.contrasts(runs["pl"].logits, ev.nouns)
+        for noun in ev.nouns:
+            if noun.single_token:
+                key = noun.lexical_key
+                rows.append(pm.CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key], c_a_i[key] - c_b_i[key]))
+    d_clean = [row.d_full for row in rows]
+    d_iso = [row.d_patch for row in rows]
+    agreement = sum(1 for clean, iso in zip(d_clean, d_iso) if math.copysign(1.0, clean) == math.copysign(1.0, iso))
+    return {"summary": pm.stratified_recovery(rows), "sign_agreement": agreement, "pairs": len(rows), "correlation": _pearson(d_iso, d_clean), "rows": [row.to_dict() for row in rows]}
+
+
+def circuit_families(ev: pm.EvalContext, universe: Sequence[str]) -> dict[str, Any]:
+    """P1, P3-fidelity, P4, P5, P7, P8, P9 and the behavior summary on ``ev.frames`` with ``ev.nouns``."""
+    return {"behavior": pm._behavior_family(ev), "P1": pm._p1(ev), "P3": p3_fidelity(ev), "P4": pm._p4(ev, ev.frames, universe), "P5": pm._p5(ev, ev.frames),
+            "P7": pm._p7(ev, ev.frames), "P8": pm._p8(ev, ev.frames, universe), "P9": pm._p9(ev, ev.frames)}
+
+
+def circuit_floors(results: Mapping[str, Any], *, fresh: bool) -> dict[str, Any]:
+    n_pairs = results["behavior"]["cases"]
+    out: dict[str, Any] = {}
+    rate = CUE_EFFECT_FRESH if fresh else CUE_EFFECT_MANIFEST
+    required = pm.exact_count_floor(rate, n_pairs)
+    out["cue_effect"] = {"passed": results["behavior"]["positive_pairs"] >= required, "positive_pairs": results["behavior"]["positive_pairs"], "required": required, "n": n_pairs,
+                         "descriptive": {"primary_correct": results["behavior"]["primary_correct"], "flips": results["behavior"]["flips"]}}
+    p1_ok, p1_fail = pm.recovery_floors_pass(results["P1"]["summary"], overall=pm.FLOORS["P1_overall"], stratum=pm.FLOORS["P1_stratum"])
+    out["P1"] = {"passed": p1_ok, "failures": p1_fail, "recovery": results["P1"]["summary"]["overall"]["recovery"]}
+    r_set = results["P1"]["summary"]["overall"]["recovery"]
+    p3 = results["P3"]
+    f = p3["summary"]["overall"]["recovery"]
+    templates_ok = all(entry["recovery"] is not None and entry["recovery"] >= P3_F_TEMPLATE for entry in p3["summary"]["templates"].values())
+    required_signs = pm.exact_count_floor(P3_SIGN_RATE, p3["pairs"])
+    out["P3"] = {"passed": f is not None and f >= P3_F_OVERALL and templates_ok and p3["sign_agreement"] >= required_signs and p3["correlation"] >= P3_CORRELATION,
+                 "F": f, "templates_ok": templates_ok, "sign_agreement": p3["sign_agreement"], "required_signs": required_signs, "correlation": p3["correlation"]}
+    out["P4"] = {"passed": results["P4"]["value"] is not None and results["P4"]["value"] >= pm.FLOORS["P4"], "value": results["P4"]["value"]}
+    p5 = results["P5"]
+    out["P5"] = {"passed": bool(p5.get("applicable")) and p5["a_single"] is not None and p5["a_single"] >= pm.FLOORS["P5a_H1"] and p5["b_blocked_fraction"] is not None and p5["b_blocked_fraction"] >= pm.FLOORS["P5b_H1"],
+                 "a_single": p5.get("a_single"), "b_blocked_fraction": p5.get("b_blocked_fraction")}
+    p7 = results["P7"]
+    out["P7"] = {"passed": p7["same"] is not None and p7["same"] <= pm.FLOORS["P7_same"] and p7["opposite"] is not None and r_set is not None and p7["opposite"] >= pm.FLOORS["P7_opposite_factor"] * r_set,
+                 "same": p7["same"], "opposite": p7["opposite"]}
+    p8 = results["P8"]
+    out["P8"] = {"passed": p8["loss"] is not None and p8["loss"] >= pm.FLOORS["P8_loss"], "loss": p8["loss"], "compensation_ratio": p8["compensation_ratio"]}
+    p9 = results["P9"]
+    out["P9"] = {"passed": bool(p9.get("applicable")) and p9["m_T"] >= pm.FLOORS["P9"] and p9["m_R"] >= pm.FLOORS["P9"] and p9["m_R_given_T_frozen"] <= pm.FLOORS["P9_frozen_factor"] * p9["m_R"],
+                 "m_T": p9.get("m_T"), "m_R": p9.get("m_R"), "m_R_given_T_frozen": p9.get("m_R_given_T_frozen")}
+    families = ["P1", "P3", "P4", "P5", "P7", "P8", "P9"]
+    out["failures"] = [family for family in families if not out[family]["passed"]]
+    out["passed"] = out["cue_effect"]["passed"] and not out["failures"]
+    return out
+
+
+def measure_confirmation_families(model: Any, weights: pm.Weights, confirmation: Confirmation, programs: Mapping[str, Any], *, cache: pm.PromptCache) -> dict[str, Any]:
+    """Y1 (E-patch), Y2 (behavior), Y3 (pair shift) measurements on the fresh frames, nouns, and tokens, with every program's predictions."""
+    nouns = [noun for noun in confirmation.nouns if noun.single_token]
+    per_token: dict[str, dict[str, Any]] = {}
+    for token in confirmation.tokens:
+        per_token[token["word"]] = {"token_id": token["token_id"], "category": token["category"], "frames": {}}
+    for frame in confirmation.frames:
+        reference = confirmation.reference_prompt(frame)
+        c_ref = cache.c(reference)
+        clean = cache.run(reference)
+        for token in confirmation.tokens:
+            word, token_id = token["word"], token["token_id"]
+            site = ("L00.MLP", reference.p_c)
+            patched = pm.run_patched(model, reference, {site: e_slice(weights, token_id)}, {site: ReplacementSource.RESAMPLE})
+            c_patched = pm.contrasts(patched.logits, nouns)
+            prompt = next(prompt for prompt in confirmation.token_prompts if prompt.frame.frame_id == frame.frame_id and prompt.cue_token_id == token_id)
+            c_word = cache.c(prompt)
+            entry: dict[str, Any] = {"template_id": frame.template_id}
+            entry["epatch_measured"] = pm._mean([c_patched[n.lexical_key] - c_ref[n.lexical_key] for n in nouns])
+            entry["behavior_measured"] = pm._mean([c_word[n.lexical_key] - c_ref[n.lexical_key] for n in nouns])
+            for name, program in programs.items():
+                predictions = [program.predict_epatch_shift(frame.template_id, None, token_id, n.sg_ids[0], n.pl_ids[0]) for n in nouns]
+                entry[f"predicted:{name}"] = pm._mean(predictions)
+                entry[f"epatch_mae:{name}"] = pm._mean([abs(p - (c_patched[n.lexical_key] - c_ref[n.lexical_key])) for p, n in zip(predictions, nouns)])
+                entry[f"behavior_mae:{name}"] = pm._mean([abs(p - (c_word[n.lexical_key] - c_ref[n.lexical_key])) for p, n in zip(predictions, nouns)])
+            per_token[word]["frames"][frame.frame_id] = entry
+    # Y3: the template's original cue pair in each fresh frame.
+    y3 = {}
+    positive = total = 0
+    for template in pm.TEMPLATE_ORDER:
+        measured, predicted = [], {name: [] for name in programs}
+        for frame in confirmation.frames:
+            if frame.template_id != template:
+                continue
+            sg, pl = pm.frame_prompts(frame)
+            c_a, c_b = cache.c(sg), cache.c(pl)
+            for noun in nouns:
+                d_full = c_a[noun.lexical_key] - c_b[noun.lexical_key]
+                measured.append(d_full)
+                total += 1
+                positive += int(d_full > 0)
+                for name, program in programs.items():
+                    predicted[name].append(program.predict_pair(template, None, frame.cue_ids["sg"], frame.cue_ids["pl"], noun.sg_ids[0], noun.pl_ids[0]))
+        y3[template] = {"mean_measured": pm._mean(measured), **{f"mean_predicted:{name}": pm._mean(values) for name, values in predicted.items()}}
+    y3["positive_pairs"] = positive
+    y3["pairs"] = total
+    return {"per_token": per_token, "Y3": y3}
+
+
+def y_summary(per_token: Mapping[str, Mapping[str, Any]], program_name: str, measured_key: str, mae_key: str) -> dict[str, Any]:
+    words = list(per_token)
+    predicted = [pm._mean([entry[f"predicted:{program_name}"] for entry in per_token[word]["frames"].values()]) for word in words]
+    measured = [pm._mean([entry[measured_key] for entry in per_token[word]["frames"].values()]) for word in words]
+    mae = pm._mean([entry[mae_key] for word in words for entry in per_token[word]["frames"].values()])
+    confident = {}
+    for word in words:
+        frames = per_token[word]["frames"]
+        predicted_means = {frame_id: entry[f"predicted:{program_name}"] for frame_id, entry in frames.items()}
+        if abs(pm._mean(list(predicted_means.values()))) >= Y1_CONFIDENT_NATS:
+            agree = sum(1 for frame_id, entry in frames.items() if math.copysign(1.0, entry[measured_key]) == math.copysign(1.0, predicted_means[frame_id]))
+            confident[word] = {"agree": agree, "total": len(frames)}
+    return {"spearman": pm.spearman(predicted, measured), "mae": mae, "confident": confident, "token_predicted": dict(zip(words, predicted)), "token_measured": dict(zip(words, measured))}
+
+
+def y_floors(measurements: Mapping[str, Any], *, tau: float, program_name: str = "selected") -> dict[str, Any]:
+    per_token = measurements["per_token"]
+    y1 = y_summary(per_token, program_name, "epatch_measured", f"epatch_mae:{program_name}")
+    y2 = y_summary(per_token, program_name, "behavior_measured", f"behavior_mae:{program_name}")
+    y1_signs_ok = all(entry["agree"] >= Y1_SIGN_FRAMES for entry in y1["confident"].values())
+    out = {
+        "Y1": {"passed": y1["spearman"] >= Y1_SPEARMAN and y1["mae"] <= tau and y1_signs_ok, "spearman": y1["spearman"], "mae": y1["mae"], "signs_ok": y1_signs_ok, "confident": y1["confident"]},
+        "Y2": {"passed": y2["spearman"] >= Y2_SPEARMAN and y2["mae"] <= Y2_TAU_FACTOR * tau, "spearman": y2["spearman"], "mae": y2["mae"]},
+    }
+    y3 = measurements["Y3"]
+    required = pm.exact_count_floor(Y3_POSITIVE_RATE, y3["pairs"])
+    within = all(abs(y3[template]["mean_measured"] - y3[template][f"mean_predicted:{program_name}"]) <= tau for template in pm.TEMPLATE_ORDER)
+    out["Y3"] = {"passed": within and y3["positive_pairs"] >= required, "within_tau": within, "positive_pairs": y3["positive_pairs"], "required": required}
+    out["failures"] = [family for family in ("Y1", "Y2", "Y3") if not out[family]["passed"]]
+    out["passed"] = not out["failures"]
+    out["tau"] = tau
+    return out
+
+
+def y_band_hits(per_token: Mapping[str, Mapping[str, Any]], *, tau: float, program_name: str = "selected") -> dict[str, Any]:
+    """At least 18 of the 24 tokens inside their ± τ interval in at least 5 of 6 frames on Y1."""
+    detail = {}
+    tokens_hit = 0
+    for word, data in per_token.items():
+        frames_hit = sum(1 for entry in data["frames"].values() if abs(entry["epatch_measured"] - entry[f"predicted:{program_name}"]) <= tau)
+        detail[word] = frames_hit
+        tokens_hit += int(frames_hit >= Y_BAND_FRAMES)
+    return {"tokens_hit": tokens_hit, "hit": tokens_hit >= Y_BAND_TOKENS, "frames_hit_by_token": detail}
+
+
+def outcome(*, manifest_floors: Mapping[str, Any], fresh_floors: Mapping[str, Any], program_floors: Mapping[str, Any], bands: Mapping[str, Any]) -> dict[str, Any]:
+    if not manifest_floors["cue_effect"]["passed"] or not fresh_floors["cue_effect"]["passed"]:
+        label = "CUE_EFFECT_NOT_REPLICATED"
+    elif manifest_floors["failures"]:
+        label = "NOT_SUPPORTED"
+    elif fresh_floors["failures"]:
+        label = "CIRCUIT_NOT_GENERALIZED"
+    elif not program_floors["passed"]:
+        label = "CIRCUIT_ONLY"
+    elif bands["hit"]:
+        label = "DECOMPILED"
+    else:
+        label = "DECOMPILED_MISCALIBRATED"
+    return {"label": label, "circuit": "CIRCUIT_PASS" if not manifest_floors["failures"] and not fresh_floors["failures"] else "CIRCUIT_FAIL",
+            "program": "PROGRAM_PASS" if program_floors["passed"] else "PROGRAM_FAIL", "manifest_failures": manifest_floors["failures"],
+            "fresh_failures": fresh_floors["failures"], "program_failures": program_floors["failures"], "bands_hit": bands["hit"]}
