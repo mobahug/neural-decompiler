@@ -2493,10 +2493,12 @@ def _p7(ev: EvalContext, frames: Sequence[Frame]) -> dict[str, Any]:
     for flip, name in ((True, "opposite"), (False, "same")):
         rows: list[CaseRow] = []
         for template in TEMPLATE_ORDER:
-            pair = [frame for frame in frames if frame.template_id == template]
-            if len(pair) != 2:
+            group = [frame for frame in frames if frame.template_id == template]
+            if len(group) < 2:
                 continue
-            for target, source in ((pair[0], pair[1]), (pair[1], pair[0])):
+            # Each frame takes its source from the next frame of the same template (cyclic); two frames swap.
+            for index, target in enumerate(group):
+                source = group[(index + 1) % len(group)]
                 sites = list(ev.mechanism.role_sites())
                 if target.p_c == target.p_t:
                     sites = list(dict.fromkeys((key, "p_t") for key, _ in sites))

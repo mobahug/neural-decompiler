@@ -46,3 +46,35 @@ uv run python experiments/006-low-rank-cue-decompilation/run.py report
 
 Boundaries: the confirmation set is never executed before `confirm`; every phase refuses to run out of order,
 twice, or on a dirty tree; `low_rank_program.py` loads only exported tensors and never imports the network stack.
+
+## Status — 2026-09-18: Tier A executed once; the pre-lock quality gate failed
+
+`explore` ran on protocol/code commit `adea65f` (run `b09a022e021ba19c`, results state sha256
+`ba502188070f5f7144ec78a2b3ad166c15c13047631ccdb18b75cfbb37581982`; A0 passed). The rendered report is copied
+verbatim to [`evidence/exploration-report-2026-09-18.md`](evidence/exploration-report-2026-09-18.md). Ledger: 36
+prompt keys (the twelve exposed frames' cue prompts and reference prompts), 60 noun keys; no confirmation prompt
+and no fresh noun was executed.
+
+- Circuit on the exposed pool (60 nouns × 12 frames, descriptive): cue effect 708/708 positive; P1 0.978; P3
+  F 0.804 with 708/708 paired signs but correlation 0.756 (the 0.90 confirmation floor would not be met); P4
+  0.915; P5 0.819 / 0.870; P8 0.813; P9 0.917 / 1.037 / 0.190. P7 was recorded as `None` because the reused
+  cross-frame control paired only templates with exactly two frames; the pairing was generalized (cyclic) after
+  the run, and `explore` cannot be re-run in this protocol version.
+- E-patch responses: replacing `L00.MLP` in a reference prompt by the weight-only `E(w)` moves the contrast by a
+  token-specific amount that is nearly frame-invariant (for example `all` −3.7 to −5.4 nats over the twelve frames,
+  `a` +0.4 to +1.6 in cardinal and coordinated frames, `every` about zero); the named circuit carries 0.6–0.9 of
+  each response's squared norm.
+- Leave-one-cue-out rank selection: errors 2.305 ± 0.296 (r = 1), 2.400 ± 0.316 (r = 2), 2.358 ± 0.275 (r = 3),
+  2.099 ± 0.302 (r = 4); no rank beats `R1-PCA` by 20%, so r = 1 is selected. Quality gate **FAILED**: Spearman
+  0.800 (≥ 0.70) but normalized RMSE 0.623 (> 0.50). τ would have been 7.724 nats. The frozen `E005-scalar`
+  baseline's cue-level error on the same tokens is 1.410 (not a leave-one-out figure).
+- Consequently no lock may be written and the experiment ends at Tier A. Outcome recorded as
+  `QUALITY_GATE_FAILED`; no confirmation, no claim change (C002 stays `LOCALIZED`).
+
+Post-hoc diagnostic (exploratory data only, outside the results state, not a gate): fitting the same family on all
+sixteen tokens in-sample gives cue-level MAE 2.35 (r = 1), 2.27 (r = 2), 2.09 (r = 3), 2.02 (r = 4), 0.54
+(r = 8), 0.40 (r = 15); a rank-free linear map on the full E difference leaves 34% of the response energy
+unexplained in-sample. The failure is therefore representational: the leading principal directions of the sixteen
+`E(w)` vectors do not carry the number-relevant variation, so a rank ≤ 4 PCA projection cannot represent the
+cue-to-readout map, whatever the fitting procedure. A supervised low-rank projection (directions chosen for the
+response, not for E's variance) is the obvious next design; it is not part of this protocol.

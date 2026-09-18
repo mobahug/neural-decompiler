@@ -82,3 +82,17 @@ def test_p3_fidelity_and_circuit_families_run_on_the_fake(tmp_path):
     assert set(results) == {"behavior", "P1", "P3", "P4", "P5", "P7", "P8", "P9"}
     floors = cd.circuit_floors(results, fresh=False)
     assert set(floors["cue_effect"]) >= {"passed", "required", "descriptive"}
+
+
+def test_p7_pairs_frames_cyclically_for_more_than_two_frames_per_template(tmp_path):
+    ctx = make_context()
+    circuit = pm.MechanismSet("L00.MLP", ("L00.MLP",), ("L01.H00",), ("L01.MLP",))
+    parameters = pm.estimate_program_parameters(ctx, circuit)
+    pm.export_program_parameters(tmp_path, ctx.weights, parameters, vocab_size=16)
+    axes = pm.site_axes_from_parameters(tmp_path)
+    extra = tuple(pm.Frame(frame.template_id, frame.frame_id + "-x", frame.prefix_ids[:-1] + (14,), frame.suffix_ids, frame.cue_ids, frame.text_template, origin="extension") for frame in ctx.frames)
+    frames = ctx.frames + extra  # four frames per template
+    ev = pm.EvalContext(ctx.model, ctx.weights, circuit, None, frames, ctx.nouns, ctx.cache, axes, "H1")
+    p7 = pm._p7(ev, frames)
+    assert p7["same"] is not None and p7["opposite"] is not None
+    assert len(p7["rows_same"]) == len(frames) * len(ctx.nouns)
