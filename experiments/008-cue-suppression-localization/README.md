@@ -2,7 +2,7 @@
 
 Implements the approved design
 [`docs/superpowers/specs/2026-09-18-experiment-008-cue-suppression-localization-design.md`](../../docs/superpowers/specs/2026-09-18-experiment-008-cue-suppression-localization-design.md)
-(revision 3) through the plan
+(revision 4) through the plan
 [`docs/superpowers/plans/2026-09-18-experiment-008-cue-suppression-localization-plan.md`](../../docs/superpowers/plans/2026-09-18-experiment-008-cue-suppression-localization-plan.md).
 Discovery-only: no lock, no confirmation, no claim promotion. The deliverable is a per-token table and a mechanically
 derived localization summary that becomes the hypothesis of a later prospective experiment.

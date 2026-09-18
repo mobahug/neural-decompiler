@@ -228,8 +228,8 @@ consensus fraction `0.75`.
 Applied to the suppressed stratum as it comes out of the eighteen-frame means, in this order of precedence:
 
 - `NO_SUPPRESSED_TOKENS` — the suppressed stratum is empty; the per-token table is the result.
-- `PROBE_INVALID` — rule 1 failed for M2 (checked before every other label); the trace summary
-  (`LOCALIZED_<stage>` without a class, or `MIXED`) is still given.
+- `PROBE_INVALID` — rule 1 failed for M2 (checked before every label except the empty-stratum one); the trace
+  summary (`LOCALIZED_<stage>` without a class, or `MIXED`) is still given.
 - `AXIS_ARTIFACT` — every suppressed token is `AXIS_ARTIFACT` under rule 2.
 - `LOCALIZED_<stage>_<class>` — at least 75% of the suppressed tokens that carry the signal share **the same pair**
   of modal collapse stage and encoding-stage class (joint consensus); `NO_COLLAPSE` is not a collapse stage and never

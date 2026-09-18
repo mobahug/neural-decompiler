@@ -733,7 +733,8 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- Probe validity: {'valid' if probe['valid'] else 'INVALID'} ({probe['frames_ok']}/{probe['frames']} frames with r_∥(pl_T) ≥ {PROBE_FLOOR})",
                   f"- Modal collapse stage {summary.get('modal_stage')} (consensus {summary.get('stage_consensus')}); modal encoding class {summary.get('modal_class')} (consensus {summary.get('class_consensus')}); context-gated {summary.get('context_gated')}",
                   f"- Identity max error {exploration['identity']['max_error']:.2e}; direct-effect additivity gap {exploration['identity']['max_direct_effect_additivity_gap']:.2e}", ""]
-        lines += ["## Tokens", "", "| token | category | stratum | a | measured | ŝ_R0 | ŝ_u₁ | carries | r_∥ | r_⊥ | g | class | collapse | transport | q_T | â | x_in | x_out | ctx | C | late |",
+        lines += ["## Tokens", "", "Component fractions r_∥, r_⊥, g are oriented by sign(ŝ_R0); q_T is the oriented head-output fraction; â is descriptive only.", "",
+                  "| token | category | stratum | a | measured | ŝ_R0 | ŝ_u₁ | carries | r_∥ | r_⊥ | g | class | collapse | transport | q_T | â | x_in | x_out | ctx | C | late |",
                   "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for row in sorted(exploration["tokens"].values(), key=lambda entry: entry["anomaly_score"]):
             lines.append(f"| {row['token']} | {row['category']} | {row['stratum']} | {_f(row['anomaly_score'])} | {_f(row['measured_shift'])} | {_f(row['fractions']['R0'])} | {_f(row['s_u1'])} | {row['carries_signal']} | "

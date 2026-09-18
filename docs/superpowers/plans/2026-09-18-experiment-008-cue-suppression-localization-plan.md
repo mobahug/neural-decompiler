@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement and run once the approved Experiment 008 design (revision 2, commit `af0b7cc`): a discovery-only causal localization, on the fully exposed pool (40 cue tokens × 18 frames × 79 single-token nouns), of where the apparent number signal of `this`-like cues is suppressed — a staged trace of the E-patch intervention with exact direct-effect deltas (M1, M4), component patching along the encoding number axis (M2), cross-context patching (M3), the sign-normalized anomaly score against the frozen 007 program, and the frozen classification rules and summary.
+**Goal:** Implement and run once the approved Experiment 008 design (revision 2, commit `af0b7cc`; clarified pre-measurement by revisions 3 and 4): a discovery-only causal localization, on the fully exposed pool (40 cue tokens × 18 frames × 79 single-token nouns), of where the apparent number signal of `this`-like cues is suppressed — a staged trace of the E-patch intervention with exact direct-effect deltas (M1, M4), component patching along the encoding number axis (M2), cross-context patching (M3), the sign-normalized anomaly score against the frozen 007 program, and the frozen classification rules and summary.
 
 **Architecture:** One module `cue_suppression.py` reusing `plural_mechanism.py` (prompts, clean-run cache with standard captures, `run_patched` with captures, contrasts, `site_axis`, `direct_effects`/`check_direct_effects`, results-state digests), `cue_decompilation.py` (exposed pool, confirmation loading, results state and phase isolation, `e_slice`), and `supervised_subspace.py` (`load_linear_program`, the inherited 006 extract loader). One runner with phases `validate`, `explore` (once), `report`. No lock, no confirm phase.
 
-**Spec:** `docs/superpowers/specs/2026-09-18-experiment-008-cue-suppression-localization-design.md` (revision 2). The spec wins over this plan.
+**Spec:** `docs/superpowers/specs/2026-09-18-experiment-008-cue-suppression-localization-design.md` (revision 4). The spec wins over this plan.
 
 ## Global constraints
 
