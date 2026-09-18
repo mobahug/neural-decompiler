@@ -94,3 +94,33 @@ prompt keys, 80 noun keys — the exposed pool only; no fresh prompt ran. Replic
 
 Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
 preregistration act; the reviewer's sign-off precedes `confirm`.
+
+### Preregistration-integrity check before `confirm` (reporting incident, no scientific change)
+
+The lock was installed at commit `877221f` (both files byte-identical to the candidates). The reviewer asked three
+questions about discrepancies between the status prose and the committed artifacts; all three are prose errors in the
+status message, not defects in the frozen set, the lock, or the frozen rule. Nothing scientific was changed.
+
+1. **Exact confirmation tokens (23, from `confirmation-v1.json`, sha256 `6330b5a2…095f`, the same digest the lock
+   records):** singular-selecting `either`, `neither` (2); plural-numeral `eleven`, `thirteen`, `fourteen`,
+   `fifteen`, `sixteen`, `seventeen` (6 — `twelve` is an exposed token and is skipped by the disjointness rule);
+   plural-quantity `more`, `most`, `other`, `enough`, `certain` (5); number-neutral `my`, `your`, `his`, `her`, `our`,
+   `their` (6); bare-adjective `small`, `blue`, `new`, `cold` (4). 2 + 6 + 5 + 6 + 4 = 23; 23 × 6 frames = 138 token
+   prompts. The status message's shorthand "eleven…seventeen" wrongly suggested seven numerals.
+2. **The locked Y2 category rule** is the design's revision 2 text (commit `fa62ab9`, written before the freeze
+   `197d8e6` and before Tier A): "all but at most one singular-selecting token measured ≤ 0.35, and at least 80% of
+   the plural-numeral, plural-quantity, and bare-adjective tokens measured ≥ 0.65 (`exact_count_floor(0.8, n)`), with
+   the rule's predictions meeting the same counts". The implementation applies exactly this (`max(n_singular − 1, 0)`
+   and `exact_count_floor(0.8, n_plural)`), and the lock records `singular_max_q 0.35`, `plural_min_q 0.65`,
+   `plural_rate 0.8`, `y2_spearman 0.80`. With the frozen set the denominators are `n_singular = 2` (at least 1 of 2)
+   and `n_plural = 15` (at least 12 of 15). The "≥ 2 of 3 singular, ≥ 8 of 11 plural" wording was revision 1's, replaced
+   in revision 2 before any implementation; it appears nowhere in the committed rule.
+3. **The singular threshold after dropping `an`:** the "all but at most one" rule is defined for any category size,
+   and the `an` rule (≥ 10 vowel-initial nouns; cue-final frames; vowel-initial nouns) was frozen in revision 2 and
+   applied deterministically at the freeze (8 vowel-initial nouns among the 79). Nothing was revised after the
+   predictions existed; the design's interpretation limits already state that the singular check is weak.
+
+Consequence already visible in the committed predictions: `either` 0.296 ≤ 0.35 and `neither` 0.429 > 0.35 (1 of 2,
+allowed); 11 of the 15 plural-expectation tokens are predicted ≥ 0.65 (`more` 0.60, `most` 0.57, `other` 0.58,
+`enough` 0.56 fall short; 12 required), so the transport-rule axis fails the `plural_predicted` count whatever
+`confirm` measures. The lock, predictions, thresholds, categories, and rules are untouched.
