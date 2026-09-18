@@ -100,13 +100,17 @@ from the on-disk programs before any fresh prompt ran, max difference 0.0). The 
   0.77 with 120/120 paired signs). C002 is not eligible for review and stays at `LOCALIZED`.
 
 What the result says, within the design's limits: the rank-1 response-supervised direction of `L00.MLP` generalizes
-to unseen tokens, frames, and nouns about as well as a full-dimensional regularized linear map (Y1 MAE 1.07 vs 1.05;
-LOCO 1.08 vs 0.86) and far better than the leading unsupervised direction (2.71) or the scalar program (1.74), so
-"compact dimensionality" is not what fails. What fails, for every linear map from the token-local `E(w)`, is a small set
-of singular-selecting determiners (`this`, `another`) whose E-patch response is near zero while their `E(w)` projects
-onto the plural side of the learned direction; with them the Y1 rank correlation misses the 0.80 floor by 0.015 and the
-confident-sign rule fails. Nothing here generalizes beyond the pinned checkpoint, the three templates, single-token
-regular nouns, and the tokens tested.
+to unseen tokens, frames, and nouns about as well as the tested full-dimensional regularized linear map (Y1 MAE 1.07 vs
+1.05; LOCO 1.08 vs 0.86) and far better than the leading unsupervised direction (2.71) or the scalar program (1.74), so
+increasing dimensionality through the tested `Ridge-full` estimator does not resolve the failure. The selected
+supervised rank-1 program and that regularized full-dimensional linear baseline both fail to explain the anomalously
+weak E-patch response of some singular-selecting determiners, especially `this` (measured +0.01, predicted −2.80) and
+`another` (−0.32, predicted −2.76), whose `E(w)` projects onto the plural side of the learned direction; with them the Y1
+rank correlation misses the 0.80 floor by 0.015 and the confident-sign rule fails. This is a statement about the two
+estimators tested, not about every possible linear map: `PCA-006`, although far worse overall, predicts `this` near zero
+(0.020 vs 0.007 measured). Nothing here generalizes beyond the pinned checkpoint, the three templates, single-token
+regular nouns, and the tokens tested. The 24 confirmation tokens, 6 frames, and 20 nouns are now exposed and may join the
+exploratory pool of a future experiment; they are no longer a holdout.
 
 ### Tier A (2026-09-18, for the record)
 
