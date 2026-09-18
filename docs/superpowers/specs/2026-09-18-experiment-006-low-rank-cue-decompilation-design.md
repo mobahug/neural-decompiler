@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-18
 
-**Status:** Draft, revision 2 (after the first external review). Not
+**Status:** Draft, revision 3 (after the second external review). Not
 approved. No Experiment 006 directory, confirmation manifest, lock, or model
 run exists. Experiment 005 is closed and is not amended by this document.
 
@@ -21,6 +21,16 @@ run exists. Experiment 005 is closed and is not amended by this document.
   E-patch residual response, which includes the deterministic recomputation
   outside the named circuit; (6) a pre-lock model-quality gate independent of
   τ is added.
+- **Revision 3 (2026-09-18).** After the second review, before any Experiment
+  006 model run: (1) the causal map is fitted and evaluated in
+  reference-relative coordinates, `Δz_T(w) = z(w) − z(ref_T)`, with no
+  intercept, so the fitted object and the prediction formula are the same
+  model and the reference cue's predicted E-patch effect is exactly zero;
+  (2) the necessity family P8 is restored as a primary circuit family so that
+  a `CIRCUIT_ONLY` outcome with fresh-frame passes can satisfy C002's Level 3
+  necessity gate; (3) the sixteen cue-level values behind the pre-lock
+  Spearman and normalized RMSE are defined; (4) Y3's prompt description is
+  corrected.
 
 **Scope:** the count-cued singular/plural contrast in pinned
 `EleutherAI/pythia-70m-deduped`, restricted to the circuit Experiment 005
@@ -160,26 +170,48 @@ The decompiled computation is a weight-only program with these frozen parts:
   ℝ^{d_model × r}` is the first `r` columns of `B` — the leading PCA feature
   directions in `ℝ^{d_model}`. `r ∈ {1, 2, 3, 4}` is selected as below and
   frozen.
-- The causal map: one linear map per template from `z` to the **measured
+- Reference-relative coordinate. Every template `T` has a singular reference
+  cue `ref_T` (`one` for cardinal and coordinated-adjective, `each` for
+  quantifier). The program's causal coordinate is the displacement from that
+  reference:
+
+  ```text
+  z(w)      = U_rᵀ (E(w) − μ_E)
+  Δz_T(w)   = z(w) − z(ref_T) = U_rᵀ (E(w) − E(ref_T))
+  ```
+
+  The centering by `μ_E` determines the basis only; it cancels in `Δz_T`.
+- The causal map: one linear map per template from `Δz_T` to the **measured
   E-patch residual response** at the noun position. For every exposed cue
   token `w` and exposed frame `f` of template `T`, `Δr_Epatch(w, f)` is the
   change of the final pre-LayerNorm residual at the noun position caused by
-  replacing `E(ref)` by `E(w)` in the frame's reference prompt (an
+  replacing `E(ref_T)` by `E(w)` in the frame's reference prompt (an
   intervention on the exposed prompts; it includes the deterministic
   recomputation of every component downstream of E, inside and outside the
-  named circuit). `V_T ∈ ℝ^{d_model × r}` is fitted by least squares to
-  `Δr_Epatch(w, f) ≈ V_T z(w)` over the exposed tokens and frames of `T`. The
-  share of `Δr_Epatch` carried by the named T ∪ R outputs versus auxiliary
-  components is decomposed and reported, not fitted separately.
-- Readout: `ĉ_N(w; frame) = −u_N · LN(ρ + V_T z(w))`, exact LayerNorm; `ρ` is
-  the frozen context residual of a known frame or the template mean for a
-  fresh frame; shifts are always relative to the template's singular
-  reference cue (`one` or `each`).
-- E-patch prediction: replacing `E` alone in the reference prompt by `E(w)`
-  is predicted to shift the contrast by `−u_N · [LN(ρ + V_T z(w)) − LN(ρ +
-  V_T z(ref))]`. Behavioral prediction uses the same expression; the
-  difference between the two measured quantities (routes that do not pass
-  through E) is residual.
+  named circuit). `V_T ∈ ℝ^{d_model × r}` is fitted by least squares, with no
+  intercept, to
+
+  ```text
+  Δr_Epatch(w, f) ≈ V_T Δz_T(w)
+  ```
+
+  over the exposed tokens and frames of `T`, so the fitted object and the
+  prediction formula are the same model and `Δr_Epatch(ref_T, f) = 0` holds
+  by construction. The share of `Δr_Epatch` carried by the named T ∪ R
+  outputs versus auxiliary components is decomposed and reported, not fitted
+  separately.
+- Readout and prediction, exact LayerNorm:
+
+  ```text
+  Δĉ_N(w, f) = −u_N · [ LN(ρ_f + V_T Δz_T(w)) − LN(ρ_f) ]
+  ```
+
+  For an exposed frame `ρ_f` is the clean final pre-LayerNorm residual of its
+  reference prompt; for a fresh frame it is the frozen `ρ_template`, the mean
+  of the exposed frames' reference residuals of that template. `Δĉ_N` is the
+  predicted E-patch shift; the behavioral prediction uses the same
+  expression, and the difference between the two measured quantities (routes
+  that do not pass through E) is residual.
 
 Two explicitly different baselines are carried: `R1-PCA`, the `r = 1` member
 of this family (leading PCA direction), and `E005-scalar`, the frozen
@@ -212,13 +244,17 @@ executed. Nothing in Tier C can change `r`.
 
 ### Pre-lock model-quality gate (independent of τ)
 
-The lock may be written only if the selected model, under LOCO on the exposed
-tokens, (a) satisfies the 20% rule when `r > 1`, (b) has Spearman correlation
-≥ 0.70 between predicted and measured per-token E-patch shifts across the
-sixteen held-out tokens, and (c) has normalized LOCO RMSE — its RMSE divided
-by the root-mean-square of the measured E-patch effects — at most 0.50. These
-gates are what make the program scientifically usable; τ below measures its
-calibration only.
+For each held-out cue token the LOCO fit yields one **signed cue-level
+value**: the mean over its exposed frames and nouns of the predicted E-patch
+shift `Δĉ_N(w, f)`, paired with the same mean of the measured E-patch shift.
+The sixteen pairs of cue-level values are the only inputs to the gate. The
+lock may be written only if the selected model (a) satisfies the 20% rule
+when `r > 1`, (b) has Spearman correlation ≥ 0.70 between the sixteen
+predicted and measured cue-level values, and (c) has normalized LOCO RMSE —
+the root-mean-square of the sixteen cue-level errors divided by the
+root-mean-square of the sixteen measured cue-level values — at most 0.50.
+These gates are what make the program scientifically usable; τ below
+measures its calibration only.
 
 ## Split-invariant criteria
 
@@ -241,11 +277,15 @@ nouns a split contains. Experiment 006 replaces them:
   play no role.
 - **Circuit families kept:** P1 (recovery 0.70 / 0.60 / 0.60), P4 (E-only at
   the cue position, coordinated, ≥ 0.50), P5 (T alone ≥ 0.50; blocked fraction
-  ≥ 0.50), P7 (cross-frame control), P9 (chain: `m_T`, `m_R` ≥ 0.50,
+  ≥ 0.50), P7 (cross-frame control), P8 (necessity, unchanged from Experiment
+  005: pair-centered neutralization of E in cue-final frames and of T in
+  coordinated frames; contrast loss ≥ 0.30, primary; compensation ratio
+  reported, secondary), and P9 (chain: `m_T`, `m_R` ≥ 0.50,
   `m_R|T ≤ 0.5·m_R`), each evaluated on the fresh nouns over the manifest
-  frames and, separately, over the fresh frames. P2, P6, and P8 are dropped
-  as already established for this circuit; their Experiment 005 values are
-  cited.
+  frames and, separately, over the fresh frames. P8 is kept precisely because
+  C002's Level 3 necessity gate was never satisfied confirmatorily. P2 and P6
+  are dropped as already established for this circuit; their Experiment 005
+  values are cited.
 
 ## Prediction families (decompilation axis)
 
@@ -258,7 +298,7 @@ quality criterion — the pre-lock gate above is.
 |---|---|---|---|
 | Y1 | E-patch prediction for fresh cue tokens | 24 tokens × 6 fresh frames × 20 nouns; replace E alone in the frame's reference prompt with `E(w)` | Spearman ≥ 0.80 between predicted and measured per-token mean shifts; mean absolute error ≤ τ; sign agreement in ≥ 5/6 frames for every token whose predicted magnitude is ≥ 1.0 nat |
 | Y2 | Behavioral shift prediction for fresh cue tokens | the same prompts, no intervention | Spearman ≥ 0.70; mean absolute error ≤ 1.5 τ (the difference from Y1 is the non-E route, reported as residual) |
-| Y3 | Frame invariance of the pair shift | four original cues × 6 fresh frames × 20 nouns | predicted mean `d_full` per template within τ of the measured mean; `d_full > 0` in ≥ 108/120 pairs |
+| Y3 | Frame invariance of the pair shift | the template-specific original cue pair in each of the six fresh frames (12 prompts) × 20 nouns | predicted mean `d_full` per template within τ of the measured mean; `d_full > 0` in ≥ 108/120 pairs |
 | Y4 | Baselines | Y1 and Y2 recomputed with `R1-PCA` and with `E005-scalar` | reported only; the rank is frozen in the lock and Y4 never changes it |
 | Y5 | Residual accounting | all | reported, never gated |
 
@@ -269,7 +309,7 @@ per-token prediction carries `± τ`; the program hits its bands when at least
 ## Tiers and execution boundary
 
 - **Tier A (exploratory):** on the exploratory pool, verify the fixed circuit
-  once (P1, P3-fidelity, P4, P5, P9 on the 60 nouns and the 12 frames),
+  once (P1, P3-fidelity, P4, P5, P8, P9 on the 60 nouns and the 12 frames),
   measure `Δr_Epatch` for every exposed token and frame, fit the program, run
   the rank selection and the pre-lock quality gate, and record the `R1-PCA`
   and `E005-scalar` baselines. No fresh noun, frame, or cue token is
@@ -291,8 +331,8 @@ per-token prediction carries `± τ`; the program hits its bands when at least
 ## Outcome rule
 
 - Precondition: the cue-effect gate on fresh nouns; failure → `CUE_EFFECT_NOT_REPLICATED`.
-- Circuit axis: `CIRCUIT_PASS` if P1, P3-fidelity, P4, P5, P9 pass on the
-  fresh nouns over the manifest frames and over the fresh frames; the two
+- Circuit axis: `CIRCUIT_PASS` if P1, P3-fidelity, P4, P5, P8, P9 pass on
+  the fresh nouns over the manifest frames and over the fresh frames; the two
   evaluations are reported separately and both are required.
 - Program axis: `PROGRAM_PASS` if Y1–Y3 pass.
 - `DECOMPILED` — both axes pass and the program hits its bands.
@@ -306,9 +346,12 @@ No scientific retries; software defects follow the incident rule.
 ## Claims and prior work
 
 A `DECOMPILED` outcome would support a new claim (C003) at `CAUSAL_EVIDENCE`
-with Level 6 gates reviewed individually; `CIRCUIT_ONLY` would promote C002's
-circuit evidence to `CAUSAL_EVIDENCE` if the fresh-frame families pass, and
-leave the program at the identified encoding failure. The prior-work boundary
+with Level 6 gates reviewed individually. A `CIRCUIT_ONLY` outcome supplies
+the confirmatory sufficiency (P1, P4, P5), necessity (P8), control (P7), and
+chain (P9) evidence that C002's Level 3 gates currently lack, so C002 is
+reviewed for promotion to `CAUSAL_EVIDENCE` after the run; promotion is a
+claim-review decision citing those families, not an automatic consequence of
+the outcome label, and the program stays at the identified encoding failure. The prior-work boundary
 of Experiment 005 applies unchanged; the new element is a prospective,
 weight-only, low-rank account of how an arbitrary token in the cue slot is
 encoded and read out, which Experiment 005's audit found absent from the close
