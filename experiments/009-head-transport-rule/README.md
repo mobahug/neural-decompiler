@@ -50,7 +50,47 @@ fitted on confirmation data. Stated limit: the fresh bare adjective `small` is a
 exposed frame `Lena and Omar displayed {cue} small`; the frozen disjointness rule covers cue tokens and noun forms, so
 this is compliant, and the token enters no fit.
 
-## Status — 2026-09-18: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+## Status — 2026-09-18: complete; outcome `HEAD_MECHANISM_CONFIRMED_P1 | TRANSPORT_RULE_FAILED | NOT_LOCKED`
+
+The lock (`877221f`) and the integrity check (`78d71c2`) preceded the single `confirm`, which ran at `78d71c2` on a
+clean tree (results state sha256 `d5e7954d31088355003f7ee4afd4e9baf512d8725bf9fcd3b43095bccfcf309a`; every locked
+prediction reproduced from the on-disk rules before any fresh prompt, max difference 0.0). The final report is copied
+verbatim to [`evidence/final-report-2026-09-18.md`](evidence/final-report-2026-09-18.md). Ledger after confirm: 930
+prompt keys, 80 noun keys. Experiment 009 is closed; nothing is amended or rerun.
+
+- **Precondition:** fresh-frame cue effect 473/474 (floor 427).
+- **Y1 — mechanism, locked level P1: PASS.** On the 138 fresh (token, frame) pairs the fixed-normalization linear OV
+  read-out of the residual arriving at `L03.H04` predicts the head's measured number-axis output with Spearman
+  **0.957** and MAE **0.066** (τ_M 0.321; floors 0.90 / τ_M). P2 (exact cue-position LayerNorm): 0.963 / 0.055; P3
+  (patched attention): 0.998 / 0.006. The claim, in the design's words, held prospectively: given the residual
+  arriving at the head, a fixed-normalization linear `W_V W_O` read-out is sufficient to explain the selective
+  transport of every new cue in every new frame; LayerNorm-scale and attention modulation are unnecessary; the
+  opposing components the head reads were constructed upstream.
+- **Y2 — weight-only transport rule: FAIL** (`spearman`, `singular_measured`, `plural_measured`, `plural_predicted`).
+  Over the 23 fresh tokens the rank-1 rule reached Spearman 0.765 (floor 0.80) with MAE 0.081 (τ₂ 0.589). The
+  frozen category checks failed on both sides: the grammatically singular-selecting `either` and `neither` were
+  measured at 0.50 and 0.45 (both above 0.35 — the network does not treat them like `this`, whose transport is 0.03;
+  their E-patch contrasts are −2.9 and −3.3 nats, plural-leaning), and 11 of the 15 plural-expectation tokens were
+  measured ≥ 0.65 (`more` 0.61, `most` 0.60, `enough` 0.49, `blue` 0.58 fell short; 12 required), the same count the
+  predictions already missed. The possessives came out at 0.36–0.57 (predicted 0.58–0.66). The numerals were predicted
+  well (0.89–0.95 predicted, 0.90–1.00 measured).
+- **Y3 — contrast rule: `NOT_LOCKED`** (its gate failed at Tier A). The Experiment 007 sixteen-token program's fresh
+  contrast predictions are reported in the table (it under-predicts every plural-like token by 0.5–1.5 nats, as in
+  Experiment 007).
+- **Non-additivity stage on the fresh tokens (descriptive):** `R3` for the numerals and the possessives, `T` for the
+  bare adjectives, `NONE` for `more`, `most`, `enough`, `other`, `our`, `their`, `either`.
+
+What this settles and what it does not. The head-level mechanism is now a prospectively confirmed statement: the
+selective transport of number by `L03.H04` is a fixed-normalization linear read-out of components already present in
+the cue residual it receives, for 40 exposed and 23 never-seen cues in 24 frames. What remains open is *upstream*:
+which components of the token-local encoding, transformed by layers 0–2, land on the head's read direction. The
+one-direction rule from `E` alone predicts the numerals and the bulk ordering but not the determiners, and the
+grammatical expectations were wrong for `either`/`neither` (the model places them mid-way, like `that` and `the`). The
+`Ridge-scalar` baseline's much lower leave-one-cue-out error at Tier A (0.099 versus 0.162) says the information is
+linearly present in `E` across several directions; a next experiment should fit the head's read direction back
+through layers 0–2 to `E` rather than a single response-weighted direction. C002 is unchanged (out of scope here).
+
+### Tier A (2026-09-18, for the record)
 
 `explore` ran once on protocol/code commit `b4c281a` (run `89239d06811dee39`; A0 passed; results state sha256
 `61d1dfa1c0ea009c0b15b4d65784212ac5c2a42401dcbe56409e404c7265745b`). The Tier A report is copied verbatim to
