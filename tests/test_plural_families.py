@@ -162,14 +162,25 @@ def test_continuation_phase_gating_and_attempt_selection():
     state["calibration"]["passes"].append({"floors_passed": False})
     with pytest.raises(pm.PhaseError):
         pm.assert_phase_allowed("revise", state)  # frozen set in the continuation
-    attempts = {"a10_selection": {"attempts": [
-        {"k": 0, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": False}, "roles_floor": {"passed": False}},
-        {"k": 3, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": True}, "roles_floor": {"passed": True}},
-        {"k": 4, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": True}, "roles_floor": {"passed": True}},
-    ]}}
-    assert pm.continuation_attempt({"discovery": attempts})["k"] == 3
+    def attempt(k, *, recovery=True, overall=True, templates=(0.9, 0.9, 0.9), roles=True, retained=60):
+        names = ("cardinal", "quantifier", "coordinated-adjective")
+        return {"k": k, "recovery_floors": {"passed": recovery, "failures": [] if recovery else ["overall"]}, "isolation_floor": {"passed": overall},
+                "isolation": {"faithfulness": {"templates": {name: {"recovery": value} for name, value in zip(names, templates)}}, "sign_retention": {"retained": retained, "total": 120}},
+                "roles_floor": {"passed": roles}}
+    attempts = [attempt(0, roles=False), attempt(2, templates=(0.599, 0.584, 0.365)), attempt(3, templates=(0.927, 0.664, 0.760), retained=80), attempt(4)]
+    assert pm.continuation_eligible(attempts[1]) == (False, ["isolation:template:coordinated-adjective"])
+    assert pm.continuation_eligible(attempts[2]) == (True, [])  # the 84/120 retention count is deliberately not applied
+    assert pm.continuation_attempt({"discovery": {"a10_selection": {"attempts": attempts}}})["k"] == 3
     with pytest.raises(pm.PhaseError):
-        pm.continuation_attempt({"discovery": {"a10_selection": {"attempts": attempts["a10_selection"]["attempts"][:1]}}})
+        pm.continuation_attempt({"discovery": {"a10_selection": {"attempts": attempts[:2]}}})
+    # A continuation adopted under an older rule can be superseded once, before calibration, under the current rule.
+    state["phases"]["continue"]["status"] = "complete"
+    state["calibration"]["passes"] = []
+    state["mechanism_versions"][-1] = {"version": "M2", "status": "candidate", "continuation": True, "continuation_rule": "revision-5", "adopted_attempt_k": 2}
+    pm.assert_phase_allowed("continue", state)
+    state["mechanism_versions"][-1]["continuation_rule"] = pm.CONTINUATION_RULE_ID
+    with pytest.raises(pm.PhaseError):
+        pm.assert_phase_allowed("continue", state)
 
 
 def test_loading_a_revision_4_state_adds_the_continuation_phase(tmp_path):

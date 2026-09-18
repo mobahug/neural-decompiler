@@ -60,6 +60,8 @@ EXTENSION_CUE_WORDS: tuple[str, ...] = (
 
 PHASES = ("discover", "continue", "calibrate", "revise", "lock", "confirm", "report")
 PROTOCOL_V2_CAP_REASON = "protocol v1 program floor failed (recorded); continuation adopted under design revision 5"
+CONTINUATION_RULE_ID = "revision-5-amended"  # split-stable Tier A criteria only: recovery strata, isolation overall and per template, roles
+CONTINUATION_ISOLATION_TEMPLATE_FLOOR = 0.40  # the P3 per-template isolation floor, applied to development data
 PHASE_STATUSES = ("not_started", "running", "complete", "invalidated")
 _COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
@@ -602,9 +604,14 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
     elif phase == "continue":
         if status["discover"] != "complete":
             raise PhaseError("continue requires the completed discover phase")
-        if status["continue"] != "not_started":
-            raise PhaseError("the protocol v2 continuation was already adopted")
-        if not versions or versions[-1].get("status") != "rejected" or versions[-1].get("outcome") != "NO_COMPACT_MECHANISM" or passes:
+        if passes:
+            raise PhaseError("the continuation cannot be adopted or superseded after calibration has started")
+        last = versions[-1] if versions else None
+        if status["continue"] == "complete":
+            if not last or not last.get("continuation") or last.get("continuation_rule") == CONTINUATION_RULE_ID:
+                raise PhaseError("the protocol v2 continuation was already adopted under the current eligibility rule")
+            return  # supersede under a corrected rule, before Tier B
+        if not last or last.get("status") != "rejected" or last.get("outcome") != "NO_COMPACT_MECHANISM":
             raise PhaseError("continue applies only to a discover phase that ended in NO_COMPACT_MECHANISM before any calibration")
     elif phase == "calibrate":
         if status["discover"] != "complete":
@@ -2080,7 +2087,7 @@ def program_development_floors(program: Any, ctx: DiscoveryContext) -> dict[str,
     return {"passed": passed, "sign_failures": sign_failures, "templates": per_template}
 
 
-def render_mechanism_statement(mechanism: MechanismSet, parameters: ProgramParameters, *, hypothesis: str, flagged: bool, capped: bool, encoding: Mapping[str, Any]) -> str:
+def render_mechanism_statement(mechanism: MechanismSet, parameters: ProgramParameters, *, hypothesis: str, flagged: bool, capped: bool, encoding: Mapping[str, Any], cap_reason: str | None = None) -> str:
     gains = parameters.gains()
     e_desc = ", ".join(mechanism.e_keys)
     t_desc = ", ".join(mechanism.t_keys) or "none (no transport declared)"
@@ -2101,7 +2108,7 @@ def render_mechanism_statement(mechanism: MechanismSet, parameters: ProgramParam
         "  ĉ(x)      = −u_N · LN( ρ + δ(x) )   exact final LayerNorm, ρ = frozen frame/template context",
         "  d̂_full(N) = ĉ(x_A) − ĉ(x_B)         predicted positive for every pair",
         "",
-        f"PROGRAM  {'CAPPED — a contextual encoding component is required; the decompilation axis cannot pass' if capped else 'token-local E_program; decompilation axis live'}",
+        "PROGRAM  " + (f"CAPPED — {cap_reason or 'a contextual encoding component is required'}; the decompilation axis cannot pass" if capped else "token-local E_program; decompilation axis live"),
     ]
     if mechanism.contextual_e_keys:
         lines.append(f"  contextual E components in the circuit account only: {', '.join(mechanism.contextual_e_keys)}")
@@ -3246,20 +3253,55 @@ def render_report(state: Mapping[str, Any]) -> str:
 # Revision 5: protocol v2 continuation after a Tier A program-floor rejection.
 
 
+def continuation_eligible(attempt: Mapping[str, Any]) -> tuple[bool, list[str]]:
+    """Revision 5 (amended): split-stable Tier A criteria only.
+
+    Recovery strata, isolation overall (≥ 0.50) and per template (≥ 0.40), and roles. The P3 absolute
+    sign-retention count is deliberately not used: its ceiling depends on the split's clean flip count.
+    """
+    failures: list[str] = []
+    if not attempt["recovery_floors"]["passed"]:
+        failures.append("recovery:" + ",".join(attempt["recovery_floors"]["failures"]))
+    if not attempt["isolation_floor"]["passed"]:
+        failures.append("isolation:overall")
+    templates = attempt["isolation"]["faithfulness"]["templates"]
+    for template, entry in templates.items():
+        if entry["recovery"] is None or entry["recovery"] < CONTINUATION_ISOLATION_TEMPLATE_FLOOR:
+            failures.append(f"isolation:template:{template}")
+    if not attempt["roles_floor"]["passed"]:
+        failures.append("roles")
+    return not failures, failures
+
+
 def continuation_attempt(state: Mapping[str, Any]) -> dict[str, Any]:
-    """The smallest recorded v1 selection attempt whose circuit floors passed; no new search."""
+    """The smallest recorded v1 selection attempt eligible under the amended rule; no new search."""
     attempts = state["discovery"]["a10_selection"]["attempts"]
     for attempt in attempts:
-        if attempt["recovery_floors"]["passed"] and attempt["isolation_floor"]["passed"] and attempt["roles_floor"]["passed"]:
+        eligible, _ = continuation_eligible(attempt)
+        if eligible:
             return dict(attempt)
-    raise PhaseError("no recorded attempt satisfies the circuit floors; the continuation has nothing to adopt")
+    raise PhaseError("no recorded attempt satisfies the continuation eligibility rule; the continuation has nothing to adopt")
 
 
 def adopt_continuation(ctx: DiscoveryContext, *, state: dict[str, Any], results_path: Path | None, program_path: Path, parameters_dir: Path, log: Any = None) -> dict[str, Any]:
-    """Freeze the recorded k as version M2 with PROGRAM_CAPPED set from the outset."""
+    """Freeze the recorded k as the next version with PROGRAM_CAPPED set from the outset.
+
+    A previous continuation version adopted under an older eligibility rule is marked superseded
+    (never deleted) when the current rule selects a different attempt.
+    """
     say = log or (lambda message: None)
     previous = state["mechanism_versions"][-1]
     attempt = continuation_attempt(state)
+    if previous.get("continuation"):
+        if previous.get("continuation_rule") == CONTINUATION_RULE_ID:
+            raise PhaseError("the continuation was already adopted under the current eligibility rule")
+        if previous.get("adopted_attempt_k") == attempt["k"]:
+            raise PhaseError("the current rule selects the attempt already adopted; nothing to supersede")
+        previous["status"] = "superseded"
+        previous["superseded_reason"] = (f"eligibility rule corrected to {CONTINUATION_RULE_ID} before Tier B: the earlier rule did not apply the "
+                                         f"P3 per-template isolation floor ({CONTINUATION_ISOLATION_TEMPLATE_FLOOR}); recorded, not deleted")
+        previous["superseded_at"] = utc_now()
+        say(f"superseding {previous['version']} (k={previous.get('adopted_attempt_k')}) under {CONTINUATION_RULE_ID}")
     mechanism = MechanismSet(attempt["mechanism"]["branch"], tuple(attempt["mechanism"]["e_keys"]), tuple(attempt["mechanism"]["t_keys"]), tuple(attempt["mechanism"]["r_keys"]))
     say(f"adopting recorded attempt k={attempt['k']}: T={list(mechanism.t_keys)} R={list(mechanism.r_keys)}")
     parameters = estimate_program_parameters(ctx, mechanism)
@@ -3279,10 +3321,16 @@ def adopt_continuation(ctx: DiscoveryContext, *, state: dict[str, Any], results_
     state["discovery"]["a5_final"] = {key: value for key, value in a5_final.items() if not key.startswith("_")}
     cap_reason = PROTOCOL_V2_CAP_REASON + f"; recorded quantities: " + ", ".join(
         f"{template} gap {entry['gap']:.3f}" for template, entry in attempt["program_floors"].get("templates", {}).items())
-    statement = render_mechanism_statement(mechanism, parameters, hypothesis=hypothesis["row"], flagged=hypothesis["flagged"], capped=True, encoding=encoding)
+    statement = render_mechanism_statement(mechanism, parameters, hypothesis=hypothesis["row"], flagged=hypothesis["flagged"], capped=True, encoding=encoding, cap_reason=cap_reason)
+    clean_flips = sum(1 for case in state["discovery"].get("a1", {}).get("measurements", {}).values() if case.get("contrast_flip")) if state["discovery"].get("a1", {}).get("measurements") else None
+    retention = attempt["isolation"]["sign_retention"]
+    diagnostic = {"clean_development_flips": clean_flips, "isolation_retained": retention["retained"], "total": retention["total"],
+                  "conditional_retention": (retention["retained"] / clean_flips) if clean_flips else None, "note": "diagnostic only; not a selection criterion"}
     version = {
         "version": f"M{int(previous['version'][1:]) + 1}", "status": "candidate", "continuation": True, "protocol_version": 2,
-        "continuation_of": previous["version"], "adopted_attempt_k": attempt["k"],
+        "continuation_rule": CONTINUATION_RULE_ID, "continuation_of": previous["version"], "adopted_attempt_k": attempt["k"],
+        "eligibility_by_attempt": {str(entry["k"]): continuation_eligible(entry) for entry in state["discovery"]["a10_selection"]["attempts"]},
+        "retention_diagnostic": diagnostic,
         "mechanism": mechanism.to_dict(), "hypothesis": hypothesis["row"], "hypothesis_flagged": hypothesis["flagged"],
         "hypothesis_quantities": hypothesis["quantities"], "encoding_branch": dict(encoding),
         "program_capped": True, "program_cap_reason": cap_reason, "program_floors": program_floors,

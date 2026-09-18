@@ -235,6 +235,7 @@ def test_continuation_after_program_floor_rejection(sandbox, monkeypatch):
     monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_OVERALL", -10.0)
     monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_STRATUM", -10.0)
     monkeypatch.setattr(pm, "TIER_A_ISOLATION_FLOOR", -10.0)
+    monkeypatch.setattr(pm, "CONTINUATION_ISOLATION_TEMPLATE_FLOOR", -10.0)
     monkeypatch.setattr(pm, "program_development_floors", lambda program, ctx: {"passed": False, "sign_failures": [], "templates": {"cardinal": {"gap": 2.0}}})
     assert runner.freeze_extension() == 0
     with pytest.raises(pm.PhaseError):
@@ -248,18 +249,29 @@ def test_continuation_after_program_floor_rejection(sandbox, monkeypatch):
     state = pm.load_results_state(runner.results_path)
     version = state["mechanism_versions"][-1]
     assert version["version"] == "M2" and version["continuation"] and version["program_capped"] and version["k"] >= 2
-    assert version["adopted_attempt_k"] == version["k"]
+    assert version["adopted_attempt_k"] == version["k"] and version["continuation_rule"] == pm.CONTINUATION_RULE_ID
+    assert "protocol v1 program floor failed" in version["statement"] and "contextual encoding" not in version["statement"]
+    assert version["retention_diagnostic"]["note"].startswith("diagnostic only")
     assert state["phases"]["continue"]["status"] == "complete"
     assert "a5_final" in state["discovery"]
     with pytest.raises(pm.PhaseError):
-        runner.continue_v2()  # once
+        runner.continue_v2()  # already adopted under the current rule
+    # A version adopted under an older rule is superseded, not deleted, when the current rule selects another k.
+    older = pm.load_results_state(runner.results_path)
+    older["mechanism_versions"][-1]["continuation_rule"] = "revision-5"
+    older["mechanism_versions"][-1]["adopted_attempt_k"] = -1
+    pm.write_results_state(runner.results_path, older)
+    assert runner.continue_v2() == 0
+    state = pm.load_results_state(runner.results_path)
+    assert [entry["status"] for entry in state["mechanism_versions"]] == ["rejected", "superseded", "candidate"]
+    assert state["mechanism_versions"][-1]["version"] == "M3" and state["phases"]["continue"]["history"]
     monkeypatch.setattr(pm, "circuit_floors", _force_pass(pm.circuit_floors))
     assert runner.calibrate() == 0
     with pytest.raises(pm.PhaseError):
         runner.revise()  # frozen in the continuation
     assert runner.lock() == 0
     lock = json.loads((runner.results_path.parent / "candidate-lock.json").read_text())
-    assert lock["protocol_version"] == 2 and lock["continuation"]["continuation_of"] == "M1" and lock["mechanism"]["program_capped"] is True
+    assert lock["protocol_version"] == 2 and lock["continuation"]["continuation_of"] == "M2" and lock["mechanism"]["program_capped"] is True
     shutil.copy(runner.results_path.parent / "candidate-lock.json", sandbox / pm.LOCK_RELATIVE_PATH)
     assert runner.confirm() == 0
     state = pm.load_results_state(runner.results_path)

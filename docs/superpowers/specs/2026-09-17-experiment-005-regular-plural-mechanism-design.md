@@ -74,10 +74,10 @@ tokenizer-validated extension set of prompts defined below.
   untouched nouns and genuinely unseen prompts, even though the compact
   program did not recover its computation?* Its rules:
   1. the mechanism set is frozen mechanically as the smallest attempt already
-     recorded in the v1 selection that satisfies the circuit floors (recovery
-     strata, isolation, roles) — k = 3 — with no new Tier A search, re-ranking,
-     or parameter tuning; the program parameters for that set are re-exported
-     from the same development activations;
+     recorded in the v1 selection that satisfies the continuation eligibility
+     rule below, with no new Tier A search, re-ranking, or parameter tuning;
+     the program parameters for that set are re-exported from the same
+     development activations;
   2. `PROGRAM_CAPPED` is set from the outset with the recorded cause; the
      decompilation axis cannot pass in this continuation, and X3/X4 run only
      as diagnostic prospective tests;
@@ -88,6 +88,40 @@ tokenizer-validated extension set of prompts defined below.
   4. Tier B calibration, the lock, and the single confirmation proceed exactly
      as designed; the reserve nouns and the extension prompts were untouched
      when the continuation was adopted.
+- **Revision 5, amended (2026-09-18, before any Tier B, reserve, or
+  extension execution).** The first continuation selection used the Tier A
+  circuit floors as written (recovery strata; isolation overall ≥ 0.50; roles)
+  and mechanically adopted k = 2 as version `M2` (isolation 0.513 overall but
+  0.365 on the coordinated-adjective template). That eligibility rule was
+  weaker than the confirmation family it feeds: P3 applies an isolation floor
+  of 0.40 per template, so `M2` was known from development data to fail the
+  structural gate confirmation would apply, and sending it into the one-shot
+  confirmation would not be a meaningful falsification test. The continuation
+  eligibility rule is therefore corrected as follows: *for post-discovery
+  continuation eligibility, use only Tier A criteria whose meaning is stable
+  across splits — counterfactual recovery (0.70 overall, 0.60 per template and
+  per rule class), isolation recovery overall (≥ 0.50), and isolation recovery
+  per template (≥ 0.40) — together with the role requirement. The P3 absolute
+  sign-retention count (84/120) is not used for continuation selection,
+  because its attainable ceiling depends on the split's clean behavioral flip
+  count (87/120 pairs on development versus 98/120 on holdout); the
+  preregistered P3 84/120 criterion remains unchanged and is applied
+  prospectively at confirmation.* Under the corrected rule k = 2 fails
+  (coordinated isolation 0.365 < 0.40) and k = 3 (E = `L00.MLP` at `p_c`,
+  T = `L03.H04`, R = {`L04.MLP`, `L05.MLP`}; isolation 0.783 overall,
+  0.927 / 0.760 / 0.664 by template) is the mechanical choice; it is recorded
+  as `M3`, and `M2` is recorded as superseded before Tier B — not deleted and
+  not a scientific failure. The normalized development retention is reported
+  as a diagnostic only: the clean model flips 87/120 development pairs and
+  the k = 3 isolation retains 80, a conditional retention of about 92%. The
+  `PROGRAM_CAPPED` reason text is corrected to name the protocol v1 program
+  floor failure rather than a contextual encoding requirement.
+
+  This amendment was made after inspecting Tier A results and therefore is
+  not preregistered with respect to development data. It was made before any
+  Tier B holdout, reserve, or extension execution. The threshold values
+  themselves were not changed; the amendment makes continuation selection
+  respect the previously specified P3 confirmation floors.
 
 ## Purpose
 

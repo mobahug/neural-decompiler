@@ -41,9 +41,11 @@ uv run python experiments/005-regular-plural-mechanism/run.py report
   and the weight-only program's parameters (exported under `outputs/experiment-005/parameters/`). It records
   mechanism version `M1` or `NO_COMPACT_MECHANISM`.
 - `continue` (design revision 5, protocol v2) applies only after a `discover` that ended in `NO_COMPACT_MECHANISM`
-  and before any calibration: it adopts the smallest recorded attempt whose circuit floors passed, re-exports its
-  program parameters, records version `M2` with `PROGRAM_CAPPED`, and freezes the set (`revise` is refused).
-  `CIRCUIT_ONLY` then requires X1 and X2; otherwise the outcome is `CIRCUIT_NOT_GENERALIZED`.
+  and before any calibration: it adopts the smallest recorded attempt eligible under the amended rule (recovery
+  strata; isolation overall ≥ 0.50 and ≥ 0.40 per template; roles — the P3 sign-retention count is not used for
+  selection), re-exports its program parameters, records the version with `PROGRAM_CAPPED`, and freezes the set
+  (`revise` is refused). It may run again only to supersede a version adopted under an older rule, before
+  calibration. `CIRCUIT_ONLY` then requires X1 and X2; otherwise the outcome is `CIRCUIT_NOT_GENERALIZED`.
 - `calibrate` (Tier B) evaluates every circuit-axis family on the 114 single-token holdout nouns and derives the
   bands, `RMSE_B`, and `τ`; at most two passes. `revise` applies the design's mechanical revision once, after a
   failed first pass.
@@ -100,7 +102,11 @@ Exploratory findings (development data only, no claim):
   outside S_M (which recompute under patching but are not part of the program's additive increment) plus the
   lexicon's asymmetric `several` value (n_c = 0.873).
 
-Protocol v1 ends here and its outcome stands. Design revision 5 (approved 2026-09-18) adopts the recorded k = 3
-circuit as protocol v2 with `PROGRAM_CAPPED`; its prospective question is whether the E → T → R circuit survives
-untouched nouns and unseen frames. Reserve nouns and extension prompts were unexecuted when the continuation was
-adopted.
+Protocol v1 ends here and its outcome stands. Design revision 5 (approved 2026-09-18) continues as protocol v2
+with `PROGRAM_CAPPED`; its prospective question is whether the E → T → R circuit survives untouched nouns and
+unseen frames. The first continuation selection (`M2`, k = 2, isolation overall 0.513 but 0.365 on the
+coordinated-adjective template) was superseded before Tier B when the eligibility rule was corrected to apply
+the P3 per-template isolation floor; `M3` = k = 3 (E `L00.MLP`, T `L03.H04`, R `L04.MLP` + `L05.MLP`) is the
+mechanical choice under the amended rule. Diagnostic only: the clean model flips 87/120 development pairs and
+the k = 3 isolation retains 80 (≈ 92% conditional retention). Reserve nouns and extension prompts were
+unexecuted when the continuation was adopted.

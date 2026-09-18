@@ -159,6 +159,20 @@ and refuses `revise` thereafter. The outcome rule gains
 `CIRCUIT_NOT_GENERALIZED`: `CIRCUIT_ONLY` now requires X1 and X2. Calibration,
 the lock, and the single confirmation are unchanged.
 
+#### Amendment — 2026-09-18: continuation eligibility corrected (design revision 5, amended)
+
+The first `continue` run adopted k = 2 as `M2` under the Tier A circuit floors
+as written (isolation overall only). Because P3 applies a per-template
+isolation floor of 0.40 at confirmation and k = 2 already showed 0.365 on the
+coordinated-adjective template, the eligibility rule is corrected before any
+Tier B execution to use only split-stable Tier A criteria: recovery strata,
+isolation overall (≥ 0.50), isolation per template (≥ 0.40), and roles. The P3
+sign-retention count is not used for selection (its ceiling depends on the
+split's clean flip count; 87/120 on development). `continue` may run a second
+time only to supersede a continuation adopted under an older rule, before any
+calibration; `M2` is recorded as superseded, `M3` = k = 3 is adopted, and the
+cap-reason text names the protocol v1 program floor failure.
+
 ### Task 7: Independent review, then Tier A execution
 
 - [ ] **Step 1: Subagent review of the implementation against the spec** (definitions, floors, seeds, phase isolation, non-execution, program independence, LayerNorm semantics). Fix findings; commit.

@@ -252,7 +252,12 @@ class Runner:
         state = self._state_for("continue", manifest_sha256, extension.content_sha256)
         reserve = pm.nouns_for(manifest, pm.Split.FUTURE_RESERVE)
         development = pm.nouns_for(manifest, pm.Split.DEVELOPMENT)
-        state["phases"]["continue"] = {"status": "running", "started_at": pm.utc_now(), "protocol_version": 2, "commit": self._provenance()["protocol_code_commit"]}
+        record = dict(state["phases"]["continue"])
+        history = list(record.get("history", []))
+        if record.get("status") == "complete":
+            history.append({key: value for key, value in record.items() if key != "history"})
+        state["phases"]["continue"] = {"status": "running", "started_at": pm.utc_now(), "protocol_version": 2, "rule": pm.CONTINUATION_RULE_ID,
+                                       "commit": self._provenance()["protocol_code_commit"], "history": history}
         pm.write_results_state(self.results_path, state)
         seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
         model = self.model_loader(PYTHIA_70M)
