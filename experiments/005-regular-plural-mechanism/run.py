@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import json
 import os
 import subprocess
 import sys
@@ -47,6 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
     phases.add_parser("freeze-extension", help="build extension-v1.json from tokenizer rules only (refuses to overwrite)")
     discover = phases.add_parser("discover", help="Tier A: run A0-A11 once on development data")
     discover.add_argument("--screening-results", default=None, metavar="PATH", help="screening results.json for the A1 per-case comparison")
+    phases.add_parser("calibrate", help="Tier B: evaluate the current mechanism version on holdout nouns (at most twice)")
+    phases.add_parser("revise", help="mechanical revision after a failed first calibration pass")
+    phases.add_parser("lock", help="write outputs/experiment-005/candidate-lock.json for review")
+    phases.add_parser("confirm", help="Tier C: the single reserve + extension run; requires the committed lock")
+    phases.add_parser("report", help="render outputs/experiment-005/report.md")
     return parser
 
 
@@ -68,6 +74,16 @@ def _load_tokenizer(spec: ModelSpec) -> Any:
     from transformers import AutoTokenizer
 
     return AutoTokenizer.from_pretrained(spec.model_id, revision=spec.revision)
+
+
+def _git_changed_paths(commit: str) -> list[str] | None:
+    """Paths changed between ``commit`` and HEAD, or None when ``commit`` is not an ancestor."""
+    try:
+        subprocess.run(["git", "merge-base", "--is-ancestor", commit, "HEAD"], cwd=ROOT, check=True, capture_output=True)
+        diff = subprocess.run(["git", "diff", "--name-only", commit, "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return [line.strip() for line in diff.stdout.splitlines() if line.strip()]
 
 
 def _run_contract_test() -> dict[str, Any]:
@@ -93,6 +109,7 @@ class Runner:
     versions: Callable[[], Mapping[str, Any]] = collect_versions
     tracked: Callable[[Path], bool] = _git_tracked
     contract_runner: Callable[[], Mapping[str, Any]] = _run_contract_test
+    changed_paths: Callable[[str], list[str] | None] = _git_changed_paths
     log: Callable[[str], None] = field(default_factory=lambda: lambda message: print(message, flush=True))
     parameters_dir: Path = PARAMETERS_DIR
     program_path: Path = PROGRAM_PATH
@@ -211,6 +228,192 @@ class Runner:
         return 0
 
 
+    # -- Tier B, lock, Tier C, report ------------------------------------------
+
+    def _current_version(self, state: Mapping[str, Any]) -> dict[str, Any]:
+        candidates = [entry for entry in state["mechanism_versions"] if entry.get("status") == "candidate"]
+        if not candidates:
+            raise pm.PhaseError("no candidate mechanism version exists")
+        return dict(candidates[-1])
+
+    def _eval_context(self, model: Any, version: Mapping[str, Any], frames, nouns) -> pm.EvalContext:
+        mechanism = pm.MechanismSet(version["mechanism"]["branch"], tuple(version["mechanism"]["e_keys"]), tuple(version["mechanism"]["t_keys"]), tuple(version["mechanism"]["r_keys"]))
+        program = pm.load_program(self.parameters_dir, self.program_path)
+        axes = pm.site_axes_from_parameters(self.parameters_dir)
+        return pm.EvalContext(model, pm.Weights.from_model(model), mechanism, program, tuple(frames), tuple(nouns), pm.PromptCache(model, tuple(nouns)), axes, version["hypothesis"])
+
+    def calibrate(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("calibrate", manifest_sha256, extension.content_sha256)
+        version = self._current_version(state)
+        reserve = pm.nouns_for(manifest, pm.Split.FUTURE_RESERVE)
+        holdout = tuple(noun for noun in pm.nouns_for(manifest, pm.Split.HOLDOUT) if noun.single_token)
+        frames = pm.derive_frames(manifest)
+        state["phases"]["calibrate"] = {"status": "running", "started_at": pm.utc_now()}
+        pm.write_results_state(self.results_path, state)
+        seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+        model = self.model_loader(PYTHIA_70M)
+        try:
+            ev = self._eval_context(model, version, frames, holdout)
+            universe = pm.universe_keys(model)
+            pm.record_execution(state, pm.manifest_prompts(frames), holdout)
+            pm.assert_not_executed(state, extension=extension, reserve=reserve)
+            self.log(f"calibrating {version['version']} on {len(holdout)} holdout nouns")
+            results = pm.evaluate_circuit_families(ev, universe)
+        finally:
+            del model
+            gc.collect()
+        n_cases = results["behavior"]["cases"]
+        floors = pm.circuit_floors(results, hypothesis=version["hypothesis"], n_cases=n_cases)
+        bands = pm.calibration_bands(results)
+        residual = results["program_residual"]
+        entry = {"version": version["version"], "n_cases": n_cases, "results": {key: value for key, value in results.items() if key != "program_residual"},
+                 "program_residual": {"rmse": residual["rmse"], "mae": residual["mae"], "conditions": residual["conditions"]},
+                 "floors": floors, "bands": bands, "floors_passed": floors["circuit_passed"], "completed_at": pm.utc_now()}
+        state["calibration"]["passes"].append(entry)
+        state["phases"]["calibrate"] = {**state["phases"]["calibrate"], "status": "complete", "completed_at": pm.utc_now()}
+        digest = pm.write_results_state(self.results_path, state)
+        self.log(f"calibration pass {len(state['calibration']['passes'])}: floors {'passed' if floors['circuit_passed'] else 'FAILED ' + str(floors['primary_failures'] or ['B1'])}; "
+                 f"RMSE_B {residual['rmse']:.4f}; tau {pm.tolerance_tau(residual['rmse']):.3f}; results sha256 {digest}")
+        return 0
+
+    def revise(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("revise", manifest_sha256, extension.content_sha256)
+        version = self._current_version(state)
+        instruction = pm.revise_version(version, state["calibration"]["passes"][-1], state["discovery"]["a2"])
+        state["phases"]["revise"] = {"status": "running", "started_at": pm.utc_now(), "instruction": instruction}
+        pm.write_results_state(self.results_path, state)
+        if instruction["action"] == "reject":
+            state["mechanism_versions"].append({"version": instruction["version"], "status": "rejected", "outcome": "NO_COMPACT_MECHANISM", "reason": instruction["reason"]})
+            state["phases"]["revise"] = {**state["phases"]["revise"], "status": "complete", "completed_at": pm.utc_now()}
+            pm.write_results_state(self.results_path, state)
+            self.log(f"revision rejected: {instruction['reason']}")
+            return 1
+        reserve = pm.nouns_for(manifest, pm.Split.FUTURE_RESERVE)
+        development = pm.nouns_for(manifest, pm.Split.DEVELOPMENT)
+        seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+        model = self.model_loader(PYTHIA_70M)
+        try:
+            ctx = pm.new_discovery_context(model, manifest, development)
+            pm.assert_not_executed(state, extension=extension, reserve=reserve)
+            previous = version["mechanism"]
+            hypothesis = version["hypothesis"]
+            t_keys, r_keys = list(previous["t_keys"]), list(previous["r_keys"])
+            if instruction["action"] == "extend":
+                for key in instruction["add"]:
+                    (t_keys if pm.is_head_key(key) else r_keys).append(key)
+            else:
+                hypothesis = instruction["row"]
+            mechanism = pm.MechanismSet(previous["branch"], tuple(previous["e_keys"]), tuple(t_keys), tuple(r_keys))
+            evaluation = pm.evaluate_candidate_set(ctx, mechanism, program_path=self.program_path, parameters_dir=self.parameters_dir)
+            new_version = {**version, "version": instruction["version"], "mechanism": mechanism.to_dict(), "hypothesis": hypothesis,
+                           "program_capped": evaluation["program_capped"], "program_floors": evaluation["program_floors"], "recovery": evaluation["recovery"],
+                           "isolation": evaluation["isolation"]["faithfulness"], "sign_retention": evaluation["isolation"]["sign_retention"], "revision": instruction}
+            if evaluation["passed"]:
+                parameters = evaluation["_parameters"]
+                index = pm.export_program_parameters(self.parameters_dir, ctx.weights, parameters, vocab_size=int(ctx.weights.W_E.shape[0]))
+                program = pm.load_program(self.parameters_dir, self.program_path)
+                new_version["parameters_index_sha256"] = pm.sha256_text(pm.canonical_json(index))
+                new_version["lexicon_sha256"] = program.lexicon_digest()
+                new_version["statement"] = pm.render_mechanism_statement(mechanism, parameters, hypothesis=hypothesis, flagged=version["hypothesis_flagged"],
+                                                                        capped=evaluation["program_capped"], encoding=version["encoding_branch"])
+                new_version["status"] = "candidate"
+            else:
+                new_version["status"] = "rejected"
+                new_version["outcome"] = "NO_COMPACT_MECHANISM"
+        finally:
+            del model
+            gc.collect()
+        state["mechanism_versions"].append(new_version)
+        state["phases"]["revise"] = {**state["phases"]["revise"], "status": "complete", "completed_at": pm.utc_now()}
+        pm.write_results_state(self.results_path, state)
+        self.log(f"revision {new_version['version']}: {new_version['status']} ({instruction['action']})")
+        return 0 if new_version["status"] == "candidate" else 1
+
+    def lock(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("lock", manifest_sha256, extension.content_sha256)
+        version = self._current_version(state)
+        calibration = state["calibration"]["passes"][-1]
+        if calibration["version"] != version["version"]:
+            raise pm.PhaseError("the last calibration pass does not belong to the current mechanism version")
+        program = pm.load_program(self.parameters_dir, self.program_path)
+        lock = pm.build_candidate_lock(state=state, version=version, calibration=calibration, manifest=manifest, manifest_sha256=manifest_sha256, extension=extension,
+                                       program=program, parameters_dir=self.parameters_dir, program_path=self.program_path, protocol_code_commit=self._provenance()["protocol_code_commit"])
+        candidate_path = self.results_path.parent / "candidate-lock.json"
+        candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
+        state["lock"] = {"candidate_path": str(candidate_path), "content_sha256": lock["content_sha256"], "version": version["version"], "written_at": pm.utc_now()}
+        state["phases"]["lock"] = {"status": "complete", "completed_at": pm.utc_now()}
+        pm.write_results_state(self.results_path, state)
+        self.log(f"candidate lock written to {candidate_path} (sha256 {lock['content_sha256']}).")
+        self.log(f"Review it, then install it as {pm.LOCK_RELATIVE_PATH} and commit before running confirm.")
+        return 0
+
+    def confirm(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("confirm", manifest_sha256, extension.content_sha256)
+        lock_path = self.root / pm.LOCK_RELATIVE_PATH
+        if not lock_path.exists():
+            raise pm.PhaseError(f"missing committed lock {lock_path}")
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        git = self.git_state()
+        pm.validate_lock(lock, state=state, manifest=manifest, manifest_sha256=manifest_sha256, extension=extension, parameters_dir=self.parameters_dir,
+                         program_path=self.program_path, git_state=git, tracked=self.tracked(lock_path), changed_paths=self.changed_paths(lock["protocol_code_commit"]))
+        version = self._current_version(state)
+        reserve = pm.nouns_for(manifest, pm.Split.FUTURE_RESERVE)
+        frames = pm.derive_frames(manifest)
+        state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": str(git.get("commit"))}
+        pm.write_results_state(self.results_path, state)
+        seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+        model = self.model_loader(PYTHIA_70M)
+        try:
+            universe = pm.universe_keys(model)
+            self.log("Tier C: reserve nouns on the twelve manifest prompts")
+            ev = self._eval_context(model, version, frames, reserve)
+            circuit_results = pm.evaluate_circuit_families(ev, universe)
+            self.log("Tier C: new frames")
+            ev_new = pm.EvalContext(model, ev.weights, ev.mechanism, ev.program, extension.new_frames, reserve, pm.PromptCache(model, reserve), ev.site_axes, version["hypothesis"])
+            new_frame_results = pm.evaluate_new_frame_families(ev_new, universe)
+            self.log("Tier C: cue words")
+            locked_full_shift = {template: band["point"] for template, band in lock["bands"]["B2"].items()}
+            cue_word_results = pm.evaluate_cue_word_families(ev, extension, locked_full_shift=locked_full_shift)
+            cue_word_results["locked_full_shift"] = locked_full_shift
+            pm.record_execution(state, pm.manifest_prompts(frames) + extension.new_frame_prompts() + extension.cue_word_prompts, reserve)
+        finally:
+            del model
+            gc.collect()
+        n_cases = circuit_results["behavior"]["cases"]
+        circuit = pm.circuit_floors(circuit_results, hypothesis=version["hypothesis"], n_cases=n_cases)
+        hits = pm.band_hits(circuit_results, lock["bands"])
+        decompilation = pm.decompilation_floors(new_frame_results, cue_word_results, hypothesis=version["hypothesis"], capped=bool(lock["mechanism"]["program_capped"]))
+        x_hits = pm.x_band_hits(cue_word_results, {"X3": lock["x_predictions"]["X3_band"], "X4": lock["x_predictions"]["X4_band"]})
+        contested = pm.contested(circuit_results, hypothesis=version["hypothesis"], bands=lock["bands"])
+        verdict = pm.outcome(circuit=circuit, hits=hits, decompilation=decompilation, x_hits=x_hits, contested_findings=contested)
+        state["confirmation"] = {
+            "lock_sha256": lock["content_sha256"], "n_cases": n_cases,
+            "reserve": {key: value for key, value in circuit_results.items() if key != "program_residual"},
+            "reserve_program_residual": {key: value for key, value in circuit_results["program_residual"].items() if key != "entries"},
+            "new_frames": {key: value for key, value in new_frame_results.items() if key != "program_residual"},
+            "new_frames_program_residual": {key: value for key, value in new_frame_results["program_residual"].items() if key != "entries"},
+            "cue_words": cue_word_results, "circuit_floors": circuit, "band_hits": hits, "decompilation_floors": decompilation, "x_band_hits": x_hits,
+            "contested": contested, "outcome": verdict, "completed_at": pm.utc_now(),
+        }
+        state["phases"]["confirm"] = {**state["phases"]["confirm"], "status": "complete", "completed_at": pm.utc_now()}
+        digest = pm.write_results_state(self.results_path, state)
+        self.log(f"confirm complete: {verdict['label']} ({verdict['axes']}); results sha256 {digest}")
+        return 0
+
+    def report(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("report", manifest_sha256, extension.content_sha256)
+        text = pm.render_report(state)
+        self.report_path.parent.mkdir(parents=True, exist_ok=True)
+        self.report_path.write_text(text, encoding="utf-8")
+        self.log(f"report written to {self.report_path}")
+        return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     runner = Runner()
@@ -220,6 +423,8 @@ def main(argv: list[str] | None = None) -> int:
         return runner.freeze_extension()
     if args.phase == "discover":
         return runner.discover(screening_results=args.screening_results)
+    if args.phase in {"calibrate", "revise", "lock", "confirm", "report"}:
+        return getattr(runner, args.phase)()
     raise SystemExit(f"unknown phase {args.phase}")
 
 

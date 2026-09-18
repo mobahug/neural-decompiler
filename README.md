@@ -18,7 +18,7 @@ The project advances through small, reproducible experiments. It separates what 
 - [Experiment 003: Pythia Scale-and-Behavior Comparison](experiments/003-pythia-scale-comparison/README.md) — compares fresh Pythia-70M and Pythia-160M behavior, selectivity, and normalized-depth trajectories under one frozen pipeline.
 - [Experiment 004: Prompt Elicitation](experiments/004-prompt-elicitation/README.md) — tests a preregistered prompt intervention selected on development data and evaluated on held-out cases.
 
-Experiments 001–004 are preserved historical observational and infrastructure work. The behavior candidate screen below has since been executed once: it proposes `regular-plural` (count-cued noun number selection in Pythia-70M) as the single target and eliminates `ordinal-suffix`. A design for Experiment 005 is drafted in [the Experiment 005 mechanism design](docs/superpowers/specs/2026-09-17-experiment-005-regular-plural-mechanism-design.md) and awaits review and user approval; no Experiment 005 directory, claim, preregistration lock, or model run exists, and the future-reserve cases remain unexecuted.
+Experiments 001–004 are preserved historical observational and infrastructure work. The behavior candidate screen below has since been executed once: it proposes `regular-plural` (count-cued noun number selection in Pythia-70M) as the single target and eliminates `ordinal-suffix`. Experiment 005 is designed ([approved design, revision 4](docs/superpowers/specs/2026-09-17-experiment-005-regular-plural-mechanism-design.md); [plan](docs/superpowers/plans/2026-09-17-experiment-005-regular-plural-mechanism-plan.md)) and implemented under [`experiments/005-regular-plural-mechanism/`](experiments/005-regular-plural-mechanism/README.md) with a frozen extension set; no scientific phase has run yet, no preregistration lock exists, and the future-reserve cases remain unexecuted.
 
 ## Behavior candidate screening
 
@@ -38,7 +38,7 @@ uv run python screening/behavior-candidates/run.py report
 - `compactness` probes only behavioral passers with development data; holdout and future-reserve cases are never executed during selection.
 - `report` renders the candidate matrix; `report --audit-json JSON` records the finalist prior-art audits (write-once per candidate) and the final zero/one-target decision.
 
-The screen was executed once on 2026-09-17; the outcome, evidence copy, and finalist audit are recorded in [`screening/behavior-candidates/README.md`](screening/behavior-candidates/README.md): `regular-plural` (count-cued noun number selection) is the single proposed target and `ordinal-suffix` was eliminated. The Experiment 005 design draft is linked above; it is not yet approved or implemented.
+The screen was executed once on 2026-09-17; the outcome, evidence copy, and finalist audit are recorded in [`screening/behavior-candidates/README.md`](screening/behavior-candidates/README.md): `regular-plural` (count-cued noun number selection) is the single proposed target and `ordinal-suffix` was eliminated. Experiment 005 (approved design revision 4) is implemented and awaits its Tier A run.
 
 Scientific phases require a clean, committed tree and run once. `--resume` continues only an interrupted, provenance-identical run. A completed screen is rerun only through `--incident-note TRACKED_PATH`, which invalidates the whole affected model screen for every candidate after a committed software fix. Generated outputs live under `outputs/behavior-candidate-screening/` (`results.json`, `report.md`) and are not committed.
 

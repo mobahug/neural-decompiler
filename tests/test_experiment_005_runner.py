@@ -80,12 +80,14 @@ def test_validate_requires_tracked_extension(sandbox):
     assert runner.validate() == 1
 
 
-def test_parser_exposes_only_implemented_phases():
+def test_parser_exposes_every_phase_and_no_override_flags():
     parser = runner_module.build_parser()
-    assert parser.parse_args(["validate"]).phase == "validate"
-    assert parser.parse_args(["freeze-extension"]).phase == "freeze-extension"
+    for phase in ("validate", "freeze-extension", "discover", "calibrate", "revise", "lock", "confirm", "report"):
+        assert parser.parse_args([phase]).phase == phase
     with pytest.raises(SystemExit):
-        parser.parse_args(["confirm"])
+        parser.parse_args(["confirm", "--force"])
+    with pytest.raises(SystemExit):
+        parser.parse_args(["behavioral"])
 
 
 # ---------------------------------------------------------------------------
@@ -103,8 +105,8 @@ def make_discover_runner(sandbox, monkeypatch, *, contract_passed=True, logs=Non
     logs = logs if logs is not None else []
     monkeypatch.setattr(pm, "a1_baseline", _stub_a1)
     # A random fake has no real cue effect on the manifest prompts; lift the denominator floors for plumbing.
-    monkeypatch.setattr(pm, "DENOMINATOR_FLOOR_OVERALL", 0.0)
-    monkeypatch.setattr(pm, "DENOMINATOR_FLOOR_STRATUM", 0.0)
+    monkeypatch.setattr(pm, "DENOMINATOR_FLOOR_OVERALL", -1e9)
+    monkeypatch.setattr(pm, "DENOMINATOR_FLOOR_STRATUM", -1e9)
     runner = runner_module.Runner(
         root=sandbox,
         experiment_dir=sandbox / "experiments/005-regular-plural-mechanism",
@@ -152,3 +154,75 @@ def test_discover_runs_once_and_never_touches_reserve_or_extension(sandbox, monk
     assert state["mechanism_versions"][0]["version"] == "M1"
     with pytest.raises(pm.PhaseError):
         runner.discover()
+
+
+# ---------------------------------------------------------------------------
+# calibrate → lock → confirm → report on the fake (floors forced to pass for the state machine)
+
+
+def _force_pass(real):
+    def wrapped(results, *, hypothesis, n_cases):
+        floors = real(results, hypothesis=hypothesis, n_cases=n_cases)
+        floors["primary_failures"] = []
+        floors["precondition_passed"] = True
+        floors["circuit_passed"] = True
+        return floors
+    return wrapped
+
+
+def test_full_state_machine_on_the_fake(sandbox, monkeypatch):
+    runner, logs = make_discover_runner(sandbox, monkeypatch)
+    runner.changed_paths = lambda commit: []
+    # A random fake cannot pass scientific floors; lift the Tier A floors so the state machine can be exercised.
+    monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_OVERALL", -10.0)
+    monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_STRATUM", -10.0)
+    monkeypatch.setattr(pm, "TIER_A_ISOLATION_FLOOR", -10.0)
+    monkeypatch.setattr(pm, "program_development_floors", lambda program, ctx: {"passed": True, "sign_failures": [], "templates": {}})
+    assert runner.freeze_extension() == 0
+    assert runner.discover() == 0
+    state = pm.load_results_state(runner.results_path)
+    assert state["mechanism_versions"][-1]["status"] == "candidate"
+    with pytest.raises(pm.PhaseError):
+        runner.lock()  # needs a calibration pass first
+    with pytest.raises(pm.PhaseError):
+        runner.confirm()
+    monkeypatch.setattr(pm, "circuit_floors", _force_pass(pm.circuit_floors))
+    assert runner.calibrate() == 0
+    state = pm.load_results_state(runner.results_path)
+    assert len(state["calibration"]["passes"]) == 1 and state["calibration"]["passes"][0]["floors_passed"]
+    assert len([key for key in state["executed_noun_keys"] if key.startswith("future-reserve")]) == 0
+    with pytest.raises(pm.PhaseError):
+        runner.revise()  # floors passed: nothing to revise
+    with pytest.raises(pm.PhaseError):
+        runner.calibrate()  # a second pass needs a revise phase
+    assert runner.lock() == 0
+    candidate = runner.results_path.parent / "candidate-lock.json"
+    lock = json.loads(candidate.read_text())
+    assert lock["content_sha256"] == pm.sha256_text(pm.canonical_json({k: v for k, v in lock.items() if k != "content_sha256"}))
+    assert set(lock["x_predictions"]["cue_words"]) == set(pm.EXTENSION_CUE_WORDS[:12])
+    assert len(lock["x_predictions"]["new_frames"]) == 6
+    with pytest.raises(pm.PhaseError):
+        runner.confirm()  # lock not installed yet
+    installed = sandbox / pm.LOCK_RELATIVE_PATH
+    shutil.copy(candidate, installed)
+    tampered = json.loads(installed.read_text())
+    tampered["bands"]["P1"]["overall"]["low"] -= 1.0
+    installed.write_text(json.dumps(tampered))
+    with pytest.raises(pm.PhaseError):
+        runner.confirm()  # digest mismatch
+    shutil.copy(candidate, installed)
+    runner.changed_paths = lambda commit: ["src/neural_decompiler/plural_mechanism.py"]
+    with pytest.raises(pm.PhaseError):
+        runner.confirm()  # scientific path changed since the lock commit
+    runner.changed_paths = lambda commit: ["README.md"]
+    assert runner.confirm() == 0
+    state = pm.load_results_state(runner.results_path)
+    assert state["phases"]["confirm"]["status"] == "complete"
+    assert state["confirmation"]["outcome"]["label"] in {"MECHANISM_CONFIRMED", "MECHANISM_SUPPORTED_MISCALIBRATED", "CIRCUIT_ONLY", "MECHANISM_CONTESTED", "MECHANISM_NOT_SUPPORTED", "BEHAVIOR_NOT_REPLICATED"}
+    assert len([key for key in state["executed_noun_keys"] if key.startswith("future-reserve")]) == 20
+    assert len(state["executed_prompt_keys"]) == 12 + 12 + 72
+    with pytest.raises(pm.PhaseError):
+        runner.confirm()  # once only
+    assert runner.report() == 0
+    text = runner.report_path.read_text()
+    assert "## Confirmation — outcome" in text and "### Cue words" in text

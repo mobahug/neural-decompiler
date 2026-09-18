@@ -1909,6 +1909,18 @@ class ProgramParameters:
     rho_frame: Mapping[str, torch.Tensor]
     rho_template: Mapping[str, torch.Tensor]
     t_axis: SiteAxis | None
+    r_in_axis: SiteAxis | None = None
+    r_out_axis: SiteAxis | None = None
+
+    def site_axes(self) -> dict[str, SiteAxis]:
+        axes = {"E": self.e_axis}
+        if self.t_axis is not None:
+            axes["T"] = self.t_axis
+        if self.r_in_axis is not None:
+            axes["R_in"] = self.r_in_axis
+        if self.r_out_axis is not None:
+            axes["R_out"] = self.r_out_axis
+        return axes
 
     def gains(self) -> dict[str, float]:
         return {template: float(vector.norm()) for template, vector in self.v_t.items()}
@@ -1958,7 +1970,14 @@ def estimate_program_parameters(ctx: DiscoveryContext, mechanism: MechanismSet) 
             rho_frame[frame.frame_id] = 0.5 * (ctx.cache.final_residual(sg) + ctx.cache.final_residual(pl))
         v_t[template] = 0.5 * torch.stack(diffs).mean(dim=0)
         rho_template[template] = torch.stack([rho_frame[frame.frame_id] for frame in frames]).mean(dim=0)
-    return ProgramParameters(keys, e_axis, k_t, v_t, rho_frame, rho_template, t_axis)
+    r_in_axis = r_out_axis = None
+    if mechanism.r_keys and mechanism.l_r is not None:
+        r_in_key = f"RESID_PRE.L{mechanism.l_r}"
+        r_in_axis = site_axis("R_in", [ctx.cache.run(sg).vector((r_in_key, sg.p_t)) for sg, _ in map(frame_prompts, ctx.frames)],
+                              [ctx.cache.run(pl).vector((r_in_key, pl.p_t)) for _, pl in map(frame_prompts, ctx.frames)])
+        r_out_axis = site_axis("R_out", [summed_vector(ctx.cache.run(sg), [(key, sg.p_t) for key in mechanism.r_keys]) for sg, _ in map(frame_prompts, ctx.frames)],
+                               [summed_vector(ctx.cache.run(pl), [(key, pl.p_t) for key in mechanism.r_keys]) for _, pl in map(frame_prompts, ctx.frames)])
+    return ProgramParameters(keys, e_axis, k_t, v_t, rho_frame, rho_template, t_axis, r_in_axis, r_out_axis)
 
 
 def export_program_parameters(directory: Path, weights: Weights, parameters: ProgramParameters, *, vocab_size: int) -> dict[str, Any]:
@@ -1979,6 +1998,13 @@ def export_program_parameters(directory: Path, weights: Weights, parameters: Pro
         tensors[f"rho_frame.{frame_id}"] = vector
     for template, vector in parameters.rho_template.items():
         tensors[f"rho_template.{template}"] = vector
+    axis_scalars = {}
+    for label, axis in parameters.site_axes().items():
+        if label == "E":
+            continue
+        tensors[f"axis_mu.{label}"] = axis.mu
+        tensors[f"axis_direction.{label}"] = axis.direction
+        axis_scalars[label] = axis.sigma
     digests = {}
     for name, tensor in tensors.items():
         path = directory / f"{name}.pt"
@@ -1986,7 +2012,7 @@ def export_program_parameters(directory: Path, weights: Weights, parameters: Pro
         digests[name] = {"file": path.name, "shape": list(tensor.shape), "dtype": str(tensor.dtype), "sha256": tensor_digest(tensor)}
     index = {
         "eps": weights.eps, "act_fn": weights.act_fn, "vocab_size": vocab_size, "e_program_keys": list(parameters.e_program_keys),
-        "e_axis_sigma": parameters.e_axis.sigma, "k_t": parameters.k_t, "templates": list(TEMPLATE_ORDER),
+        "e_axis_sigma": parameters.e_axis.sigma, "axis_sigmas": axis_scalars, "k_t": parameters.k_t, "templates": list(TEMPLATE_ORDER),
         "cue_final_templates": list(CUE_FINAL_TEMPLATES), "coordinated_template": COORDINATED_TEMPLATE,
         "frames_by_template": {template: [frame_id for frame_id in parameters.rho_frame if frame_id.startswith(template + "-")] for template in TEMPLATE_ORDER},
         "tensors": digests,
@@ -2214,3 +2240,977 @@ def run_discovery(ctx: DiscoveryContext, *, state: dict[str, Any], results_path:
     if results_path is not None:
         write_results_state(results_path, state)
     return version
+
+
+# ---------------------------------------------------------------------------
+# Prediction families: one evaluator shared by calibrate (holdout) and confirm
+# (reserve + extension). Floors are the design's, restated as rates with
+# exact-count evaluation (ceil(rate · n)); bands come from Tier B.
+
+FLOOR_RATES = {
+    "B1_accuracy": 103 / 120, "B1_flip": 96 / 120, "B2_positive": 114 / 120, "P3_retention": 84 / 120,
+    "X1_positive": 108 / 120, "X1_variables": 11 / 12, "X3_sign_word": 5 / 6, "X3_sign_overall": 0.90, "X3_ambiguous": 5 / 6, "S3": 0.80,
+}
+FLOORS = {
+    "P1_overall": 0.70, "P1_stratum": 0.60, "P2_random_floor": 0.05, "P2_multiplier": 2.0, "P3_overall": 0.50, "P3_template": 0.40,
+    "P4": 0.50, "P5a_H1": 0.50, "P5a_H2": 0.70, "P5b_H1": 0.50, "P6_opposite": 0.50, "P6_same": 0.25, "P7_same": 0.25, "P7_opposite_factor": 0.5,
+    "P8_loss": 0.30, "P9": 0.50, "P9_frozen_factor": 0.5, "S1": 0.70, "X3_spearman": 0.70, "X3_confident": 0.5, "X3_ambiguous_factor": 0.5,
+    "X4_spearman": 0.70, "X4_mae_factor": 0.25,
+}
+BAND_MIN_WIDTH = 0.10
+BAND_SE_MULTIPLIER = 1.5
+BAND_D_FULL_NATS = 0.5
+BOOTSTRAP_RESAMPLES = 1000
+TAU_MIN_NATS = 0.5
+TAU_RMSE_MULTIPLIER = 3.0
+X_BAND_WORDS = 9
+X_BAND_FRAMES = 5
+
+
+def exact_count_floor(rate: float, n: int) -> int:
+    return int(math.ceil(rate * n - 1e-9))
+
+
+def primary_orientation_for(noun: Noun) -> str:
+    """The screen's primary condition: singular prompt for simple-suffix nouns, plural prompt otherwise."""
+    return "A" if noun.rule_class == "simple-suffix" else "B"
+
+
+@dataclass
+class EvalContext:
+    """What every family needs: model, mechanism, program, frames, nouns, clean cache, locked axes."""
+
+    model: Any
+    weights: Weights
+    mechanism: MechanismSet
+    program: Any
+    frames: tuple[Frame, ...]
+    nouns: tuple[Noun, ...]
+    cache: PromptCache
+    site_axes: Mapping[str, SiteAxis]
+    hypothesis: str
+
+    @property
+    def discovery_like(self) -> DiscoveryContext:
+        return DiscoveryContext(self.model, self.weights, None, self.frames, self.nouns, self.cache)
+
+    def frames_of(self, template_id: str) -> tuple[Frame, ...]:
+        return tuple(frame for frame in self.frames if frame.template_id == template_id)
+
+    @property
+    def coordinated(self) -> tuple[Frame, ...]:
+        return self.frames_of(COORDINATED_TEMPLATE)
+
+
+def _rows_to_json(rows: Sequence[CaseRow]) -> list[dict[str, Any]]:
+    return [row.to_dict() for row in rows]
+
+
+def _behavior_family(ev: EvalContext) -> dict[str, Any]:
+    """B1/B2 (and X1 on new frames): primary accuracy, flips, positive pairs, per-template d_full, variables."""
+    accuracy = flips = positive = total = 0
+    d_full_rows: list[CaseRow] = []
+    variable_hits = {"n_c": 0, "n_t": 0, "prompts": 0}
+    wrong_conditions = []
+    for frame in ev.frames:
+        sg, pl = frame_prompts(frame)
+        c_a, c_b = ev.cache.c(sg), ev.cache.c(pl)
+        for prompt in (sg, pl):
+            run = ev.cache.run(prompt)
+            expected = -1.0 if prompt.cue_label == "sg" else 1.0
+            n_c = ev.site_axes["E"].n(summed_vector(run, [(key, prompt.p_c) for key in ev.mechanism.e_program_keys]))
+            if frame.template_id == COORDINATED_TEMPLATE and "T" in ev.site_axes and ev.mechanism.t_keys:
+                n_t = ev.site_axes["T"].n(summed_vector(run, [(key, prompt.p_t) for key in ev.mechanism.t_keys]))
+            else:
+                n_t = n_c
+            variable_hits["prompts"] += 1
+            variable_hits["n_c"] += int(math.copysign(1.0, n_c) == expected)
+            variable_hits["n_t"] += int(math.copysign(1.0, n_t) == expected)
+            for noun in ev.nouns:
+                if not noun.single_token:
+                    continue
+                contrast = (c_a if prompt.cue_label == "sg" else c_b)[noun.lexical_key]
+                correct = contrast > 0 if prompt.cue_label == "sg" else contrast < 0
+                if not correct:
+                    wrong_conditions.append({"frame_id": frame.frame_id, "noun": noun.lexical_key, "cue": prompt.cue_label,
+                                             "n_t_sign_matches_cue": math.copysign(1.0, n_t) == expected})
+        for noun in ev.nouns:
+            if not noun.single_token:
+                continue
+            key = noun.lexical_key
+            total += 1
+            primary = c_a[key] if primary_orientation_for(noun) == "A" else c_b[key]
+            accuracy += int(primary > 0 if primary_orientation_for(noun) == "A" else primary < 0)
+            flips += int(c_a[key] > 0 and c_b[key] < 0)
+            positive += int(c_a[key] - c_b[key] > 0)
+            d_full_rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key], 0.0))
+    template_means = {template: _mean([row.d_full for row in d_full_rows if row.template_id == template]) for template in TEMPLATE_ORDER if any(row.template_id == template for row in d_full_rows)}
+    s3 = {"n_wrong": len(wrong_conditions), "n_t_matches": sum(1 for entry in wrong_conditions if entry["n_t_sign_matches_cue"])}
+    return {"cases": total, "primary_correct": accuracy, "flips": flips, "positive_pairs": positive, "template_mean_d_full": template_means,
+            "variables": variable_hits, "s3": s3, "rows": _rows_to_json(d_full_rows), "wrong_conditions": wrong_conditions}
+
+
+def _rows_over(ev: EvalContext, frames: Sequence[Frame], role_sites: Sequence[RoleSite], **options: Any) -> tuple[CaseRow, ...]:
+    rows: list[CaseRow] = []
+    for frame in frames:
+        sites = list(role_sites)
+        if frame.p_c == frame.p_t:
+            sites = list(dict.fromkeys((key, "p_t") for key, _ in sites))
+        frame_rows, _ = counterfactual_rows(ev.model, ev.cache, frame, sites, **options)
+        rows.extend(frame_rows)
+    return tuple(rows)
+
+
+def _p1(ev: EvalContext) -> dict[str, Any]:
+    rows = _rows_over(ev, ev.frames, ev.mechanism.role_sites())
+    return {"summary": stratified_recovery(rows), "rows": _rows_to_json(rows)}
+
+
+def _p2(ev: EvalContext, universe: Sequence[str]) -> dict[str, Any]:
+    n_c = len(ev.mechanism.e_keys) if ev.mechanism.branch != "EMBED" else 0
+    n_t = len(ev.mechanism.p_t_keys)
+    import random
+
+    generator = random.Random(CONTROL_SEED)
+    ordered = tuple(universe)
+    recoveries, sets = [], []
+    for _ in range(RANDOM_SET_COUNT):
+        at_c = tuple(sorted(generator.sample(ordered, n_c), key=ordered.index)) if n_c else ()
+        at_t = tuple(sorted(generator.sample(ordered, n_t), key=ordered.index)) if n_t else ()
+        role_sites = [(key, "p_c") for key in at_c] + [(key, "p_t") for key in at_t]
+        rows = _rows_over(ev, ev.frames, role_sites)
+        recoveries.append(_recovery(rows))
+        sets.append({"p_c": list(at_c), "p_t": list(at_t)})
+    finite = sorted(value for value in recoveries if value is not None)
+    median = finite[len(finite) // 2] if len(finite) % 2 else 0.5 * (finite[len(finite) // 2 - 1] + finite[len(finite) // 2])
+    return {"median": median, "reference": max(median, FLOORS["P2_random_floor"]), "recoveries": recoveries, "sets": sets, "size": {"p_c": n_c, "p_t": n_t}}
+
+
+def _p3(ev: EvalContext, frames: Sequence[Frame]) -> dict[str, Any]:
+    rows: list[CaseRow] = []
+    retention = {"retained": 0, "total": 0}
+    for frame in frames:
+        kept = list(ev.mechanism.role_sites())
+        if frame.p_c == frame.p_t:
+            kept = list(dict.fromkeys((key, "p_t") for key, _ in kept))
+        runs = isolation_runs(ev.model, ev.cache, frame, kept)
+        sg, pl = frame_prompts(frame)
+        c_a, c_b = ev.cache.c(sg), ev.cache.c(pl)
+        c_a_i, c_b_i = contrasts(runs["sg"].logits, ev.nouns), contrasts(runs["pl"].logits, ev.nouns)
+        for noun in ev.nouns:
+            if noun.single_token:
+                key = noun.lexical_key
+                rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key], c_a_i[key] - c_b_i[key]))
+        kept_signs = sign_retention(ev.cache, frame, runs)
+        retention["retained"] += kept_signs["retained"]
+        retention["total"] += kept_signs["total"]
+    return {"summary": stratified_recovery(rows), "sign_retention": retention, "rows": _rows_to_json(rows)}
+
+
+def _p4(ev: EvalContext, frames: Sequence[Frame], universe: Sequence[str]) -> dict[str, Any]:
+    coordinated = [frame for frame in frames if frame.template_id == COORDINATED_TEMPLATE]
+    if ev.mechanism.branch == "EMBED":
+        rows: list[CaseRow] = []
+        for frame in coordinated:
+            runs = neutralized_runs(ev.model, ev.cache, frame, [(key, "p_c") for key in universe])
+            sg, pl = frame_prompts(frame)
+            c_a, c_b = ev.cache.c(sg), ev.cache.c(pl)
+            c_a_n, c_b_n = contrasts(runs["sg"].logits, ev.nouns), contrasts(runs["pl"].logits, ev.nouns)
+            for noun in ev.nouns:
+                if noun.single_token:
+                    key = noun.lexical_key
+                    rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key], c_a_n[key] - c_b_n[key]))
+        return {"variant": "P4prime", "value": _recovery(rows), "rows": _rows_to_json(rows)}
+    rows = _rows_over(ev, coordinated, [(key, "p_c") for key in ev.mechanism.e_keys])
+    return {"variant": "P4", "value": _recovery(rows), "rows": _rows_to_json(rows)}
+
+
+def _p5(ev: EvalContext, frames: Sequence[Frame]) -> dict[str, Any]:
+    coordinated = [frame for frame in frames if frame.template_id == COORDINATED_TEMPLATE]
+    t_keys = list(ev.mechanism.t_keys)
+    if not t_keys or ev.mechanism.l_t is None:
+        return {"applicable": False}
+    single = _rows_over(ev, coordinated, [(t_keys[0], "p_t")])
+    declared = _rows_over(ev, coordinated, [(key, "p_t") for key in t_keys])
+    resid = [(f"RESID_PRE.L{ev.mechanism.l_t}", "p_c")]
+    unfrozen_rows = _rows_over(ev, coordinated, resid)
+    frozen_rows = _rows_over(ev, coordinated, resid, freeze=[(key, "p_t") for key in t_keys])
+    unfrozen, frozen = _recovery(unfrozen_rows), _recovery(frozen_rows)
+    blocked = (unfrozen - frozen) / unfrozen if unfrozen else None
+    return {"applicable": True, "a_single": _recovery(single), "a_declared": _recovery(declared), "b_unfrozen": unfrozen, "b_frozen": frozen,
+            "b_blocked_fraction": blocked, "rows": {"single": _rows_to_json(single), "declared": _rows_to_json(declared),
+                                                    "unfrozen": _rows_to_json(unfrozen_rows), "frozen": _rows_to_json(frozen_rows)}}
+
+
+def _p6(ev: EvalContext) -> dict[str, Any]:
+    cardinal, quantifier = ev.frames_of("cardinal"), ev.frames_of("quantifier")
+    if len(cardinal) != len(quantifier) or not cardinal:
+        return {"applicable": False}
+    e_sites = [(key, "p_t") for key in ev.mechanism.e_keys] if ev.mechanism.branch != "EMBED" else [("EMBED", "p_t")]
+    result = {"applicable": True}
+    for flip, name in ((True, "opposite"), (False, "same")):
+        rows: list[CaseRow] = []
+        for targets, sources in ((cardinal, quantifier), (quantifier, cardinal)):
+            for target, source in zip(targets, sources):
+                frame_rows, _ = counterfactual_rows(ev.model, ev.cache, target, e_sites, source_frame=source, flip_source=flip)
+                rows.extend(frame_rows)
+        result[name] = _recovery(rows)
+        result[f"rows_{name}"] = _rows_to_json(rows)
+    return result
+
+
+def _p7(ev: EvalContext, frames: Sequence[Frame]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for flip, name in ((True, "opposite"), (False, "same")):
+        rows: list[CaseRow] = []
+        for template in TEMPLATE_ORDER:
+            pair = [frame for frame in frames if frame.template_id == template]
+            if len(pair) != 2:
+                continue
+            for target, source in ((pair[0], pair[1]), (pair[1], pair[0])):
+                sites = list(ev.mechanism.role_sites())
+                if target.p_c == target.p_t:
+                    sites = list(dict.fromkeys((key, "p_t") for key, _ in sites))
+                frame_rows, _ = counterfactual_rows(ev.model, ev.cache, target, sites, source_frame=source, flip_source=flip)
+                rows.extend(frame_rows)
+        result[name] = _recovery(rows) if rows else None
+        result[f"rows_{name}"] = _rows_to_json(rows)
+    return result
+
+
+def _p8(ev: EvalContext, frames: Sequence[Frame], universe: Sequence[str]) -> dict[str, Any]:
+    """Neutralize T (coordinated) or E (cue-final): loss and compensation via direct effects."""
+    n_layers = int(ev.model.cfg.n_layers)
+    capture = [(key, "p_t") for key in universe] + [("EMBED", "p_t"), (f"RESID_POST.L{n_layers - 1}", "p_t")]
+    rows: list[CaseRow] = []
+    compensation_terms: list[float] = []
+    for frame in frames:
+        if frame.template_id == COORDINATED_TEMPLATE:
+            if not ev.mechanism.t_keys:
+                continue
+            sites = [(key, "p_t") for key in ev.mechanism.t_keys]
+        else:
+            if ev.mechanism.branch == "EMBED":
+                continue
+            sites = [(key, "p_t") for key in ev.mechanism.e_keys]
+        runs = neutralized_runs(ev.model, ev.cache, frame, sites, capture_role_sites=capture)
+        rows.extend(neutralization_rows(ev.cache, frame, runs))
+        sg, pl = frame_prompts(frame)
+        clean = pair_direct_effects(direct_effects(ev.weights, ev.cache.run(sg), ev.nouns, p_t=sg.p_t, n_layers=n_layers, universe=universe),
+                                    direct_effects(ev.weights, ev.cache.run(pl), ev.nouns, p_t=pl.p_t, n_layers=n_layers, universe=universe))
+        after = pair_direct_effects(direct_effects(ev.weights, runs["sg"], ev.nouns, p_t=sg.p_t, n_layers=n_layers, universe=universe),
+                                    direct_effects(ev.weights, runs["pl"], ev.nouns, p_t=pl.p_t, n_layers=n_layers, universe=universe))
+        removed = [key for key, _ in sites]
+        clean_removed = sum(clean[key] for key in removed if key in clean)
+        others = sum(after[name] - clean[name] for name in clean if name not in removed)
+        if clean_removed != 0.0:
+            compensation_terms.append(others / clean_removed)
+    return {"loss": _recovery(rows) if rows else None, "compensation_ratio": _mean(compensation_terms) if compensation_terms else None, "rows": _rows_to_json(rows)}
+
+
+def _p9(ev: EvalContext, frames: Sequence[Frame]) -> dict[str, Any]:
+    coordinated = [frame for frame in frames if frame.template_id == COORDINATED_TEMPLATE]
+    t_keys, r_keys = list(ev.mechanism.t_keys), list(ev.mechanism.r_keys)
+    if not t_keys or not r_keys or "T" not in ev.site_axes or "R_out" not in ev.site_axes:
+        return {"applicable": False}
+    e_sites = [(key, "p_c") for key in ev.mechanism.e_keys] if ev.mechanism.branch != "EMBED" else [("EMBED", "p_c")]
+    capture = [(key, "p_t") for key in t_keys + r_keys]
+    ctx = ev.discovery_like
+
+    def t_vec(run: PromptRun, prompt: Prompt) -> torch.Tensor:
+        return summed_vector(run, [(key, prompt.p_t) for key in t_keys])
+
+    def r_vec(run: PromptRun, prompt: Prompt) -> torch.Tensor:
+        return summed_vector(run, [(key, prompt.p_t) for key in r_keys])
+
+    runs = {}
+    for frame in coordinated:
+        _, patched = counterfactual_rows(ev.model, ev.cache, frame, e_sites, capture_role_sites=capture)
+        runs[frame.frame_id] = patched
+    m_t = _projection_fraction(ctx, coordinated, runs, ev.site_axes["T"], t_vec)
+    m_r = _projection_fraction(ctx, coordinated, runs, ev.site_axes["R_out"], r_vec)
+    frozen = {}
+    for frame in coordinated:
+        _, patched = counterfactual_rows(ev.model, ev.cache, frame, e_sites, freeze=[(key, "p_t") for key in t_keys], capture_role_sites=[(key, "p_t") for key in r_keys])
+        frozen[frame.frame_id] = patched
+    m_r_frozen = _projection_fraction(ctx, coordinated, frozen, ev.site_axes["R_out"], r_vec)
+    return {"applicable": True, "m_T": m_t, "m_R": m_r, "m_R_given_T_frozen": m_r_frozen}
+
+
+def _s1(ev: EvalContext) -> dict[str, Any]:
+    if ev.mechanism.l_r is None:
+        return {"applicable": False}
+    key = f"RESID_PRE.L{ev.mechanism.l_r}"
+    axes = {}
+    for template in TEMPLATE_ORDER:
+        frames = ev.frames_of(template)
+        if not frames:
+            continue
+        diffs = [ev.cache.run(pl).vector((key, pl.p_t)) - ev.cache.run(sg).vector((key, sg.p_t)) for sg, pl in map(frame_prompts, frames)]
+        axes[template] = torch.stack(diffs).double().mean(dim=0)
+    pairs = {}
+    names = list(axes)
+    for i, left in enumerate(names):
+        for right in names[i + 1:]:
+            pairs[f"{left}|{right}"] = cosine(axes[left], axes[right])
+    return {"applicable": bool(pairs), "cosines": pairs, "minimum": min(pairs.values()) if pairs else None}
+
+
+def _program_residual(ev: EvalContext) -> dict[str, Any]:
+    """Per-condition residual c(x) − ĉ(x) on the frames (manifest frames use ρ_frame; new frames ρ_template)."""
+    residuals = []
+    for frame in ev.frames:
+        sg, pl = frame_prompts(frame)
+        frame_id = frame.frame_id if frame.origin == "manifest" else None
+        for prompt in (sg, pl):
+            measured = ev.cache.c(prompt)
+            for noun in ev.nouns:
+                if noun.single_token:
+                    predicted = ev.program.predict_contrast(frame.template_id, frame_id, prompt.cue_token_id, noun.sg_ids[0], noun.pl_ids[0])
+                    residuals.append({"frame_id": frame.frame_id, "cue": prompt.cue_label, "noun": noun.lexical_key,
+                                      "measured": measured[noun.lexical_key], "predicted": predicted, "residual": measured[noun.lexical_key] - predicted})
+    values = [entry["residual"] for entry in residuals]
+    rmse = math.sqrt(_mean([value * value for value in values])) if values else None
+    return {"conditions": len(residuals), "rmse": rmse, "mae": _mean([abs(value) for value in values]) if values else None, "entries": residuals}
+
+
+def evaluate_circuit_families(ev: EvalContext, universe: Sequence[str]) -> dict[str, Any]:
+    """Every circuit-axis family on ``ev.frames`` with ``ev.nouns``."""
+    return {
+        "behavior": _behavior_family(ev),
+        "P1": _p1(ev), "P2": _p2(ev, universe), "P3": _p3(ev, ev.frames), "P4": _p4(ev, ev.frames, universe), "P5": _p5(ev, ev.frames),
+        "P6": _p6(ev), "P7": _p7(ev, ev.frames), "P8": _p8(ev, ev.frames, universe), "P9": _p9(ev, ev.frames), "S1": _s1(ev),
+        "program_residual": _program_residual(ev),
+    }
+
+
+def evaluate_new_frame_families(ev_new: EvalContext, universe: Sequence[str]) -> dict[str, Any]:
+    """X1 and X2 on the extension frames (reserve nouns)."""
+    return {
+        "behavior": _behavior_family(ev_new),
+        "P1": _p1(ev_new), "P3": _p3(ev_new, ev_new.frames), "P4": _p4(ev_new, ev_new.frames, universe), "P5": _p5(ev_new, ev_new.frames),
+        "P8": _p8(ev_new, ev_new.frames, universe), "P9": _p9(ev_new, ev_new.frames), "program_residual": _program_residual(ev_new),
+    }
+
+
+def spearman(xs: Sequence[float], ys: Sequence[float]) -> float:
+    def ranks(values: Sequence[float]) -> list[float]:
+        order = sorted(range(len(values)), key=lambda index: values[index])
+        result = [0.0] * len(values)
+        index = 0
+        while index < len(order):
+            end = index
+            while end + 1 < len(order) and values[order[end + 1]] == values[order[index]]:
+                end += 1
+            rank = (index + end) / 2 + 1
+            for position in range(index, end + 1):
+                result[order[position]] = rank
+            index = end + 1
+        return result
+
+    if len(xs) != len(ys) or len(xs) < 2:
+        raise ValueError("spearman needs two equal-length sequences with at least two entries")
+    rx, ry = ranks(xs), ranks(ys)
+    mx, my = _mean(rx), _mean(ry)
+    numerator = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    denominator = math.sqrt(sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry))
+    return numerator / denominator if denominator else 0.0
+
+
+def evaluate_cue_word_families(ev: EvalContext, extension: Extension, *, locked_full_shift: Mapping[str, float]) -> dict[str, Any]:
+    """X3 (behavior) and X4 (E-patch) on the twelve cue words in the six original frames, reserve nouns."""
+    frames_by_id = {frame.frame_id: frame for frame in ev.frames}
+    words = list(extension.cue_words)
+    per_word: dict[str, dict[str, Any]] = {word: {"token_id": token, "n_c": ev.program.n_c(token), "frames": {}} for word, token in words}
+    e_program_sites = list(ev.mechanism.e_program_keys)
+    for prompt in extension.cue_word_prompts:
+        frame = frames_by_id[prompt.frame.frame_id]
+        reference = Prompt(frame, extension.reference_cue_ids[frame.template_id], "sg")
+        run_word = ev.cache.run(prompt)
+        run_ref = ev.cache.run(reference)
+        measured_word, measured_ref = ev.cache.c(prompt), ev.cache.c(reference)
+        shifts, predicted_shifts, epatch_measured, epatch_predicted = [], [], [], []
+        # Lexicon check: the captured E_program output equals the weight-only vector.
+        captured = summed_vector(run_word, [(key, prompt.p_c) for key in e_program_sites])
+        gap = float((ev.program.e_program_vector(prompt.cue_token_id).float() - captured).abs().max())
+        if gap > 1e-5:
+            raise IncidentError(f"E_program lexicon differs from the captured activation for {prompt.cue_label} by {gap:.2e}")
+        replacements = {(key, prompt.p_c): run_word.slice((key, prompt.p_c)) for key in e_program_sites}
+        sources = {site: ReplacementSource.RESAMPLE for site in replacements}
+        patched = run_patched(ev.model, reference, replacements, sources)
+        c_patched = contrasts(patched.logits, ev.nouns)
+        for noun in ev.nouns:
+            if not noun.single_token:
+                continue
+            key = noun.lexical_key
+            shifts.append(measured_word[key] - measured_ref[key])
+            predicted_shifts.append(ev.program.predict_shift(frame.template_id, frame.frame_id, prompt.cue_token_id, reference.cue_token_id, noun.sg_ids[0], noun.pl_ids[0]))
+            epatch_measured.append(c_patched[key] - measured_ref[key])
+            epatch_predicted.append(ev.program.predict_epatch_shift(frame.template_id, frame.frame_id, prompt.cue_token_id, reference.cue_token_id, noun.sg_ids[0], noun.pl_ids[0]))
+        per_word[prompt.cue_label]["frames"][frame.frame_id] = {
+            "template_id": frame.template_id, "mean_shift": _mean(shifts), "mean_predicted_shift": _mean(predicted_shifts),
+            "epatch_mean_shift": _mean(epatch_measured), "epatch_mean_predicted": _mean(epatch_predicted), "lexicon_gap": gap,
+        }
+    # X3 aggregates.
+    word_means = {word: _mean([entry["mean_shift"] for entry in per_word[word]["frames"].values()]) for word, _ in words}
+    n_c_values = [per_word[word]["n_c"] for word, _ in words]
+    # A positive n_c means "plural", which lowers c, so the predicted relationship is negative: correlate n_c with −shift.
+    x3_spearman = spearman(n_c_values, [-word_means[word] for word, _ in words])
+    confident = [word for word, _ in words if abs(per_word[word]["n_c"]) >= FLOORS["X3_confident"]]
+    ambiguous = [word for word, _ in words if abs(per_word[word]["n_c"]) < FLOORS["X3_confident"]]
+    sign_by_word = {}
+    for word in confident:
+        expected = -math.copysign(1.0, per_word[word]["n_c"])  # plural lexicon → negative shift of c
+        frames = per_word[word]["frames"]
+        sign_by_word[word] = {"agree": sum(1 for entry in frames.values() if math.copysign(1.0, entry["mean_shift"]) == expected), "total": len(frames)}
+    ambiguous_by_word = {}
+    for word in ambiguous:
+        frames = per_word[word]["frames"]
+        ambiguous_by_word[word] = {"small": sum(1 for entry in frames.values() if abs(entry["mean_shift"]) < FLOORS["X3_ambiguous_factor"] * locked_full_shift[entry["template_id"]]), "total": len(frames)}
+    # X4 aggregates.
+    epatch_word_measured = {word: _mean([entry["epatch_mean_shift"] for entry in per_word[word]["frames"].values()]) for word, _ in words}
+    epatch_word_predicted = {word: _mean([entry["epatch_mean_predicted"] for entry in per_word[word]["frames"].values()]) for word, _ in words}
+    x4_spearman = spearman([epatch_word_predicted[word] for word, _ in words], [epatch_word_measured[word] for word, _ in words])
+    x4_mae_by_template = {}
+    for template in TEMPLATE_ORDER:
+        errors = [abs(entry["epatch_mean_shift"] - entry["epatch_mean_predicted"]) for word, _ in words for entry in per_word[word]["frames"].values() if entry["template_id"] == template]
+        x4_mae_by_template[template] = _mean(errors) if errors else None
+    return {"per_word": per_word, "X3": {"spearman": x3_spearman, "confident_words": confident, "ambiguous_words": ambiguous, "sign_by_word": sign_by_word,
+                                         "ambiguous_by_word": ambiguous_by_word, "word_mean_shift": word_means},
+            "X4": {"spearman": x4_spearman, "mae_by_template": x4_mae_by_template, "word_measured": epatch_word_measured, "word_predicted": epatch_word_predicted}}
+
+
+# ---------------------------------------------------------------------------
+# Floors (exact counts), bootstrap bands, and band hits.
+
+
+def _rows_from_json(rows: Sequence[Mapping[str, Any]]) -> tuple[CaseRow, ...]:
+    return tuple(CaseRow(row["frame_id"], row["template_id"], row["lexical_key"], row["rule_class"], row["d_full"], row["d_patch"]) for row in rows)
+
+
+def circuit_floors(results: Mapping[str, Any], *, hypothesis: str, n_cases: int) -> dict[str, Any]:
+    """Pass/fail for every circuit-axis family from the design's floors; B1 is the precondition."""
+    out: dict[str, Any] = {}
+    behavior = results["behavior"]
+    out["B1"] = {"passed": behavior["primary_correct"] >= exact_count_floor(FLOOR_RATES["B1_accuracy"], n_cases) and behavior["flips"] >= exact_count_floor(FLOOR_RATES["B1_flip"], n_cases),
+                 "primary_correct": behavior["primary_correct"], "flips": behavior["flips"], "n": n_cases,
+                 "required": {"accuracy": exact_count_floor(FLOOR_RATES["B1_accuracy"], n_cases), "flips": exact_count_floor(FLOOR_RATES["B1_flip"], n_cases)}}
+    out["B2"] = {"passed": behavior["positive_pairs"] >= exact_count_floor(FLOOR_RATES["B2_positive"], n_cases), "positive_pairs": behavior["positive_pairs"],
+                 "required": exact_count_floor(FLOOR_RATES["B2_positive"], n_cases)}
+    p1_ok, p1_fail = recovery_floors_pass(results["P1"]["summary"], overall=FLOORS["P1_overall"], stratum=FLOORS["P1_stratum"])
+    out["P1"] = {"passed": p1_ok, "failures": p1_fail, "recovery": results["P1"]["summary"]["overall"]["recovery"]}
+    r_set = results["P1"]["summary"]["overall"]["recovery"]
+    reference = results["P2"]["reference"]
+    out["P2"] = {"passed": r_set is not None and r_set >= FLOORS["P2_multiplier"] * reference, "reference": reference, "recovery": r_set}
+    p3 = results["P3"]["summary"]
+    retention = results["P3"]["sign_retention"]
+    p3_ok = p3["overall"]["recovery"] is not None and p3["overall"]["recovery"] >= FLOORS["P3_overall"] and all(
+        entry["recovery"] is not None and entry["recovery"] >= FLOORS["P3_template"] for entry in p3["templates"].values()) and \
+        retention["retained"] >= exact_count_floor(FLOOR_RATES["P3_retention"], retention["total"])
+    out["P3"] = {"passed": p3_ok, "faithfulness": p3["overall"]["recovery"], "retained": retention, "required_retained": exact_count_floor(FLOOR_RATES["P3_retention"], retention["total"])}
+    out["P4"] = {"passed": results["P4"]["value"] is not None and results["P4"]["value"] >= FLOORS["P4"], "value": results["P4"]["value"], "variant": results["P4"]["variant"]}
+    p5 = results["P5"]
+    if p5.get("applicable"):
+        if hypothesis == "H1":
+            passed = p5["a_single"] is not None and p5["a_single"] >= FLOORS["P5a_H1"] and p5["b_blocked_fraction"] is not None and p5["b_blocked_fraction"] >= FLOORS["P5b_H1"]
+        else:
+            passed = p5["a_declared"] is not None and p5["a_declared"] >= FLOORS["P5a_H2"]
+        out["P5"] = {"passed": passed, "a_single": p5["a_single"], "a_declared": p5["a_declared"], "b_blocked_fraction": p5["b_blocked_fraction"]}
+    else:
+        out["P5"] = {"passed": False, "applicable": False}
+    p6 = results["P6"]
+    out["P6"] = {"passed": p6.get("applicable", False) and p6["opposite"] is not None and p6["opposite"] >= FLOORS["P6_opposite"] and p6["same"] is not None and p6["same"] <= FLOORS["P6_same"],
+                 "opposite": p6.get("opposite"), "same": p6.get("same")}
+    p7 = results["P7"]
+    out["P7"] = {"passed": p7["same"] is not None and p7["same"] <= FLOORS["P7_same"] and p7["opposite"] is not None and r_set is not None and p7["opposite"] >= FLOORS["P7_opposite_factor"] * r_set,
+                 "same": p7["same"], "opposite": p7["opposite"]}
+    p8 = results["P8"]
+    out["P8"] = {"passed": p8["loss"] is not None and p8["loss"] >= FLOORS["P8_loss"], "loss": p8["loss"], "compensation_ratio": p8["compensation_ratio"]}
+    p9 = results["P9"]
+    if p9.get("applicable"):
+        if hypothesis in ("H1", "H2"):
+            passed = p9["m_T"] >= FLOORS["P9"] and p9["m_R"] >= FLOORS["P9"] and p9["m_R_given_T_frozen"] <= FLOORS["P9_frozen_factor"] * p9["m_R"]
+        else:
+            passed = True  # H3 is judged by its band
+        out["P9"] = {"passed": passed, "m_T": p9["m_T"], "m_R": p9["m_R"], "m_R_given_T_frozen": p9["m_R_given_T_frozen"]}
+    else:
+        out["P9"] = {"passed": False, "applicable": False}
+    s1 = results["S1"]
+    out["S1"] = {"passed": bool(s1.get("applicable")) and s1["minimum"] is not None and s1["minimum"] >= FLOORS["S1"], "minimum": s1.get("minimum"), "secondary": True}
+    s3 = behavior["s3"]
+    out["S3"] = {"passed": s3["n_wrong"] == 0 or s3["n_t_matches"] >= exact_count_floor(FLOOR_RATES["S3"], s3["n_wrong"]), "n_wrong": s3["n_wrong"], "n_t_matches": s3["n_t_matches"], "secondary": True}
+    primary = ["B2", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9"]
+    out["primary_failures"] = [family for family in primary if not out[family]["passed"]]
+    out["precondition_passed"] = out["B1"]["passed"]
+    out["circuit_passed"] = out["B1"]["passed"] and not out["primary_failures"]
+    return out
+
+
+def _stat_recovery(rows: Sequence[CaseRow]) -> float | None:
+    if not rows:
+        return None
+    denominator = _mean([row.d_full for row in rows])
+    return _mean([row.d_patch for row in rows]) / denominator if denominator else None
+
+
+def bootstrap_rows(rows: Sequence[CaseRow], statistic: Any, generator: Any, *, resamples: int = BOOTSTRAP_RESAMPLES) -> dict[str, Any]:
+    """Resample (frame, noun) cases with replacement within each template; return the point and SE."""
+    groups: dict[str, list[CaseRow]] = {}
+    for row in rows:
+        groups.setdefault(row.template_id, []).append(row)
+    point = statistic(rows)
+    values = []
+    for _ in range(resamples):
+        sample: list[CaseRow] = []
+        for group in groups.values():
+            sample.extend(generator.choice(group) for _ in range(len(group)))
+        value = statistic(sample)
+        if value is not None and math.isfinite(value):
+            values.append(value)
+    if len(values) < 2:
+        return {"point": point, "se": 0.0}
+    mean = _mean(values)
+    se = math.sqrt(sum((value - mean) ** 2 for value in values) / (len(values) - 1))
+    return {"point": point, "se": se}
+
+
+def _band(point: float | None, se: float, *, width_floor: float = BAND_MIN_WIDTH) -> dict[str, Any] | None:
+    if point is None:
+        return None
+    half = max(width_floor, BAND_SE_MULTIPLIER * se)
+    return {"point": point, "se": se, "low": point - half, "high": point + half}
+
+
+def calibration_bands(results: Mapping[str, Any], *, seed: int = CONTROL_SEED) -> dict[str, Any]:
+    """Tier B bands for every band-bearing family, in a fixed family order from one generator."""
+    import random
+
+    generator = random.Random(seed)
+    bands: dict[str, Any] = {}
+    # B2: template mean d_full ± 0.5 nats (no bootstrap needed).
+    bands["B2"] = {template: {"point": value, "low": value - BAND_D_FULL_NATS, "high": value + BAND_D_FULL_NATS} for template, value in results["behavior"]["template_mean_d_full"].items()}
+    p1_rows = _rows_from_json(results["P1"]["rows"])
+    bands["P1"] = {"overall": _band(**bootstrap_rows(p1_rows, _stat_recovery, generator))}
+    for template in TEMPLATE_ORDER:
+        subset = [row for row in p1_rows if row.template_id == template]
+        if subset:
+            bands["P1"][f"template:{template}"] = _band(**bootstrap_rows(subset, _stat_recovery, generator))
+    for rule in RULE_CLASSES:
+        subset = [row for row in p1_rows if row.rule_class == rule]
+        if subset:
+            bands["P1"][f"rule:{rule}"] = _band(**bootstrap_rows(subset, _stat_recovery, generator))
+    bands["P2"] = {"median": _band(results["P2"]["median"], 0.0)}
+    p3_rows = _rows_from_json(results["P3"]["rows"])
+    bands["P3"] = {"overall": _band(**bootstrap_rows(p3_rows, _stat_recovery, generator))}
+    for template in TEMPLATE_ORDER:
+        subset = [row for row in p3_rows if row.template_id == template]
+        if subset:
+            bands["P3"][f"template:{template}"] = _band(**bootstrap_rows(subset, _stat_recovery, generator))
+    retention = results["P3"]["sign_retention"]
+    bands["P3"]["retention_rate"] = _band(retention["retained"] / retention["total"] if retention["total"] else None, 0.0)
+    bands["P4"] = {"value": _band(**bootstrap_rows(_rows_from_json(results["P4"]["rows"]), _stat_recovery, generator))}
+    p5 = results["P5"]
+    if p5.get("applicable"):
+        bands["P5"] = {name: _band(**bootstrap_rows(_rows_from_json(p5["rows"][key]), _stat_recovery, generator)) for name, key in
+                       (("a_single", "single"), ("a_declared", "declared"), ("b_unfrozen", "unfrozen"), ("b_frozen", "frozen"))}
+        bands["P5"]["b_blocked_fraction"] = _band(p5["b_blocked_fraction"], 0.0)
+    p6 = results["P6"]
+    if p6.get("applicable"):
+        bands["P6"] = {name: _band(**bootstrap_rows(_rows_from_json(p6[f"rows_{name}"]), _stat_recovery, generator)) for name in ("opposite", "same")}
+    bands["P7"] = {name: _band(**bootstrap_rows(_rows_from_json(results["P7"][f"rows_{name}"]), _stat_recovery, generator)) for name in ("opposite", "same") if results["P7"][f"rows_{name}"]}
+    bands["P8"] = {"loss": _band(**bootstrap_rows(_rows_from_json(results["P8"]["rows"]), _stat_recovery, generator)),
+                   "compensation_ratio": _band(results["P8"]["compensation_ratio"], 0.0)}
+    p9 = results["P9"]
+    if p9.get("applicable"):
+        bands["P9"] = {name: _band(p9[name], 0.0) for name in ("m_T", "m_R", "m_R_given_T_frozen")}
+    return bands
+
+
+def _inside(band: Mapping[str, Any] | None, value: float | None) -> bool | None:
+    if band is None or value is None:
+        return None
+    return band["low"] <= value <= band["high"]
+
+
+def band_hits(results: Mapping[str, Any], bands: Mapping[str, Any]) -> dict[str, Any]:
+    """Whether each band-bearing family's confirmation value lies inside its locked band."""
+    hits: dict[str, Any] = {}
+    behavior_means = results["behavior"]["template_mean_d_full"]
+    hits["B2"] = {template: _inside(band, behavior_means.get(template)) for template, band in bands.get("B2", {}).items()}
+    p1 = results["P1"]["summary"]
+    p1_values = {"overall": p1["overall"]["recovery"]}
+    p1_values.update({f"template:{name}": entry["recovery"] for name, entry in p1["templates"].items()})
+    p1_values.update({f"rule:{name}": entry["recovery"] for name, entry in p1["rule_classes"].items()})
+    hits["P1"] = {name: _inside(band, p1_values.get(name)) for name, band in bands.get("P1", {}).items()}
+    hits["P2"] = {"median": _inside(bands.get("P2", {}).get("median"), results["P2"]["median"])}
+    p3 = results["P3"]["summary"]
+    p3_values = {"overall": p3["overall"]["recovery"], "retention_rate": results["P3"]["sign_retention"]["retained"] / max(results["P3"]["sign_retention"]["total"], 1)}
+    p3_values.update({f"template:{name}": entry["recovery"] for name, entry in p3["templates"].items()})
+    hits["P3"] = {name: _inside(band, p3_values.get(name)) for name, band in bands.get("P3", {}).items()}
+    hits["P4"] = {"value": _inside(bands.get("P4", {}).get("value"), results["P4"]["value"])}
+    if results["P5"].get("applicable") and "P5" in bands:
+        hits["P5"] = {name: _inside(band, results["P5"].get(name)) for name, band in bands["P5"].items()}
+    if results["P6"].get("applicable") and "P6" in bands:
+        hits["P6"] = {name: _inside(band, results["P6"].get(name)) for name, band in bands["P6"].items()}
+    hits["P7"] = {name: _inside(band, results["P7"].get(name)) for name, band in bands.get("P7", {}).items()}
+    hits["P8"] = {name: _inside(band, results["P8"].get(name)) for name, band in bands.get("P8", {}).items()}
+    if results["P9"].get("applicable") and "P9" in bands:
+        hits["P9"] = {name: _inside(band, results["P9"].get(name)) for name, band in bands["P9"].items()}
+    missed = [f"{family}:{name}" for family, entries in hits.items() for name, hit in entries.items() if hit is False]
+    return {"hits": hits, "missed": missed, "all_hit": not missed}
+
+
+def tolerance_tau(rmse_b: float) -> float:
+    return max(TAU_MIN_NATS, TAU_RMSE_MULTIPLIER * rmse_b)
+
+
+def decompilation_floors(new_frames: Mapping[str, Any], cue_words: Mapping[str, Any], *, hypothesis: str, capped: bool, x_bands: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """X1–X4 floors (exact counts) on the extension results."""
+    out: dict[str, Any] = {}
+    behavior = new_frames["behavior"]
+    n = behavior["cases"]
+    variables = behavior["variables"]
+    required_variables = exact_count_floor(FLOOR_RATES["X1_variables"], variables["prompts"])
+    out["X1"] = {"passed": behavior["positive_pairs"] >= exact_count_floor(FLOOR_RATES["X1_positive"], n) and variables["n_c"] >= required_variables and variables["n_t"] >= required_variables,
+                 "positive_pairs": behavior["positive_pairs"], "required_positive": exact_count_floor(FLOOR_RATES["X1_positive"], n), "variables": variables, "required_variables": required_variables}
+    circuit = circuit_floors({**new_frames, "P2": {"reference": 0.0, "median": 0.0}, "P6": {"applicable": False}, "P7": {"same": 0.0, "opposite": 1.0, "rows_same": [], "rows_opposite": []}, "S1": {"applicable": False}},
+                             hypothesis=hypothesis, n_cases=n)
+    x2_families = ["P1", "P3", "P4", "P5", "P8", "P9"]
+    out["X2"] = {"passed": all(circuit[family]["passed"] for family in x2_families), "families": {family: circuit[family] for family in x2_families}}
+    x3 = cue_words["X3"]
+    k = len(x3["confident_words"])
+    sign_total = sum(entry["agree"] for entry in x3["sign_by_word"].values())
+    sign_ok = all(entry["agree"] >= exact_count_floor(FLOOR_RATES["X3_sign_word"], entry["total"]) for entry in x3["sign_by_word"].values()) and \
+        sign_total >= exact_count_floor(FLOOR_RATES["X3_sign_overall"], 6 * k)
+    ambiguous_ok = all(entry["small"] >= exact_count_floor(FLOOR_RATES["X3_ambiguous"], entry["total"]) for entry in x3["ambiguous_by_word"].values())
+    out["X3"] = {"passed": x3["spearman"] >= FLOORS["X3_spearman"] and sign_ok and ambiguous_ok, "spearman": x3["spearman"], "sign_ok": sign_ok, "ambiguous_ok": ambiguous_ok, "k": k}
+    x4 = cue_words["X4"]
+    mae_ok = all(value is not None and value <= FLOORS["X4_mae_factor"] * cue_words["locked_full_shift"][template] for template, value in x4["mae_by_template"].items())
+    out["X4"] = {"passed": x4["spearman"] >= FLOORS["X4_spearman"] and mae_ok, "spearman": x4["spearman"], "mae_by_template": x4["mae_by_template"], "mae_ok": mae_ok}
+    out["primary_failures"] = [family for family in ("X1", "X2", "X3", "X4") if not out[family]["passed"]]
+    out["program_capped"] = capped
+    out["program_passed"] = not capped and not out["primary_failures"]
+    return out
+
+
+def x_band_hits(cue_words: Mapping[str, Any], x_bands: Mapping[str, Any]) -> dict[str, Any]:
+    """X3/X4: at least 9 of 12 words inside their tolerance interval in at least 5 of 6 frames."""
+    hits = {}
+    for family, measured_key in (("X3", "mean_shift"), ("X4", "epatch_mean_shift")):
+        words_hit = 0
+        detail = {}
+        for word, entry in x_bands[family].items():
+            frames_hit = 0
+            for frame_id, interval in entry.items():
+                measured = cue_words["per_word"][word]["frames"][frame_id][measured_key]
+                if interval["low"] <= measured <= interval["high"]:
+                    frames_hit += 1
+            detail[word] = frames_hit
+            if frames_hit >= X_BAND_FRAMES:
+                words_hit += 1
+        hits[family] = {"words_hit": words_hit, "hit": words_hit >= X_BAND_WORDS, "frames_hit_by_word": detail}
+    return hits
+
+
+def site_axes_from_parameters(parameters_dir: Path) -> dict[str, SiteAxis]:
+    """Rebuild the locked site axes (E_program, T, R_in, R_out) from the exported tensors."""
+    directory = Path(parameters_dir)
+    index = json.loads((directory / "parameters.json").read_text(encoding="utf-8"))
+
+    def tensor(name: str) -> torch.Tensor:
+        return torch.load(directory / index["tensors"][name]["file"], map_location="cpu", weights_only=True)
+
+    axes = {"E": SiteAxis("E_program", tensor("e_axis_mu"), tensor("e_axis_direction"), float(index["e_axis_sigma"]))}
+    for label, sigma in index.get("axis_sigmas", {}).items():
+        axes[label] = SiteAxis(label, tensor(f"axis_mu.{label}"), tensor(f"axis_direction.{label}"), float(sigma))
+    return axes
+
+
+# ---------------------------------------------------------------------------
+# Preregistration lock, X predictions at lock time, revision, outcome.
+
+LOCK_SCHEMA_VERSION = 1
+LOCK_RELATIVE_PATH = "experiments/005-regular-plural-mechanism/preregistration-lock.json"
+SCIENTIFIC_PATH_PREFIXES = ("src/", "experiments/005-regular-plural-mechanism/", "screening/behavior-candidates/manifest-v1.json")
+HYPOTHESIS_REGIONS = {  # the tree's own thresholds, stored so a confirmation result can land "inside a rejected row"
+    "H1": {"P5.b_blocked_fraction": [0.5, 1.0], "P5.a_single": [0.5, 10.0]},
+    "H2": {"P5.b_blocked_fraction": [-10.0, 0.5], "P5.a_single": [-10.0, 0.5]},
+    "H3": {"P9.m_R": [-10.0, 0.5]},
+}
+
+
+def reserve_digest(manifest: ScreeningManifest) -> str:
+    return sha256_text(canonical_json([case.case_id for case in regular_plural_cases(manifest, Split.FUTURE_RESERVE)]))
+
+
+def lock_x_predictions(program: Any, extension: Extension, reserve: Sequence[Noun], *, tau: float, reserve_bands: Mapping[str, Any]) -> dict[str, Any]:
+    """Program predictions for every extension prompt, computed without running any of them."""
+    frames_by_id = {frame.frame_id: frame for frame in extension.original_frames}
+    words = {}
+    for word, token in extension.cue_words:
+        entry = {"token_id": token, "n_c": program.n_c(token), "frames": {}}
+        for frame in extension.original_frames:
+            reference = extension.reference_cue_ids[frame.template_id]
+            shift = _mean([program.predict_shift(frame.template_id, frame.frame_id, token, reference, noun.sg_ids[0], noun.pl_ids[0]) for noun in reserve])
+            epatch = _mean([program.predict_epatch_shift(frame.template_id, frame.frame_id, token, reference, noun.sg_ids[0], noun.pl_ids[0]) for noun in reserve])
+            entry["frames"][frame.frame_id] = {"template_id": frame.template_id, "predicted_shift": shift, "shift_interval": {"low": shift - tau, "high": shift + tau},
+                                               "predicted_epatch_shift": epatch, "epatch_interval": {"low": epatch - tau, "high": epatch + tau}}
+        words[word] = entry
+    new_frames = {}
+    for frame in extension.new_frames:
+        pairs = [program.predict_pair(frame.template_id, None, frame.cue_ids["sg"], frame.cue_ids["pl"], noun.sg_ids[0], noun.pl_ids[0]) for noun in reserve]
+        new_frames[frame.frame_id] = {"template_id": frame.template_id, "predicted_mean_d_full": _mean(pairs), "predicted_positive_pairs": sum(1 for value in pairs if value > 0), "pairs": len(pairs)}
+    return {"tau": tau, "cue_words": words, "new_frames": new_frames, "new_frame_bands": {"B2": reserve_bands.get("B2", {})},
+            "X3_band": {word: {frame_id: entry["shift_interval"] for frame_id, entry in data["frames"].items()} for word, data in words.items()},
+            "X4_band": {word: {frame_id: entry["epatch_interval"] for frame_id, entry in data["frames"].items()} for word, data in words.items()}}
+
+
+def build_candidate_lock(*, state: Mapping[str, Any], version: Mapping[str, Any], calibration: Mapping[str, Any], manifest: ScreeningManifest, manifest_sha256: str,
+                         extension: Extension, program: Any, parameters_dir: Path, program_path: Path, protocol_code_commit: str) -> dict[str, Any]:
+    index_text = (Path(parameters_dir) / "parameters.json").read_text(encoding="utf-8")
+    reserve = pm_reserve = nouns_for(manifest, Split.FUTURE_RESERVE)
+    rmse_b = calibration["program_residual"]["rmse"]
+    tau = tolerance_tau(rmse_b)
+    x_predictions = lock_x_predictions(program, extension, reserve, tau=tau, reserve_bands=calibration["bands"])
+    lock = {
+        "schema_version": LOCK_SCHEMA_VERSION,
+        "created_at": utc_now(),
+        "manifest_path": MANIFEST_RELATIVE_PATH, "manifest_sha256": manifest_sha256,
+        "extension_path": EXTENSION_RELATIVE_PATH, "extension_sha256": extension.content_sha256,
+        "reserve_case_digest": reserve_digest(manifest), "reserve_noun_keys": [noun.key for noun in pm_reserve],
+        "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "seeds": {"runtime": RUNTIME_SEED, "control": CONTROL_SEED},
+        "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
+        "mechanism": {key: version[key] for key in ("version", "mechanism", "hypothesis", "hypothesis_flagged", "hypothesis_quantities", "encoding_branch", "program_capped", "k")},
+        "statement": version["statement"], "statement_sha256": sha256_text(version["statement"]),
+        "hypothesis_regions": HYPOTHESIS_REGIONS,
+        "parameters_index_sha256": sha256_text(index_text), "parameters_index": json.loads(index_text),
+        "lexicon_sha256": program.lexicon_digest(), "program_source_sha256": sha256_text(Path(program_path).read_text(encoding="utf-8")),
+        "program_residual": {"development": version["program_floors"].get("templates"), "holdout_rmse": rmse_b, "holdout_mae": calibration["program_residual"]["mae"], "tau": tau},
+        "floors": {"rates": FLOOR_RATES, "values": FLOORS},
+        "bands": calibration["bands"],
+        "calibration": {"passes": len(state["calibration"]["passes"]), "floors": calibration["floors"], "n_cases": calibration["n_cases"]},
+        "x_predictions": x_predictions,
+        "tier_a_results_sha256": state.get("state_sha256"), "discovery_steps": sorted(state["discovery"]),
+    }
+    lock["content_sha256"] = sha256_text(canonical_json({key: value for key, value in lock.items() if key != "content_sha256"}))
+    return lock
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], manifest: ScreeningManifest, manifest_sha256: str, extension: Extension,
+                  parameters_dir: Path, program_path: Path, git_state: Mapping[str, Any], tracked: bool, changed_paths: Sequence[str] | None) -> None:
+    """Refuse confirmation unless the committed lock matches every frozen input and the current state."""
+    if not isinstance(lock, Mapping) or lock.get("schema_version") != LOCK_SCHEMA_VERSION:
+        raise PhaseError("lock schema is not recognized")
+    unsigned = {key: value for key, value in lock.items() if key != "content_sha256"}
+    if lock.get("content_sha256") != sha256_text(canonical_json(unsigned)):
+        raise PhaseError("lock content digest mismatch")
+    if not tracked:
+        raise PhaseError("the lock must be tracked and committed")
+    if git_state.get("dirty", True):
+        raise PhaseError("confirm requires a clean Git tree")
+    if lock["manifest_sha256"] != manifest_sha256 or lock["extension_sha256"] != extension.content_sha256:
+        raise PhaseError("lock was built against a different manifest or extension")
+    if lock["reserve_case_digest"] != reserve_digest(manifest):
+        raise PhaseError("lock reserve digest differs from the manifest")
+    if lock["run_id"] != state["run_id"]:
+        raise PhaseError("lock belongs to a different results state")
+    versions = [entry for entry in state["mechanism_versions"] if entry.get("status") == "candidate"]
+    if not versions or versions[-1]["version"] != lock["mechanism"]["version"] or sha256_text(versions[-1]["statement"]) != lock["statement_sha256"]:
+        raise PhaseError("lock mechanism does not match the current candidate version")
+    if lock["calibration"]["passes"] != len(state["calibration"]["passes"]) or not state["calibration"]["passes"][-1].get("floors_passed"):
+        raise PhaseError("lock calibration record does not match the results state")
+    index_text = (Path(parameters_dir) / "parameters.json").read_text(encoding="utf-8")
+    if sha256_text(index_text) != lock["parameters_index_sha256"]:
+        raise PhaseError("program parameters differ from the locked digest")
+    if sha256_text(Path(program_path).read_text(encoding="utf-8")) != lock["program_source_sha256"]:
+        raise PhaseError("mechanism_program.py differs from the locked source")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = [path for path in changed_paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and not path.endswith("preregistration-lock.json")]
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock commit: {scientific}")
+    assert_not_executed(state, extension=extension, reserve=nouns_for(manifest, Split.FUTURE_RESERVE))
+
+
+def revise_version(previous: Mapping[str, Any], calibration: Mapping[str, Any], a2: Mapping[str, Any]) -> dict[str, Any]:
+    """The design's two mechanical revisions; returns the instruction for building M2 (no model here)."""
+    number = int(previous["version"][1:]) + 1
+    if number > MAX_MECHANISM_VERSIONS:
+        raise PhaseError("the mechanism-version budget is exhausted")
+    failures = list(calibration["floors"]["primary_failures"])
+    if not calibration["floors"]["precondition_passed"]:
+        return {"version": f"M{number}", "action": "reject", "reason": "behavior did not replicate on holdout"}
+    hypothesis_specific = [family for family in failures if family in ("P5", "P9")]
+    set_level = [family for family in failures if family not in ("P5", "P9")]
+    if set_level:
+        mechanism = previous["mechanism"]
+        current = set(mechanism["t_keys"]) | set(mechanism["r_keys"])
+        ranking = [key for key in a2["rankings"]["p_t_all_templates"] if key != "L00.MLP" and key not in current]
+        if len(current) >= MAX_COMPONENTS_AT_P_T or not ranking:
+            return {"version": f"M{number}", "action": "reject", "reason": "component budget exhausted"}
+        return {"version": f"M{number}", "action": "extend", "add": ranking[:1], "failed": set_level}
+    if hypothesis_specific:
+        order = list(HYPOTHESIS_ROWS)
+        current_row = previous["hypothesis"]
+        remaining = [row for row in order if order.index(row) > order.index(current_row)]
+        if not remaining:
+            return {"version": f"M{number}", "action": "reject", "reason": "no hypothesis row remains"}
+        return {"version": f"M{number}", "action": "next_row", "row": remaining[0], "failed": hypothesis_specific}
+    return {"version": f"M{number}", "action": "reject", "reason": "no primary family failed; nothing to revise"}
+
+
+def contested(results: Mapping[str, Any], *, hypothesis: str, bands: Mapping[str, Any]) -> list[str]:
+    """Discriminating values outside the chosen band and inside a rejected row's region."""
+    values = {}
+    if results["P5"].get("applicable"):
+        values["P5.b_blocked_fraction"] = results["P5"]["b_blocked_fraction"]
+        values["P5.a_single"] = results["P5"]["a_single"]
+    if results["P9"].get("applicable"):
+        values["P9.m_R"] = results["P9"]["m_R"]
+    band_lookup = {"P5.b_blocked_fraction": bands.get("P5", {}).get("b_blocked_fraction"), "P5.a_single": bands.get("P5", {}).get("a_single"), "P9.m_R": bands.get("P9", {}).get("m_R")}
+    findings = []
+    for name, value in values.items():
+        if value is None:
+            continue
+        band = band_lookup.get(name)
+        outside_chosen = band is not None and not (band["low"] <= value <= band["high"])
+        if not outside_chosen:
+            continue
+        for row, regions in HYPOTHESIS_REGIONS.items():
+            if row == hypothesis or name not in regions:
+                continue
+            low, high = regions[name]
+            if low <= value <= high:
+                findings.append(f"{name}={value:.3f} inside {row}")
+    return findings
+
+
+def outcome(*, circuit: Mapping[str, Any], hits: Mapping[str, Any], decompilation: Mapping[str, Any] | None, x_hits: Mapping[str, Any] | None, contested_findings: Sequence[str]) -> dict[str, Any]:
+    circuit_pass = circuit["circuit_passed"]
+    program_pass = bool(decompilation and decompilation["program_passed"])
+    axes = {"circuit": "CIRCUIT_PASS" if circuit_pass else "CIRCUIT_FAIL", "decompilation": "PROGRAM_PASS" if program_pass else "PROGRAM_FAIL"}
+    bands_hit = hits["all_hit"] and (x_hits is None or all(entry["hit"] for entry in x_hits.values()))
+    if not circuit["precondition_passed"]:
+        label = "BEHAVIOR_NOT_REPLICATED"
+    elif not circuit_pass:
+        label = "MECHANISM_NOT_SUPPORTED"
+    elif not program_pass:
+        label = "CIRCUIT_ONLY"
+    elif contested_findings:
+        label = "MECHANISM_CONTESTED"
+    elif bands_hit:
+        label = "MECHANISM_CONFIRMED"
+    else:
+        label = "MECHANISM_SUPPORTED_MISCALIBRATED"
+    return {"label": label, "axes": axes, "circuit_failures": circuit.get("primary_failures", []), "program_failures": (decompilation or {}).get("primary_failures", []),
+            "missed_bands": hits["missed"], "x_bands": x_hits, "contested": list(contested_findings)}
+
+
+# ---------------------------------------------------------------------------
+# Markdown report.
+
+
+def _fmt(value: Any, digits: int = 3) -> str:
+    if value is None:
+        return "—"
+    if isinstance(value, bool):
+        return "pass" if value else "FAIL"
+    if isinstance(value, float):
+        return f"{value:.{digits}f}"
+    return str(value)
+
+
+def _band_text(band: Mapping[str, Any] | None) -> str:
+    if not band:
+        return "—"
+    return f"[{band['low']:.3f}, {band['high']:.3f}]"
+
+
+def _family_table(floors: Mapping[str, Any], bands: Mapping[str, Any] | None, hits: Mapping[str, Any] | None) -> list[str]:
+    lines = ["| Family | Value | Floor | Band | Hit |", "|---|---|---|---|---|"]
+    order = ["B1", "B2", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "S1", "S3"]
+    for family in order:
+        entry = floors.get(family)
+        if entry is None:
+            continue
+        value_keys = [key for key in entry if key not in {"passed", "secondary", "applicable", "failures", "required", "required_retained", "variant", "retained"}]
+        value = "; ".join(f"{key}={_fmt(entry[key])}" for key in value_keys[:4])
+        band_entries = (bands or {}).get(family, {})
+        band = "; ".join(f"{name}={_band_text(item)}" for name, item in list(band_entries.items())[:3]) if isinstance(band_entries, dict) else "—"
+        hit_entries = (hits or {}).get("hits", {}).get(family, {}) if hits else {}
+        hit = "; ".join(f"{name}={'yes' if item else 'no' if item is False else '—'}" for name, item in list(hit_entries.items())[:3]) if hit_entries else "—"
+        lines.append(f"| {family}{' (secondary)' if entry.get('secondary') else ''} | {value} | {_fmt(entry['passed'])} | {band} | {hit} |")
+    return lines
+
+
+def render_report(state: Mapping[str, Any]) -> str:
+    lines = ["# Experiment 005 Report", ""]
+    lines += [f"- Run ID: `{state['run_id']}`", f"- Manifest sha256: `{state['manifest_sha256']}`", f"- Extension sha256: `{state['extension_sha256']}`",
+              f"- Protocol/code commit at discover: `{state['protocol_code_commit']}`", f"- Model: `{state['model']['model_id']}` @ `{state['model']['revision']}`", ""]
+    lines += ["## Phases", ""] + [f"- `{phase}`: `{entry['status']}`" for phase, entry in state["phases"].items()] + [""]
+    discovery = state.get("discovery", {})
+    if "a0_contract_test" in discovery:
+        lines += [f"- A0 contract test: {'passed' if discovery['a0_contract_test'].get('passed') else 'FAILED'}"]
+    if "a1" in discovery and "aggregates" in discovery["a1"]:
+        a1 = discovery["a1"]
+        lines += [f"- A1 baseline: {a1['screening_results_compared']} cases compared to the screen (max gap {a1['max_case_gap']:.2e}); development mean d_full {a1['aggregates']['development_mean_d_full']:.3f}; prompt-level gap {a1['max_prompt_level_gap']:.2e}"]
+    if "hypothesis" in discovery:
+        h = discovery["hypothesis"]
+        lines += [f"- Hypothesis tree: `{h['row']}`{' (AMBIGUOUS)' if h['flagged'] else ''} from " + ", ".join(f"{k}={_fmt(v)}" for k, v in h["quantities"].items()) + f" (top head `{h['top_head']}`)"]
+    if "encoding_branch" in discovery:
+        e = discovery["encoding_branch"]
+        lines += [f"- Encoding branch: `{e['branch']}` with E = {e['e_keys']} (E share {_fmt(e['e_share'])}, embedding share {_fmt(e['embedding_share'])}{', flag ' + e['flag'] if e.get('flag') else ''})"]
+    if "a2" in discovery:
+        lines += ["", "### A2 rankings", "", f"- p_t (all templates): {', '.join(discovery['a2']['rankings']['p_t_all_templates'][:8])}",
+                  f"- p_t (coordinated): {', '.join(discovery['a2']['rankings']['p_t_coordinated'][:8])}", f"- p_c (coordinated): {', '.join(discovery['a2']['rankings']['p_c_coordinated'][:8])}"]
+    if "a3" in discovery:
+        lines += ["", "### A3 residual profile at p_c (coordinated)", ""] + [f"- {layer}: recovery {_fmt(entry['recovery'])}" for layer, entry in discovery["a3"]["recovery_by_layer"].items()]
+    if "a4" in discovery:
+        lines += ["", "### A4 attention to the cue from p_t", ""] + [f"- {key}: {_fmt(discovery['a4']['heads'][key]['attention_to_cue'])}" for key in discovery["a4"]["ranking_by_attention_to_cue"][:6]]
+    if "a6" in discovery:
+        a6 = discovery["a6"]
+        lines += ["", "### A6 chain and path", "", f"- E alone: recovery {_fmt(a6['e_alone']['recovery'].get('recovery'))}, m_T {_fmt(a6['e_alone'].get('m_T'))}, m_R {_fmt(a6['e_alone']['m_R'])}",
+                  f"- residual patch at p_c: unfrozen {_fmt(a6['residual_patch']['recovery_unfrozen'])}; blocked fractions " + ", ".join(f"{k}={_fmt(v['blocked_fraction'])}" for k, v in a6["residual_patch"]["frozen"].items()),
+                  f"- T alone: " + ", ".join(f"{k}={_fmt(v)}" for k, v in a6["t_alone"]["singles"].items()) + "; cumulative " + ", ".join(f"{k}={_fmt(v)}" for k, v in a6["t_alone"]["cumulative"].items()),
+                  f"- R alone: {_fmt(a6['r_alone']['recovery'])}"]
+    for entry in state.get("mechanism_versions", []):
+        lines += ["", f"## Mechanism version {entry['version']} — {entry['status']}", ""]
+        if entry.get("statement"):
+            lines += ["```text", entry["statement"].rstrip(), "```", ""]
+            recovery = entry.get("recovery", {}).get("overall", {})
+            lines += [f"- Development recovery {_fmt(recovery.get('recovery'))}; isolation faithfulness {_fmt(entry.get('isolation', {}).get('overall', {}).get('recovery'))}; program floors {'passed' if entry.get('program_floors', {}).get('passed') else 'FAILED'}; program capped: {entry.get('program_capped')}"]
+        else:
+            lines += [f"- Outcome: {entry.get('outcome')} {entry.get('reason', '')}"]
+    for index, entry in enumerate(state.get("calibration", {}).get("passes", []), start=1):
+        lines += ["", f"## Calibration pass {index} — {entry['version']} on {entry['n_cases']} holdout cases", "",
+                  f"- Floors: {'passed' if entry['floors_passed'] else 'FAILED ' + str(entry['floors'].get('primary_failures'))}; program residual RMSE_B {_fmt(entry['program_residual']['rmse'], 4)} (τ = {_fmt(tolerance_tau(entry['program_residual']['rmse']))})", ""]
+        lines += _family_table(entry["floors"], entry["bands"], None)
+    if state.get("lock"):
+        lines += ["", "## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}` for {state['lock']['version']}"]
+    confirmation = state.get("confirmation")
+    if confirmation:
+        verdict = confirmation["outcome"]
+        lines += ["", f"## Confirmation — outcome `{verdict['label']}`", "", f"- Axes: circuit `{verdict['axes']['circuit']}`, decompilation `{verdict['axes']['decompilation']}`",
+                  f"- Circuit failures: {verdict['circuit_failures'] or 'none'}; program failures: {verdict['program_failures'] or 'none'}; missed bands: {verdict['missed_bands'] or 'none'}; contested: {verdict['contested'] or 'none'}",
+                  "", "### Reserve nouns (readout generalization)", ""]
+        lines += _family_table(confirmation["circuit_floors"], None, confirmation["band_hits"])
+        deco = confirmation["decompilation_floors"]
+        lines += ["", "### Extension prompts (prompt-side generalization)", "",
+                  f"- X1 frame invariance of behavior: {_fmt(deco['X1']['passed'])} (positive pairs {deco['X1']['positive_pairs']}/{deco['X1']['required_positive']} required; variables {deco['X1']['variables']})",
+                  f"- X2 frame invariance of the circuit: {_fmt(deco['X2']['passed'])} (" + ", ".join(f"{k}={_fmt(v['passed'])}" for k, v in deco["X2"]["families"].items()) + ")",
+                  f"- X3 cue lexicon: {_fmt(deco['X3']['passed'])} (Spearman {_fmt(deco['X3']['spearman'])}, {deco['X3']['k']} confident words, signs {deco['X3']['sign_ok']}, ambiguous {deco['X3']['ambiguous_ok']})",
+                  f"- X4 E-patch prediction: {_fmt(deco['X4']['passed'])} (Spearman {_fmt(deco['X4']['spearman'])}, MAE by template " + ", ".join(f"{k}={_fmt(v)}" for k, v in deco["X4"]["mae_by_template"].items()) + ")",
+                  f"- X band hits: " + ", ".join(f"{k}: {v['words_hit']}/12 words" for k, v in confirmation["x_band_hits"].items()),
+                  "", "### Cue words", "", "| Word | n_c | mean shift | E-patch measured | E-patch predicted |", "|---|---|---|---|---|"]
+        for word, entry in confirmation["cue_words"]["per_word"].items():
+            frames = entry["frames"].values()
+            lines.append(f"| {word} | {_fmt(entry['n_c'])} | {_fmt(_mean([f['mean_shift'] for f in frames]))} | {_fmt(_mean([f['epatch_mean_shift'] for f in frames]))} | {_fmt(_mean([f['epatch_mean_predicted'] for f in frames]))} |")
+        reserve = confirmation["reserve"]
+        lines += ["", "### Residual accounting (Q1)", "",
+                  f"- Unexplained sufficiency residual 1 − R: {_fmt(1 - reserve['P1']['summary']['overall']['recovery'] if reserve['P1']['summary']['overall']['recovery'] is not None else None)}",
+                  f"- Unexplained isolation residual 1 − F: {_fmt(1 - reserve['P3']['summary']['overall']['recovery'] if reserve['P3']['summary']['overall']['recovery'] is not None else None)}",
+                  f"- Program residual on reserve conditions: RMSE {_fmt(confirmation['reserve_program_residual']['rmse'], 4)}, MAE {_fmt(confirmation['reserve_program_residual']['mae'], 4)}",
+                  f"- Program residual on new frames: RMSE {_fmt(confirmation['new_frames_program_residual']['rmse'], 4)}, MAE {_fmt(confirmation['new_frames_program_residual']['mae'], 4)}"]
+    lines += ["", "## Execution ledger", "", f"- Executed prompt keys: {len(state['executed_prompt_keys'])}", f"- Executed noun keys: {len(state['executed_noun_keys'])}",
+              f"- Invalidated runs: {len(state['invalidated_runs'])}", ""]
+    return "\n".join(lines)
