@@ -74,7 +74,19 @@ and no fresh noun was executed.
 Post-hoc diagnostic (exploratory data only, outside the results state, not a gate): fitting the same family on all
 sixteen tokens in-sample gives cue-level MAE 2.35 (r = 1), 2.27 (r = 2), 2.09 (r = 3), 2.02 (r = 4), 0.54
 (r = 8), 0.40 (r = 15); a rank-free linear map on the full E difference leaves 34% of the response energy
-unexplained in-sample. The failure is therefore representational: the leading principal directions of the sixteen
-`E(w)` vectors do not carry the number-relevant variation, so a rank ≤ 4 PCA projection cannot represent the
-cue-to-readout map, whatever the fitting procedure. A supervised low-rank projection (directions chosen for the
-response, not for E's variance) is the obvious next design; it is not part of this protocol.
+unexplained in-sample. Stated narrowly: Experiment 006 falsified the hypothesis that the cue-to-readout
+computation can be captured by the leading ≤ 4 *unsupervised* PCA directions of the `L00.MLP` cue
+representations. The diagnostic supports, but does not prove, the explanation that those variance-leading
+directions are poorly aligned with the downstream-relevant directions; whether a *supervised* rank ≤ 4 subspace
+works is an open question for the next experiment, not a conclusion of this one.
+
+## Closure — 2026-09-18
+
+Experiment 006 is closed at `QUALITY_GATE_FAILED`. No lock and no confirmation are attempted under this protocol;
+C002 is unchanged. Two results carry forward: (1) the preregistered PCA family performed poorly under
+leave-one-cue-out at every rank (rank 4 only about 9% better than rank 1, against the 20% requirement); (2) the
+fixed circuit preserved the *direction* of the cue effect on the exposed pool (708/708 paired signs) far better
+than its case-by-case magnitude (correlation 0.756 against the unchanged 0.90 criterion). The frozen
+`confirmation-v1.json` (sha256 `dbb8dbcef9ab201cb5555a3c1d988e3ca8ab70f742f10b12f80a856c9ebf5521`) was never
+executed — no fresh noun, fresh frame prompt, or fresh cue token — and is inherited byte-for-byte as the untouched
+holdout of Experiment 007.
