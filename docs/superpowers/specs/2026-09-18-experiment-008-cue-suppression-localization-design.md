@@ -2,8 +2,9 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 1, for review. Not approved. No Experiment 008 directory or model run exists. Experiments 005–007
-are closed and are not amended by this document.
+**Status:** Revision 2, approved for implementation planning (the reviewer approved revision 1's direction subject to
+the two corrections listed under "Revision history", which this revision makes). No Experiment 008 directory or model
+run exists. Experiments 005–007 are closed and are not amended by this document.
 
 **Kind:** Discovery-only, discriminating. No confirmation set is frozen, no lock is written, no claim is promoted.
 The deliverable is a mechanically derived localization statement that becomes the hypothesis of a later prospective
@@ -83,10 +84,19 @@ and the two add linearly. It differs from H1 (non-additive) and is recorded as i
 
 ## Anomaly score and descriptive strata
 
-For every token `w` and frame `f`, `a(w, f) = Δĉ_prog(w, f) − Δc(w, f)`: the 007 program's predicted E-patch shift
-minus the measured one (nats; negative = the program predicts more plural shift than the network shows). The token
-score is `a(w)`, the mean over the eighteen frames. It is recorded with the token's in-sample/out-of-sample status
-(the sixteen exposed tokens were used to fit the program; the twenty-four were not).
+For every token `w` and frame `f`, with `p = Δĉ_prog(w, f)` the 007 program's predicted E-patch shift and `m = Δc(w, f)`
+the measured one, the anomaly score is **sign-normalized** so that "suppressed" and "amplified" mean the same thing
+whatever the orientation of the predicted effect:
+
+```text
+a(w, f) = sign(p) × (m − p)            sign(0) := +1
+   predicted −3, measured  0  →  −3   suppression        predicted +3, measured  0  →  −3   suppression
+   predicted −3, measured −5  →  +2   amplification      predicted +3, measured +5  →  +2   amplification
+```
+
+The token score `a(w)` is the mean over the eighteen frames; it is recorded with the token's in-sample/out-of-sample
+status (the sixteen exposed tokens were used to fit the program; the twenty-four were not) and with the mean
+`|p|`, so that scores built on near-zero predictions can be recognized.
 
 Descriptive strata, chosen with knowledge of the Experiment 007 residuals and used only to organize reporting (they
 gate nothing): **suppressed** `a(w) ≤ −1.5`, **amplified** `a(w) ≥ +1.5`, **ordinary** otherwise. On the frames
@@ -147,8 +157,14 @@ terms of the two LayerNorms differ, so each run is decomposed with its own scale
   fraction of the template's plural cue's own E-patch signal at that stage in the same frame; `ŝ_c(w, f) = Δc(w, f) /
   Δc(pl_T, f)`. A stage is uninformative in a frame if `|⟨Δ_s(pl_T, f), d̂_s⟩| < 0.25 σ_s` (recorded as `None`). At
   `R0`, both `ŝ_{R0}` (along `d̂_E`) and the 007 fraction `ŝ_{u₁}(w, f) = ⟨ΔE_T(w), u₁⟩ / ⟨ΔE_T(pl_T), u₁⟩` are recorded.
+- **Oriented trace.** Every trace is oriented to its own encoding signal: `q_s(w, f) = sign(ŝ_{R0}(w, f)) × ŝ_s(w, f)`
+  for `s ∈ {R0, R1, R2, R3, c}`, so `q_{R0} = |ŝ_{R0}| ≥ 0` and a later `q_s < 0` is a sign flip relative to the
+  encoding signal. Collapse is defined on `q`, never on the raw signed fractions (a signal going from −2 to −3 has
+  strengthened, not collapsed).
 - **Attention fraction.** `â(w, f) = A(patched) / A(ref)` for the head's weight on `p_c` (self-attention in cue-final
-  frames), and `Δâ = A(patched) − A(ref)`.
+  frames), and `Δâ = A(patched) − A(ref)`. The attention weight is **descriptive supporting evidence only**: it says
+  where the head looked, not what it transmitted. Transport conclusions rest on the head's output fraction `ŝ_T`
+  and on the downstream causal deltas (`R2`, `R3`, the direct effects).
 - **Component fractions.** `r_∥ = Δc_∥ / Δc(pl_T, f)`, `r_⊥ = Δc_⊥ / Δc(pl_T, f)`, `r_full = ŝ_c`; additivity gap
   `g = r_full − (r_∥ + r_⊥)`.
 - **Context fractions.** `x_in(w, f) = Δc[E(pl_T) in the w-cue prompt] / Δc(pl_T, f)` (does an ordinary plural
@@ -176,13 +192,16 @@ consensus fraction `0.75`.
    - `AXIS_NOT_SUFFICIENT` if `r_∥(w) < s_min` while `|ŝ_{R0}(w)| ≥ s_min` (the axis component alone does not drive
      the response for this token although it does for the plural cue);
    - `ADDITIVE_ORDINARY` otherwise.
-4. **Collapse stage (from M1, full `ΔE_T(w)`).** Along the running-residual stages `R0 → R1 → R2 → R3 → c`, the
-   collapse stage `σ*(w, f)` is the first stage `s` with `ŝ_s ≤ κ · ŝ_{s−1}` or `sign(ŝ_s) ≠ sign(ŝ_{s−1})`, provided
-   `ŝ_{s−1} ≥ s_min`; `NO_COLLAPSE` if none. Interpretation of the location: `R1` — transformation at the cue position
-   in layers 1–2 (H1 at the cue position); `R2` — transport into the prediction position (H3; the T fraction `ŝ_T`
-   and the attention fraction `â` say whether the head's attention or its value mapping dropped the signal, or whether
-   other layer-3 components cancelled it); `R3` — late components (H4; the cancellation index and the named opposing
-   terms say which); `c` — the readout.
+4. **Collapse stage (from M1, full `ΔE_T(w)`, on the oriented trace).** Along the running-residual stages
+   `R0 → R1 → R2 → R3 → c`, the collapse stage `σ*(w, f)` is the first stage `s` with `q_s ≤ κ · q_{s−1}`, provided
+   `q_{s−1} ≥ s_min`; because `q_{s−1} > 0`, this single condition covers both a drop to at most half of the previous
+   oriented signal and a sign flip relative to the encoding signal (`q_s ≤ 0`). `NO_COLLAPSE` if none. Interpretation
+   of the location: `R1` — transformation at the cue position in layers 1–2 (H1 at the cue position); `R2` —
+   transport into the prediction position (H3): the oriented head-output fraction `q_T` decides whether `L03.H04`
+   itself dropped the signal (`q_T ≤ κ · q_{R1}`) or whether other layer-3 components at `p_t` cancelled what the head
+   delivered (`q_T > κ · q_{R1}` while `q_{R2}` collapsed); the attention fraction `â` is reported beside `q_T` as
+   context and never decides; `R3` — late components (H4; the cancellation index and the named opposing terms say
+   which); `c` — the readout.
 5. **Context interaction (M3).** `CONTEXT_GATED` if `x_in(w) < x_min` (an ordinary plural encoding is suppressed in
    `w`'s context; supports H2); `CONTEXT_NEUTRAL` otherwise. `x_out` is reported.
 6. **Late cancellation (M4).** `LATE_CANCELLATION` if `C(w) ≥ C_min · C(pl_T)` and `C(w) ≥ C_min`; the named opposing
@@ -222,8 +241,8 @@ determiner set (`this`, `that`, `these`, `those`, `a`, `the`, `another`, `every`
   tokens (in particular new singular-selecting determiners and near-synonyms of the suppressed tokens) and new frames
   before any prospective test.
 - Signal fractions are projections onto one axis per stage; a signal carried in a different direction at a later stage
-  appears as a collapse. The direct-effect decomposition (exact) and the attention fraction partly guard against this
-  and are reported next to the fractions.
+  appears as a collapse. The direct-effect decomposition (exact) partly guards against this and is reported next to
+  the fractions. The attention weight of `L03.H04` is descriptive only; it does not establish or refute transport.
 - Component patching along `d̂_E` tests one axis; if the probe is invalid on the plural cue itself, no conclusion about
   H1 versus linear cancellation is drawn.
 - Nothing generalizes beyond the pinned checkpoint, the three templates, single-token regular nouns, and the tokens
@@ -243,3 +262,17 @@ tables, the summary rule, replication incidents, and the runner's phase isolatio
 
 Design first; no implementation until approved. `explore` runs once after the implementation review; the report and
 the per-token table are the deliverable; the localization statement is then handed to the Experiment 009 design.
+
+## Revision history
+
+- **Revision 1** (commit `5b13138`): initial draft. Reviewed: direction approved; two corrections requested because
+  they affect interpretation — the collapse criterion `ŝ_s ≤ 0.5 · ŝ_{s−1}` misbehaves for negative signals (−2 → −3
+  is a strengthening, yet −3 ≤ −1), and the anomaly score `prediction − measured` would call a suppressed positive
+  prediction "amplified". Also: treat the `L03.H04` attention weight as descriptive support, not as evidence of
+  transport by itself.
+- **Revision 2**: (1) traces are oriented to their encoding signal, `q_s = sign(ŝ_{R0}) × ŝ_s`, and collapse is
+  `q_s ≤ κ · q_{s−1}` with `q_{s−1} ≥ s_min` (covers both a drop and a sign flip relative to `R0`); the `R2`
+  interpretation now decides transport by the oriented head-output fraction `q_T` and the downstream deltas.
+  (2) The anomaly score is sign-normalized, `a = sign(p) × (m − p)`, so suppression is negative and amplification
+  positive for either orientation; the mean `|p|` is recorded beside it. (3) The attention fraction is declared
+  descriptive supporting evidence throughout. No threshold, measurement, or label changed.
