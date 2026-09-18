@@ -2,8 +2,10 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 1, for review. Not approved. No Experiment 010 directory or model run exists. Experiments
-005–009 are closed and are not amended by this document.
+**Status:** Revision 2 — conceptually approved at revision 1 subject to the three corrections under "Revision
+history", which this revision makes (the exact P1 functional with the frozen reference statistics, a gross/cumulative
+relay criterion, and a deterministic neuron-concentration definition). No Experiment 010 model run exists.
+Experiments 005–009 are closed and are not amended by this document.
 
 **Kind:** Discovery-only, exact attribution. No predictor is fitted; every number reported is an exact linear
 decomposition of a measured quantity, normalized against the template's plural cue. No confirmation set is frozen and
@@ -28,45 +30,57 @@ linearly present in `E` across several directions.
 ## The head-readable number signal (exact, from Experiment 009's confirmed level)
 
 For frame `f` with cue position `c`, reference run `ref`, and the head `h = L03.H04`: with `d̂_T` the head-output number
-axis, `m = W_V^h W_O^h d̂_T`, `γ₃` the layer-3 attention LayerNorm weight, and `σ_c^ref` its scale at `c` in the reference
-run, the P1 prediction of the head's number-axis output change is
+axis, `m = W_V^h W_O^h d̂_T`, `γ₃` the layer-3 attention LayerNorm weight, `σ_c^ref(f)` that LayerNorm's scale at `c` in
+the frame's reference run, and `A_c^ref(f)` the head's reference attention weight from `p_t` to `c`, Experiment 009's
+confirmed P1 prediction of the head's number-axis output change is exactly
 
 ```text
-⟨ΔT₁, d̂_T⟩ = (A_c^ref / σ_c^ref) · ρ(Δr_c),        ρ(x) := ⟨ x − mean(x)·1 , γ₃ ⊙ m ⟩
+⟨ΔT₁, d̂_T⟩ = ρ_f(Δr_c),        ρ_f(x) := (A_c^ref(f) / σ_c^ref(f)) · ⟨ x − mean(x)·1 , γ₃ ⊙ m ⟩
 ```
 
-`ρ` is a fixed linear functional of the layer-3 input residual change at the cue position — the **read functional**.
+`ρ_f` is the **exact P1 read functional**: linear in `x`, with the frame's frozen reference statistics as its scale
+(they depend on the reference run only, so they are the same for every token in the frame). It is *not* weight-only.
 Because the residual stream is a sum of component outputs and the E-patch changes nothing before the layer-0 MLP,
 
 ```text
 Δr_c = ΔE_T(w) + Σ_{k ∈ K} Δout_k(c),        K = { L01.H00 … L01.H07, L01.MLP, L02.H00 … L02.H07, L02.MLP }
-ρ(Δr_c) = ρ(ΔE_T(w)) + Σ_k ρ(Δout_k(c))                                     (exact; checked in every run)
+ρ_f(Δr_c) = ρ_f(ΔE_T(w)) + Σ_k ρ_f(Δout_k(c))                                 (exact by linearity; checked in every run)
 ```
 
-Every term is a measured activation change projected by the same fixed functional; nothing is fitted. Normalizing by
-the plural cue's `ρ(Δr_c)` in the same frame gives fractions that sum to the P1 fraction of Experiment 009:
+Every term is a measured activation change under the same fixed functional; nothing is fitted. The fractions are
+normalized exactly as Experiment 009 normalized its P1 level — by the template plural cue's **measured** head-output
+change in the same frame — so that `f_total` **is** Experiment 009's P1 fraction, term for term:
 
 ```text
-f_total(w, f) = ρ(Δr_c(w, f)) / ρ(Δr_c(pl_T, f)) = f_E + Σ_k f_k
+f_total(w, f) = ρ_f(Δr_c(w, f)) / ⟨ΔT(pl_T, f), d̂_T⟩ = f_E + Σ_k f_k,      f_E = ρ_f(ΔE_T(w)) / ⟨ΔT(pl_T, f), d̂_T⟩
 ```
 
-Two further exact splits of the encoding term:
+(Normalizing by the plural cue's own `ρ_f(Δr_c)` instead would cancel `A_c^ref/σ_c^ref` but would not reproduce 009's
+fraction; both denominators are recorded, the first is the one the rules use.)
 
-- **axis / orthogonal:** `ρ(ΔE) = ρ(ΔE_∥) + ρ(ΔE_⊥)` along the encoding number axis `d̂_E` (does the part of `E(w)`
-  orthogonal to the number axis oppose the number read-out?);
+Two further exact splits of the encoding term, plus a genuinely weight-only score kept **separate**:
+
+- **axis / orthogonal:** `ρ_f(ΔE) = ρ_f(ΔE_∥) + ρ_f(ΔE_⊥)` along the encoding number axis `d̂_E` (does the part of
+  `E(w)` orthogonal to the number axis oppose the number read-out?).
 - **neurons:** `ΔE = Σ_j Δa_j(w) · W_out[j]` over the 2048 layer-0 MLP neurons (`a_j = GELU(pre_j)`, weight-only), so
-  `ρ(ΔE) = Σ_j Δa_j · ρ(W_out[j])`: which neurons carry the head-readable number signal, which oppose it, and how
-  concentrated the signal is.
+  `ρ_f(ΔE) = Σ_j c_j` with `c_j = Δa_j · ρ_f(W_out[j])`: which neurons carry the head-readable number signal, which
+  oppose it, and how concentrated the signal is.
+- **weight-only m-score (for seeding a later prospective rule; not used by the rules below):**
+  `g_E(w, T) = ⟨ΔE_T(w) − mean·1, γ₃ ⊙ m⟩ / ⟨ΔE_T(pl_T) − mean·1, γ₃ ⊙ m⟩` — a ratio of encoding-level reads with no
+  activation statistics; it equals `f_E(w, f) / f_E(pl_T, f)` only where the reference scalars cancel, and is reported
+  beside `f_E`, never in its place.
 
 ## Competing hypotheses (decided by the attribution, not by fitting)
 
 - **H_E — encoding-borne.** The opposition is already inside `E(w)`: `f_E` is small for the suppressed cues although
-  `f_∥` is large (`ρ(ΔE_⊥)` opposes), and layers 1–2 mostly relay (`Σ_k f_k` small). Then the head's read direction
-  `m` already discriminates cues at the encoding, and a zero-parameter, weight-only predictor
-  `f_E(w) = ρ(ΔE_T(w)) / ρ(ΔE_T(pl_T))` is the candidate transport rule for a later prospective test.
-- **H_L — layer-borne.** `f_E` is large for the suppressed cues and layers 1–2 subtract it: specific components in `K`
-  contribute consistently negative fractions for the suppressed cues and not for the numerals (an attention head that
-  reads a determiner-like feature, or an MLP that opposes it).
+  `f_∥` is large (`ρ_f(ΔE_⊥)` opposes), and layers 1–2 make only small changes to the read score — small in gross, not
+  merely in net. Then the head's read direction already discriminates cues at the encoding, and the weight-only
+  `g_E` is the candidate zero-parameter transport rule for a later prospective test.
+- **H_L — layer-borne.** `f_E` is large for the suppressed cues and the residual updates of layers 1–2 — themselves
+  caused by the E intervention — supply the dominant change in the head-readable score that produces the low final
+  value: specific components in `K` contribute consistently negative fractions for the suppressed cues and not for
+  the high-transport cues. This is a statement about where the additive residual updates change the read score, not
+  a claim that information "originates" in a layer independently of the cue.
 - **H_M — mixed / distributed.** Neither pattern reaches the consensus below.
 
 ## Inherited fixed elements
@@ -93,8 +107,9 @@ functional, the component split, the results-state, ledger, and incident convent
   attention row and result at `p_t`, `RESID_POST.L5` at `p_t`, and the logits. Record `ρ(ΔE)`, `ρ(Δout_k)` for every
   `k`, `ρ(Δr_c)`, the identity error `|ρ(Δr_c) − ρ(ΔE) − Σ_k ρ(Δout_k)|`, the measured `q_T`, and the P1 fraction
   (Experiment 009's check that P1 holds is repeated descriptively on the larger pool).
-- **M2 — encoding splits** (weight-only, no forward): `ρ(ΔE_∥)`, `ρ(ΔE_⊥)`, and the per-neuron terms
-  `Δa_j · ρ(W_out[j])` for every token and template.
+- **M2 — encoding splits** (no additional forward; the reference scalars come from M1's reference runs):
+  `ρ_f(ΔE_∥)`, `ρ_f(ΔE_⊥)`, the per-neuron terms `c_j = Δa_j · ρ_f(W_out[j])` for every token and frame, and the
+  weight-only `g_E` per token and template.
 - **Replication:** the E-patch mean shifts of the 16 × 12 (Experiment 006 extract), 24 × 6 (Experiment 007 extract),
   and 23 × 6 (a committed extract of Experiment 009's confirmation) pairs must match within 1e-6; the identity
   `Δ_{R0} = ΔE` (1e-4) and the ρ-identity (1e-4 relative to the plural cue's `ρ(Δr_c)`) hold in every run; otherwise
@@ -102,31 +117,42 @@ functional, the component split, the results-state, ledger, and incident convent
 
 ## Definitions
 
-- **Fractions.** `f_E`, `f_∥`, `f_⊥`, `f_k`, `f_total` as above, per (token, frame); the denominator `ρ(Δr_c(pl_T, f))`
-  is uninformative if `|ρ(Δr_c(pl_T, f))| < 0.25 · σ_ρ`, where `σ_ρ` is the site-axis scale of `ρ` over the clean cue
-  pairs (mean of `ρ(r_c(pl)) − ρ(r_c(sg))` over the frames); token-level values are means over the 24 frames and over
-  each template's frames.
-- **Layer totals.** `f_L1 = Σ_{k ∈ layer 1} f_k`, `f_L2 = Σ_{k ∈ layer 2} f_k`, `f_layers = f_L1 + f_L2`.
-- **Neuron concentration.** For each token and template, the neurons sorted by `|Δa_j · ρ(W_out[j])|`; the smallest
-  `n` such that the top-`n` neurons account for 80% of `Σ_j |Δa_j ρ(W_out[j])|` (`n_80`), and the top-20 neurons with
-  their signed contributions. The overlap of the top-20 sets between the plural cues and the suppressed cues is
-  reported (Jaccard).
+- **Fractions.** `f_E`, `f_∥`, `f_⊥`, `f_k`, `f_total` as above, per (token, frame); the frame is uninformative if
+  `|⟨ΔT(pl_T, f), d̂_T⟩| < 0.25 · σ_T` (Experiment 008/009's convention for the head stage); token-level values are
+  means over the informative frames of the 24 and over each template's frames.
+- **Layer totals, gross change, and cumulative deviation.** `f_L1 = Σ_{k ∈ layer 1} f_k`, `f_L2 = Σ_{k ∈ layer 2} f_k`,
+  `f_layers = f_L1 + f_L2` (the *net* layer contribution); `G = Σ_k |f_k|` (the *gross* layer change); and, along the
+  frozen component order `L01.H00 … L01.H07, L01.MLP, L02.H00 … L02.H07, L02.MLP` (heads in index order, then the MLP,
+  a convention — within a layer the attention heads and the MLP act in parallel on the same input),
+  `D = max_j |Σ_{k ≤ j} f_k|`, the maximum cumulative deviation of the read score from `f_E` while the residual updates
+  accumulate. Layer-level cumulative values `|f_L1|` and `|f_L1 + f_L2|` are reported as well.
+- **Neuron concentration (deterministic).** For each token and frame, `c_j = Δa_j · ρ_f(W_out[j])`; the neurons are
+  sorted by `|c_j|` descending with ties broken by neuron index ascending; `n_80` is the smallest `n` such that
+  `Σ_{top-n} |c_j| ≥ 0.8 · Σ_j |c_j|` (absolute attribution mass, so cancellation cannot shrink it). Reported per token
+  and template (means over the template's frames): `n_80`, the positive mass `Σ_{c_j > 0} c_j`, the negative mass
+  `Σ_{c_j < 0} c_j`, and the top-20 neurons by `|c_j|` on the template's mean `c_j` (one deterministic set per token
+  and template) with their signed mean contributions.
+- **Top-20 overlap.** For each template, the top-20 set of the template's plural cue (from its mean `c_j`) is compared
+  with the top-20 set of every token of the frozen low-`q_T` stratum by Jaccard index; the per-template mean Jaccard
+  over the low stratum and the same statistic for the high stratum are reported. "Suppressed" always means the frozen
+  low stratum.
 - **Consistency of a component.** A component `k` is a **consistent opposer** for a token set `S` if `f_k ≤ −0.10` in
-  at least 75% of the frames of at least 75% of the tokens in `S`; a **consistent supporter** if `f_k ≥ +0.10` likewise.
+  at least 75% of the informative frames of at least 75% of the tokens in `S`; a **consistent supporter** if
+  `f_k ≥ +0.10` likewise.
 
 ## Frozen classification rules (fixed here, before any Experiment 010 measurement)
 
-Constants: `s_min = 0.35`, `s_high = 0.65`, `c_min = 0.10`, consensus `0.75`, neuron concentration threshold
-`n_80 ≤ 40` (of 2048) for "concentrated".
+Constants: `s_min = 0.35`, `s_high = 0.65`, `c_min = 0.10` (net), `g_max = 0.25` (gross and cumulative), consensus
+`0.75`, neuron concentration threshold `n_80 ≤ 40` (of 2048) for "concentrated".
 
-1. **Per token (24-frame means):**
-   - `E_BORNE` if `f_E ≤ s_min` and `f_∥ ≥ s_min` and `|f_layers| ≤ c_min`;
-   - `LAYER_BORNE` if `f_E ≥ s_min` and `f_layers ≤ −(f_E − s_min)` (layers 1–2 remove at least what would have
-     exceeded the low band) and `f_total ≤ s_min`;
-   - `RELAYED` if `|f_total − f_E| ≤ c_min` and `f_total ≥ s_high` (an ordinary plural-like cue: the encoding's
-     signal passes through);
+1. **Per token (means over informative frames):** "layers relay" requires small net **and** small gross **and** small
+   cumulative change: `|f_layers| ≤ c_min` and `G ≤ g_max` and `D ≤ g_max` (`RELAY`).
+   - `E_BORNE` if `f_E ≤ s_min` and `f_∥ ≥ s_min` and `RELAY`;
+   - `LAYER_BORNE` if `f_E ≥ s_min` and `f_layers ≤ −(f_E − s_min)` (the layers' residual updates remove at least what
+     would have exceeded the low band) and `f_total ≤ s_min`;
+   - `RELAYED` if `f_total ≥ s_high` and `RELAY`;
    - `AMPLIFIED` if `f_layers ≥ +c_min` and `f_total ≥ s_high`;
-   - `MIXED` otherwise.
+   - `MIXED` otherwise (including every case where large layer updates cancel in net).
 2. **Per stratum:** the modal per-token class with its fraction; the consistent opposers and supporters of the low
    stratum and of the high stratum (rule above), with the components' identities.
 3. **Experiment-level summary** over the low stratum: `E_BORNE` if ≥ 75% of its tokens are `E_BORNE`; `LAYER_BORNE`
@@ -164,3 +190,21 @@ tables; a runner with phases `validate`, `explore`, `report`.
 Design first; no implementation until approved. `explore` runs once after the implementation review; the attribution
 table and the summary are the deliverable; the summary's hypothesis (and, if `E_BORNE`, the zero-parameter rule
 `f_E`) is handed to the Experiment 011 design, which freezes new cue tokens and frames before any prospective test.
+
+## Revision history
+
+- **Revision 1** (commit `a8d422f`): initial draft. Reviewed: direction approved with three corrections — the read
+  functional omitted P1's frozen reference scalars `A_c^ref` and `1/σ_c^ref` while claiming to equal 009's P1
+  fraction; `E_BORNE` inferred "layers relay" from a small *net* layer contribution, which large cancelling layer
+  updates would satisfy; the neuron concentration `n_80` and the top-20 overlap were not defined deterministically
+  on absolute attribution mass and across frames.
+- **Revision 2**: (1) `ρ_f` carries the frame's frozen reference scalars and the fractions are normalized by the plural
+  cue's measured head-output change, so `f_total` equals Experiment 009's P1 fraction term for term; the weight-only
+  `g_E` is defined separately and never substituted for `f_E`. (2) Relay requires small net (`|f_layers| ≤ 0.10`),
+  small gross (`G = Σ|f_k| ≤ 0.25`), and small maximum cumulative deviation (`D ≤ 0.25`) along the frozen component
+  order; `E_BORNE` and `RELAYED` use it; cancelling layer updates fall to `MIXED` or `LAYER_BORNE`. (3) `n_80` is
+  defined on absolute attribution mass with deterministic sorting and tie-breaking; positive and negative masses and
+  the signed top-20 contributions are reported; the top-20 overlap is frozen as a per-template Jaccard between the
+  plural cue's set and each low-stratum token's set, both on template-mean contributions. (4) `LAYER_BORNE` is worded as
+  "the layers' residual updates supply the dominant change in the head-readable score", not as information originating
+  in a layer. No threshold other than the added gross/cumulative bound changed; no measurement changed.
