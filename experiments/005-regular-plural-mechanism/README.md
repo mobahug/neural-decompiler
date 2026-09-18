@@ -140,3 +140,16 @@ a selection criterion. Reserve nouns and extension prompts were unexecuted when 
   0.699 (floor 0.70), X4 Spearman 0.692 with MAE 1.2–1.6 nats.
 - Claim: [`research/claims/C002-count-cued-noun-number-circuit.md`](../../research/claims/C002-count-cued-noun-number-circuit.md)
   at maturity `LOCALIZED`. The experiment is complete; a second scientific attempt requires a new protocol version.
+
+## Archival notes (2026-09-18, after closure; no artifact rewritten)
+
+- The phase table in both evidence reports shows `report: not_started` because the `report` phase renders the
+  Markdown without marking itself complete in the results state; the reports were rendered after the phases they
+  describe and copied verbatim. This is a runner cosmetic, not a missing phase.
+- The superseded `M2` record preserves the statement text rendered at its adoption, whose cap line reads "a
+  contextual encoding component is required"; that wording was the generic cap text and was corrected in the same
+  session before `M3` was adopted (`M3` names the protocol v1 program-floor failure). `M2` is kept verbatim as
+  history and was never calibrated, locked, or confirmed.
+- Experiment 005 is closed. Both outcomes stand as recorded; the next experiment is designed separately as
+  Experiment 006 and treats all Experiment 005 data, including the reserve nouns and the extension prompts, as
+  exploratory input.
