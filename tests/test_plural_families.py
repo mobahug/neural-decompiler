@@ -198,3 +198,12 @@ def test_retention_diagnostic_counts_only_development_flips():
     attempt = {"isolation": {"sign_retention": {"retained": 1, "total": 2}}}
     diagnostic = pm.retention_diagnostic({"discovery": {"a1": {"measurements": measurements}}}, attempt)
     assert diagnostic["clean_development_flips"] == 1 and diagnostic["conditional_retention"] == 1.0
+
+
+def test_p8_compensation_band_is_secondary():
+    results = _results()
+    bands = pm.calibration_bands(results)
+    shifted = dict(results)
+    shifted["P8"] = {**results["P8"], "compensation_ratio": 0.9}
+    hits = pm.band_hits(shifted, bands)
+    assert hits["all_hit"] and hits["secondary_missed"] == ["P8:compensation_ratio"]

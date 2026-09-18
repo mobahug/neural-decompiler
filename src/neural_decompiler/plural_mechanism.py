@@ -2885,8 +2885,11 @@ def band_hits(results: Mapping[str, Any], bands: Mapping[str, Any]) -> dict[str,
     hits["P8"] = {name: _inside(band, results["P8"].get(name)) for name, band in bands.get("P8", {}).items()}
     if results["P9"].get("applicable") and "P9" in bands:
         hits["P9"] = {name: _inside(band, results["P9"].get(name)) for name, band in bands["P9"].items()}
-    missed = [f"{family}:{name}" for family, entries in hits.items() for name, hit in entries.items() if hit is False]
-    return {"hits": hits, "missed": missed, "all_hit": not missed}
+    # P8's compensation ratio is secondary by design ("primary for loss, secondary for compensation").
+    secondary = {("P8", "compensation_ratio")}
+    missed = [f"{family}:{name}" for family, entries in hits.items() for name, hit in entries.items() if hit is False and (family, name) not in secondary]
+    secondary_missed = [f"{family}:{name}" for family, name in secondary if hits.get(family, {}).get(name) is False]
+    return {"hits": hits, "missed": missed, "secondary_missed": secondary_missed, "all_hit": not missed}
 
 
 def tolerance_tau(rmse_b: float) -> float:
