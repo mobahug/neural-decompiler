@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-18
 
-**Status:** Draft, revision 3 (after the second external review). Not
+**Status:** Draft, revision 4 (after the third external review). Not
 approved. No Experiment 006 directory, confirmation manifest, lock, or model
 run exists. Experiment 005 is closed and is not amended by this document.
 
@@ -31,6 +31,11 @@ run exists. Experiment 005 is closed and is not amended by this document.
   necessity gate; (3) the sixteen cue-level values behind the pre-lock
   Spearman and normalized RMSE are defined; (4) Y3's prompt description is
   corrected.
+- **Revision 4 (2026-09-18).** After the third review, before any Experiment
+  006 model run: (1) P7 is included wherever the circuit families are
+  enumerated (Tier A verification and `CIRCUIT_PASS`), with its Experiment
+  005 floors restated here; (2) the one-standard-error rank-selection rule is
+  written as an executable formula.
 
 **Scope:** the count-cued singular/plural contrast in pinned
 `EleutherAI/pythia-70m-deduped`, restricted to the circuit Experiment 005
@@ -230,12 +235,14 @@ nouns), and the mean and standard error of a rank's LOCO error are computed
 over the sixteen held-out tokens, never over the hundreds of frame–noun
 predictions. Selection is mechanical and entirely pre-lock:
 
-1. compute the LOCO error of `R1-PCA` and of ranks 2–4;
-2. a rank `r > 1` is eligible only if its LOCO error is at least 20% lower
-   than `R1-PCA`'s; otherwise `r = 1` is selected;
-3. among eligible ranks apply the one-standard-error rule: the smallest rank
-   whose LOCO error is within one standard error of the best; ties resolve to
-   the smaller rank.
+1. compute the mean LOCO error `error_r` and its standard error `SE_r` (over
+   the sixteen held-out tokens) for `R1-PCA` (`r = 1`) and for ranks 2–4;
+2. `eligible = {1} ∪ {r > 1 : error_r ≤ 0.8 × error_1}`;
+3. `r_best` = the eligible rank with the minimum mean LOCO error;
+   `threshold = error_{r_best} + SE_{r_best}`; select the smallest eligible
+   `r` with `error_r ≤ threshold`.
+
+If no `r > 1` is eligible the selection is `r = 1` by construction of step 2.
 
 The rule, every rank's per-token errors, the selected `r`, and the
 `E005-scalar` LOCO error are recorded; the final parameters are then fitted
@@ -277,8 +284,10 @@ nouns a split contains. Experiment 006 replaces them:
   play no role.
 - **Circuit families kept:** P1 (recovery 0.70 / 0.60 / 0.60), P4 (E-only at
   the cue position, coordinated, ≥ 0.50), P5 (T alone ≥ 0.50; blocked fraction
-  ≥ 0.50), P7 (cross-frame control), P8 (necessity, unchanged from Experiment
-  005: pair-centered neutralization of E in cue-final frames and of T in
+  ≥ 0.50), P7 (cross-frame control, unchanged from Experiment 005:
+  cross-frame resample of the circuit set with the same cue must recover
+  ≤ 0.25 and with the opposite cue ≥ 0.5 × R(S_M)), P8 (necessity, unchanged
+  from Experiment 005: pair-centered neutralization of E in cue-final frames and of T in
   coordinated frames; contrast loss ≥ 0.30, primary; compensation ratio
   reported, secondary), and P9 (chain: `m_T`, `m_R` ≥ 0.50,
   `m_R|T ≤ 0.5·m_R`), each evaluated on the fresh nouns over the manifest
@@ -309,7 +318,8 @@ per-token prediction carries `± τ`; the program hits its bands when at least
 ## Tiers and execution boundary
 
 - **Tier A (exploratory):** on the exploratory pool, verify the fixed circuit
-  once (P1, P3-fidelity, P4, P5, P8, P9 on the 60 nouns and the 12 frames),
+  once (P1, P3-fidelity, P4, P5, P7, P8, P9 on the 60 nouns and the 12
+  frames),
   measure `Δr_Epatch` for every exposed token and frame, fit the program, run
   the rank selection and the pre-lock quality gate, and record the `R1-PCA`
   and `E005-scalar` baselines. No fresh noun, frame, or cue token is
@@ -331,9 +341,10 @@ per-token prediction carries `± τ`; the program hits its bands when at least
 ## Outcome rule
 
 - Precondition: the cue-effect gate on fresh nouns; failure → `CUE_EFFECT_NOT_REPLICATED`.
-- Circuit axis: `CIRCUIT_PASS` if P1, P3-fidelity, P4, P5, P8, P9 pass on
-  the fresh nouns over the manifest frames and over the fresh frames; the two
-  evaluations are reported separately and both are required.
+- Circuit axis: `CIRCUIT_PASS` if and only if P1, P3-fidelity, P4, P5, P7,
+  P8, and P9 all pass on the fresh nouns over the manifest frames and,
+  separately, over the fresh frames; both evaluations are reported and both
+  are required.
 - Program axis: `PROGRAM_PASS` if Y1–Y3 pass.
 - `DECOMPILED` — both axes pass and the program hits its bands.
 - `DECOMPILED_MISCALIBRATED` — both axes pass; bands missed.
