@@ -113,3 +113,30 @@ mechanical choice under the amended rule (`continue` run 2, results state sha256
 `retention_diagnostic` field stored inside the M3 version record double-counted holdout flips (185) because of a
 filter bug fixed immediately afterwards — the lock and the report recompute it correctly, and the field is not
 a selection criterion. Reserve nouns and extension prompts were unexecuted when the continuation was adopted.
+
+## Status — 2026-09-18: protocol v2 executed to completion
+
+- `continue` (twice; M2 superseded, M3 = k = 3 adopted), `calibrate` (pass 1, floors passed, `RMSE_B` 0.609,
+  τ 1.826), `lock` (candidate content sha256 `ec2a8879bab35fd6e4d45484321595aed565fb40f19bf608daf2574ea50ccc97`,
+  installed and committed by hand as `preregistration-lock.json` in commit `30e8b84`), and `confirm` (once, on
+  commit `30e8b84`) all ran. Final results state sha256
+  `5a0c6836af57b6132216b3160d429c58b3e75015842e63dc86928161a877f6bf`; the rendered report is copied verbatim to
+  [`evidence/final-report-2026-09-18.md`](evidence/final-report-2026-09-18.md). Ledger: 96 prompt keys, 60 noun keys.
+- **Outcome: `BEHAVIOR_NOT_REPLICATED`** (axes `CIRCUIT_FAIL` via P3's retention count, `PROGRAM_FAIL` by cap,
+  `NOT_GENERALIZED` via P3's retention count on the new frames). The reserve nouns failed the preregistered
+  behavioral precondition: 98/120 primary conditions correct (floor 103) and 75/120 contrast flips (floor 96);
+  44 of the 45 failures are plural conditions, and in all 45 the number variable still matched the cue (S3).
+  By the preregistered rule no other family is confirmatory.
+- Recorded, non-confirmatory: on the reserve nouns P1 0.985, P3 0.795 (0.962 / 0.760 / 0.672 by template), P4
+  0.873, P5 0.817 / 0.869, P6 0.840 / 0.074, P7 0.984 / −0.007, P8 loss 0.826, P9 0.987 / 0.900 / 0.074, with
+  every P band hit except P3's retention count (71/120; the clean model flips only 75/120 reserve pairs) and the
+  secondary P8 compensation band; B2's template means fell below their holdout bands. On the six unseen frames X1
+  passed (120/120 positive pairs; 12/12 number variables) and P1 0.980, P3 0.824, P4 0.948, P5 0.822 / 0.872, P8
+  0.796, P9 0.937 / 1.079 / 0.286, again failing only P3's retention count (62/120; clean flips 65/120).
+- Cue words (diagnostic, capped program): the E-patch reproduces each word's behavioral shift closely (the cue
+  information travels through `L00.MLP`), but the one-dimensional lexicon does not predict the magnitudes:
+  `all`, `some`, `both`, `few`, `many` shift the contrast by −3.8 to −4.8 nats with lexicon values within ±0.48,
+  `every` shifts it by ≈ 0, `a` by ≈ 0, `the` by −2.6; the four numerals agree in sign in 6/6 frames. X3 Spearman
+  0.699 (floor 0.70), X4 Spearman 0.692 with MAE 1.2–1.6 nats.
+- Claim: [`research/claims/C002-count-cued-noun-number-circuit.md`](../../research/claims/C002-count-cued-noun-number-circuit.md)
+  at maturity `LOCALIZED`. The experiment is complete; a second scientific attempt requires a new protocol version.
