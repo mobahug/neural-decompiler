@@ -121,3 +121,54 @@ def test_e005_scalar_baseline_refits_on_the_fake(setting, tmp_path):
     frame = ctx.frames[0]
     noun = ctx.nouns[0]
     assert isinstance(program.predict_epatch_shift(frame.template_id, frame.frame_id, frame.cue_ids["pl"], frame.cue_ids["sg"], noun.sg_ids[0], noun.pl_ids[0]), float)
+
+
+def _table(errors_by_rank: dict[int, list[float]], predicted=None, measured=None):
+    table = {}
+    for rank, errors in errors_by_rank.items():
+        table[rank] = {f"t{i}": {"mae": error, "predicted": (predicted or errors)[i], "measured": (measured or errors)[i]} for i, error in enumerate(errors)}
+    return table
+
+
+def test_rank_rule_branches():
+    # No rank beats rank 1 by 20%: rank 1 selected regardless of the one-SE rule.
+    table = _table({1: [1.0] * 4, 2: [0.9] * 4, 3: [0.85] * 4, 4: [0.81] * 4})
+    assert cd.select_rank(table)["selected"] == 1 and cd.select_rank(table)["eligible"] == [1]
+    # Ranks 2-4 eligible; best is 4 but within one SE of rank 2 → smallest eligible within threshold.
+    table = _table({1: [1.0, 1.0, 1.0, 1.0], 2: [0.70, 0.74, 0.78, 0.74], 3: [0.72, 0.70, 0.74, 0.70], 4: [0.60, 0.80, 0.65, 0.75]})
+    verdict = cd.select_rank(table)
+    assert verdict["eligible"] == [1, 2, 3, 4] and verdict["r_best"] == 4 and verdict["selected"] == 2
+    assert verdict["threshold"] == pytest.approx(0.70 + verdict["summary"][4]["se"])
+    # Best rank far ahead: threshold excludes the others.
+    table = _table({1: [1.0] * 4, 2: [0.75] * 4, 3: [0.30, 0.30, 0.30, 0.30], 4: [0.31] * 4})
+    assert cd.select_rank(table)["selected"] == 3
+    # Rank 1 itself is best among eligible (eligible ranks slightly worse than allowed threshold).
+    table = _table({1: [0.5] * 4, 2: [0.39, 0.41, 0.40, 0.40], 3: [0.45] * 4, 4: [0.6] * 4})
+    verdict = cd.select_rank(table)
+    assert verdict["eligible"] == [1, 2] and verdict["selected"] == 2
+
+
+def test_quality_gate_and_tau():
+    predicted = [1.0, 2.0, 3.0, 4.0, 5.0]
+    measured = [1.1, 2.1, 2.9, 4.2, 5.0]
+    per_token = {f"t{i}": {"predicted": p, "measured": m, "mae": abs(p - m)} for i, (p, m) in enumerate(zip(predicted, measured))}
+    summary = {1: {"error": 1.0, "se": 0.1}, 2: {"error": 0.7, "se": 0.1}}
+    gate = cd.quality_gate(per_token, selected=2, summary=summary)
+    assert gate["passed"] and gate["spearman"] == pytest.approx(1.0) and gate["normalized_rmse"] < 0.1
+    bad = cd.quality_gate(per_token, selected=2, summary={1: {"error": 0.75, "se": 0.1}, 2: {"error": 0.7, "se": 0.1}})
+    assert not bad["improvement_ok"] and not bad["passed"]
+    reversed_ = {f"t{i}": {"predicted": p, "measured": m, "mae": abs(p - m)} for i, (p, m) in enumerate(zip(predicted, reversed(measured)))}
+    assert not cd.quality_gate(reversed_, selected=1, summary=summary)["spearman_ok"]
+    assert cd.tolerance_tau(per_token) == 0.5
+    assert cd.tolerance_tau({"a": {"mae": 0.4}, "b": {"mae": 0.4}}) == pytest.approx(1.2)
+
+
+def test_loco_runs_on_the_fake(setting):
+    ctx, references, tokens, responses, e_vectors, reference_vectors = setting
+    table = cd.loco_errors(e_vectors=e_vectors, reference_ids=references, reference_vectors=reference_vectors, responses=responses, frames=ctx.frames,
+                           cache=ctx.cache, nouns=ctx.nouns, weights=ctx.weights, tokens=[token for token, _ in tokens], ranks=(1, 2))
+    assert set(table) == {1, 2} and set(table[1]) == {token for token, _ in tokens}
+    verdict = cd.select_rank(table)
+    assert verdict["selected"] in (1, 2)
+    gate = cd.quality_gate(table[verdict["selected"]], selected=verdict["selected"], summary=verdict["summary"])
+    assert set(gate) >= {"spearman", "normalized_rmse", "improvement_ok", "passed", "cue_level"}

@@ -642,3 +642,72 @@ def e005_scalar_baseline(ctx: pm.DiscoveryContext, *, parameters_dir: Path, prog
     program = pm.load_program(parameters_dir, program_path)
     return program, {"parameters_index_sha256": digest, "matches_experiment_005_lock": (digest == expected_index_sha256) if expected_index_sha256 else None,
                      "k_t": parameters.k_t, "gains": parameters.gains()}
+
+
+# ---------------------------------------------------------------------------
+# Leave-one-cue-out rank selection, the pre-lock quality gate, and τ.
+
+
+def loco_errors(*, e_vectors: Mapping[str, torch.Tensor], reference_ids: Mapping[str, int], reference_vectors: Mapping[str, torch.Tensor],
+                responses: Mapping[tuple[str, str], EPatchResponse], frames: Sequence[pm.Frame], cache: pm.PromptCache, nouns: Sequence[pm.Noun],
+                weights: pm.Weights, tokens: Sequence[str], ranks: Sequence[int] = RANKS) -> dict[int, dict[str, dict[str, float]]]:
+    """For every rank and held-out token: cue-level predicted/measured values and mean absolute error."""
+    table: dict[int, dict[str, dict[str, float]]] = {}
+    for rank in ranks:
+        per_token = {}
+        for held_out in tokens:
+            fit_tokens = [token for token in tokens if token != held_out]
+            fit = fit_low_rank(e_vectors=e_vectors, reference_ids=reference_ids, reference_vectors=reference_vectors, responses=responses,
+                               frames=frames, cache=cache, fit_tokens=fit_tokens, rank=rank)
+            per_token[held_out] = cue_level_values(fit, weights, e_vectors, reference_vectors, responses, frames, nouns, held_out)
+        table[rank] = per_token
+    return table
+
+
+def _mean_se(values: Sequence[float]) -> tuple[float, float]:
+    mean = pm._mean(values)
+    if len(values) < 2:
+        return mean, 0.0
+    variance = sum((value - mean) ** 2 for value in values) / (len(values) - 1)
+    return mean, math.sqrt(variance / len(values))
+
+
+def select_rank(table: Mapping[int, Mapping[str, Mapping[str, float]]]) -> dict[str, Any]:
+    """The design's executable rule; the cue token is the unit of the standard error."""
+    summary = {}
+    for rank, per_token in table.items():
+        errors = [entry["mae"] for entry in per_token.values()]
+        mean, se = _mean_se(errors)
+        summary[int(rank)] = {"error": mean, "se": se, "n": len(errors)}
+    error_1 = summary[1]["error"]
+    eligible = [1] + [rank for rank in sorted(summary) if rank > 1 and summary[rank]["error"] <= RANK_IMPROVEMENT_FACTOR * error_1]
+    r_best = min(eligible, key=lambda rank: (summary[rank]["error"], rank))
+    threshold = summary[r_best]["error"] + summary[r_best]["se"]
+    selected = min(rank for rank in eligible if summary[rank]["error"] <= threshold)
+    return {"summary": summary, "eligible": eligible, "r_best": r_best, "threshold": threshold, "selected": selected, "rule": CONTINUATION_RULE_TEXT}
+
+
+CONTINUATION_RULE_TEXT = ("eligible = {1} ∪ {r > 1 : error_r ≤ 0.8 × error_1}; r_best = argmin_{eligible} error_r; "
+                          "threshold = error_{r_best} + SE_{r_best}; selected = min {r ∈ eligible : error_r ≤ threshold}")
+
+
+def quality_gate(per_token: Mapping[str, Mapping[str, float]], *, selected: int, summary: Mapping[int, Mapping[str, float]]) -> dict[str, Any]:
+    """Pre-lock gate on the sixteen cue-level values of the selected rank; independent of τ."""
+    tokens = list(per_token)
+    predicted = [per_token[token]["predicted"] for token in tokens]
+    measured = [per_token[token]["measured"] for token in tokens]
+    spearman = pm.spearman(predicted, measured)
+    rmse = math.sqrt(pm._mean([(p - m) ** 2 for p, m in zip(predicted, measured)]))
+    rms_measured = math.sqrt(pm._mean([m * m for m in measured]))
+    normalized = rmse / rms_measured if rms_measured > 0 else float("inf")
+    improvement_ok = selected == 1 or summary[selected]["error"] <= RANK_IMPROVEMENT_FACTOR * summary[1]["error"]
+    return {"spearman": spearman, "spearman_ok": spearman >= QUALITY_SPEARMAN_FLOOR, "normalized_rmse": normalized,
+            "normalized_rmse_ok": normalized <= QUALITY_NORMALIZED_RMSE_CEILING, "improvement_ok": improvement_ok,
+            "passed": spearman >= QUALITY_SPEARMAN_FLOOR and normalized <= QUALITY_NORMALIZED_RMSE_CEILING and improvement_ok,
+            "cue_level": {token: {"predicted": per_token[token]["predicted"], "measured": per_token[token]["measured"], "mae": per_token[token]["mae"]} for token in tokens}}
+
+
+def tolerance_tau(per_token: Mapping[str, Mapping[str, float]]) -> float:
+    """τ = max(0.5 nats, 3 × RMSE of the cue-level errors of the selected rank)."""
+    errors = [entry["mae"] for entry in per_token.values()]
+    return max(TAU_MIN_NATS, TAU_RMSE_MULTIPLIER * math.sqrt(pm._mean([error * error for error in errors])))
