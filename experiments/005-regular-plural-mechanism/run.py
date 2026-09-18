@@ -201,7 +201,11 @@ class Runner:
         screening_path = self._screening_results(screening_results)
         self.log(f"A1 comparison source: {screening_path if screening_path else 'report constants only (no results.json found)'}")
         state["discovery"]["a1_screening_results_path"] = str(screening_path) if screening_path else None
-        state["phases"]["discover"] = {"status": "running", "started_at": pm.utc_now(), "runtime": runtime_record(PYTHIA_70M)}
+        attempts = int(state["phases"]["discover"].get("attempts", 0)) + 1
+        if attempts > 1:
+            self.log(f"discover attempt {attempts}: the previous attempt did not conclude; recomputing the deterministic measurements")
+            state["discovery"] = {key: value for key, value in state["discovery"].items() if key in {"a0_contract_test", "a1_screening_results_path"}}
+        state["phases"]["discover"] = {"status": "running", "started_at": pm.utc_now(), "runtime": runtime_record(PYTHIA_70M), "attempts": attempts}
         pm.write_results_state(self.results_path, state)
         seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
         model = self.model_loader(PYTHIA_70M)
@@ -369,6 +373,9 @@ class Runner:
         model = self.model_loader(PYTHIA_70M)
         try:
             universe = pm.universe_keys(model)
+            # The intent to execute is recorded before any reserve or extension forward runs.
+            pm.record_execution(state, pm.manifest_prompts(frames) + extension.new_frame_prompts() + extension.cue_word_prompts, reserve)
+            pm.write_results_state(self.results_path, state)
             self.log("Tier C: reserve nouns on the twelve manifest prompts")
             ev = self._eval_context(model, version, frames, reserve)
             circuit_results = pm.evaluate_circuit_families(ev, universe)
@@ -379,7 +386,6 @@ class Runner:
             locked_full_shift = {template: band["point"] for template, band in lock["bands"]["B2"].items()}
             cue_word_results = pm.evaluate_cue_word_families(ev, extension, locked_full_shift=locked_full_shift)
             cue_word_results["locked_full_shift"] = locked_full_shift
-            pm.record_execution(state, pm.manifest_prompts(frames) + extension.new_frame_prompts() + extension.cue_word_prompts, reserve)
         finally:
             del model
             gc.collect()

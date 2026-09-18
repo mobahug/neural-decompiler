@@ -588,6 +588,8 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
     status = {name: entry["status"] for name, entry in state["phases"].items()}
     passes = len(state["calibration"]["passes"])
     if phase == "discover":
+        if status["discover"] == "running" and not state["mechanism_versions"]:
+            return  # crash recovery: nothing was concluded, the deterministic measurements are recomputed
         if status["discover"] != "not_started":
             raise PhaseError("discover already ran; discovery is never re-run in one protocol version")
     elif phase == "calibrate":
@@ -599,6 +601,8 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
             raise PhaseError("only two calibration passes are allowed in one protocol version")
         if passes == 1 and status["revise"] != "complete":
             raise PhaseError("a second calibration pass requires a completed revise phase")
+        if status["calibrate"] == "complete" and passes == 0:
+            raise PhaseError("calibration state is inconsistent")
     elif phase == "revise":
         if passes != 1 or status["revise"] != "not_started":
             raise PhaseError("revise is allowed exactly once, after the first calibration pass")
