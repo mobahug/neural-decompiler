@@ -66,8 +66,8 @@ def _run_contract_test() -> dict[str, Any]:
 
 def runtime_record(spec: ModelSpec) -> dict[str, Any]:
     runtime = validate_runtime(spec)
-    return {"device": runtime.device, "backend": runtime.backend, "dtype": runtime.dtype_name, "seed": cs.RUNTIME_SEED, "deterministic_algorithms": spec.deterministic_algorithms,
-            "torch_num_threads": int(torch.get_num_threads())}
+    return {"device": runtime.device, "backend": runtime.backend, "dtype": runtime.dtype_name, "seed": cs.RUNTIME_SEED, "control_seed": cs.CONTROL_SEED,
+            "deterministic_algorithms": spec.deterministic_algorithms, "torch_num_threads": int(torch.get_num_threads())}
 
 
 @dataclass
@@ -146,6 +146,12 @@ class Runner:
                 raise cs.PhaseError("frozen inputs or dependency versions differ from the recorded run")
         else:
             state = cs.new_results_state(manifest_sha256=manifest_sha256, extension_sha256=extension.content_sha256, confirmation_sha256=confirmation.content_sha256, **provenance)
+        if state["phases"]["explore"]["status"] == "running" and state["exploration"].get("summary"):
+            # The measurement finished but the final status write did not: finalize without any model run.
+            state["phases"]["explore"] = {**state["phases"]["explore"], "status": "complete", "completed_at": pm.utc_now(), "finalized_after_interruption": True}
+            digest = cs.write_results_state(self.results_path, state)
+            self.log(f"explore finalized after an interrupted status write; results sha256 {digest}")
+            return 0
         cs.assert_phase_allowed("explore", state)
         commit = provenance["protocol_code_commit"]
         incidents = state["exploration"].get("incidents", [])
@@ -168,10 +174,14 @@ class Runner:
         model = self.model_loader(PYTHIA_70M)
         try:
             try:
-                cs.run_exploration(model, pool, state=state, results_path=self.results_path, program=program, program_record=program_record, inherited_006=inherited_006, inherited_007=inherited_007, log=self.log)
+                cs.run_exploration(model, pool, state=state, results_path=self.results_path, program=program, program_record=program_record, inherited_006=inherited_006, inherited_007=inherited_007,
+                                   e005_axis_path=self.root / cs.E005_AXIS_RELATIVE_PATH, log=self.log)
             except pm.IncidentError as error:
                 self._record_incident(state, error)
                 return 2
+            except Exception as error:  # a software defect is an incident too: record it, then surface it
+                self._record_incident(state, error)
+                raise
         finally:
             del model
             gc.collect()

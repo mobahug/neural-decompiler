@@ -2,9 +2,10 @@
 
 **Date:** 2026-09-18
 
-**Status:** Revision 3 (pre-measurement clarification of M3's baseline, made during implementation planning; no
-threshold, label, or other measurement changed). Revision 2 was approved for implementation planning. No Experiment
-008 model run exists. Experiments 005–007 are closed and are not amended by this document.
+**Status:** Revision 4 (pre-measurement rule clarifications raised by the independent implementation review; no
+threshold or measurement changed; one summary label added for the empty stratum). Revision 2 was approved for
+implementation planning; revisions 3 and 4 precede any Experiment 008 model run. Experiments 005–007 are closed and
+are not amended by this document.
 
 **Kind:** Discovery-only, discriminating. No confirmation set is frozen, no lock is written, no claim is promoted.
 The deliverable is a mechanically derived localization statement that becomes the hypothesis of a later prospective
@@ -174,8 +175,9 @@ terms of the two LayerNorms differ, so each run is decomposed with its own scale
   frames), and `Δâ = A(patched) − A(ref)`. The attention weight is **descriptive supporting evidence only**: it says
   where the head looked, not what it transmitted. Transport conclusions rest on the head's output fraction `ŝ_T`
   and on the downstream causal deltas (`R2`, `R3`, the direct effects).
-- **Component fractions.** `r_∥ = Δc_∥ / Δc(pl_T, f)`, `r_⊥ = Δc_⊥ / Δc(pl_T, f)`, `r_full = ŝ_c`; additivity gap
-  `g = r_full − (r_∥ + r_⊥)`.
+- **Component fractions.** `r_∥ = Δc_∥ / Δc(pl_T, f)`, `r_⊥ = Δc_⊥ / Δc(pl_T, f)`, `r_full = ŝ_c`, each then oriented by
+  `sign(ŝ_{R0}(w, f))` exactly like `q`, so that for a token whose axis signal is singular-side "cancellation" still
+  means opposing the token's own axis signal; additivity gap `g = r_full − (r_∥ + r_⊥)` on the oriented values.
 - **Context fractions.** `x_in(w, f)` = the `x_in` numerator above `/ Δc(pl_T, f)` (does an ordinary plural encoding
   produce its effect inside `w`'s context?), `x_out(w, f)` = the `x_out` numerator `/ Δc(pl_T, f)` (does `w`'s
   encoding produce its (lack of) effect inside an ordinary plural context?); the context-only shift is reported as a
@@ -204,9 +206,12 @@ consensus fraction `0.75`.
      the response for this token although it does for the plural cue);
    - `ADDITIVE_ORDINARY` otherwise.
 4. **Collapse stage (from M1, full `ΔE_T(w)`, on the oriented trace).** Along the running-residual stages
-   `R0 → R1 → R2 → R3 → c`, the collapse stage `σ*(w, f)` is the first stage `s` with `q_s ≤ κ · q_{s−1}`, provided
-   `q_{s−1} ≥ s_min`; because `q_{s−1} > 0`, this single condition covers both a drop to at most half of the previous
-   oriented signal and a sign flip relative to the encoding signal (`q_s ≤ 0`). `NO_COLLAPSE` if none. Interpretation
+   `R0 → R1 → R2 → R3 → c` (uninformative stages skipped), the collapse stage `σ*(w, f)` is the first stage `s` with
+   `q_s ≤ κ · q_{s−1}`, provided `q_{s−1} ≥ s_min`; because `q_{s−1} > 0`, this single condition covers both a drop to
+   at most half of the previous oriented signal and a sign flip relative to the encoding signal (`q_s ≤ 0`). The rule
+   is applied literally from `R0` onward (a weak `R0` followed by a strong `R1` that then collapses is a collapse at
+   that later stage). `NO_COLLAPSE` if a stage ≥ `s_min` was reached and nothing collapsed; `NO_SIGNAL` if no stage
+   before the end ever reached `s_min` — such frames are excluded from the mode over frames. Interpretation
    of the location: `R1` — transformation at the cue position in layers 1–2 (H1 at the cue position); `R2` —
    transport into the prediction position (H3): the oriented head-output fraction `q_T` decides whether `L03.H04`
    itself dropped the signal (`q_T ≤ κ · q_{R1}`) or whether other layer-3 components at `p_t` cancelled what the head
@@ -220,17 +225,20 @@ consensus fraction `0.75`.
 
 ### Experiment-level summary (mechanical)
 
-Applied to the suppressed stratum as it comes out of the eighteen-frame means:
+Applied to the suppressed stratum as it comes out of the eighteen-frame means, in this order of precedence:
 
+- `NO_SUPPRESSED_TOKENS` — the suppressed stratum is empty; the per-token table is the result.
+- `PROBE_INVALID` — rule 1 failed for M2 (checked before every other label); the trace summary
+  (`LOCALIZED_<stage>` without a class, or `MIXED`) is still given.
 - `AXIS_ARTIFACT` — every suppressed token is `AXIS_ARTIFACT` under rule 2.
-- `LOCALIZED_<stage>_<class>` — at least 75% of the suppressed tokens that carry the signal share one modal collapse
-  stage and one encoding-stage class.
+- `LOCALIZED_<stage>_<class>` — at least 75% of the suppressed tokens that carry the signal share **the same pair**
+  of modal collapse stage and encoding-stage class (joint consensus); `NO_COLLAPSE` is not a collapse stage and never
+  forms such a pair.
 - `CONTEXT_LOCALIZED` — at least 75% of the suppressed tokens are `CONTEXT_GATED` while the E-patch traces show no
-  common collapse stage.
-- `MIXED` — otherwise; the per-token table is the result.
-- `PROBE_INVALID` — rule 1 failed for M2; the trace summary (`LOCALIZED_<stage>` without a class, or `MIXED`) is
-  still given.
-- Incidents (replication mismatch, identity failures, software defects) stop the phase and are never a summary label.
+  common collapse stage (no stage among `R1, R2, R3, c` reaches the 75% consensus).
+- `MIXED` — otherwise; the per-token table is the result (with the stage-only trace summary).
+- Incidents (replication mismatch, identity failures, software defects — any exception during the phase) stop the
+  phase, are recorded with their commit, block another `explore` at that commit, and are never a summary label.
 
 The amplified and ordinary strata receive the same per-token classification and are summarized descriptively; the
 determiner set (`this`, `that`, `these`, `those`, `a`, `the`, `another`, `every`) is reported as a group.
@@ -287,6 +295,16 @@ the per-token table are the deliverable; the localization statement is then hand
   (2) The anomaly score is sign-normalized, `a = sign(p) × (m − p)`, so suppression is negative and amplification
   positive for either orientation; the mean `|p|` is recorded beside it. (3) The attention fraction is declared
   descriptive supporting evidence throughout. No threshold, measurement, or label changed.
+- **Revision 4** (pre-measurement, from the independent implementation review): (1) `NO_COLLAPSE` is not a collapse
+  stage — it never forms a `LOCALIZED_…` label and counts as "no common collapse stage" for `CONTEXT_LOCALIZED`;
+  (2) the `LOCALIZED_<stage>_<class>` consensus is joint (the same 75% of carrying tokens share the pair), not two
+  separate consensuses; (3) rule 4 is applied literally from `R0` with `NO_SIGNAL` defined as "no stage before the end
+  reached `s_min`" and excluded from the mode; (4) the component fractions are oriented by `sign(ŝ_{R0})` before rule
+  3, so the rule is well defined for singular-side axis signals; (5) label precedence is fixed
+  (`NO_SUPPRESSED_TOKENS`, `PROBE_INVALID`, `AXIS_ARTIFACT`, `LOCALIZED_…`, `CONTEXT_LOCALIZED`, `MIXED`), with
+  `NO_SUPPRESSED_TOKENS` added for the empty stratum; (6) any exception during `explore` is recorded as an incident;
+  (7) the cosine of the eighteen-frame E axis with Experiment 005's frozen E axis is reported (informational). No
+  threshold or measurement changed.
 - **Revision 3** (pre-measurement, during implementation planning): M3's baseline is the same prompt patched with the
   reference encoding rather than its clean run, so that `x_in` and `x_out` measure the encoding swap inside a fixed
   context (with the clean-run baseline, `x_in` of the plural cue itself would be identically zero and `x_in` of other

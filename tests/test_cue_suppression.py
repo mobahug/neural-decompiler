@@ -51,6 +51,11 @@ def test_collapse_rule_on_oriented_traces():
     assert head["transport"] == "HEAD_DROPPED" and other["transport"] == "OTHER_LAYER3_CANCELLED"
     # A previous stage below S_MIN cannot be the base of a collapse.
     assert cs.collapse_stage({"R0": 1.0, "R1": 0.25, "R2": 0.1, "R3": 0.1, "c": 0.1})["stage"] == "R1"
+    # Revision 4: the rule runs from R0 literally; a weak R0 followed by a strong R1 that then collapses is a collapse at that stage.
+    assert cs.collapse_stage({"R0": 0.1, "R1": 0.6, "R2": 0.1, "R3": 0.1, "c": 0.1})["stage"] == "R2"
+    # A trace that never reaches S_MIN at any stage before the end has no signal to trace.
+    assert cs.collapse_stage({"R0": 0.1, "R1": 0.2, "R2": 0.1, "R3": 0.1, "c": 0.9})["stage"] == "NO_SIGNAL"
+    assert cs.collapse_stage({"R0": None, "R1": None, "R2": None, "R3": None, "c": None})["stage"] == "NO_SIGNAL"
 
 
 def test_encoding_class_branches_and_mode_aggregation():
@@ -79,7 +84,16 @@ def test_summary_labels():
     assert cs.summarize(gated, True)["label"] == "CONTEXT_LOCALIZED"
     invalid = cs.summarize(rows, False)
     assert invalid["label"] == "PROBE_INVALID" and invalid["trace_summary"] == "LOCALIZED_R2"
-    assert cs.summarize([_row("two", "ordinary")], True)["label"] == "MIXED"
+    assert cs.summarize([_row("two", "ordinary")], True)["label"] == "NO_SUPPRESSED_TOKENS"
+    # Revision 4: NO_COLLAPSE is not a collapse stage; a gated stratum without a common collapse stage is CONTEXT_LOCALIZED.
+    gated_flat = [_row("this", "suppressed", stage="NO_COLLAPSE", context="CONTEXT_GATED"), _row("a", "suppressed", stage="NO_COLLAPSE", context="CONTEXT_GATED")]
+    assert cs.summarize(gated_flat, True)["label"] == "CONTEXT_LOCALIZED"
+    assert cs.summarize([_row("this", "suppressed", stage="NO_COLLAPSE"), _row("a", "suppressed", stage="NO_COLLAPSE")], True)["label"] == "MIXED"
+    # Joint consensus: stage and class must agree on the same tokens.
+    split = [_row("t1", "suppressed", stage="R2", cls="A"), _row("t2", "suppressed", stage="R2", cls="A"), _row("t3", "suppressed", stage="R2", cls="B"), _row("t4", "suppressed", stage="R3", cls="A")]
+    assert cs.summarize(split, True)["label"] == "MIXED"
+    # Probe invalidity takes precedence over every other label, including the axis artifact.
+    assert cs.summarize(artifact, False)["label"] == "PROBE_INVALID"
 
 
 # ---------------------------------------------------------------------------
@@ -172,3 +186,64 @@ def test_committed_007_extract_matches_the_frozen_inputs():
     lock = json.loads((ROOT / cs.EXPERIMENT_007_LOCK_PATH).read_text())
     assert extract["lock_sha256"] == lock["content_sha256"]
     assert set(extract["responses"]) == {f"{token['word']}|{frame.frame_id}" for token in confirmation.tokens for frame in confirmation.frames}
+
+
+def test_probe_validity_and_token_row_rules(fake_setting):
+    pool, model, weights, cache = fake_setting
+    frames = pool.frames[:4]
+    small = cs.Pool008(frames, pool.frame_origin, pool.tokens[:5], pool.token_category, pool.token_source, pool.nouns, pool.noun_source, pool.reference_ids, pool.plural_cue)
+    # Synthetic per-frame analyses for the plural cue (valid probe) and one token.
+    def analysis(r_par, *, s_r0=0.9, stage="R2", x_in=0.9, C=1.2, g=0.0, r_perp=0.0):
+        oriented = {s: (s_r0 if s in ("R0", "R1", "T") else 0.2) for s in cs.VECTOR_STAGES + ("c",)}
+        return {"fractions": {s: oriented[s] for s in cs.VECTOR_STAGES + ("c",)}, "oriented": oriented, "s_u1": 0.8, "r_par": r_par, "r_perp": r_perp, "r_full": r_par + r_perp + g, "g": g,
+                "x_in": x_in, "x_out": 0.1, "context_only": 0.0, "behavior": 0.1, "attention_fraction": 1.0, "attention_delta": 0.0, "cancellation_index": C,
+                "opposing_terms": {}, "dde_circuit": {}, "collapse": {"stage": stage, "transport": "HEAD_DROPPED" if stage == "R2" else None}, "dc": -1.0, "dc_beh": -1.0}
+    plural_names = {small.plural_cue[frame.template_id] for frame in frames}
+    per_frame_by_token = {name: {frame.frame_id: analysis(0.9 if name in plural_names else 0.8) for frame in frames} for name, _ in small.tokens}
+    probe = cs.probe_validity(per_frame_by_token, small)
+    assert probe["valid"] and probe["frames_ok"] == 4
+    for name in plural_names:
+        for frame in frames:
+            per_frame_by_token[name][frame.frame_id]["r_par"] = 0.4
+    assert not cs.probe_validity(per_frame_by_token, small)["valid"]
+    token = "cardinal:sg" if "cardinal:sg" in dict(small.tokens) else small.tokens[0][0]
+    scores = {frame.frame_id: {"p": -3.0, "m": 0.0, "a": cs.anomaly_score(-3.0, 0.0)} for frame in frames}
+    plural_cancellation = {frame.frame_id: 1.0 for frame in frames}
+    row = cs.token_row(token, small, {frame.frame_id: analysis(0.8, C=2.5, x_in=0.2) for frame in frames}, scores, plural_cancellation, True)
+    assert row["stratum"] == "suppressed" and row["anomaly_score"] == -3.0 and row["in_sample_for_007"] and row["carries_signal"]
+    assert row["encoding_class"] == "ADDITIVE_ORDINARY" and row["collapse_stage"] == "R2" and row["transport_detail"] == "HEAD_DROPPED"
+    assert row["context_class"] == "CONTEXT_GATED" and row["late_cancellation"] and not row["axis_artifact"]
+    # Class withheld when the probe is invalid or the token carries no signal; axis artifact for a suppressed token without signal.
+    assert cs.token_row(token, small, {frame.frame_id: analysis(0.8) for frame in frames}, scores, plural_cancellation, False)["encoding_class"] is None
+    weak = cs.token_row(token, small, {frame.frame_id: analysis(0.8, s_r0=0.1, stage="NO_SIGNAL") for frame in frames}, scores, plural_cancellation, True)
+    assert weak["encoding_class"] is None and weak["axis_artifact"] and weak["collapse_stage"] is None
+    assert set(row["per_template"]) == set(pm.TEMPLATE_ORDER) and "oriented" in row["per_template"]["cardinal"]
+
+
+def test_m3_conventions_and_identity_incident(fake_setting, monkeypatch):
+    pool, model, weights, cache = fake_setting
+    frame = pool.frames_of("quantifier")[0]
+    names = [pool.plural_cue["quantifier"], next(name for name, token_id in pool.tokens if token_id == pool.reference_ids["quantifier"]), "this"]
+    small = cs.Pool008((frame,), pool.frame_origin, tuple((name, pool.token_id(name)) for name in names), pool.token_category, pool.token_source, pool.nouns, pool.noun_source, pool.reference_ids, pool.plural_cue)
+    axes = cs.stage_axes(cache, weights, small)
+    records = cs.measure_pool(model, weights, cache, small, axes["R0"])
+    plural, reference = records[(names[0], frame.frame_id)], records[(names[1], frame.frame_id)]
+    assert reference.dc_out == 0.0 and reference.dc_context_only == 0.0  # E(ref) in the plural context is the shared baseline itself
+    assert plural.dc_in == pytest.approx(plural.dc_out, abs=1e-9)  # both endpoints of the plural cue are its clean prompt versus E(ref) in that prompt
+    assert plural.dc_in == pytest.approx(plural.dc_beh - plural.dc_context_only, abs=1e-9)
+    monkeypatch.setattr(cs, "IDENTITY_TOLERANCE", -1.0)
+    with pytest.raises(pm.IncidentError, match="does not change by"):
+        cs.measure_pool(model, weights, cache, small, axes["R0"])
+
+
+def test_load_program_007_refuses_a_digest_mismatch(tmp_path):
+    root = tmp_path
+    (root / cs.EXPERIMENT_007_LOCK_PATH).parent.mkdir(parents=True)
+    (root / cs.EXPERIMENT_007_LOCK_PATH).write_text(json.dumps({"parameters": {"selected": "0" * 64}, "content_sha256": "x", "program_source_sha256": "y"}))
+    directory = root / "program"
+    directory.mkdir()
+    (directory / "parameters.json").write_text("{}")
+    with pytest.raises(cs.PhaseError, match="does not match"):
+        cs.load_program_007(root, parameters_dir=directory)
+    with pytest.raises(cs.PhaseError, match="not available"):
+        cs.load_program_007(root, parameters_dir=root / "missing")

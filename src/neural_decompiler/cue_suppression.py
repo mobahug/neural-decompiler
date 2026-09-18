@@ -64,7 +64,8 @@ VECTOR_STAGES = ("R0", "R1", "T", "R2", "M4", "M5", "R3")
 STAGE_MEANING = {"R1": "transformation at the cue position (layers 1–2)", "R2": "transport into the prediction position (layer 3)",
                  "R3": "late components (layers 4–5)", "c": "readout"}
 ENCODING_CLASSES = ("LINEAR_CANCELLATION", "NONLINEAR_GATING", "AXIS_NOT_SUFFICIENT", "ADDITIVE_ORDINARY")
-SUMMARY_LABELS = ("AXIS_ARTIFACT", "LOCALIZED", "CONTEXT_LOCALIZED", "MIXED", "PROBE_INVALID")
+SUMMARY_LABELS = ("AXIS_ARTIFACT", "LOCALIZED", "CONTEXT_LOCALIZED", "MIXED", "PROBE_INVALID", "NO_SUPPRESSED_TOKENS")
+E005_AXIS_RELATIVE_PATH = "outputs/experiment-007/parameters/e005-scalar/e_axis_direction.pt"  # Experiment 005's frozen E axis (informational cosine)
 DETERMINER_GROUP = ("this", "that", "these", "those", "a", "the", "another", "every")
 EXPOSED_16_CATEGORY = {"cardinal:sg": "original-cue", "cardinal:pl": "original-cue", "quantifier:sg": "original-cue", "quantifier:pl": "original-cue"}
 
@@ -401,6 +402,10 @@ def _ratio(numerator: float, denominator: float, floor: float) -> float | None:
     return None if abs(denominator) < floor else numerator / denominator
 
 
+def _oriented(value: float | None, orientation: float) -> float | None:
+    return None if value is None else orientation * value
+
+
 def frame_analysis(record: TraceRecord, plural: TraceRecord, axes: Mapping[str, pm.SiteAxis], u1: torch.Tensor, e_axis: pm.SiteAxis, delta_e: torch.Tensor, delta_e_pl: torch.Tensor) -> dict[str, Any]:
     """Signal fractions, oriented trace, component and context fractions, cancellation index, and the collapse stage for one (token, frame)."""
     out: dict[str, Any] = {}
@@ -419,9 +424,10 @@ def frame_analysis(record: TraceRecord, plural: TraceRecord, axes: Mapping[str, 
     oriented = {stage: (None if value is None else orientation * value) for stage, value in fractions.items()}
     out["oriented"] = oriented
     out["carries_signal"] = s_r0 is not None and abs(s_r0) >= S_MIN
-    out["r_par"] = _ratio(record.dc_par, dc_pl, CONTRAST_UNINFORMATIVE_NATS)
-    out["r_perp"] = _ratio(record.dc_perp, dc_pl, CONTRAST_UNINFORMATIVE_NATS)
-    out["r_full"] = fractions["c"]
+    # Component fractions are oriented by the encoding signal's sign (like q), so "cancellation" means opposing the token's own axis signal.
+    out["r_par"] = _oriented(_ratio(record.dc_par, dc_pl, CONTRAST_UNINFORMATIVE_NATS), orientation)
+    out["r_perp"] = _oriented(_ratio(record.dc_perp, dc_pl, CONTRAST_UNINFORMATIVE_NATS), orientation)
+    out["r_full"] = _oriented(fractions["c"], orientation)
     out["g"] = None if None in (out["r_par"], out["r_perp"], out["r_full"]) else out["r_full"] - out["r_par"] - out["r_perp"]
     out["x_in"] = _ratio(record.dc_in, dc_pl, CONTRAST_UNINFORMATIVE_NATS)
     out["x_out"] = _ratio(record.dc_out, dc_pl, CONTRAST_UNINFORMATIVE_NATS)
@@ -442,23 +448,29 @@ def frame_analysis(record: TraceRecord, plural: TraceRecord, axes: Mapping[str, 
 
 
 def collapse_stage(oriented: Mapping[str, float | None]) -> dict[str, Any]:
-    """First running stage whose oriented signal is at most KAPPA times the previous informative stage's (a sign flip counts), given that stage ≥ S_MIN."""
-    q_r0 = oriented.get("R0")
-    if q_r0 is None or q_r0 < S_MIN:
-        return {"stage": "NO_SIGNAL", "previous": None, "q_previous": q_r0, "q_at": None, "transport": None}
-    previous_stage, previous = "R0", q_r0
-    for stage in RUNNING_STAGES[1:]:
-        value = oriented.get(stage)
-        if value is None:
-            continue
-        if previous >= S_MIN and value <= KAPPA * previous:
-            transport = None
-            if stage == "R2":
-                q_t, q_r1 = oriented.get("T"), oriented.get("R1")
-                if q_t is not None and q_r1 is not None:
-                    transport = "HEAD_DROPPED" if q_t <= KAPPA * q_r1 else "OTHER_LAYER3_CANCELLED"
-            return {"stage": stage, "previous": previous_stage, "q_previous": previous, "q_at": value, "transport": transport}
+    """First running stage whose oriented signal is at most KAPPA times the previous informative stage's (a sign flip counts), given that previous stage ≥ S_MIN.
+
+    The rule is applied literally from R0 onward; a frame in which no informative stage before the end ever reaches S_MIN
+    has no signal to trace and is labelled NO_SIGNAL (excluded from the mode over frames).
+    """
+    informative = [(stage, oriented.get(stage)) for stage in RUNNING_STAGES if oriented.get(stage) is not None]
+    if not informative:
+        return {"stage": "NO_SIGNAL", "previous": None, "q_previous": None, "q_at": None, "transport": None}
+    reached = False
+    previous_stage, previous = informative[0]
+    for stage, value in informative[1:]:
+        if previous >= S_MIN:
+            reached = True
+            if value <= KAPPA * previous:
+                transport = None
+                if stage == "R2":
+                    q_t, q_r1 = oriented.get("T"), oriented.get("R1")
+                    if q_t is not None and q_r1 is not None:
+                        transport = "HEAD_DROPPED" if q_t <= KAPPA * q_r1 else "OTHER_LAYER3_CANCELLED"
+                return {"stage": stage, "previous": previous_stage, "q_previous": previous, "q_at": value, "transport": transport}
         previous_stage, previous = stage, value
+    if not reached:
+        return {"stage": "NO_SIGNAL", "previous": None, "q_previous": informative[0][1], "q_at": None, "transport": None}
     return {"stage": "NO_COLLAPSE", "previous": previous_stage, "q_previous": previous, "q_at": None, "transport": None}
 
 
@@ -515,8 +527,12 @@ def token_row(name: str, pool: Pool008, per_frame: Mapping[str, Mapping[str, Any
     per_template = {}
     for template in pm.TEMPLATE_ORDER:
         template_frames = [frame.frame_id for frame in pool.frames_of(template) if frame.frame_id in per_frame]
-        per_template[template] = {"s_R0": _mean_or_none([per_frame[frame]["fractions"]["R0"] for frame in template_frames]), "s_c": _mean_or_none([per_frame[frame]["fractions"]["c"] for frame in template_frames]),
-                                  "dc": _mean_or_none([per_frame[frame]["dc"] for frame in template_frames]), "x_in": _mean_or_none([per_frame[frame]["x_in"] for frame in template_frames])}
+        entry = {key: _mean_or_none([per_frame[frame][key] for frame in template_frames]) for key in ("r_par", "r_perp", "g", "x_in", "x_out", "context_only", "cancellation_index", "dc")}
+        entry["s_R0"] = _mean_or_none([per_frame[frame]["fractions"]["R0"] for frame in template_frames])
+        entry["s_c"] = _mean_or_none([per_frame[frame]["fractions"]["c"] for frame in template_frames])
+        entry["oriented"] = {stage: _mean_or_none([per_frame[frame]["oriented"][stage] for frame in template_frames]) for stage in VECTOR_STAGES + ("c",)}
+        entry["collapse_stage"], entry["collapse_agreement"] = _mode_stage([per_frame[frame]["collapse"]["stage"] for frame in template_frames])
+        per_template[template] = entry
     stage, agreement = _mode_stage([per_frame[frame]["collapse"]["stage"] for frame in frames])
     transports = Counter(per_frame[frame]["collapse"]["transport"] for frame in frames if per_frame[frame]["collapse"]["stage"] == "R2" and per_frame[frame]["collapse"]["transport"])
     s_r0 = fractions["R0"]
@@ -552,34 +568,37 @@ def probe_validity(per_frame_by_token: Mapping[str, Mapping[str, Mapping[str, An
 
 
 def summarize(rows: Sequence[Mapping[str, Any]], probe_valid: bool) -> dict[str, Any]:
-    """The experiment-level summary over the suppressed stratum (mechanical)."""
+    """The experiment-level summary over the suppressed stratum (mechanical; design revision 4 precedence)."""
     suppressed = [row for row in rows if row["stratum"] == "suppressed"]
     out: dict[str, Any] = {"suppressed_tokens": [row["token"] for row in suppressed], "n_suppressed": len(suppressed), "probe_valid": probe_valid}
     if not suppressed:
-        out["label"] = "MIXED"
-        out["note"] = "no token falls in the suppressed stratum"
-        return out
-    if all(row["axis_artifact"] for row in suppressed):
-        out["label"] = "AXIS_ARTIFACT"
+        out["label"] = "NO_SUPPRESSED_TOKENS"
         return out
     carrying = [row for row in suppressed if row["carries_signal"]]
-    stages = Counter(row["collapse_stage"] for row in carrying if row["collapse_stage"])
-    modal_stage, stage_count = (stages.most_common(1)[0] if stages else (None, 0))
+    collapse_stages = Counter(row["collapse_stage"] for row in carrying if row["collapse_stage"] in RUNNING_STAGES[1:])  # NO_COLLAPSE is not a collapse stage
+    modal_stage, stage_count = (collapse_stages.most_common(1)[0] if collapse_stages else (None, 0))
     stage_consensus = bool(carrying) and stage_count >= CONSENSUS * len(carrying)
+    pairs = Counter((row["collapse_stage"], row["encoding_class"]) for row in carrying if row["collapse_stage"] in RUNNING_STAGES[1:] and row["encoding_class"])
+    (modal_pair, pair_count) = (pairs.most_common(1)[0] if pairs else ((None, None), 0))
+    joint_consensus = bool(carrying) and pair_count >= CONSENSUS * len(carrying)
     classes = Counter(row["encoding_class"] for row in carrying if row["encoding_class"])
-    modal_class, class_count = (classes.most_common(1)[0] if classes else (None, 0))
-    class_consensus = bool(carrying) and class_count >= CONSENSUS * len(carrying)
     gated = sum(1 for row in suppressed if row["context_class"] == "CONTEXT_GATED")
-    out.update({"modal_stage": modal_stage, "stage_consensus": stage_consensus, "modal_class": modal_class, "class_consensus": class_consensus, "context_gated": gated})
+    no_collapse = sum(1 for row in carrying if row["collapse_stage"] == "NO_COLLAPSE")
+    out.update({"n_carrying": len(carrying), "modal_stage": modal_stage, "stage_consensus": stage_consensus, "modal_pair": list(modal_pair), "joint_consensus": joint_consensus,
+                "class_counts": dict(classes), "context_gated": gated, "no_collapse": no_collapse})
+    trace_summary = f"LOCALIZED_{modal_stage}" if stage_consensus else "MIXED"
     if not probe_valid:
         out["label"] = "PROBE_INVALID"
-        out["trace_summary"] = f"LOCALIZED_{modal_stage}" if stage_consensus else "MIXED"
-    elif stage_consensus and class_consensus:
-        out["label"] = f"LOCALIZED_{modal_stage}_{modal_class}"
+        out["trace_summary"] = trace_summary
+    elif all(row["axis_artifact"] for row in suppressed):
+        out["label"] = "AXIS_ARTIFACT"
+    elif joint_consensus:
+        out["label"] = f"LOCALIZED_{modal_pair[0]}_{modal_pair[1]}"
     elif gated >= CONSENSUS * len(suppressed) and not stage_consensus:
         out["label"] = "CONTEXT_LOCALIZED"
     else:
         out["label"] = "MIXED"
+        out["trace_summary"] = trace_summary
     return out
 
 
@@ -597,7 +616,12 @@ def load_program_007(root: Path, *, parameters_dir: Path | None = None) -> tuple
     digest = pm.sha256_text(index_path.read_text(encoding="utf-8"))
     if digest != lock["parameters"]["selected"]:
         raise PhaseError("the Experiment 007 selected program on disk does not match the committed 007 lock")
-    program = ss.load_linear_program(directory, Path(root) / PROGRAM_007_SOURCE)
+    source_path = Path(root) / PROGRAM_007_SOURCE
+    if pm.sha256_text(source_path.read_text(encoding="utf-8")) != lock["program_source_sha256"]:
+        raise PhaseError("the Experiment 007 program source differs from the committed 007 lock")
+    program = ss.load_linear_program(directory, source_path)
+    if program.kind != ss.KIND_SUPERVISED or program.rank != 1 or program.basis is None:
+        raise PhaseError("the Experiment 007 selected program is not the rank-1 supervised subspace program")
     return program, {"parameters_sha256": digest, "lock_sha256": lock["content_sha256"], "rank": program.rank, "kind": program.kind}
 
 
@@ -609,18 +633,29 @@ def program_prediction(program: Any, frame: pm.Frame, token_id: int, nouns: Sequ
 # Exploration orchestration and the report.
 
 
+def cosine_with_005_axis(e_axis: pm.SiteAxis, path: Path | None) -> float | None:
+    """Informational: the cosine of the eighteen-frame E axis with Experiment 005's frozen E axis, when its tensor is available locally."""
+    if path is None or not Path(path).exists():
+        return None
+    tensor = torch.load(Path(path), map_location="cpu", weights_only=True)
+    return pm.cosine(e_axis.direction, tensor.reshape(-1))
+
+
 def run_exploration(model: Any, pool: Pool008, *, state: dict[str, Any], results_path: Path | None, program: Any, program_record: Mapping[str, Any],
-                    inherited_006: Mapping[str, Any], inherited_007: Mapping[str, Any], log: Any = None) -> dict[str, Any]:
+                    inherited_006: Mapping[str, Any], inherited_007: Mapping[str, Any], e005_axis_path: Path | None = None, log: Any = None) -> dict[str, Any]:
     say = log or (lambda message: None)
     weights = pm.Weights.from_model(model)
     cache = pm.PromptCache(model, tuple(pool.nouns))
     say("stage axes from the eighteen frames' clean cue pairs")
     axes = stage_axes(cache, weights, pool)
     e_axis = axes["R0"]
+    if getattr(program, "basis", None) is None or program.basis.shape[1] < 1:
+        raise PhaseError("the anomaly-score program has no basis direction")
     u1 = program.basis[:, 0].double()
     exploration = state["exploration"]
     exploration["axes"] = {stage: {"sigma": axis.sigma, "cos_with_E_axis": pm.cosine(axis.direction, e_axis.direction)} for stage, axis in axes.items()}
     exploration["axes"]["R0"]["cos_with_u1"] = pm.cosine(e_axis.direction, u1)
+    exploration["axes"]["R0"]["cos_with_experiment_005_axis"] = cosine_with_005_axis(e_axis, e005_axis_path)
     exploration["program_007"] = dict(program_record)
     say("measurements: 40 tokens × 18 frames (trace, component, context, direct effects)")
     records = measure_pool(model, weights, cache, pool, e_axis, log=say)

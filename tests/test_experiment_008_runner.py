@@ -111,7 +111,7 @@ def test_validate_and_the_single_discovery_run(sandbox, monkeypatch):
     assert exploration["replication"]["experiment_006"]["passed"] and exploration["replication"]["experiment_006"]["max_abs_deviation"] == 0.0
     assert exploration["replication"]["experiment_007"]["passed"] and exploration["replication"]["experiment_007"]["max_abs_deviation"] == 0.0
     assert len(exploration["tokens"]) == 40 and all(len(frames) == 18 for frames in exploration["per_frame"].values())
-    assert exploration["summary"]["label"] == "AXIS_ARTIFACT" or exploration["summary"]["label"].startswith(("LOCALIZED_", "MIXED", "CONTEXT_LOCALIZED", "PROBE_INVALID"))
+    assert exploration["summary"]["label"].startswith(cs.SUMMARY_LABELS)
     assert exploration["identity"]["max_error"] <= cs.IDENTITY_TOLERANCE
     for row in exploration["tokens"].values():
         assert row["stratum"] in ("suppressed", "amplified", "ordinary") and set(row["fractions"]) == set(cs.VECTOR_STAGES) | {"c"}
