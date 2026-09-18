@@ -69,3 +69,32 @@ uv run python experiments/005-regular-plural-mechanism/run.py report
   `max_model_gap` with a 1e-2 tolerance.
 - Generated outputs live under `outputs/experiment-005/` and are not committed; evidence copies of the final
   reports go under `evidence/` with the claim.
+
+## Status — 2026-09-18: Tier A executed once; selection stopped at the program floor
+
+`discover` ran on protocol/code commit `83d1ae4` (attempt 2; attempt 1 stopped in A1 on the instrumented-path
+numerics documented above, before any conclusion). Run `050405f9f4f7e629`, results state sha256
+`d5977a11954f5ee95e07418191d599cb114018679198e9978d8964910f47795b`; the rendered report is copied verbatim to
+[`evidence/discovery-report-2026-09-18.md`](evidence/discovery-report-2026-09-18.md). A0 passed; A1 matched the
+screen per case to 0.0 and the report aggregates within tolerance.
+
+Exploratory findings (development data only, no claim):
+
+- Hypothesis tree: `H1` (dedicated transport), unambiguous: `L03.H04` alone recovers 0.816 of the coordinated
+  shift; freezing it blocks 0.865 of a counterfactual residual patch at the cue position; the E-alone patch
+  reproduces 0.90 of the head's number change and 0.99 of the readout MLPs' change. The cue information at the
+  cue position is consumed at layer 3 (residual profile 0.956 at the layer-3 input, 0.125 at the layer-4 input).
+- Encoding: `L00.MLP` carries 0.535 of the transport-input axis, the raw embedding 0.009.
+- Circuit: with E = `L00.MLP` at the cue position, T = `L03.H04`, R = {`L04.MLP`, `L05.MLP`} (k = 3), the
+  counterfactual set recovers 0.982 overall (every template and rule class ≥ 0.975) and the isolation test
+  retains 0.783 of the shift (0.927 / 0.760 / 0.664 by template) with the correct sign in 80/120 cases.
+- Program (token-local `E_program` = `L00.MLP`, k_T = 0.962): every development pair sign is reproduced, but
+  the per-template mean is under-predicted by 0.43 (cardinal), 0.86 (coordinated), and 1.44 nats (quantifier);
+  the quantifier gap exceeds the 1.0-nat Tier A program floor at every k ≤ 6, so version M1 is `rejected` and the
+  recorded outcome is `NO_COMPACT_MECHANISM`. The shortfall is the cue-dependent shift carried by components
+  outside S_M (which recompute under patching but are not part of the program's additive increment) plus the
+  lexicon's asymmetric `several` value (n_c = 0.873).
+
+No calibration, lock, or confirmation has run; reserve nouns and extension prompts remain unexecuted. Whether
+protocol v1 ends here or the design is amended (a version whose circuit floors pass but whose program misses a
+template mean would proceed with the decompilation axis capped) is a design decision recorded separately.
