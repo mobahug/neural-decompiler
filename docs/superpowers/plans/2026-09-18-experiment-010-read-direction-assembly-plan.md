@@ -6,12 +6,12 @@
 
 **Architecture:** One module `read_assembly.py` reusing `head_transport.py` (`HeadWeights`, `ov_levels` for the P1 cross-check, results-state and incident patterns), `cue_suppression.py` (`Pool008` dataclass, `stage_axes`, `_sites`, `_ratio`, replication), `supervised_subspace.py` / `cue_decompilation.py` (extract loaders, `_token_vectors`), and `plural_mechanism.py`; a committed extract of Experiment 009's confirmation E-patch means; a runner with phases `validate`, `explore`, `report`.
 
-**Spec:** `docs/superpowers/specs/2026-09-18-experiment-010-read-direction-assembly-design.md` (revision 2). The spec wins over this plan.
+**Spec:** `docs/superpowers/specs/2026-09-18-experiment-010-read-direction-assembly-design.md` (revision 3). The spec wins over this plan.
 
 ## Global constraints
 
 - Pinned model and runtime; seeds `20260916` / `20260923`. Pool: the forty tokens and eighteen frames of Experiment 008 plus the twenty-three tokens and six frames of Experiment 009's confirmation set (63 × 24); the eighty nouns. Nothing outside the pool is executed; the ledger records every prompt and noun.
-- Exact identities checked in every run (incidents otherwise): `Δ_{R0} = ΔE` (1e-4); `ρ_f(Δr_c) = ρ_f(ΔE) + Σ_k ρ_f(Δout_k)` (1e-4 relative to the plural cue's measured head change); `f_total` equals the P1 fraction computed by `ht.ov_levels` (1e-6); `Σ_j c_j = ρ_f(ΔE)` (1e-6 relative); the head-result reconstruction (1e-3 relative).
+- Exact identities checked in every run (incidents otherwise): `Δ_{R0} = ΔE` (1e-4); `ρ_f(Δr_c) = ρ_f(ΔE) + Σ_k ρ_f(Δout_k)` (1e-4 relative to the plural cue's measured head change); `f_total` equals the P1 fraction computed by `ht.ov_levels` (1e-6); `Σ_j c_j = ρ_f(ΔE)` (1e-4 of the functional's natural scale); the head-result reconstruction (1e-3 relative).
 - Replication: E-patch mean shifts must match Experiment 006 (192 pairs, 59 exposed nouns), Experiment 007 (144 pairs, 20 confirmation nouns), and Experiment 009 (138 pairs, 79 nouns) within 1e-6.
 - Every constant (`s_min 0.35`, `s_high 0.65`, `c_min 0.10`, `g_max 0.25`, consensus `0.75`, `n_80 ≤ 40`, uninformative floor `0.25 σ_T`, top-20) is a named constant tested against the spec.
 

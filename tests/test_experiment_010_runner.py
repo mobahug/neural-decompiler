@@ -114,7 +114,10 @@ def test_single_attribution_run_on_the_fake(sandbox, monkeypatch):
     assert exploration["summary"]["label"].split("+")[0] in ra.SUMMARY_LABELS
     row = exploration["tokens"]["this"]
     assert row["class"] in ra.TOKEN_CLASSES and set(row["means"]["f_k"]) == set(ra.COMPONENT_ORDER) and set(row["neurons"]) == set(pm.TEMPLATE_ORDER)
-    assert set(exploration["strata"]) == {"low", "mid", "high", "uninformative"} and set(exploration["components"]) == {"low", "high"}
+    assert set(exploration["strata"]) == {"low", "mid", "high", "uninformative", "reference"} and set(exploration["components"]) == {"low", "high"}
+    assert set(exploration["strata"]["reference"]) == {"cardinal:sg", "quantifier:sg"} and exploration["tokens"]["cardinal:sg"]["n_informative"] == 8 and exploration["tokens"]["quantifier:sg"]["n_informative"] == 16
+    assert "cardinal:sg" not in exploration["strata"]["low"] and exploration["tokens"]["cardinal:sg"]["neurons"]["cardinal"]["n_80"] is None
+    assert all(frame_id not in {f for f in exploration["per_frame"]["cardinal:sg"] if exploration["per_frame"]["cardinal:sg"][f] is not None} for frame_id in exploration["per_frame"]["cardinal:sg"] if frame_id.startswith(("cardinal", "coordinated")))
     # Ledger: exactly the clean cue prompts and the reference prompts of the 24 frames; all 80 nouns.
     expected_prompts = 24 * 3
     assert len(state["executed_prompt_keys"]) == expected_prompts and len(state["executed_noun_keys"]) == 80

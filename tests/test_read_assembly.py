@@ -46,7 +46,7 @@ def test_neuron_concentration_is_deterministic_and_on_absolute_mass():
     out = ra.neuron_concentration(terms)
     assert out["n_80"] == 2 and out["positive_mass"] == pytest.approx(0.6) and out["negative_mass"] == pytest.approx(-0.6)
     assert [entry["neuron"] for entry in out["top"]] == [0, 1, 2, 3, 4, 5]  # ties broken by index
-    assert ra.neuron_concentration(torch.zeros(4, dtype=torch.float64))["n_80"] == 4
+    assert ra.neuron_concentration(torch.zeros(4, dtype=torch.float64))["n_80"] is None  # undefined on zero mass
     assert ra.jaccard([1, 2, 3], [2, 3, 4]) == pytest.approx(0.5) and ra.jaccard([], []) == 0.0
 
 
@@ -70,16 +70,19 @@ def test_consistent_components_and_summary():
 
 
 def test_fractions_and_predictor_check():
-    plural = ra.Attribution("pl", 1, "f", "cardinal", 1.0, 1.0, 0.0, {k: 0.0 for k in ra.COMPONENT_ORDER}, 1.0, 0.0, 0.0, 2.0, {}, {}, 0.0, 4.0, torch.zeros(2, dtype=torch.float64))
+    plural = ra.Attribution("pl", 1, "f", "cardinal", 1.0, 1.0, 0.0, {k: 0.0 for k in ra.COMPONENT_ORDER}, 1.0, 0.0, 0.0, False, 2.0, {}, {}, 0.0, 4.0, torch.zeros(2, dtype=torch.float64))
     components = {k: 0.0 for k in ra.COMPONENT_ORDER}
     components["L01.H03"], components["L02.MLP"] = 0.8, -0.9
-    record = ra.Attribution("w", 2, "f", "cardinal", 0.5, 0.7, -0.2, components, 0.4, 0.0, 0.0, 0.3, {}, {}, 0.0, 1.0, torch.zeros(2, dtype=torch.float64))
+    record = ra.Attribution("w", 2, "f", "cardinal", 0.5, 0.7, -0.2, components, 0.4, 0.0, 0.0, False, 0.3, {}, {}, 0.0, 1.0, torch.zeros(2, dtype=torch.float64))
     axis = pm.SiteAxis("T", torch.zeros(1), torch.ones(1), 1.0)
     out = ra.fractions(record, plural, axis, plural.g_E_inner)
     assert out["f_E"] == pytest.approx(0.25) and out["f_total"] == pytest.approx(0.2) and out["q_T"] == pytest.approx(0.15) and out["g_E"] == pytest.approx(0.25)
     assert out["f_L1"] == pytest.approx(0.4) and out["f_L2"] == pytest.approx(-0.45) and out["f_layers"] == pytest.approx(-0.05)
     assert out["G"] == pytest.approx(0.85) and out["D"] == pytest.approx(0.4)  # net small, gross and cumulative large
-    assert ra.fractions(record, ra.Attribution("pl", 1, "f", "cardinal", 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, 0.1, {}, {}, 0.0, 0.0, torch.zeros(2, dtype=torch.float64)), axis, 0.0) is None
+    assert ra.fractions(record, ra.Attribution("pl", 1, "f", "cardinal", 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, False, 0.1, {}, {}, 0.0, 0.0, torch.zeros(2, dtype=torch.float64)), axis, 0.0) is None
+    own = ra.Attribution("ref", 3, "f", "cardinal", 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, True, 0.0, {}, {}, 0.0, 0.0, torch.zeros(2, dtype=torch.float64))
+    assert ra.fractions(own, plural, axis, plural.g_E_inner) is None  # own-reference frames are uninformative for the token
+    assert set(out["raw"]) >= {"rho_E", "rho_total", "rho_components", "head_change", "denominator_measured", "denominator_rho_plural", "identity_error"}
     rows = {f"t{i}": {"means": {"f_E": v, "g_E": v * 0.5, "f_total": v, "q_T": v}} for i, v in enumerate([0.1, 0.4, 0.9, 0.7])}
     check = ra.predictor_check(rows)
     assert check["f_E"]["spearman"] == pytest.approx(1.0) and check["f_E"]["mae"] == 0.0 and check["g_E"]["n"] == 4
@@ -124,7 +127,9 @@ def test_read_functional_matches_p1_and_the_neuron_split_on_the_fake(fake_settin
             assert record.neuron_sum_error <= ra.NEURON_SUM_TOLERANCE  # Σ_j c_j = ρ(ΔE)
             assert record.rho_E == pytest.approx(record.rho_par + record.rho_perp, abs=1e-9)
             if token_id == small.reference_ids[frame.template_id]:
-                assert record.rho_total == 0.0 and all(value == 0.0 for value in record.rho_components.values())
+                assert record.own_reference and record.rho_total == 0.0 and all(value == 0.0 for value in record.rho_components.values())
+            else:
+                assert not record.own_reference
         # The functional applied to every neuron row reproduces ρ of the encoding change exactly (weight-only path).
         terms = ra.neuron_terms(weights, functional, small.tokens[1][1], ref.reference.cue_token_id)
         delta_e = pm.lexicon_vector(weights, small.tokens[1][1]).double() - pm.lexicon_vector(weights, ref.reference.cue_token_id).double()

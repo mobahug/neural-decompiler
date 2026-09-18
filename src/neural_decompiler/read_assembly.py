@@ -237,12 +237,14 @@ def neuron_terms(weights: pm.Weights, functional: ReadFunctional, token_id: int,
 def neuron_concentration(terms: torch.Tensor) -> dict[str, Any]:
     """n_80 on absolute attribution mass (sorted |c_j| descending, ties by index ascending), positive and negative masses."""
     magnitude = terms.abs()
-    order = sorted(range(terms.numel()), key=lambda j: (-float(magnitude[j]), j))
     total = float(magnitude.sum())
+    if total <= 0.0:
+        return {"n_80": None, "positive_mass": 0.0, "negative_mass": 0.0, "total_abs_mass": 0.0, "top": []}
+    order = sorted(range(terms.numel()), key=lambda j: (-float(magnitude[j]), j))
     running, n_80 = 0.0, terms.numel()
     for count, j in enumerate(order, start=1):
         running += float(magnitude[j])
-        if total > 0 and running >= NEURON_MASS_FRACTION * total - 1e-12:
+        if running >= NEURON_MASS_FRACTION * total - 1e-12:
             n_80 = count
             break
     return {"n_80": n_80, "positive_mass": float(terms[terms > 0].sum()), "negative_mass": float(terms[terms < 0].sum()), "total_abs_mass": total,
@@ -271,6 +273,7 @@ class Attribution:
     rho_total: float  # ρ_f(Δr_c)
     identity_error: float
     p1_cross_check: float  # |ρ_f(Δr_c) − ⟨ΔT₁, d̂_T⟩| from ht.ov_levels
+    own_reference: bool  # the token is the frame's reference cue: the E-patch is the identity and the frame is uninformative for it
     head_change: float  # ⟨ΔT_measured, d̂_T⟩
     shifts: dict[str, float]  # per single-token noun E-patch contrast shift
     neuron: dict[str, Any]
@@ -285,7 +288,7 @@ def _component_sites(frame: pm.Frame) -> list[pm.Site]:
 
 def _capture_sites(model: Any, frame: pm.Frame) -> list[pm.Site]:
     sites = cs._sites(model, frame)
-    return [sites["R0"], sites["R1"], sites["T"], sites["A"]] + _component_sites(frame) + [(f"RESID_PRE.L{ht.HEAD_LAYER}", k) for k in range(frame.p_t + 1)]
+    return [sites["R0"], sites["R1"], sites["T"], sites["A"], sites["R3"]] + _component_sites(frame) + [(f"RESID_PRE.L{ht.HEAD_LAYER}", k) for k in range(frame.p_t + 1)]
 
 
 def capture_reference(model: Any, head: ht.HeadWeights, reference: pm.Prompt, nouns: Sequence[pm.Noun]) -> tuple[ht.FrameReference, dict[str, torch.Tensor]]:
@@ -314,11 +317,11 @@ def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref
     parallel = (delta_e @ direction) * direction
     terms = neuron_terms(weights, functional, token_id, ref.reference.cue_token_id)
     rho_E = functional(delta_e)
-    neuron_sum_error = abs(float(terms.sum()) - rho_E) / max(abs(rho_E), 1e-12)
+    natural_scale = functional.scale * float(functional.weight.norm()) * max(float(e_w.norm()), float(e_ref.norm()), 1e-12)
+    neuron_sum_error = abs(float(terms.sum()) - rho_E) / natural_scale
     if token_id == ref.reference.cue_token_id:
         components = {key: 0.0 for key in COMPONENT_ORDER}
-        ov = ht.ov_levels(head, p_c=frame.p_c, attention_ref=ref.attention, attention_patch=ref.attention, residuals_ref=ref.residuals, residuals_patch=ref.residuals, delta_head=torch.zeros_like(ref.head))
-        return Attribution(name, token_id, frame.frame_id, frame.template_id, 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, 0.0, {noun.lexical_key: 0.0 for noun in nouns if noun.single_token},
+        return Attribution(name, token_id, frame.frame_id, frame.template_id, 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, True, 0.0, {noun.lexical_key: 0.0 for noun in nouns if noun.single_token},
                            neuron_concentration(torch.zeros_like(terms)), 0.0, 0.0, torch.zeros_like(terms))
     e_site = ("L00.MLP", frame.p_c)
     run = pm.run_patched(model, ref.reference, {e_site: e_w.reshape(1, 1, -1).to(torch.float32)}, {e_site: ReplacementSource.RESAMPLE}, capture_sites=_capture_sites(model, frame))
@@ -337,7 +340,7 @@ def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref
     p1_cross = abs(rho_total - float(ov["delta_T1"] @ axis_T.direction.double()))
     c_patched = pm.contrasts(run.logits, nouns)
     shifts = {noun.lexical_key: c_patched[noun.lexical_key] - ref.c_by_noun[noun.lexical_key] for noun in nouns if noun.single_token}
-    return Attribution(name, token_id, frame.frame_id, frame.template_id, rho_E, functional(parallel), functional(delta_e - parallel), components, rho_total, identity_error, p1_cross,
+    return Attribution(name, token_id, frame.frame_id, frame.template_id, rho_E, functional(parallel), functional(delta_e - parallel), components, rho_total, identity_error, p1_cross, False,
                        float(delta_head @ axis_T.direction.double()), shifts, neuron_concentration(terms), neuron_sum_error, functional.inner(delta_e), terms)
 
 
@@ -346,9 +349,9 @@ def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref
 
 
 def fractions(record: Attribution, plural: Attribution, axis_T: pm.SiteAxis, plural_inner_E: float) -> dict[str, Any] | None:
-    """Normalized by the plural cue's measured head-output change in the frame; None if the frame is uninformative."""
+    """Normalized by the plural cue's measured head-output change in the frame; None if the frame is uninformative for the token."""
     denominator = plural.head_change
-    if abs(denominator) < cs.STAGE_UNINFORMATIVE_FLOOR * axis_T.sigma:
+    if record.own_reference or abs(denominator) < cs.STAGE_UNINFORMATIVE_FLOOR * axis_T.sigma:
         return None
     f_k = {key: record.rho_components[key] / denominator for key in COMPONENT_ORDER}
     cumulative, running = [], 0.0
@@ -363,6 +366,9 @@ def fractions(record: Attribution, plural: Attribution, axis_T: pm.SiteAxis, plu
     out["D"] = max(abs(value) for value in cumulative)
     out["cumulative"] = cumulative
     out["g_E"] = record.g_E_inner / plural_inner_E if abs(plural_inner_E) > 1e-12 else None
+    out["raw"] = {"rho_E": record.rho_E, "rho_par": record.rho_par, "rho_perp": record.rho_perp, "rho_components": dict(record.rho_components), "rho_total": record.rho_total,
+                  "head_change": record.head_change, "denominator_measured": denominator, "denominator_rho_plural": plural.rho_total,
+                  "identity_error": record.identity_error, "p1_cross_check": record.p1_cross_check, "neuron_sum_error": record.neuron_sum_error}
     return out
 
 
@@ -495,7 +501,7 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
     worst_identity = worst_p1 = worst_neuron = 0.0
     for frame in pool.frames:
         plural = records[(pool.plural_cue[frame.template_id], frame.frame_id)]
-        scale = max(abs(plural.head_change), 1e-12)
+        scale = max(abs(plural.rho_total), 1e-12)  # the plural cue's ρ_f(Δr_c) in the frame
         for name, _ in pool.tokens:
             record = records[(name, frame.frame_id)]
             worst_identity = max(worst_identity, record.identity_error / scale)
@@ -506,7 +512,7 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
             if record.p1_cross_check / scale > P1_CROSS_CHECK_TOLERANCE:
                 raise pm.IncidentError(f"{frame.frame_id}/{name}: ρ(Δr_c) does not equal Experiment 009's P1 prediction (relative error {record.p1_cross_check / scale:.2e})")
             if record.neuron_sum_error > NEURON_SUM_TOLERANCE:
-                raise pm.IncidentError(f"{frame.frame_id}/{name}: the neuron terms do not sum to ρ(ΔE) (relative error {record.neuron_sum_error:.2e})")
+                raise pm.IncidentError(f"{frame.frame_id}/{name}: the neuron terms do not sum to ρ(ΔE) (error {record.neuron_sum_error:.2e} of the functional's natural scale)")
             per_frame[name][frame.frame_id] = fractions(record, plural, axis_T, plural.g_E_inner)
     exploration["identities"] = {"max_rho_identity_error": worst_identity, "max_p1_cross_check": worst_p1, "max_neuron_sum_error": worst_neuron}
     # Token rows.
@@ -521,16 +527,20 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
             template_frames = [analysis for frame in pool.frames_of(template) for analysis in [informative.get(frame.frame_id)] if analysis is not None]
             per_template[template] = {key: cs._mean_or_none([analysis[key] for analysis in template_frames]) for key in keys}
             per_template[template]["f_k"] = {key: cs._mean_or_none([analysis["f_k"][key] for analysis in template_frames]) for key in COMPONENT_ORDER}
-        # Neurons: one deterministic concentration and top-20 per token and template, computed on the template-mean terms.
+        # Neurons: one deterministic concentration and top-20 per token and template, computed on the template-mean terms over the token's informative frames.
         neurons = {}
         for template in pool.plural_cue:
-            frames = [frame.frame_id for frame in pool.frames_of(template)]
+            frames = [frame.frame_id for frame in pool.frames_of(template) if frame.frame_id in informative]
+            if not frames:
+                neurons[template] = {"n_80": None, "positive_mass": None, "negative_mass": None, "total_abs_mass": 0.0, "top": [], "n_80_frame_mean": None}
+                continue
             mean_terms = torch.stack([records[(name, frame_id)].terms for frame_id in frames]).mean(dim=0)
             concentration = neuron_concentration(mean_terms)
-            concentration["n_80_frame_mean"] = pm._mean([records[(name, frame_id)].neuron["n_80"] for frame_id in frames])
+            concentration["n_80_frame_mean"] = cs._mean_or_none([records[(name, frame_id)].neuron["n_80"] for frame_id in frames])
             neurons[template] = concentration
-        rows[name] = {"token": name, "token_id": token_id, "category": pool.token_category[name], "source": pool.token_source[name], "n_informative": len(informative),
-                      "means": means, "per_template": per_template, "class": classify_token(means), "stratum": stratum(means["q_T"]), "neurons": neurons}
+        is_reference = token_id in set(pool.reference_ids.values())
+        rows[name] = {"token": name, "token_id": token_id, "category": pool.token_category[name], "source": pool.token_source[name], "n_informative": len(informative), "reference_cue": is_reference,
+                      "means": means, "per_template": per_template, "class": classify_token(means), "stratum": ("reference" if is_reference else stratum(means["q_T"])), "neurons": neurons}
     low_tokens = [name for name, row in rows.items() if row["stratum"] == "low"]
     high_tokens = [name for name, row in rows.items() if row["stratum"] == "high"]
     low_components = consistent_components(per_frame, low_tokens)
@@ -539,12 +549,19 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
     overlap = {}
     for template, plural_name in pool.plural_cue.items():
         plural_top = [entry["neuron"] for entry in rows[plural_name]["neurons"][template]["top"]]
-        overlap[template] = {"low": cs._mean_or_none([jaccard(plural_top, [e["neuron"] for e in rows[name]["neurons"][template]["top"]]) for name in low_tokens if name != plural_name]),
-                             "high": cs._mean_or_none([jaccard(plural_top, [e["neuron"] for e in rows[name]["neurons"][template]["top"]]) for name in high_tokens if name != plural_name])}
-    concentrated = all(rows[name]["neurons"][template]["n_80"] <= N80_CONCENTRATED for template, plural_name in pool.plural_cue.items() for name in [plural_name] + low_tokens)
+        overlap[template] = {"low": cs._mean_or_none([jaccard(plural_top, [e["neuron"] for e in rows[name]["neurons"][template]["top"]]) for name in low_tokens if name != plural_name and rows[name]["neurons"][template]["top"]]),
+                             "high": cs._mean_or_none([jaccard(plural_top, [e["neuron"] for e in rows[name]["neurons"][template]["top"]]) for name in high_tokens if name != plural_name and rows[name]["neurons"][template]["top"]])}
+
+    def concentrated_value(name: str, template: str) -> bool:
+        value = rows[name]["neurons"][template]["n_80"]
+        return value is not None and value <= N80_CONCENTRATED
+
+    # Each plural cue in its own template(s); every low-stratum token in every template.
+    concentrated = all(concentrated_value(plural_name, template) for template, plural_name in pool.plural_cue.items()) and all(concentrated_value(name, template) for name in low_tokens for template in pool.plural_cue)
     exploration["tokens"] = rows
     exploration["per_frame"] = per_frame
-    exploration["strata"] = {"low": low_tokens, "mid": [name for name, row in rows.items() if row["stratum"] == "mid"], "high": high_tokens, "uninformative": [name for name, row in rows.items() if row["stratum"] == "uninformative"]}
+    exploration["strata"] = {"low": low_tokens, "mid": [name for name, row in rows.items() if row["stratum"] == "mid"], "high": high_tokens,
+                             "uninformative": [name for name, row in rows.items() if row["stratum"] == "uninformative"], "reference": [name for name, row in rows.items() if row["stratum"] == "reference"]}
     exploration["components"] = {"low": low_components, "high": high_components}
     exploration["neuron_overlap"] = overlap
     exploration["predictor_check"] = predictor_check(rows)

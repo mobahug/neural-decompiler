@@ -38,9 +38,10 @@ uv run python experiments/010-read-direction-assembly/run.py report
 
 Boundaries: every phase refuses to run out of order or twice; identity, replication, and software failures are
 incidents recorded with their commit and block another `explore` at that commit; the ledger records every executed
-prompt (the 24 frames' cue and reference prompts) and noun. Implementation tolerances beyond the design: the
-neuron-sum identity is checked at `1e-4` relative (ΔE is a float32 quantity; the terms accumulate in float64) and the
-ρ identity at `1e-4` relative to the plural cue's head change (float32 residual-sum rounding); the P1 cross-check at
-`1e-6`. `g_E` is weight-only apart from the frozen axis `d̂_T`.
+prompt (the 24 frames' cue and reference prompts) and noun. Design revision 3 (pre-measurement): a token's
+own-reference frames are uninformative for it, the two reference cues are reported but excluded from the strata,
+consensus, overlap, and concentration flag, `n_80` is undefined on zero mass, token-level `G`/`D` are means of
+per-frame values, and the neuron-sum identity is normalized by the functional's natural scale. `g_E` is weight-only
+apart from the frozen axis `d̂_T`.
 
 ## Status — 2026-09-18: implemented; the single run has not happened yet
