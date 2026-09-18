@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime as _datetime
 import hashlib
 import json
+import math
 import os
 import re
 from dataclasses import dataclass, field
@@ -1768,3 +1769,448 @@ def a9_isolation(ctx: DiscoveryContext, keep: Sequence[RoleSite]) -> dict[str, A
         retention["total"] += kept_signs["total"]
     summary = stratified_recovery(rows)
     return {"faithfulness": summary, "sign_retention": retention, "keep": [list(site) for site in keep]}
+
+
+# ---------------------------------------------------------------------------
+# A10/A11: hypothesis tree, encoding branch, set selection, program parameters, statement.
+
+HYPOTHESIS_ROWS = ("H1", "H2", "H3")
+PROGRAM_ELIGIBLE_KEYS = ("EMBED", "L00.MLP")
+MAX_COMPONENTS_AT_P_T = 6
+MAX_COMPONENTS_AT_P_C = 2
+MAX_MECHANISM_VERSIONS = 3
+TIER_A_RECOVERY_FLOOR_OVERALL = 0.70
+TIER_A_RECOVERY_FLOOR_STRATUM = 0.60
+TIER_A_ISOLATION_FLOOR = 0.50
+PROGRAM_TEMPLATE_MEAN_TOLERANCE = 1.0
+
+
+def hypothesis_tree(q1: float, q2: float, q3: float, q4: float, q5: float) -> tuple[str, bool]:
+    """The design's decision tree; returns (row, ambiguity flag)."""
+    for name, value in (("q1", q1), ("q2", q2), ("q3", q3), ("q4", q4), ("q5", q5)):
+        if value is None or not math.isfinite(value):
+            raise IncidentError(f"hypothesis quantity {name} is not finite")
+    if q3 < 0.50 and q4 >= 0.70:
+        return "H3", False
+    if q1 >= 0.50 and q2 >= 0.50:
+        return "H1", q3 < 0.50
+    if q5 >= 0.70:
+        return "H2", q3 < 0.50
+    return "H2", True
+
+
+def program_eligible(key: str) -> bool:
+    return key in PROGRAM_ELIGIBLE_KEYS
+
+
+def encoding_branch(decomposition: Mapping[str, Any], *, budget: int = MAX_COMPONENTS_AT_P_C) -> dict[str, Any]:
+    """Apply the predeclared encoding rule to the p_c decomposition at the transport layer's input."""
+    entries = dict(decomposition["entries"])
+    total = float(decomposition["axis_norm"])
+    e_keys = ["L00.MLP"]
+    e_share = entries.get("L00.MLP", 0.0) / total
+    embedding_share = entries["EMBED"] / total
+    if e_share >= 0.5:
+        return {"branch": "L00.MLP", "e_keys": e_keys, "e_share": e_share, "embedding_share": embedding_share, "flag": None}
+    if embedding_share > 0.5:
+        return {"branch": "EMBED", "e_keys": ["EMBED"], "e_share": embedding_share, "embedding_share": embedding_share, "flag": None}
+    others = sorted((key for key in entries if key not in {"EMBED", "L00.MLP"}), key=lambda key: -entries[key])
+    for key in others:
+        if len(e_keys) >= budget:
+            break
+        e_keys.append(key)
+        e_share += entries[key] / total
+        if e_share >= 0.5:
+            break
+    flag = None if e_share >= 0.5 else "ENCODING_SHARE_BELOW_HALF"
+    return {"branch": "L00.MLP", "e_keys": e_keys, "e_share": e_share, "embedding_share": embedding_share, "flag": flag}
+
+
+@dataclass(frozen=True)
+class MechanismSet:
+    """S_M with roles: E at p_c, T heads and R MLPs at p_t (E sits at p_t in cue-final frames)."""
+
+    branch: str
+    e_keys: tuple[str, ...]
+    t_keys: tuple[str, ...]
+    r_keys: tuple[str, ...]
+
+    @property
+    def p_t_keys(self) -> tuple[str, ...]:
+        return tuple(self.t_keys) + tuple(self.r_keys)
+
+    @property
+    def l_r(self) -> int | None:
+        return min((key_layer(key) for key in self.r_keys), default=None)
+
+    @property
+    def l_t(self) -> int | None:
+        return min((key_layer(key) for key in self.t_keys), default=None)
+
+    def role_sites(self, *, include_e: bool = True) -> tuple[RoleSite, ...]:
+        sites: list[RoleSite] = []
+        if include_e and self.branch != "EMBED":
+            sites.extend((key, "p_c") for key in self.e_keys)
+        sites.extend((key, "p_t") for key in self.p_t_keys)
+        return tuple(sites)
+
+    def p_t_sites_for(self, frame: Frame) -> tuple[Site, ...]:
+        keys = list(self.p_t_keys)
+        if frame.p_c == frame.p_t and self.branch != "EMBED":
+            keys = list(self.e_keys) + keys
+        return tuple((key, frame.p_t) for key in dict.fromkeys(keys))
+
+    @property
+    def e_program_keys(self) -> tuple[str, ...]:
+        return tuple(key for key in self.e_keys if program_eligible(key))
+
+    @property
+    def contextual_e_keys(self) -> tuple[str, ...]:
+        return tuple(key for key in self.e_keys if not program_eligible(key))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"branch": self.branch, "e_keys": list(self.e_keys), "t_keys": list(self.t_keys), "r_keys": list(self.r_keys),
+                "l_r": self.l_r, "l_t": self.l_t, "e_program_keys": list(self.e_program_keys), "contextual_e_keys": list(self.contextual_e_keys)}
+
+
+def set_recovery(ctx: DiscoveryContext, mechanism: MechanismSet) -> dict[str, Any]:
+    rows: list[CaseRow] = []
+    for frame in ctx.frames:
+        sites = mechanism.role_sites()
+        if frame.p_c == frame.p_t:
+            sites = tuple(dict.fromkeys((key, "p_t") for key, _ in sites))
+        frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, sites)
+        rows.extend(frame_rows)
+    return stratified_recovery(rows)
+
+
+def recovery_floors_pass(summary: Mapping[str, Any], *, overall: float, stratum: float) -> tuple[bool, list[str]]:
+    failures = []
+    if summary["overall"]["recovery"] is None or summary["overall"]["recovery"] < overall:
+        failures.append("overall")
+    for group in ("templates", "rule_classes"):
+        for name, entry in summary[group].items():
+            if entry["recovery"] is None or entry["recovery"] < stratum:
+                failures.append(f"{group}:{name}")
+    return not failures, failures
+
+
+# -- program parameters ------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ProgramParameters:
+    """Everything the weight-only program needs, estimated on development data."""
+
+    e_program_keys: tuple[str, ...]
+    e_axis: SiteAxis
+    k_t: float
+    v_t: Mapping[str, torch.Tensor]  # per template increment vector (g_R · d̂_R)
+    rho_frame: Mapping[str, torch.Tensor]
+    rho_template: Mapping[str, torch.Tensor]
+    t_axis: SiteAxis | None
+
+    def gains(self) -> dict[str, float]:
+        return {template: float(vector.norm()) for template, vector in self.v_t.items()}
+
+
+def e_program_vector(weights: Weights, keys: Sequence[str], token_id: int) -> torch.Tensor:
+    parts = []
+    for key in keys:
+        if key == "L00.MLP":
+            parts.append(lexicon_vector(weights, token_id))
+        elif key == "EMBED":
+            parts.append(weights.W_E[int(token_id)])
+        else:
+            raise ValueError(f"{key} is not program-eligible")
+    if not parts:
+        raise ValueError("E_program needs at least one token-local path")
+    return torch.stack(parts).sum(dim=0)
+
+
+def estimate_program_parameters(ctx: DiscoveryContext, mechanism: MechanismSet) -> ProgramParameters:
+    keys = mechanism.e_program_keys
+    if not keys:
+        raise IncidentError("no program-eligible encoding path is declared")
+    e_a = [e_program_vector(ctx.weights, keys, frame.cue_ids["sg"]) for frame in ctx.frames]
+    e_b = [e_program_vector(ctx.weights, keys, frame.cue_ids["pl"]) for frame in ctx.frames]
+    e_axis = site_axis("E_program", e_a, e_b)
+    t_axis = None
+    k_t = 1.0
+    if mechanism.t_keys:
+        t_a = [summed_vector(ctx.cache.run(sg), [(key, sg.p_t) for key in mechanism.t_keys]) for sg, _ in map(frame_prompts, ctx.coordinated)]
+        t_b = [summed_vector(ctx.cache.run(pl), [(key, pl.p_t) for key in mechanism.t_keys]) for _, pl in map(frame_prompts, ctx.coordinated)]
+        t_axis = site_axis("T", t_a, t_b)
+        n_c, n_t = [], []
+        for frame in ctx.coordinated:
+            for prompt in frame_prompts(frame):
+                n_c.append(e_axis.n(e_program_vector(ctx.weights, keys, prompt.cue_token_id)))
+                n_t.append(t_axis.n(summed_vector(ctx.cache.run(prompt), [(key, prompt.p_t) for key in mechanism.t_keys])))
+        k_t = float(sum(c * t for c, t in zip(n_c, n_t)) / sum(c * c for c in n_c))
+    v_t, rho_frame, rho_template = {}, {}, {}
+    for template in TEMPLATE_ORDER:
+        frames = ctx.frames_of(template)
+        diffs = []
+        for frame in frames:
+            sg, pl = frame_prompts(frame)
+            sites = mechanism.p_t_sites_for(frame)
+            diffs.append(summed_vector(ctx.cache.run(pl), sites) - summed_vector(ctx.cache.run(sg), sites))
+            rho_frame[frame.frame_id] = 0.5 * (ctx.cache.final_residual(sg) + ctx.cache.final_residual(pl))
+        v_t[template] = 0.5 * torch.stack(diffs).mean(dim=0)
+        rho_template[template] = torch.stack([rho_frame[frame.frame_id] for frame in frames]).mean(dim=0)
+    return ProgramParameters(keys, e_axis, k_t, v_t, rho_frame, rho_template, t_axis)
+
+
+def export_program_parameters(directory: Path, weights: Weights, parameters: ProgramParameters, *, vocab_size: int) -> dict[str, Any]:
+    """Write the tensors the program may read, plus an index with digests; return the index."""
+    from .provenance import tensor_digest
+
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    tensors: dict[str, torch.Tensor] = {
+        "W_E": weights.W_E, "W_U": weights.W_U, "b_U": weights.b_U, "ln_final_w": weights.ln_final_w, "ln_final_b": weights.ln_final_b,
+        "ln2_0_w": weights.ln2_0_w, "ln2_0_b": weights.ln2_0_b, "mlp0_W_in": weights.mlp0_W_in, "mlp0_b_in": weights.mlp0_b_in,
+        "mlp0_W_out": weights.mlp0_W_out, "mlp0_b_out": weights.mlp0_b_out,
+        "e_axis_mu": parameters.e_axis.mu, "e_axis_direction": parameters.e_axis.direction,
+    }
+    for template, vector in parameters.v_t.items():
+        tensors[f"v_t.{template}"] = vector
+    for frame_id, vector in parameters.rho_frame.items():
+        tensors[f"rho_frame.{frame_id}"] = vector
+    for template, vector in parameters.rho_template.items():
+        tensors[f"rho_template.{template}"] = vector
+    digests = {}
+    for name, tensor in tensors.items():
+        path = directory / f"{name}.pt"
+        torch.save(tensor.detach().cpu().contiguous(), path)
+        digests[name] = {"file": path.name, "shape": list(tensor.shape), "dtype": str(tensor.dtype), "sha256": tensor_digest(tensor)}
+    index = {
+        "eps": weights.eps, "act_fn": weights.act_fn, "vocab_size": vocab_size, "e_program_keys": list(parameters.e_program_keys),
+        "e_axis_sigma": parameters.e_axis.sigma, "k_t": parameters.k_t, "templates": list(TEMPLATE_ORDER),
+        "cue_final_templates": list(CUE_FINAL_TEMPLATES), "coordinated_template": COORDINATED_TEMPLATE,
+        "frames_by_template": {template: [frame_id for frame_id in parameters.rho_frame if frame_id.startswith(template + "-")] for template in TEMPLATE_ORDER},
+        "tensors": digests,
+    }
+    (directory / "parameters.json").write_text(canonical_json(index) + "\n", encoding="utf-8")
+    return index
+
+
+def load_program(parameters_dir: Path, program_path: Path) -> Any:
+    """Import the standalone program module from the experiment directory and bind it to the parameters."""
+    import importlib.util
+    import sys
+
+    spec = importlib.util.spec_from_file_location("mechanism_program", str(program_path))
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.MechanismProgram.load(Path(parameters_dir))
+
+
+def program_development_floors(program: Any, ctx: DiscoveryContext) -> dict[str, Any]:
+    """Every development pair sign; per-template mean within 1.0 nats of the measured mean d_full."""
+    sign_failures = []
+    per_template = {}
+    for template in TEMPLATE_ORDER:
+        measured, predicted = [], []
+        for frame in ctx.frames_of(template):
+            sg, pl = frame_prompts(frame)
+            for noun in ctx.nouns:
+                if not noun.single_token:
+                    continue
+                d_hat = program.predict_pair(template, frame.frame_id, sg.cue_token_id, pl.cue_token_id, noun.sg_ids[0], noun.pl_ids[0])
+                d_meas = ctx.cache.c(sg)[noun.lexical_key] - ctx.cache.c(pl)[noun.lexical_key]
+                measured.append(d_meas)
+                predicted.append(d_hat)
+                if d_hat <= 0.0:
+                    sign_failures.append(f"{frame.frame_id}/{noun.lexical_key}")
+        per_template[template] = {"mean_measured": _mean(measured), "mean_predicted": _mean(predicted),
+                                  "gap": abs(_mean(measured) - _mean(predicted)),
+                                  "mae": _mean([abs(m - p) for m, p in zip(measured, predicted)])}
+    passed = not sign_failures and all(entry["gap"] <= PROGRAM_TEMPLATE_MEAN_TOLERANCE for entry in per_template.values())
+    return {"passed": passed, "sign_failures": sign_failures, "templates": per_template}
+
+
+def render_mechanism_statement(mechanism: MechanismSet, parameters: ProgramParameters, *, hypothesis: str, flagged: bool, capped: bool, encoding: Mapping[str, Any]) -> str:
+    gains = parameters.gains()
+    e_desc = ", ".join(mechanism.e_keys)
+    t_desc = ", ".join(mechanism.t_keys) or "none (no transport declared)"
+    r_desc = ", ".join(mechanism.r_keys)
+    lines = [
+        "VARIABLES",
+        f"  n_c(x)  = ( E_program(cue token) − μ_E ) · d̂_E / σ_E          σ_E = {parameters.e_axis.sigma:.4f}; E_program = {', '.join(parameters.e_program_keys)}",
+        f"  n_t(x)  = k_T · n_c(x) when p_c ≠ p_t (k_T = {parameters.k_t:.4f}); n_t(x) = n_c(x) otherwise",
+        "  c(x)    = log P(singular | x) − log P(plural | x)",
+        "",
+        "STAGES",
+        f"  E  [{e_desc}] at p_c : cue token → n_c   (encoding; branch {mechanism.branch}; share of the transport-input axis {encoding.get('e_share', float('nan')):.3f})",
+        f"  T  [{t_desc}] at p_t : n_t := k_T · n_c  (transport; hypothesis {hypothesis}{' — AMBIGUOUS' if flagged else ''})",
+        f"  R  [{r_desc}] at p_t : δ(x) = n_t(x) · v_T with g_R = |v_T|: " + ", ".join(f"{template} {gain:.3f}" for template, gain in gains.items()),
+        "  D  direct paths: reported under residual accounting",
+        "",
+        "READOUT",
+        "  ĉ(x)      = −u_N · LN( ρ + δ(x) )   exact final LayerNorm, ρ = frozen frame/template context",
+        "  d̂_full(N) = ĉ(x_A) − ĉ(x_B)         predicted positive for every pair",
+        "",
+        f"PROGRAM  {'CAPPED — a contextual encoding component is required; the decompilation axis cannot pass' if capped else 'token-local E_program; decompilation axis live'}",
+    ]
+    if mechanism.contextual_e_keys:
+        lines.append(f"  contextual E components in the circuit account only: {', '.join(mechanism.contextual_e_keys)}")
+    return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# Discovery orchestration: A1–A11 in order, writing each step before the next.
+
+
+def _write_step(state: dict[str, Any], results_path: Path | None, step: str, payload: Mapping[str, Any]) -> None:
+    state["discovery"][step] = {key: value for key, value in payload.items() if not key.startswith("_")}
+    if results_path is not None:
+        write_results_state(results_path, state)
+
+
+def candidate_roles_from_a2(ctx: DiscoveryContext, a2: Mapping[str, Any]) -> dict[str, Any]:
+    """Top-three transport heads, the transport layer, provisional readout MLPs and L_R."""
+    heads = [key for key in a2["rankings"]["p_t_coordinated"] if is_head_key(key)]
+    t_candidates = heads[:3]
+    l_t = key_layer(t_candidates[0])
+    mlps_ranked = [key for key in a2["rankings"]["p_t_all_templates"] if is_mlp_key(key) and key != "L00.MLP"]
+    r_cand = [key for key in mlps_ranked if key_layer(key) > l_t]
+    flag = None
+    if not r_cand:
+        r_cand = mlps_ranked[:1]
+        flag = "NO_MLP_BELOW_TRANSPORT_LAYER"
+    r_cand = sorted(r_cand, key=key_layer)
+    return {"t_candidates": t_candidates, "l_t": l_t, "r_candidates": r_cand, "l_r": min(key_layer(key) for key in r_cand), "flag": flag}
+
+
+def evaluate_candidate_set(ctx: DiscoveryContext, mechanism: MechanismSet, *, program_path: Path, parameters_dir: Path) -> dict[str, Any]:
+    """Tier A floors for one candidate S_M: recovery strata, isolation, roles, program floors."""
+    recovery = set_recovery(ctx, mechanism)
+    recovery_ok, recovery_failures = recovery_floors_pass(recovery, overall=TIER_A_RECOVERY_FLOOR_OVERALL, stratum=TIER_A_RECOVERY_FLOOR_STRATUM)
+    isolation = a9_isolation(ctx, mechanism.role_sites())
+    faithfulness = isolation["faithfulness"]["overall"]["recovery"]
+    isolation_ok = faithfulness is not None and faithfulness >= TIER_A_ISOLATION_FLOOR
+    roles_ok = bool(mechanism.e_keys) and bool(mechanism.r_keys) and bool(mechanism.t_keys)
+    result = {"mechanism": mechanism.to_dict(), "recovery": recovery, "recovery_floors": {"passed": recovery_ok, "failures": recovery_failures},
+              "isolation": isolation, "isolation_floor": {"passed": isolation_ok, "faithfulness": faithfulness},
+              "roles_floor": {"passed": roles_ok}}
+    program_result: dict[str, Any] = {"passed": False, "error": None}
+    capped = False
+    if roles_ok:
+        try:
+            parameters = estimate_program_parameters(ctx, mechanism)
+            export_program_parameters(parameters_dir, ctx.weights, parameters, vocab_size=int(ctx.weights.W_E.shape[0]))
+            program = load_program(parameters_dir, program_path)
+            program_result = program_development_floors(program, ctx)
+            program_result["k_t"] = parameters.k_t
+            program_result["gains"] = parameters.gains()
+            program_result["lexicon_sha256"] = program.lexicon_digest()
+            result["_parameters"] = parameters
+            result["_program"] = program
+        except (IncidentError, ValueError) as error:
+            program_result = {"passed": False, "error": str(error)}
+        capped = bool(mechanism.contextual_e_keys) and not program_result["passed"]
+    result["program_floors"] = program_result
+    result["program_capped"] = capped
+    circuit_ok = recovery_ok and isolation_ok and roles_ok
+    result["passed"] = circuit_ok and (program_result["passed"] or capped)
+    result["circuit_passed"] = circuit_ok
+    return result
+
+
+def select_mechanism_set(ctx: DiscoveryContext, a2: Mapping[str, Any], encoding: Mapping[str, Any], *, program_path: Path, parameters_dir: Path) -> dict[str, Any]:
+    """Smallest cumulative top-k set at p_t (plus E at p_c) that passes the Tier A floors."""
+    ranking = [key for key in a2["rankings"]["p_t_all_templates"] if key != "L00.MLP"]
+    attempts = []
+    chosen = None
+    for k in range(0, MAX_COMPONENTS_AT_P_T + 1):
+        top = ranking[:k]
+        mechanism = MechanismSet(encoding["branch"], tuple(encoding["e_keys"]), tuple(key for key in top if is_head_key(key)), tuple(key for key in top if is_mlp_key(key)))
+        evaluation = evaluate_candidate_set(ctx, mechanism, program_path=program_path, parameters_dir=parameters_dir)
+        attempts.append({"k": k, **{key: value for key, value in evaluation.items() if not key.startswith("_")}})
+        if evaluation["passed"]:
+            chosen = {"k": k, "mechanism": mechanism, "evaluation": evaluation}
+            break
+    return {"attempts": attempts, "chosen": chosen, "ranking": ranking}
+
+
+def run_discovery(ctx: DiscoveryContext, *, state: dict[str, Any], results_path: Path | None, program_path: Path, parameters_dir: Path,
+                  screening_results_path: Path | None = None, log: Any = None) -> dict[str, Any]:
+    """Execute A1–A11 and record mechanism version M1 (or NO_COMPACT_MECHANISM)."""
+    say = log or (lambda message: None)
+    if ctx.manifest is not None:
+        say("A1 baseline replication")
+        _write_step(state, results_path, "a1", a1_baseline(ctx, screening_results_path))
+    say("A2 position map")
+    a2 = a2_position_map(ctx)
+    _write_step(state, results_path, "a2", a2)
+    roles = candidate_roles_from_a2(ctx, a2)
+    _write_step(state, results_path, "candidate_roles", roles)
+    say("A3 layer profile")
+    _write_step(state, results_path, "a3", a3_layer_profile(ctx))
+    say("A4 attention")
+    _write_step(state, results_path, "a4", a4_attention(ctx))
+    say("A5 axes and direct effects (provisional roles)")
+    a5 = a5_axes_and_direct_effects(ctx, e_keys=["L00.MLP"], t_keys=roles["t_candidates"][:1], r_keys=roles["r_candidates"], l_r=roles["l_r"], l_t=roles["l_t"])
+    _write_step(state, results_path, "a5_provisional", a5)
+    encoding = encoding_branch(a5["encoding_decomposition"])
+    _write_step(state, results_path, "encoding_branch", encoding)
+    e_keys = list(encoding["e_keys"])
+    if encoding["branch"] == "EMBED":
+        e_keys_for_chain = ["EMBED"]
+    else:
+        e_keys_for_chain = e_keys
+    say("A6 chain, path, and mediation")
+    a6 = a6_chain(ctx, a5["_site_axes"], e_keys=e_keys_for_chain, t_keys=roles["t_candidates"][:1], t_candidates=roles["t_candidates"], r_keys=roles["r_candidates"], l_t=roles["l_t"])
+    _write_step(state, results_path, "a6", a6)
+    top = roles["t_candidates"][0]
+    quantities = {"q1": a6["t_alone"]["singles"][top], "q2": a6["residual_patch"]["frozen"][top]["blocked_fraction"],
+                  "q3": a6["e_alone"]["m_R"], "q4": a6["r_alone"]["recovery"], "q5": a6["t_alone"]["cumulative"]["top3"]}
+    row, flagged = hypothesis_tree(**quantities)
+    _write_step(state, results_path, "hypothesis", {"quantities": quantities, "row": row, "flagged": flagged, "top_head": top})
+    say("A7 abstractness")
+    _write_step(state, results_path, "a7", a7_abstractness(ctx, e_keys=e_keys_for_chain, t_candidates=roles["t_candidates"], r_keys=roles["r_candidates"]))
+    say("A8 neutralization and self-repair")
+    _write_step(state, results_path, "a8", a8_neutralization(ctx, e_keys=e_keys_for_chain, t_candidates=roles["t_candidates"], r_keys=roles["r_candidates"]))
+    say("A10 mechanism set selection")
+    selection = select_mechanism_set(ctx, a2, encoding, program_path=program_path, parameters_dir=parameters_dir)
+    _write_step(state, results_path, "a10_selection", {"attempts": selection["attempts"], "ranking": selection["ranking"], "chosen_k": selection["chosen"]["k"] if selection["chosen"] else None})
+    if selection["chosen"] is None:
+        version = {"version": "M1", "status": "rejected", "outcome": "NO_COMPACT_MECHANISM", "hypothesis": row, "hypothesis_flagged": flagged}
+        state["mechanism_versions"].append(version)
+        if results_path is not None:
+            write_results_state(results_path, state)
+        return version
+    mechanism: MechanismSet = selection["chosen"]["mechanism"]
+    evaluation = selection["chosen"]["evaluation"]
+    say("A5 axes and direct effects (final roles)")
+    a5_final = a5_axes_and_direct_effects(ctx, e_keys=list(mechanism.e_keys) if mechanism.branch != "EMBED" else ["EMBED"], t_keys=list(mechanism.t_keys),
+                                          r_keys=list(mechanism.r_keys), l_r=mechanism.l_r, l_t=mechanism.l_t if mechanism.l_t is not None else roles["l_t"])
+    _write_step(state, results_path, "a5_final", a5_final)
+    parameters: ProgramParameters = evaluation["_parameters"]
+    index = export_program_parameters(parameters_dir, ctx.weights, parameters, vocab_size=int(ctx.weights.W_E.shape[0]))
+    program = load_program(parameters_dir, program_path)
+    # The runner's lexicon check: captured E_program output equals the weight-only vector for the four cue tokens.
+    lexicon_check = {}
+    for frame in ctx.frames:
+        for prompt in frame_prompts(frame):
+            captured = summed_vector(ctx.cache.run(prompt), [(key, prompt.p_c) for key in mechanism.e_program_keys])
+            gap = float((program.e_program_vector(prompt.cue_token_id).float() - captured).abs().max())
+            lexicon_check[str(prompt.cue_token_id)] = max(gap, lexicon_check.get(str(prompt.cue_token_id), 0.0))
+            if gap > 1e-5:
+                raise IncidentError(f"E_program lexicon differs from the captured activation for token {prompt.cue_token_id} by {gap:.2e}")
+    statement = render_mechanism_statement(mechanism, parameters, hypothesis=row, flagged=flagged, capped=evaluation["program_capped"], encoding=encoding)
+    version = {
+        "version": "M1", "status": "candidate", "mechanism": mechanism.to_dict(), "hypothesis": row, "hypothesis_flagged": flagged,
+        "hypothesis_quantities": quantities, "encoding_branch": {key: value for key, value in encoding.items()},
+        "program_capped": evaluation["program_capped"], "program_floors": evaluation["program_floors"],
+        "recovery": evaluation["recovery"], "isolation": evaluation["isolation"]["faithfulness"], "sign_retention": evaluation["isolation"]["sign_retention"],
+        "parameters_index_sha256": sha256_text(canonical_json(index)), "lexicon_sha256": program.lexicon_digest(), "lexicon_check_max_gap": lexicon_check,
+        "statement": statement, "k": selection["chosen"]["k"],
+    }
+    state["mechanism_versions"].append(version)
+    if results_path is not None:
+        write_results_state(results_path, state)
+    return version

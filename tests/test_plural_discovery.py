@@ -2,61 +2,17 @@
 
 from __future__ import annotations
 
-import itertools
-
 import pytest
 import torch
 
 from neural_decompiler import plural_mechanism as pm
 from neural_decompiler.candidate_screening import Split
-from plural_fakes import TinyPlural
-
-
-_PREFIXES = {
-    "cardinal": (((1, 2, 3), ()), ((6, 2, 3), ())),
-    "quantifier": (((9, 10, 11), ()), ((9, 6, 11), ())),
-    "coordinated-adjective": (((1, 2, 3, 6, 7), (8,)), ((9, 2, 3, 6, 7), (8,))),
-}
-
-
-def _frames(cues: dict[str, tuple[int, int]]) -> tuple[pm.Frame, ...]:
-    frames = []
-    for template, variants in _PREFIXES.items():
-        for index, (prefix, suffix) in enumerate(variants, start=1):
-            sg, pl = cues[template]
-            frames.append(pm.Frame(template, f"{template}-{index}", prefix, suffix, {"sg": sg, "pl": pl}, f"{template} {index} {{cue}}"))
-    return tuple(frames)
-
-
-def _nouns() -> tuple[pm.Noun, ...]:
-    return (pm.Noun("n0", Split.DEVELOPMENT, "simple-suffix", (0,), (1,)),
-            pm.Noun("n1", Split.DEVELOPMENT, "simple-suffix", (14,), (15,)),
-            pm.Noun("n2", Split.DEVELOPMENT, "sibilant-es", (2,), (3,)),
-            pm.Noun("n3", Split.DEVELOPMENT, "consonant-y", (10,), (11,)))
+from plural_fakes import make_context
 
 
 @pytest.fixture(scope="module")
 def ctx() -> pm.DiscoveryContext:
-    """Pick, per template, the cue pair that moves the contrast most, so denominators clear the floors."""
-    model = TinyPlural(seed=3)
-    nouns = _nouns()
-    cache = pm.PromptCache(model, nouns)
-    candidates = [token for token in range(16) if token not in {0, 1, 2, 3, 10, 11, 14, 15}]
-    cues: dict[str, tuple[int, int]] = {}
-    for template, variants in _PREFIXES.items():
-        best, best_value = None, -1.0
-        for sg, pl in itertools.permutations(candidates, 2):
-            values = []
-            for index, (prefix, suffix) in enumerate(variants, start=1):
-                frame = pm.Frame(template, f"{template}-{index}", prefix, suffix, {"sg": sg, "pl": pl}, "{cue}")
-                a, b = pm.frame_prompts(frame)
-                values.extend(cache.c(a)[noun.lexical_key] - cache.c(b)[noun.lexical_key] for noun in nouns)
-            mean = sum(values) / len(values)
-            if mean > best_value:
-                best, best_value = (sg, pl), mean
-        assert best is not None and best_value >= 0.6, (template, best_value)
-        cues[template] = best
-    return pm.DiscoveryContext(model, pm.Weights.from_model(model), None, _frames(cues), nouns, pm.PromptCache(model, nouns))
+    return make_context()
 
 
 def test_lexicon_matches_captured_layer0_mlp_everywhere(ctx):
