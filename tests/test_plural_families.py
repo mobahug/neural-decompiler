@@ -89,7 +89,7 @@ def test_band_hits_and_outcome_labels():
     assert "P1:overall" in pm.band_hits(shifted, bands)["missed"]
     circuit = pm.circuit_floors(results, hypothesis="H1", n_cases=120)
     deco_pass = {"program_passed": True, "primary_failures": [], "program_capped": False}
-    deco_fail = {"program_passed": False, "primary_failures": ["X3"], "program_capped": False}
+    deco_fail = {"program_passed": False, "primary_failures": ["X3"], "program_capped": False, "X1": {"passed": True}, "X2": {"passed": True}}
     x_hits = {"X3": {"hit": True, "words_hit": 10}, "X4": {"hit": True, "words_hit": 11}}
     assert pm.outcome(circuit=circuit, hits=hits, decompilation=deco_pass, x_hits=x_hits, contested_findings=[])["label"] == "MECHANISM_CONFIRMED"
     assert pm.outcome(circuit=circuit, hits=pm.band_hits(shifted, bands), decompilation=deco_pass, x_hits=x_hits, contested_findings=[])["label"] == "MECHANISM_SUPPORTED_MISCALIBRATED"
@@ -130,3 +130,51 @@ def test_spearman_handles_ties_and_monotone_sequences():
     assert pm.spearman([1, 2, 3, 4], [10, 20, 30, 40]) == pytest.approx(1.0)
     assert pm.spearman([1, 2, 3, 4], [40, 30, 20, 10]) == pytest.approx(-1.0)
     assert -1.0 <= pm.spearman([1, 1, 2, 3], [3, 1, 2, 2]) <= 1.0
+
+
+def test_circuit_only_requires_new_frame_generalization():
+    results = _results()
+    bands = pm.calibration_bands(results)
+    hits = pm.band_hits(results, bands)
+    circuit = pm.circuit_floors(results, hypothesis="H1", n_cases=120)
+    capped_generalized = {"program_passed": False, "primary_failures": ["X3"], "program_capped": True, "X1": {"passed": True}, "X2": {"passed": True}}
+    capped_not = {"program_passed": False, "primary_failures": ["X2"], "program_capped": True, "X1": {"passed": True}, "X2": {"passed": False}}
+    x_hits = {"X3": {"hit": True, "words_hit": 10}, "X4": {"hit": True, "words_hit": 11}}
+    assert pm.outcome(circuit=circuit, hits=hits, decompilation=capped_generalized, x_hits=x_hits, contested_findings=[])["label"] == "CIRCUIT_ONLY"
+    verdict = pm.outcome(circuit=circuit, hits=hits, decompilation=capped_not, x_hits=x_hits, contested_findings=[])
+    assert verdict["label"] == "CIRCUIT_NOT_GENERALIZED" and verdict["axes"]["new_frames"] == "NOT_GENERALIZED"
+
+
+def test_continuation_phase_gating_and_attempt_selection():
+    state = pm.new_results_state(manifest_sha256="a" * 64, extension_sha256="b" * 64, protocol_code_commit="c" * 40, git_dirty=False, versions={})
+    with pytest.raises(pm.PhaseError):
+        pm.assert_phase_allowed("continue", state)
+    state["phases"]["discover"]["status"] = "complete"
+    state["mechanism_versions"].append({"version": "M1", "status": "candidate"})
+    with pytest.raises(pm.PhaseError):
+        pm.assert_phase_allowed("continue", state)  # only after a rejection
+    state["mechanism_versions"][-1] = {"version": "M1", "status": "rejected", "outcome": "NO_COMPACT_MECHANISM"}
+    pm.assert_phase_allowed("continue", state)
+    state["phases"]["continue"]["status"] = "complete"
+    with pytest.raises(pm.PhaseError):
+        pm.assert_phase_allowed("continue", state)  # once
+    state["mechanism_versions"].append({"version": "M2", "status": "candidate", "continuation": True})
+    state["calibration"]["passes"].append({"floors_passed": False})
+    with pytest.raises(pm.PhaseError):
+        pm.assert_phase_allowed("revise", state)  # frozen set in the continuation
+    attempts = {"a10_selection": {"attempts": [
+        {"k": 0, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": False}, "roles_floor": {"passed": False}},
+        {"k": 3, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": True}, "roles_floor": {"passed": True}},
+        {"k": 4, "recovery_floors": {"passed": True}, "isolation_floor": {"passed": True}, "roles_floor": {"passed": True}},
+    ]}}
+    assert pm.continuation_attempt({"discovery": attempts})["k"] == 3
+    with pytest.raises(pm.PhaseError):
+        pm.continuation_attempt({"discovery": {"a10_selection": {"attempts": attempts["a10_selection"]["attempts"][:1]}}})
+
+
+def test_loading_a_revision_4_state_adds_the_continuation_phase(tmp_path):
+    state = pm.new_results_state(manifest_sha256="a" * 64, extension_sha256="b" * 64, protocol_code_commit="c" * 40, git_dirty=False, versions={})
+    del state["phases"]["continue"]
+    pm.write_results_state(tmp_path / "results.json", state)
+    loaded = pm.load_results_state(tmp_path / "results.json")
+    assert loaded["phases"]["continue"] == {"status": "not_started"}

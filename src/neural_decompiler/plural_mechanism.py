@@ -58,7 +58,8 @@ EXTENSION_CUE_WORDS: tuple[str, ...] = (
     "twelve", "hundred",
 )
 
-PHASES = ("discover", "calibrate", "revise", "lock", "confirm", "report")
+PHASES = ("discover", "continue", "calibrate", "revise", "lock", "confirm", "report")
+PROTOCOL_V2_CAP_REASON = "protocol v1 program floor failed (recorded); continuation adopted under design revision 5"
 PHASE_STATUSES = ("not_started", "running", "complete", "invalidated")
 _COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
@@ -545,9 +546,14 @@ def load_results_state(path: Path) -> dict[str, Any]:
         raise PhaseError("results state schema is not recognized")
     if state["state_sha256"] != state_digest(state):
         raise PhaseError("results state digest mismatch: the artifact was modified outside the runner")
-    if set(state["phases"]) != set(PHASES) or any(entry.get("status") not in PHASE_STATUSES for entry in state["phases"].values()):
+    phases = dict(state["phases"])
+    if "continue" not in phases:  # revision 5 added the continuation phase to states written under revision 4
+        phases["continue"] = {"status": "not_started"}
+    if set(phases) != set(PHASES) or any(entry.get("status") not in PHASE_STATUSES for entry in phases.values()):
         raise PhaseError("results state phase records are invalid")
-    return dict(state)
+    result = dict(state)
+    result["phases"] = phases
+    return result
 
 
 def assert_provenance_identical(state: Mapping[str, Any], *, manifest_sha256: str, extension_sha256: str, protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> None:
@@ -587,11 +593,19 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
         raise PhaseError(f"unknown phase {phase}")
     status = {name: entry["status"] for name, entry in state["phases"].items()}
     passes = len(state["calibration"]["passes"])
+    versions = state["mechanism_versions"]
     if phase == "discover":
-        if status["discover"] == "running" and not state["mechanism_versions"]:
+        if status["discover"] == "running" and not versions:
             return  # crash recovery: nothing was concluded, the deterministic measurements are recomputed
         if status["discover"] != "not_started":
             raise PhaseError("discover already ran; discovery is never re-run in one protocol version")
+    elif phase == "continue":
+        if status["discover"] != "complete":
+            raise PhaseError("continue requires the completed discover phase")
+        if status["continue"] != "not_started":
+            raise PhaseError("the protocol v2 continuation was already adopted")
+        if not versions or versions[-1].get("status") != "rejected" or versions[-1].get("outcome") != "NO_COMPACT_MECHANISM" or passes:
+            raise PhaseError("continue applies only to a discover phase that ended in NO_COMPACT_MECHANISM before any calibration")
     elif phase == "calibrate":
         if status["discover"] != "complete":
             raise PhaseError("calibrate requires the completed discover phase")
@@ -604,6 +618,8 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
         if status["calibrate"] == "complete" and passes == 0:
             raise PhaseError("calibration state is inconsistent")
     elif phase == "revise":
+        if versions and versions[-1].get("continuation"):
+            raise PhaseError("the protocol v2 mechanism set is frozen; no revision is allowed in the continuation")
         if passes != 1 or status["revise"] != "not_started":
             raise PhaseError("revise is allowed exactly once, after the first calibration pass")
         last = state["calibration"]["passes"][-1]
@@ -2987,6 +3003,8 @@ def build_candidate_lock(*, state: Mapping[str, Any], version: Mapping[str, Any]
         "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "seeds": {"runtime": RUNTIME_SEED, "control": CONTROL_SEED},
         "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
         "mechanism": {key: version[key] for key in ("version", "mechanism", "hypothesis", "hypothesis_flagged", "hypothesis_quantities", "encoding_branch", "program_capped", "k")},
+        "protocol_version": 2 if version.get("continuation") else 1,
+        "continuation": {key: version[key] for key in ("continuation_of", "adopted_attempt_k", "program_cap_reason")} if version.get("continuation") else None,
         "statement": version["statement"], "statement_sha256": sha256_text(version["statement"]),
         "hypothesis_regions": HYPOTHESIS_REGIONS,
         "parameters_index_sha256": sha256_text(index_text), "parameters_index": json.loads(index_text),
@@ -3094,14 +3112,16 @@ def contested(results: Mapping[str, Any], *, hypothesis: str, bands: Mapping[str
 def outcome(*, circuit: Mapping[str, Any], hits: Mapping[str, Any], decompilation: Mapping[str, Any] | None, x_hits: Mapping[str, Any] | None, contested_findings: Sequence[str]) -> dict[str, Any]:
     circuit_pass = circuit["circuit_passed"]
     program_pass = bool(decompilation and decompilation["program_passed"])
-    axes = {"circuit": "CIRCUIT_PASS" if circuit_pass else "CIRCUIT_FAIL", "decompilation": "PROGRAM_PASS" if program_pass else "PROGRAM_FAIL"}
+    generalized = bool(decompilation and decompilation.get("X1", {}).get("passed") and decompilation.get("X2", {}).get("passed"))
+    axes = {"circuit": "CIRCUIT_PASS" if circuit_pass else "CIRCUIT_FAIL", "decompilation": "PROGRAM_PASS" if program_pass else "PROGRAM_FAIL",
+            "new_frames": "GENERALIZED" if generalized else "NOT_GENERALIZED"}
     bands_hit = hits["all_hit"] and (x_hits is None or all(entry["hit"] for entry in x_hits.values()))
     if not circuit["precondition_passed"]:
         label = "BEHAVIOR_NOT_REPLICATED"
     elif not circuit_pass:
         label = "MECHANISM_NOT_SUPPORTED"
     elif not program_pass:
-        label = "CIRCUIT_ONLY"
+        label = "CIRCUIT_ONLY" if generalized else "CIRCUIT_NOT_GENERALIZED"
     elif contested_findings:
         label = "MECHANISM_CONTESTED"
     elif bands_hit:
@@ -3180,7 +3200,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- T alone: " + ", ".join(f"{k}={_fmt(v)}" for k, v in a6["t_alone"]["singles"].items()) + "; cumulative " + ", ".join(f"{k}={_fmt(v)}" for k, v in a6["t_alone"]["cumulative"].items()),
                   f"- R alone: {_fmt(a6['r_alone']['recovery'])}"]
     for entry in state.get("mechanism_versions", []):
-        lines += ["", f"## Mechanism version {entry['version']} — {entry['status']}", ""]
+        lines += ["", f"## Mechanism version {entry['version']} — {entry['status']}" + (" (protocol v2 continuation, PROGRAM_CAPPED)" if entry.get("continuation") else ""), ""]
         if entry.get("statement"):
             lines += ["```text", entry["statement"].rstrip(), "```", ""]
             recovery = entry.get("recovery", {}).get("overall", {})
@@ -3196,7 +3216,7 @@ def render_report(state: Mapping[str, Any]) -> str:
     confirmation = state.get("confirmation")
     if confirmation:
         verdict = confirmation["outcome"]
-        lines += ["", f"## Confirmation — outcome `{verdict['label']}`", "", f"- Axes: circuit `{verdict['axes']['circuit']}`, decompilation `{verdict['axes']['decompilation']}`",
+        lines += ["", f"## Confirmation — outcome `{verdict['label']}`", "", f"- Axes: circuit `{verdict['axes']['circuit']}`, decompilation `{verdict['axes']['decompilation']}`, new frames `{verdict['axes'].get('new_frames')}`",
                   f"- Circuit failures: {verdict['circuit_failures'] or 'none'}; program failures: {verdict['program_failures'] or 'none'}; missed bands: {verdict['missed_bands'] or 'none'}; contested: {verdict['contested'] or 'none'}",
                   "", "### Reserve nouns (readout generalization)", ""]
         lines += _family_table(confirmation["circuit_floors"], None, confirmation["band_hits"])
@@ -3220,3 +3240,57 @@ def render_report(state: Mapping[str, Any]) -> str:
     lines += ["", "## Execution ledger", "", f"- Executed prompt keys: {len(state['executed_prompt_keys'])}", f"- Executed noun keys: {len(state['executed_noun_keys'])}",
               f"- Invalidated runs: {len(state['invalidated_runs'])}", ""]
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Revision 5: protocol v2 continuation after a Tier A program-floor rejection.
+
+
+def continuation_attempt(state: Mapping[str, Any]) -> dict[str, Any]:
+    """The smallest recorded v1 selection attempt whose circuit floors passed; no new search."""
+    attempts = state["discovery"]["a10_selection"]["attempts"]
+    for attempt in attempts:
+        if attempt["recovery_floors"]["passed"] and attempt["isolation_floor"]["passed"] and attempt["roles_floor"]["passed"]:
+            return dict(attempt)
+    raise PhaseError("no recorded attempt satisfies the circuit floors; the continuation has nothing to adopt")
+
+
+def adopt_continuation(ctx: DiscoveryContext, *, state: dict[str, Any], results_path: Path | None, program_path: Path, parameters_dir: Path, log: Any = None) -> dict[str, Any]:
+    """Freeze the recorded k as version M2 with PROGRAM_CAPPED set from the outset."""
+    say = log or (lambda message: None)
+    previous = state["mechanism_versions"][-1]
+    attempt = continuation_attempt(state)
+    mechanism = MechanismSet(attempt["mechanism"]["branch"], tuple(attempt["mechanism"]["e_keys"]), tuple(attempt["mechanism"]["t_keys"]), tuple(attempt["mechanism"]["r_keys"]))
+    say(f"adopting recorded attempt k={attempt['k']}: T={list(mechanism.t_keys)} R={list(mechanism.r_keys)}")
+    parameters = estimate_program_parameters(ctx, mechanism)
+    index = export_program_parameters(parameters_dir, ctx.weights, parameters, vocab_size=int(ctx.weights.W_E.shape[0]))
+    program = load_program(parameters_dir, program_path)
+    for frame in ctx.frames:
+        for prompt in frame_prompts(frame):
+            captured = summed_vector(ctx.cache.run(prompt), [(key, prompt.p_c) for key in mechanism.e_program_keys])
+            gap = float((program.e_program_vector(prompt.cue_token_id).float() - captured).abs().max())
+            if gap > 1e-5:
+                raise IncidentError(f"E_program lexicon differs from the captured activation for token {prompt.cue_token_id} by {gap:.2e}")
+    program_floors = program_development_floors(program, ctx)
+    hypothesis = state["discovery"]["hypothesis"]
+    encoding = state["discovery"]["encoding_branch"]
+    a5_final = a5_axes_and_direct_effects(ctx, e_keys=list(mechanism.e_keys) if mechanism.branch != "EMBED" else ["EMBED"], t_keys=list(mechanism.t_keys),
+                                          r_keys=list(mechanism.r_keys), l_r=mechanism.l_r, l_t=mechanism.l_t)
+    state["discovery"]["a5_final"] = {key: value for key, value in a5_final.items() if not key.startswith("_")}
+    cap_reason = PROTOCOL_V2_CAP_REASON + f"; recorded quantities: " + ", ".join(
+        f"{template} gap {entry['gap']:.3f}" for template, entry in attempt["program_floors"].get("templates", {}).items())
+    statement = render_mechanism_statement(mechanism, parameters, hypothesis=hypothesis["row"], flagged=hypothesis["flagged"], capped=True, encoding=encoding)
+    version = {
+        "version": f"M{int(previous['version'][1:]) + 1}", "status": "candidate", "continuation": True, "protocol_version": 2,
+        "continuation_of": previous["version"], "adopted_attempt_k": attempt["k"],
+        "mechanism": mechanism.to_dict(), "hypothesis": hypothesis["row"], "hypothesis_flagged": hypothesis["flagged"],
+        "hypothesis_quantities": hypothesis["quantities"], "encoding_branch": dict(encoding),
+        "program_capped": True, "program_cap_reason": cap_reason, "program_floors": program_floors,
+        "recovery": attempt["recovery"], "isolation": attempt["isolation"]["faithfulness"], "sign_retention": attempt["isolation"]["sign_retention"],
+        "parameters_index_sha256": sha256_text(canonical_json(index)), "lexicon_sha256": program.lexicon_digest(),
+        "statement": statement, "k": attempt["k"],
+    }
+    state["mechanism_versions"].append(version)
+    if results_path is not None:
+        write_results_state(results_path, state)
+    return version

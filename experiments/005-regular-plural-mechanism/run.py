@@ -48,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     phases.add_parser("freeze-extension", help="build extension-v1.json from tokenizer rules only (refuses to overwrite)")
     discover = phases.add_parser("discover", help="Tier A: run A0-A11 once on development data")
     discover.add_argument("--screening-results", default=None, metavar="PATH", help="screening results.json for the A1 per-case comparison")
+    phases.add_parser("continue", help="revision 5: adopt the recorded circuit as protocol v2 after a NO_COMPACT_MECHANISM discover")
     phases.add_parser("calibrate", help="Tier B: evaluate the current mechanism version on holdout nouns (at most twice)")
     phases.add_parser("revise", help="mechanical revision after a failed first calibration pass")
     phases.add_parser("lock", help="write outputs/experiment-005/candidate-lock.json for review")
@@ -246,6 +247,29 @@ class Runner:
         axes = pm.site_axes_from_parameters(self.parameters_dir)
         return pm.EvalContext(model, pm.Weights.from_model(model), mechanism, program, tuple(frames), tuple(nouns), pm.PromptCache(model, tuple(nouns)), axes, version["hypothesis"])
 
+    def continue_v2(self) -> int:
+        manifest, manifest_sha256, extension = self._inputs()
+        state = self._state_for("continue", manifest_sha256, extension.content_sha256)
+        reserve = pm.nouns_for(manifest, pm.Split.FUTURE_RESERVE)
+        development = pm.nouns_for(manifest, pm.Split.DEVELOPMENT)
+        state["phases"]["continue"] = {"status": "running", "started_at": pm.utc_now(), "protocol_version": 2, "commit": self._provenance()["protocol_code_commit"]}
+        pm.write_results_state(self.results_path, state)
+        seed_runtime(pm.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+        model = self.model_loader(PYTHIA_70M)
+        try:
+            ctx = pm.new_discovery_context(model, manifest, development)
+            pm.assert_not_executed(state, extension=extension, reserve=reserve)
+            version = pm.adopt_continuation(ctx, state=state, results_path=self.results_path, program_path=self.program_path, parameters_dir=self.parameters_dir, log=self.log)
+        finally:
+            del model
+            gc.collect()
+        pm.assert_not_executed(state, extension=extension, reserve=reserve)
+        state["phases"]["continue"] = {**state["phases"]["continue"], "status": "complete", "completed_at": pm.utc_now()}
+        digest = pm.write_results_state(self.results_path, state)
+        self.log(f"continuation adopted: version {version['version']} (k={version['k']}), PROGRAM_CAPPED; results sha256 {digest}")
+        self.log(version["statement"])
+        return 0
+
     def calibrate(self) -> int:
         manifest, manifest_sha256, extension = self._inputs()
         state = self._state_for("calibrate", manifest_sha256, extension.content_sha256)
@@ -429,6 +453,8 @@ def main(argv: list[str] | None = None) -> int:
         return runner.freeze_extension()
     if args.phase == "discover":
         return runner.discover(screening_results=args.screening_results)
+    if args.phase == "continue":
+        return runner.continue_v2()
     if args.phase in {"calibrate", "revise", "lock", "confirm", "report"}:
         return getattr(runner, args.phase)()
     raise SystemExit(f"unknown phase {args.phase}")

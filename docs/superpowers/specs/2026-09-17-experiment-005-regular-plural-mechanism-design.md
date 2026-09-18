@@ -2,7 +2,10 @@
 
 **Date:** 2026-09-17
 
-**Status:** Draft, revision 4 (after the third external review). Not approved.
+**Status:** Revision 5 — approved revision 4 plus a post-discovery continuation
+(protocol v2) adopted on 2026-09-18 after Tier A of protocol v1 ended in
+`NO_COMPACT_MECHANISM`. Revision 5 is not a preregistered amendment; it is a
+continuation motivated by a stopping-rule design issue, recorded as such.
 No Experiment 005 directory, claim, preregistration lock, extension manifest,
 or model run exists. The 120 `regular-plural` future-reserve cases remain
 unexecuted.
@@ -56,6 +59,35 @@ tokenizer-validated extension set of prompts defined below.
   2. the E-output equality check is stated for `E_program` only;
   3. the exact LayerNorm's variance semantics are frozen (population variance,
      `correction=0`, `ε = 1e-5`).
+- **Revision 5 (2026-09-18, after Tier A of protocol v1; approved by the
+  reviewer as protocol v2).** Protocol v1's `discover` ran once (run
+  `050405f9f4f7e629`, code commit `83d1ae4`): the hypothesis tree returned
+  `H1` unambiguously, the smallest circuit satisfying the circuit floors was
+  k = 3 (E = `L00.MLP` at `p_c`, T = `L03.H04`, R = {`L04.MLP`, `L05.MLP`};
+  recovery 0.982, isolation 0.783), and the token-local program reproduced
+  every development pair sign but under-predicted the quantifier template
+  mean by 1.44 nats against the 1.0-nat Tier A program floor at every k ≤ 6.
+  Under the rules above that is `NO_COMPACT_MECHANISM`, and **that outcome is
+  preserved permanently as protocol v1's result**; the 1.0-nat threshold is not
+  changed. Revision 5 adds a continuation, protocol v2, whose prospective
+  question is narrower: *is the discovered E → T → R circuit real and stable on
+  untouched nouns and genuinely unseen prompts, even though the compact
+  program did not recover its computation?* Its rules:
+  1. the mechanism set is frozen mechanically as the smallest attempt already
+     recorded in the v1 selection that satisfies the circuit floors (recovery
+     strata, isolation, roles) — k = 3 — with no new Tier A search, re-ranking,
+     or parameter tuning; the program parameters for that set are re-exported
+     from the same development activations;
+  2. `PROGRAM_CAPPED` is set from the outset with the recorded cause; the
+     decompilation axis cannot pass in this continuation, and X3/X4 run only
+     as diagnostic prospective tests;
+  3. a prospective circuit result requires the new frames: `CIRCUIT_ONLY` is
+     reported only when the reserve circuit families pass **and** X1 and X2
+     pass; when the reserve families pass but X1 or X2 fails, the outcome is
+     `CIRCUIT_NOT_GENERALIZED`;
+  4. Tier B calibration, the lock, and the single confirmation proceed exactly
+     as designed; the reserve nouns and the extension prompts were untouched
+     when the continuation was adopted.
 
 ## Purpose
 
@@ -805,10 +837,14 @@ Overall outcome:
 - `MECHANISM_SUPPORTED_MISCALIBRATED` — `CIRCUIT_PASS` and `PROGRAM_PASS`; at
   least one primary band is missed. The missed bands are listed as the
   mechanism's quantitative residual.
-- `CIRCUIT_ONLY` — `CIRCUIT_PASS` but `PROGRAM_FAIL`. The components are
-  sufficient and specific, but the explicit computation attributed to them is
-  wrong or incomplete; the failing X families, or the `PROGRAM_CAPPED` flag,
-  name where.
+- `CIRCUIT_ONLY` — `CIRCUIT_PASS` but `PROGRAM_FAIL`, with X1 and X2 passed
+  (revision 5): the components are sufficient and specific on the reserve
+  nouns *and* on the unseen frames, but the explicit computation attributed
+  to them is wrong or incomplete; the failing X families, or the
+  `PROGRAM_CAPPED` flag, name where.
+- `CIRCUIT_NOT_GENERALIZED` — `CIRCUIT_PASS` on the reserve nouns but X1 or
+  X2 failed (revision 5): the development circuit did not survive the unseen
+  frames; the failing family names where.
 - `MECHANISM_CONTESTED` — both axes pass but at least one discriminating
   prediction lands outside the chosen hypothesis's band and inside a rejected
   hypothesis's band. A result outside both bands is a missed band

@@ -147,6 +147,18 @@ measured gap is recorded in the A1 result. All Experiment 005 quantities are
 consistent within the instrumented path; `discover` restarts under the
 crash-recovery rule because nothing had been concluded.
 
+#### Amendment — 2026-09-18: protocol v2 continuation (design revision 5)
+
+Tier A of protocol v1 ended in `NO_COMPACT_MECHANISM` at the program floor
+(quantifier mean gap 1.44 nats > 1.0). That result is preserved. Under design
+revision 5 the runner gains a `continue` phase that adopts, without any new
+search, the smallest recorded selection attempt whose circuit floors passed
+(k = 3), re-exports its program parameters from the same development
+activations, records version `M2` with `PROGRAM_CAPPED` set from the outset,
+and refuses `revise` thereafter. The outcome rule gains
+`CIRCUIT_NOT_GENERALIZED`: `CIRCUIT_ONLY` now requires X1 and X2. Calibration,
+the lock, and the single confirmation are unchanged.
+
 ### Task 7: Independent review, then Tier A execution
 
 - [ ] **Step 1: Subagent review of the implementation against the spec** (definitions, floors, seeds, phase isolation, non-execution, program independence, LayerNorm semantics). Fix findings; commit.

@@ -218,7 +218,7 @@ def test_full_state_machine_on_the_fake(sandbox, monkeypatch):
     assert runner.confirm() == 0
     state = pm.load_results_state(runner.results_path)
     assert state["phases"]["confirm"]["status"] == "complete"
-    assert state["confirmation"]["outcome"]["label"] in {"MECHANISM_CONFIRMED", "MECHANISM_SUPPORTED_MISCALIBRATED", "CIRCUIT_ONLY", "MECHANISM_CONTESTED", "MECHANISM_NOT_SUPPORTED", "BEHAVIOR_NOT_REPLICATED"}
+    assert state["confirmation"]["outcome"]["label"] in {"MECHANISM_CONFIRMED", "MECHANISM_SUPPORTED_MISCALIBRATED", "CIRCUIT_ONLY", "CIRCUIT_NOT_GENERALIZED", "MECHANISM_CONTESTED", "MECHANISM_NOT_SUPPORTED", "BEHAVIOR_NOT_REPLICATED"}
     assert len([key for key in state["executed_noun_keys"] if key.startswith("future-reserve")]) == 20
     assert len(state["executed_prompt_keys"]) == 12 + 12 + 72
     with pytest.raises(pm.PhaseError):
@@ -226,3 +226,44 @@ def test_full_state_machine_on_the_fake(sandbox, monkeypatch):
     assert runner.report() == 0
     text = runner.report_path.read_text()
     assert "## Confirmation — outcome" in text and "### Cue words" in text
+
+
+def test_continuation_after_program_floor_rejection(sandbox, monkeypatch):
+    """Protocol v2: a discover that fails only the program floor is adopted with PROGRAM_CAPPED and runs to confirm."""
+    runner, logs = make_discover_runner(sandbox, monkeypatch)
+    runner.changed_paths = lambda commit: []
+    monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_OVERALL", -10.0)
+    monkeypatch.setattr(pm, "TIER_A_RECOVERY_FLOOR_STRATUM", -10.0)
+    monkeypatch.setattr(pm, "TIER_A_ISOLATION_FLOOR", -10.0)
+    monkeypatch.setattr(pm, "program_development_floors", lambda program, ctx: {"passed": False, "sign_failures": [], "templates": {"cardinal": {"gap": 2.0}}})
+    assert runner.freeze_extension() == 0
+    with pytest.raises(pm.PhaseError):
+        runner.continue_v2()  # needs discover first
+    assert runner.discover() == 0
+    state = pm.load_results_state(runner.results_path)
+    assert state["mechanism_versions"][-1]["status"] == "rejected"
+    with pytest.raises(pm.PhaseError):
+        runner.calibrate()  # no candidate version
+    assert runner.continue_v2() == 0
+    state = pm.load_results_state(runner.results_path)
+    version = state["mechanism_versions"][-1]
+    assert version["version"] == "M2" and version["continuation"] and version["program_capped"] and version["k"] >= 2
+    assert version["adopted_attempt_k"] == version["k"]
+    assert state["phases"]["continue"]["status"] == "complete"
+    assert "a5_final" in state["discovery"]
+    with pytest.raises(pm.PhaseError):
+        runner.continue_v2()  # once
+    monkeypatch.setattr(pm, "circuit_floors", _force_pass(pm.circuit_floors))
+    assert runner.calibrate() == 0
+    with pytest.raises(pm.PhaseError):
+        runner.revise()  # frozen in the continuation
+    assert runner.lock() == 0
+    lock = json.loads((runner.results_path.parent / "candidate-lock.json").read_text())
+    assert lock["protocol_version"] == 2 and lock["continuation"]["continuation_of"] == "M1" and lock["mechanism"]["program_capped"] is True
+    shutil.copy(runner.results_path.parent / "candidate-lock.json", sandbox / pm.LOCK_RELATIVE_PATH)
+    assert runner.confirm() == 0
+    state = pm.load_results_state(runner.results_path)
+    verdict = state["confirmation"]["outcome"]
+    assert verdict["axes"]["decompilation"] == "PROGRAM_FAIL"
+    assert verdict["label"] in {"CIRCUIT_ONLY", "CIRCUIT_NOT_GENERALIZED", "MECHANISM_NOT_SUPPORTED", "BEHAVIOR_NOT_REPLICATED"}
+    assert state["confirmation"]["decompilation_floors"]["program_capped"] is True
