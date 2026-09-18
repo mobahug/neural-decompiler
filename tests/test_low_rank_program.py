@@ -138,7 +138,7 @@ def test_rank_rule_branches():
     table = _table({1: [1.0, 1.0, 1.0, 1.0], 2: [0.70, 0.74, 0.78, 0.74], 3: [0.72, 0.70, 0.74, 0.70], 4: [0.60, 0.80, 0.65, 0.75]})
     verdict = cd.select_rank(table)
     assert verdict["eligible"] == [1, 2, 3, 4] and verdict["r_best"] == 4 and verdict["selected"] == 2
-    assert verdict["threshold"] == pytest.approx(0.70 + verdict["summary"][4]["se"])
+    assert verdict["threshold"] == pytest.approx(0.70 + verdict["summary"]["4"]["se"])
     # Best rank far ahead: threshold excludes the others.
     table = _table({1: [1.0] * 4, 2: [0.75] * 4, 3: [0.30, 0.30, 0.30, 0.30], 4: [0.31] * 4})
     assert cd.select_rank(table)["selected"] == 3

@@ -684,7 +684,7 @@ def select_rank(table: Mapping[int, Mapping[str, Mapping[str, float]]]) -> dict[
     r_best = min(eligible, key=lambda rank: (summary[rank]["error"], rank))
     threshold = summary[r_best]["error"] + summary[r_best]["se"]
     selected = min(rank for rank in eligible if summary[rank]["error"] <= threshold)
-    return {"summary": summary, "eligible": eligible, "r_best": r_best, "threshold": threshold, "selected": selected, "rule": CONTINUATION_RULE_TEXT}
+    return {"summary": {str(rank): entry for rank, entry in summary.items()}, "eligible": eligible, "r_best": r_best, "threshold": threshold, "selected": selected, "rule": CONTINUATION_RULE_TEXT}
 
 
 CONTINUATION_RULE_TEXT = ("eligible = {1} ∪ {r > 1 : error_r ≤ 0.8 × error_1}; r_best = argmin_{eligible} error_r; "
@@ -700,6 +700,7 @@ def quality_gate(per_token: Mapping[str, Mapping[str, float]], *, selected: int,
     rmse = math.sqrt(pm._mean([(p - m) ** 2 for p, m in zip(predicted, measured)]))
     rms_measured = math.sqrt(pm._mean([m * m for m in measured]))
     normalized = rmse / rms_measured if rms_measured > 0 else float("inf")
+    summary = {int(rank): entry for rank, entry in summary.items()}
     improvement_ok = selected == 1 or summary[selected]["error"] <= RANK_IMPROVEMENT_FACTOR * summary[1]["error"]
     return {"spearman": spearman, "spearman_ok": spearman >= QUALITY_SPEARMAN_FLOOR, "normalized_rmse": normalized,
             "normalized_rmse_ok": normalized <= QUALITY_NORMALIZED_RMSE_CEILING, "improvement_ok": improvement_ok,
@@ -899,3 +900,277 @@ def outcome(*, manifest_floors: Mapping[str, Any], fresh_floors: Mapping[str, An
     return {"label": label, "circuit": "CIRCUIT_PASS" if not manifest_floors["failures"] and not fresh_floors["failures"] else "CIRCUIT_FAIL",
             "program": "PROGRAM_PASS" if program_floors["passed"] else "PROGRAM_FAIL", "manifest_failures": manifest_floors["failures"],
             "fresh_failures": fresh_floors["failures"], "program_failures": program_floors["failures"], "bands_hit": bands["hit"]}
+
+
+# ---------------------------------------------------------------------------
+# Exploration orchestration, the lock, confirmation, and the report.
+
+PROGRAM_NAMES = ("selected", "r1-pca", "e005-scalar")
+SCIENTIFIC_PATH_PREFIXES = ("src/", "experiments/006-low-rank-cue-decompilation/", "experiments/005-regular-plural-mechanism/", "screening/behavior-candidates/manifest-v1.json")
+
+
+def _token_vectors(weights: pm.Weights, tokens: Sequence[tuple[str, int]], reference_ids: Mapping[str, int]) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+    e_vectors = {token: pm.lexicon_vector(weights, token_id) for token, token_id in tokens}
+    reference_vectors = {template: pm.lexicon_vector(weights, token_id) for template, token_id in reference_ids.items()}
+    return e_vectors, reference_vectors
+
+
+def run_exploration(model: Any, pool: ExposedPool, *, state: dict[str, Any], results_path: Path | None, parameters_dir: Path, program_path: Path,
+                    program_005_path: Path, e005_index_sha256: str | None, circuit: pm.MechanismSet = FIXED_CIRCUIT, ranks: Sequence[int] | None = None,
+                    development_ctx_factory: Any = None, log: Any = None) -> dict[str, Any]:
+    """Tier A: circuit verification on the exposed pool, E-patch responses, LOCO rank selection, quality gate, exports."""
+    say = log or (lambda message: None)
+    ranks = tuple(ranks) if ranks is not None else tuple(RANKS)
+    weights = pm.Weights.from_model(model)
+    universe = pm.universe_keys(model)
+    parameters_dir = Path(parameters_dir)
+    say("E005-scalar baseline refit")
+    ctx_dev = development_ctx_factory() if development_ctx_factory else None
+    if ctx_dev is None:
+        raise ValueError("a development context factory is required for the E005-scalar baseline")
+    e005_program, e005_record = e005_scalar_baseline(ctx_dev, parameters_dir=parameters_dir / "e005-scalar", program_path=program_005_path, expected_index_sha256=e005_index_sha256, circuit=circuit)
+    axes = pm.site_axes_from_parameters(parameters_dir / "e005-scalar")
+    cache = pm.PromptCache(model, tuple(pool.nouns))
+    say("circuit verification on the exposed pool")
+    ev = pm.EvalContext(model, weights, circuit, None, tuple(pool.frames), tuple(pool.nouns), cache, axes, "H1")
+    circuit_results = circuit_families(ev, universe)
+    circuit_verdict = circuit_floors(circuit_results, fresh=False)
+    state["exploration"]["circuit"] = {"results": {key: value for key, value in circuit_results.items() if key != "P3"} | {"P3": {k: v for k, v in circuit_results["P3"].items() if k != "rows"}}, "floors": circuit_verdict}
+    state["exploration"]["e005_scalar"] = e005_record
+    if results_path is not None:
+        write_results_state(results_path, state)
+    say("E-patch residual responses (12 frames × 16 tokens)")
+    responses = measure_epatch_responses(model, weights, cache, pool.frames, pool.tokens, pool.reference_ids, circuit=circuit)
+    state["exploration"]["epatch"] = {f"{token}|{frame_id}": {"template_id": r.template_id, "mean_shift": pm._mean(list(r.shifts.values())), "circuit_share": r.circuit_share,
+                                                               "delta_norm": float(r.delta_residual.norm())} for (token, frame_id), r in responses.items()}
+    if results_path is not None:
+        write_results_state(results_path, state)
+    e_vectors, reference_vectors = _token_vectors(weights, pool.tokens, pool.reference_ids)
+    token_names = [token for token, _ in pool.tokens]
+    say("leave-one-cue-out rank selection")
+    table = loco_errors(e_vectors=e_vectors, reference_ids=pool.reference_ids, reference_vectors=reference_vectors, responses=responses, frames=pool.frames,
+                        cache=cache, nouns=pool.nouns, weights=weights, tokens=token_names, ranks=ranks)
+    selection = select_rank(table)
+    gate = quality_gate(table[selection["selected"]], selected=selection["selected"], summary=selection["summary"])
+    tau = tolerance_tau(table[selection["selected"]])
+    # E005-scalar LOCO-free reference error on the same cue-level values (its parameters are frozen, not refit per token).
+    e005_values = {}
+    for token, token_id in pool.tokens:
+        predicted, measured = [], []
+        for frame in pool.frames:
+            response = responses[(token, frame.frame_id)]
+            for noun in pool.nouns:
+                if noun.single_token:
+                    predicted.append(e005_program.predict_epatch_shift(frame.template_id, frame.frame_id if frame.origin == "manifest" else None, token_id, pool.reference_ids[frame.template_id], noun.sg_ids[0], noun.pl_ids[0]))
+                    measured.append(response.shifts[noun.lexical_key])
+        e005_values[token] = {"predicted": pm._mean(predicted), "measured": pm._mean(measured), "mae": pm._mean([abs(p - m) for p, m in zip(predicted, measured)])}
+    e005_error = pm._mean([entry["mae"] for entry in e005_values.values()])
+    say(f"selected rank {selection['selected']} (gate {'passed' if gate['passed'] else 'FAILED'}); tau {tau:.3f}")
+    final = fit_low_rank(e_vectors=e_vectors, reference_ids=pool.reference_ids, reference_vectors=reference_vectors, responses=responses, frames=pool.frames, cache=cache, fit_tokens=token_names, rank=selection["selected"])
+    r1 = fit_low_rank(e_vectors=e_vectors, reference_ids=pool.reference_ids, reference_vectors=reference_vectors, responses=responses, frames=pool.frames, cache=cache, fit_tokens=token_names, rank=1)
+    selected_index = export_low_rank(parameters_dir / "selected", weights, final)
+    r1_index = export_low_rank(parameters_dir / "r1-pca", weights, r1)
+    state["exploration"]["loco"] = {str(rank): per_token for rank, per_token in table.items()}
+    state["exploration"]["selection"] = selection
+    state["exploration"]["quality_gate"] = gate
+    state["exploration"]["tau"] = tau
+    state["exploration"]["e005_scalar"]["cue_level"] = e005_values
+    state["exploration"]["e005_scalar"]["error"] = e005_error
+    state["exploration"]["parameters"] = {"selected": pm.sha256_text(pm.canonical_json(selected_index)), "r1-pca": pm.sha256_text(pm.canonical_json(r1_index)),
+                                          "e005-scalar": e005_record["parameters_index_sha256"], "singular_values": list(final.singular_values)}
+    if results_path is not None:
+        write_results_state(results_path, state)
+    return state["exploration"]
+
+
+def load_programs(parameters_dir: Path, program_path: Path, program_005_path: Path, reference_ids: Mapping[str, int]) -> dict[str, Any]:
+    parameters_dir = Path(parameters_dir)
+    return {"selected": load_low_rank_program(parameters_dir / "selected", program_path), "r1-pca": load_low_rank_program(parameters_dir / "r1-pca", program_path),
+            "e005-scalar": _E005Adapter(pm.load_program(parameters_dir / "e005-scalar", program_005_path)).bind(reference_ids)}
+
+
+class _E005Adapter:
+    """Present the Experiment 005 program through the Experiment 006 prediction interface (reference-relative shifts)."""
+
+    def __init__(self, program: Any) -> None:
+        self.program = program
+        self.reference_ids = {"cardinal": None, "quantifier": None, "coordinated-adjective": None}
+
+    def bind(self, reference_ids: Mapping[str, int]) -> "_E005Adapter":
+        self.reference_ids = dict(reference_ids)
+        return self
+
+    def predict_epatch_shift(self, template: str, frame_id: str | None, token_id: int, sg_id: int, pl_id: int) -> float:
+        return self.program.predict_epatch_shift(template, frame_id, token_id, self.reference_ids[template], sg_id, pl_id)
+
+    predict_behavior_shift = predict_epatch_shift
+
+    def predict_pair(self, template: str, frame_id: str | None, sg_cue_id: int, pl_cue_id: int, sg_id: int, pl_id: int) -> float:
+        return self.program.predict_pair(template, frame_id, sg_cue_id, pl_cue_id, sg_id, pl_id)
+
+
+def _parameters_digest(directory: Path) -> str:
+    return pm.sha256_text((Path(directory) / "parameters.json").read_text(encoding="utf-8"))
+
+
+def lock_predictions(programs: Mapping[str, Any], confirmation: Confirmation, *, tau: float) -> dict[str, Any]:
+    """Predictions for every confirmation prompt, computed without running any of them."""
+    nouns = [noun for noun in confirmation.nouns if noun.single_token]
+    tokens = {}
+    for token in confirmation.tokens:
+        entry = {"token_id": token["token_id"], "category": token["category"], "frames": {}}
+        for frame in confirmation.frames:
+            per_program = {}
+            for name, program in programs.items():
+                values = [program.predict_epatch_shift(frame.template_id, None, token["token_id"], noun.sg_ids[0], noun.pl_ids[0]) for noun in nouns]
+                per_program[name] = {"mean": pm._mean(values), "by_noun": {noun.lexical_key: value for noun, value in zip(nouns, values)}}
+            entry["frames"][frame.frame_id] = {"template_id": frame.template_id, "predicted": per_program,
+                                               "interval": {"low": per_program["selected"]["mean"] - tau, "high": per_program["selected"]["mean"] + tau}}
+        tokens[token["word"]] = entry
+    pairs = {}
+    for frame in confirmation.frames:
+        pairs[frame.frame_id] = {name: pm._mean([program.predict_pair(frame.template_id, None, frame.cue_ids["sg"], frame.cue_ids["pl"], noun.sg_ids[0], noun.pl_ids[0]) for noun in nouns]) for name, program in programs.items()}
+    return {"tau": tau, "tokens": tokens, "pairs": pairs}
+
+
+def build_candidate_lock(*, state: Mapping[str, Any], manifest: ScreeningManifest, manifest_sha256: str, extension: pm.Extension, confirmation: Confirmation,
+                         programs: Mapping[str, Any], parameters_dir: Path, program_path: Path, program_005_path: Path, protocol_code_commit: str, bands_005: Mapping[str, Any]) -> dict[str, Any]:
+    exploration = state["exploration"]
+    tau = float(exploration["tau"])
+    lock = {
+        "schema_version": 1, "created_at": pm.utc_now(), "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
+        "manifest_sha256": manifest_sha256, "extension_sha256": extension.content_sha256, "confirmation_sha256": confirmation.content_sha256,
+        "confirmation_prompt_keys": sorted(prompt.key for prompt in confirmation.all_prompts), "fresh_noun_keys": [noun.key for noun in confirmation.nouns],
+        "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "seeds": {"runtime": RUNTIME_SEED, "control": CONTROL_SEED},
+        "circuit": FIXED_CIRCUIT.to_dict(), "rank": exploration["selection"]["selected"], "selection": exploration["selection"], "loco": exploration["loco"],
+        "quality_gate": exploration["quality_gate"], "e005_scalar": exploration["e005_scalar"], "tau": tau,
+        "parameters": {name: _parameters_digest(Path(parameters_dir) / name) for name in PROGRAM_NAMES},
+        "program_source_sha256": pm.sha256_text(Path(program_path).read_text(encoding="utf-8")),
+        "program_005_source_sha256": pm.sha256_text(Path(program_005_path).read_text(encoding="utf-8")),
+        "floors": {"cue_effect_manifest": CUE_EFFECT_MANIFEST, "cue_effect_fresh": CUE_EFFECT_FRESH, "p3_sign_rate": P3_SIGN_RATE, "p3_correlation": P3_CORRELATION,
+                   "p3_f": [P3_F_OVERALL, P3_F_TEMPLATE], "y1_spearman": Y1_SPEARMAN, "y2_spearman": Y2_SPEARMAN, "y2_tau_factor": Y2_TAU_FACTOR,
+                   "y1_confident_nats": Y1_CONFIDENT_NATS, "y1_sign_frames": Y1_SIGN_FRAMES, "y3_positive_rate": Y3_POSITIVE_RATE, "band_tokens": Y_BAND_TOKENS, "band_frames": Y_BAND_FRAMES,
+                   "circuit": {key: pm.FLOORS[key] for key in ("P1_overall", "P1_stratum", "P4", "P5a_H1", "P5b_H1", "P7_same", "P7_opposite_factor", "P8_loss", "P9", "P9_frozen_factor")}},
+        "circuit_bands_005": {family: bands_005.get(family) for family in ("P1", "P3", "P4", "P5", "P7", "P8", "P9")},
+        "predictions": lock_predictions(programs, confirmation, tau=tau),
+        "tier_a_results_sha256": state.get("state_sha256"),
+    }
+    lock["content_sha256"] = pm.sha256_text(pm.canonical_json({key: value for key, value in lock.items() if key != "content_sha256"}))
+    return lock
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], manifest_sha256: str, extension: pm.Extension, confirmation: Confirmation, parameters_dir: Path,
+                  program_path: Path, program_005_path: Path, git_state: Mapping[str, Any], tracked: bool, changed_paths: Sequence[str] | None) -> None:
+    unsigned = {key: value for key, value in lock.items() if key != "content_sha256"}
+    if lock.get("schema_version") != 1 or lock.get("content_sha256") != pm.sha256_text(pm.canonical_json(unsigned)):
+        raise PhaseError("lock schema or content digest mismatch")
+    if not tracked:
+        raise PhaseError("the lock must be tracked and committed")
+    if git_state.get("dirty", True):
+        raise PhaseError("confirm requires a clean Git tree")
+    if (lock["manifest_sha256"], lock["extension_sha256"], lock["confirmation_sha256"]) != (manifest_sha256, extension.content_sha256, confirmation.content_sha256):
+        raise PhaseError("lock was built against different frozen inputs")
+    if lock["run_id"] != state["run_id"] or lock["rank"] != state["exploration"]["selection"]["selected"]:
+        raise PhaseError("lock does not match the results state")
+    for name in PROGRAM_NAMES:
+        if _parameters_digest(Path(parameters_dir) / name) != lock["parameters"][name]:
+            raise PhaseError(f"{name} parameters differ from the locked digest")
+    if pm.sha256_text(Path(program_path).read_text(encoding="utf-8")) != lock["program_source_sha256"] or pm.sha256_text(Path(program_005_path).read_text(encoding="utf-8")) != lock["program_005_source_sha256"]:
+        raise PhaseError("a program source differs from the locked source")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = [path for path in changed_paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and not path.endswith("preregistration-lock.json")]
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock commit: {scientific}")
+    assert_confirmation_untouched(state, confirmation)
+
+
+def run_confirmation(model: Any, pool: ExposedPool, confirmation: Confirmation, programs: Mapping[str, Any], lock: Mapping[str, Any], *, circuit: pm.MechanismSet = FIXED_CIRCUIT,
+                     axes_dir: Path, log: Any = None) -> dict[str, Any]:
+    say = log or (lambda message: None)
+    weights = pm.Weights.from_model(model)
+    universe = pm.universe_keys(model)
+    axes = pm.site_axes_from_parameters(axes_dir)
+    fresh_nouns = tuple(confirmation.nouns)
+    say("fresh nouns on the manifest frames")
+    ev_manifest = pm.EvalContext(model, weights, circuit, None, tuple(pool.manifest_frames), fresh_nouns, pm.PromptCache(model, fresh_nouns), axes, "H1")
+    manifest_results = circuit_families(ev_manifest, universe)
+    manifest_floors = circuit_floors(manifest_results, fresh=False)
+    say("fresh frames with the original cue pairs")
+    cache_fresh = pm.PromptCache(model, fresh_nouns)
+    ev_fresh = pm.EvalContext(model, weights, circuit, None, tuple(confirmation.frames), fresh_nouns, cache_fresh, axes, "H1")
+    fresh_results = circuit_families(ev_fresh, universe)
+    fresh_floors = circuit_floors(fresh_results, fresh=True)
+    say("fresh cue tokens: behavior and E-patch")
+    measurements = measure_confirmation_families(model, weights, confirmation, programs, cache=cache_fresh)
+    tau = float(lock["tau"])
+    program_floors = y_floors(measurements, tau=tau)
+    bands = y_band_hits(measurements["per_token"], tau=tau)
+    baselines = {name: {"Y1": y_summary(measurements["per_token"], name, "epatch_measured", f"epatch_mae:{name}"), "Y2": y_summary(measurements["per_token"], name, "behavior_measured", f"behavior_mae:{name}")}
+                 for name in programs if name != "selected"}
+    verdict = outcome(manifest_floors=manifest_floors, fresh_floors=fresh_floors, program_floors=program_floors, bands=bands)
+    residual = {"y1_minus_y2_by_token": {word: pm._mean([entry["behavior_measured"] - entry["epatch_measured"] for entry in data["frames"].values()]) for word, data in measurements["per_token"].items()}}
+    def strip(results: Mapping[str, Any]) -> dict[str, Any]:
+        return {key: ({k: v for k, v in value.items() if k != "rows"} if isinstance(value, dict) else value) for key, value in results.items()}
+    return {"manifest": {"results": strip(manifest_results), "floors": manifest_floors}, "fresh_frames": {"results": strip(fresh_results), "floors": fresh_floors},
+            "tokens": measurements, "program_floors": program_floors, "bands": bands, "baselines": baselines, "residual": residual, "outcome": verdict}
+
+
+def _f(value: Any, digits: int = 3) -> str:
+    return "—" if value is None else (f"{value:.{digits}f}" if isinstance(value, (int, float)) and not isinstance(value, bool) else str(value))
+
+
+def _floor_line(floors: Mapping[str, Any]) -> str:
+    return (f"- P1 {_f(floors['P1']['recovery'])}; P3 F {_f(floors['P3']['F'])}, signs {floors['P3']['sign_agreement']}/{floors['P3']['required_signs']}, corr {_f(floors['P3']['correlation'])}; "
+            f"P4 {_f(floors['P4']['value'])}; P5 {_f(floors['P5']['a_single'])}/{_f(floors['P5']['b_blocked_fraction'])}; P7 {_f(floors['P7']['same'])}/{_f(floors['P7']['opposite'])}; "
+            f"P8 {_f(floors['P8']['loss'])}; P9 {_f(floors['P9']['m_T'])}/{_f(floors['P9']['m_R'])}/{_f(floors['P9']['m_R_given_T_frozen'])}")
+
+
+def render_report(state: Mapping[str, Any]) -> str:
+    lines = ["# Experiment 006 Report", "", f"- Run ID: `{state['run_id']}`", f"- Confirmation sha256: `{state['confirmation_sha256']}`",
+             f"- Protocol/code commit at explore: `{state['protocol_code_commit']}`", ""]
+    lines += ["## Phases", ""] + [f"- `{phase}`: `{entry['status']}`" for phase, entry in state["phases"].items()] + [""]
+    exploration = state.get("exploration", {})
+    if "circuit" in exploration:
+        floors = exploration["circuit"]["floors"]
+        lines += ["## Tier A — circuit on the exposed pool", "", f"- Cue effect: {floors['cue_effect']['positive_pairs']}/{floors['cue_effect']['n']} positive (floor {floors['cue_effect']['required']})",
+                  "- " + ", ".join(f"{family} {'pass' if floors[family]['passed'] else 'FAIL'}" for family in ("P1", "P3", "P4", "P5", "P7", "P8", "P9")),
+                  _floor_line(floors), ""]
+    if "selection" in exploration:
+        selection = exploration["selection"]
+        lines += ["## Rank selection (leave-one-cue-out)", ""] + [f"- rank {rank}: error {entry['error']:.4f} ± {entry['se']:.4f}" for rank, entry in sorted(selection["summary"].items(), key=lambda kv: int(kv[0]))]
+        lines += [f"- eligible {selection['eligible']}, best {selection['r_best']}, threshold {selection['threshold']:.4f}, **selected r = {selection['selected']}**",
+                  f"- E005-scalar cue-level error: {exploration['e005_scalar']['error']:.4f}", ""]
+        gate = exploration["quality_gate"]
+        lines += [f"- Quality gate: {'passed' if gate['passed'] else 'FAILED'} (Spearman {gate['spearman']:.3f}, normalized RMSE {gate['normalized_rmse']:.3f}, improvement {gate['improvement_ok']}); τ = {exploration['tau']:.3f}", "",
+                  "| token | measured | predicted (LOCO) | E005-scalar |", "|---|---|---|---|"]
+        for token, entry in gate["cue_level"].items():
+            e005 = exploration["e005_scalar"]["cue_level"].get(token, {})
+            lines.append(f"| {token} | {_f(entry['measured'])} | {_f(entry['predicted'])} | {_f(e005.get('predicted'))} |")
+        lines.append("")
+    if state.get("lock"):
+        lines += ["## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}` (rank {state['lock']['rank']}, τ {_f(state['lock']['tau'])})", ""]
+    confirmation = state.get("confirmation")
+    if confirmation:
+        verdict = confirmation["outcome"]
+        lines += [f"## Confirmation — outcome `{verdict['label']}`", "", f"- Circuit `{verdict['circuit']}` (manifest failures {verdict['manifest_failures'] or 'none'}; fresh-frame failures {verdict['fresh_failures'] or 'none'}); program `{verdict['program']}` (failures {verdict['program_failures'] or 'none'}); bands hit {verdict['bands_hit']}", ""]
+        for label, key in (("Fresh nouns on manifest frames", "manifest"), ("Fresh frames", "fresh_frames")):
+            floors = confirmation[key]["floors"]
+            lines += [f"### {label}", "", f"- Cue effect {floors['cue_effect']['positive_pairs']}/{floors['cue_effect']['n']} (floor {floors['cue_effect']['required']}); descriptive accuracy {floors['cue_effect']['descriptive']}",
+                      "- " + ", ".join(f"{family} {'pass' if floors[family]['passed'] else 'FAIL'}" for family in ("P1", "P3", "P4", "P5", "P7", "P8", "P9")),
+                      _floor_line(floors), ""]
+        program_floors = confirmation["program_floors"]
+        lines += ["### Program (Y families)", "", f"- Y1 {'pass' if program_floors['Y1']['passed'] else 'FAIL'}: Spearman {program_floors['Y1']['spearman']:.3f}, MAE {program_floors['Y1']['mae']:.3f} (τ {program_floors['tau']:.3f}), confident-sign ok {program_floors['Y1']['signs_ok']}",
+                  f"- Y2 {'pass' if program_floors['Y2']['passed'] else 'FAIL'}: Spearman {program_floors['Y2']['spearman']:.3f}, MAE {program_floors['Y2']['mae']:.3f}",
+                  f"- Y3 {'pass' if program_floors['Y3']['passed'] else 'FAIL'}: within τ {program_floors['Y3']['within_tau']}, positive {program_floors['Y3']['positive_pairs']}/{program_floors['Y3']['required']}",
+                  f"- Bands: {confirmation['bands']['tokens_hit']}/24 tokens inside ± τ in ≥ 5/6 frames", ""]
+        for name, entry in confirmation["baselines"].items():
+            lines.append(f"- Y4 {name}: Y1 Spearman {entry['Y1']['spearman']:.3f}, MAE {entry['Y1']['mae']:.3f}; Y2 Spearman {entry['Y2']['spearman']:.3f}, MAE {entry['Y2']['mae']:.3f}")
+        lines += ["", "| token | category | E-patch measured | behavior measured | selected | R1-PCA | E005-scalar |", "|---|---|---|---|---|---|---|"]
+        for word, data in confirmation["tokens"]["per_token"].items():
+            frames = list(data["frames"].values())
+            lines.append(f"| {word} | {data['category']} | {pm._mean([f['epatch_measured'] for f in frames]):.3f} | {pm._mean([f['behavior_measured'] for f in frames]):.3f} | "
+                         f"{pm._mean([f['predicted:selected'] for f in frames]):.3f} | {pm._mean([f['predicted:r1-pca'] for f in frames]):.3f} | {pm._mean([f['predicted:e005-scalar'] for f in frames]):.3f} |")
+        lines.append("")
+    lines += ["## Execution ledger", "", f"- Executed prompt keys: {len(state['executed_prompt_keys'])}", f"- Executed noun keys: {len(state['executed_noun_keys'])}", ""]
+    return "\n".join(lines)
