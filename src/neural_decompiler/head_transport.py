@@ -599,6 +599,14 @@ def check_ov_identities(analysis: Mapping[str, Any], plural_head_norm: float, wh
             raise pm.IncidentError(f"{where}: the OV {key.replace('_', ' ')} is {analysis[key] / scale:.2e} relative to the plural cue's head change")
 
 
+def modal_stage(stages: Sequence[str]) -> tuple[str, float]:
+    """Mode over frames of the non-additivity stage; ties go to the earliest stage (NONE last); returns the agreeing fraction."""
+    counts = Counter(stages)
+    order = list(ADDITIVITY_STAGES) + ["NONE"]
+    best = min(counts, key=lambda stage: (-counts[stage], order.index(stage) if stage in order else len(order)))
+    return best, counts[best] / len(stages)
+
+
 def level_table(pairs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """Exposed MAE and R² of each level's q̂ against the measured q_T over the (token, frame) pairs, and the locked level."""
     out: dict[str, Any] = {"levels": {}}
@@ -799,14 +807,12 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
     tokens_out = {}
     for name, token_id in pool.tokens:
         frames = per_frame[name]
-        stages = [analysis["non_additivity_stage"] for analysis in frames.values()]
-        counts = Counter(stages)
-        modal = min(counts, key=lambda stage: (-counts[stage], (list(ADDITIVITY_STAGES) + ["NONE"]).index(stage)))
+        modal, agreement = modal_stage([analysis["non_additivity_stage"] for analysis in frames.values()])
         tokens_out[name] = {"token": name, "token_id": token_id, "category": pool.token_category[name], "source": pool.token_source[name],
                             "q_T": cs._mean_or_none([a["q_T"] for a in frames.values()]), "q_R1": cs._mean_or_none([a["q_R1"] for a in frames.values()]), "s_R0": cs._mean_or_none([a["s_R0"] for a in frames.values()]),
                             "levels": {key: cs._mean_or_none([a["levels"][key] for a in frames.values()]) for key in ("P1", "P2", "P3", "remainder")},
                             "gaps": {stage: cs._mean_or_none([a["gaps"][stage] for a in frames.values()]) for stage in ADDITIVITY_STAGES},
-                            "non_additivity_stage": modal, "non_additivity_agreement": counts[modal] / len(stages),
+                            "non_additivity_stage": modal, "non_additivity_agreement": agreement,
                             "attention_ratio": cs._mean_or_none([a["attention_ratio"] for a in frames.values()]), "sigma_ratio": pm._mean([a["sigma_ratio"] for a in frames.values()]),
                             "dc": pm._mean([a["dc"] for a in frames.values()]), "dc_beh": pm._mean([a["dc_beh"] for a in frames.values()])}
     exploration["tokens"] = tokens_out
@@ -909,10 +915,12 @@ def render_predictions(lock: Mapping[str, Any]) -> str:
 
 
 def build_candidate_lock(*, state: Mapping[str, Any], manifest_sha256: str, extension: pm.Extension, confirmation: Confirmation009, predictions: Mapping[str, Any], parameters_dir: Path,
-                         program_source: Path, protocol_code_commit: str, axes_T_direction: Sequence[float], read_direction: Sequence[float]) -> dict[str, Any]:
+                         program_source: Path, protocol_code_commit: str, axes_T_direction: Sequence[float], read_direction: Sequence[float], transport_v: Sequence[float] | None = None) -> dict[str, Any]:
     exploration = state["exploration"]
     mechanism = exploration["mechanism"]
     transport = exploration["transport_rule"] if exploration["transport_rule"]["gate"]["passed"] else None
+    if transport is not None and transport_v is None:
+        raise PhaseError("the lock must carry the transport rule's direction v")
     contrast = exploration["contrast_rule"] if exploration["contrast_rule"]["gate"]["passed"] else None
     lock = {
         "schema_version": 1, "experiment": "009", "created_at": pm.utc_now(), "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
@@ -921,7 +929,7 @@ def build_candidate_lock(*, state: Mapping[str, Any], manifest_sha256: str, exte
         "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "seeds": {"runtime": RUNTIME_SEED, "control": CONTROL_SEED},
         "head": HEAD_KEY, "axes": exploration["axes"], "d_T": list(axes_T_direction), "read_direction": list(read_direction),
         "mechanism": {"locked_level": mechanism["locked_level"], "levels": mechanism["levels"], "tau_M": mechanism["tau_M"], "meaning": mechanism["meaning"], "floors": {"r2": MECHANISM_R2_FLOOR, "mae": MECHANISM_MAE_CEILING, "y1_spearman": Y1_SPEARMAN}},
-        "transport_rule": ({"digest": transport["digest"], "beta": transport["beta"], "tau_2": transport["tau_2"], "gate": transport["gate"], "loco_error": transport["error"]} if transport else None),
+        "transport_rule": ({"digest": transport["digest"], "v": list(transport_v), "beta": transport["beta"], "tau_2": transport["tau_2"], "gate": transport["gate"], "loco_error": transport["error"]} if transport else None),
         "contrast_rule": ({"parameters_sha256": contrast["parameters_sha256"], "rank": contrast["selection"]["selected"], "tau_3": contrast["tau_3"], "gate": contrast["gate"], "selection": contrast["selection"]} if contrast else None),
         "program_source_sha256": pm.sha256_text(Path(program_source).read_text(encoding="utf-8")),
         "category_floors": {"singular_max_q": SINGULAR_MAX_Q, "plural_min_q": PLURAL_MIN_Q, "plural_rate": PLURAL_RATE, "y2_spearman": Y2_SPEARMAN},
@@ -1001,7 +1009,10 @@ def run_confirmation(model: Any, pool: cs.Pool008, confirmation: Confirmation009
             positive += int(c_a[noun.lexical_key] - c_b[noun.lexical_key] > 0)
         plural_name = pool.plural_cue[frame.template_id]
         plural = measure_token(model, weights, head, cache, ref, plural_name, pl.cue_token_id, e_axis, nouns, token_prompt=pl)
-        results["frames"][frame.frame_id] = {"reconstruction_error": ref.reconstruction_error, "plural_head_norm": float(plural.full.head_delta.norm()), "dc_pl": pm._mean(list(plural.full.shifts.values()))}
+        plural_analysis = frame_analysis_009(plural, plural, axes, [noun.lexical_key for noun in nouns])
+        check_ov_identities(plural_analysis, float(plural.full.head_delta.norm()), f"{frame.frame_id}/{plural_name}")
+        results["frames"][frame.frame_id] = {"reconstruction_error": ref.reconstruction_error, "plural_head_norm": float(plural.full.head_delta.norm()), "dc_pl": pm._mean(list(plural.full.shifts.values())),
+                                             "plural_levels": plural_analysis["levels"]}
         for token in confirmation.tokens:
             if frame.frame_id not in token["licensed_frames"]:
                 continue
@@ -1014,28 +1025,43 @@ def run_confirmation(model: Any, pool: cs.Pool008, confirmation: Confirmation009
         say(f"  {frame.frame_id}: {sum(1 for token in confirmation.tokens if frame.frame_id in token['licensed_frames'])} tokens")
     required = pm.exact_count_floor(cd.CUE_EFFECT_FRESH, total)
     results["cue_effect"] = {"positive_pairs": positive, "pairs": total, "required": required, "passed": positive >= required}
-    # Y1 — mechanism at the locked level (no fitted parameter).
+    # Y1 — mechanism at the locked level (no fitted parameter); every level's fresh statistics are reported, with the level that would have passed.
     level = lock["mechanism"]["locked_level"]
-    if level is not None:
-        rows = [(pair["q_T"], pair["levels"][f"P{level}"]) for pair in pairs if pair["q_T"] is not None and pair["levels"][f"P{level}"] is not None]
+    fresh_levels = {}
+    for j in LEVELS:
+        rows = [(pair["q_T"], pair["levels"][f"P{j}"]) for pair in pairs if pair["q_T"] is not None and pair["levels"][f"P{j}"] is not None]
+        if not rows:
+            fresh_levels[f"P{j}"] = {"n_pairs": 0, "spearman": None, "mae": None, "tau": None, "would_pass": False}
+            continue
         predicted, measured = [r[1] for r in rows], [r[0] for r in rows]
         mae = pm._mean([abs(p - m) for p, m in zip(predicted, measured)])
         spearman = pm.spearman(predicted, measured)
-        results["Y1"] = {"level": level, "n_pairs": len(rows), "spearman": spearman, "mae": mae, "tau_M": lock["mechanism"]["tau_M"], "passed": spearman >= Y1_SPEARMAN and mae <= lock["mechanism"]["tau_M"],
-                         "levels_fresh": level_table([{"q_T": p["q_T"], "levels": p["levels"]} for p in pairs])["levels"]}
+        exposed_rmse = lock["mechanism"]["levels"][f"P{j}"]["rmse"]
+        tau_j = max(TAU_MIN, TAU_MULTIPLIER * exposed_rmse) if exposed_rmse is not None else None
+        fresh_levels[f"P{j}"] = {"n_pairs": len(rows), "spearman": spearman, "mae": mae, "tau": tau_j, "would_pass": tau_j is not None and spearman >= Y1_SPEARMAN and mae <= tau_j}
+    would_pass_at = next((j for j in LEVELS if fresh_levels[f"P{j}"]["would_pass"]), None)
+    if level is not None:
+        entry = fresh_levels[f"P{level}"]
+        results["Y1"] = {"level": level, "n_pairs": entry["n_pairs"], "spearman": entry["spearman"], "mae": entry["mae"], "tau_M": lock["mechanism"]["tau_M"],
+                         "passed": entry["spearman"] is not None and entry["spearman"] >= Y1_SPEARMAN and entry["mae"] <= lock["mechanism"]["tau_M"], "levels_fresh": fresh_levels, "would_pass_at": would_pass_at}
     else:
-        results["Y1"] = {"level": None, "passed": None, "levels_fresh": level_table([{"q_T": p["q_T"], "levels": p["levels"]} for p in pairs])["levels"]}
+        results["Y1"] = {"level": None, "passed": None, "levels_fresh": fresh_levels, "would_pass_at": would_pass_at}
     # Token means.
     tokens_out = {}
     for token in confirmation.tokens:
         word = token["word"]
         frames = per_frame[word]
         locked = lock["predictions"]["tokens"][word]
+        informative = [frame_id for frame_id, a in frames.items() if a["q_T"] is not None]
+        stage, agreement = modal_stage([a["non_additivity_stage"] for a in frames.values()])
         entry = {"category": token["category"], "expectation": token["expectation"], "q_T": cs._mean_or_none([a["q_T"] for a in frames.values()]),
-                 "q_T_predicted": locked.get("q_T_mean"), "dc": pm._mean([a["dc"] for a in frames.values()]), "dc_beh": pm._mean([a["dc_beh"] for a in frames.values()]),
+                 # the predicted mean is taken over the same informative frames as the measured mean
+                 "q_T_predicted": (pm._mean([locked["frames"][frame_id]["q_T"] for frame_id in informative]) if informative and "q_T" in next(iter(locked["frames"].values())) else locked.get("q_T_mean")),
+                 "q_T_predicted_all_frames": locked.get("q_T_mean"),
+                 "dc": pm._mean([a["dc"] for a in frames.values()]), "dc_beh": pm._mean([a["dc_beh"] for a in frames.values()]),
                  "contrast_predicted": locked.get("contrast_mean"), "s_R0": cs._mean_or_none([a["s_R0"] for a in frames.values()]), "q_R1": cs._mean_or_none([a["q_R1"] for a in frames.values()]),
                  "attention_ratio": cs._mean_or_none([a["attention_ratio"] for a in frames.values()]),
-                 "non_additivity_stage": Counter(a["non_additivity_stage"] for a in frames.values()).most_common(1)[0][0], "levels": {key: cs._mean_or_none([a["levels"][key] for a in frames.values()]) for key in ("P1", "P2", "P3", "remainder")}}
+                 "non_additivity_stage": stage, "non_additivity_agreement": agreement, "levels": {key: cs._mean_or_none([a["levels"][key] for a in frames.values()]) for key in ("P1", "P2", "P3", "remainder")}}
         if "program_007" in next(iter(locked["frames"].values())):
             entry["program_007_predicted"] = pm._mean([f["program_007"]["mean"] for f in locked["frames"].values()])
         tokens_out[word] = entry
@@ -1109,8 +1135,9 @@ def render_report(state: Mapping[str, Any]) -> str:
     lines = ["# Experiment 009 Report", "", f"- Run ID: `{state['run_id']}`", f"- Confirmation sha256: `{state['confirmation_sha256']}`", f"- Protocol/code commit at explore: `{state['protocol_code_commit']}`", ""]
     lines += ["## Phases", ""] + [f"- `{phase}`: `{entry['status']}`" for phase, entry in state["phases"].items()] + [""]
     exploration = state.get("exploration", {})
-    if exploration.get("incidents"):
-        lines += ["## Incidents", ""] + [f"- `{e['phase']}` at commit `{e.get('commit', '?')}` ({e['at']}): {e['message']}" for e in exploration["incidents"]] + [""]
+    incidents = list(exploration.get("incidents", [])) + ([state["confirmation"]["incident"]] if isinstance(state.get("confirmation"), dict) and "incident" in state["confirmation"] else [])
+    if incidents:
+        lines += ["## Incidents", ""] + [f"- `{e['phase']}` at commit `{e.get('commit', '?')}` ({e['at']}): {e['message']}" for e in incidents] + [""]
     if "mechanism" in exploration:
         m = exploration["mechanism"]
         rep = exploration["replication"]
@@ -1134,7 +1161,7 @@ def render_report(state: Mapping[str, Any]) -> str:
         lines += [f"## Confirmation — `{o['label']}`", "", f"- Fresh-frame cue effect {ce['positive_pairs']}/{ce['pairs']} (floor {ce['required']})"]
         y1, y2, y3 = confirmation["Y1"], confirmation["Y2"], confirmation["Y3"]
         if y1.get("level") is not None:
-            lines.append(f"- Y1 (mechanism P{y1['level']}): Spearman {f(y1['spearman'], 3)}, MAE {f(y1['mae'], 3)} (τ_M {f(y1['tau_M'], 3)}) → {'pass' if y1['passed'] else 'FAIL'}; fresh levels " + "; ".join(f"{k}: MAE {f(v['mae'], 3)}, R² {f(v['r2'], 3)}" for k, v in y1["levels_fresh"].items()))
+            lines.append(f"- Y1 (mechanism P{y1['level']}): Spearman {f(y1['spearman'], 3)}, MAE {f(y1['mae'], 3)} (τ_M {f(y1['tau_M'], 3)}) → {'pass' if y1['passed'] else 'FAIL'}; fresh levels " + "; ".join(f"{k}: Spearman {f(v['spearman'], 3)}, MAE {f(v['mae'], 3)} (τ {f(v['tau'], 3)})" for k, v in y1["levels_fresh"].items()) + f"; would pass at {y1['would_pass_at']}")
         if y2.get("passed") is not None:
             lines.append(f"- Y2 (transport rule): Spearman {f(y2['spearman'], 3)}, MAE {f(y2['mae'], 3)} (τ₂ {f(y2['tau_2'], 3)}), categories ok {y2['categories_ok']} → {'pass' if y2['passed'] else 'FAIL'} {y2['failing'] or ''}")
         if y3.get("passed") is not None:

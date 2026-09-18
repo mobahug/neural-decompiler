@@ -43,8 +43,11 @@ uv run python experiments/009-head-transport-rule/run.py report
   outcome rule.
 - `report` renders `outputs/experiment-009/report.md`.
 
-Boundaries: no fresh prompt before `confirm`; every phase refuses to run out of order or twice; numerical and
-identity failures are incidents recorded with their commit; the head weights are read from the model, the OV levels
-from captured activations; nothing is fitted on confirmation data.
+Boundaries: no fresh prompt before `confirm`; every phase refuses to run out of order or twice; `lock` refuses if a
+scientific path changed since `explore`; numerical and identity failures and software defects are incidents recorded
+with their commit; the head weights are read from the model, the OV levels from captured activations; nothing is
+fitted on confirmation data. Stated limit: the fresh bare adjective `small` is also the trailing adjective of the
+exposed frame `Lena and Omar displayed {cue} small`; the frozen disjointness rule covers cue tokens and noun forms, so
+this is compliant, and the token enters no fit.
 
 ## Status — 2026-09-18: confirmation set frozen; Tier A not yet run

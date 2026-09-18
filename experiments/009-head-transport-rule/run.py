@@ -271,10 +271,15 @@ class Runner:
         finally:
             del model
             gc.collect()
+        changed = self.changed_paths(state["protocol_code_commit"])
+        scientific = [path for path in (changed or []) if path.startswith(ht.SCIENTIFIC_PATH_PREFIXES) and path not in ht.NON_SCIENTIFIC_PATHS and not path.startswith(ht.NON_SCIENTIFIC_PREFIXES)]
+        if changed is None or scientific:
+            raise ht.PhaseError(f"scientific paths changed since explore: {scientific if changed is not None else 'explore commit is not an ancestor'}; lock must be written at the explore protocol")
         predictions = self._predictions(weights, confirmation, pool, exploration)
+        transport, _ = self._rules(exploration, pool.reference_ids)
         lock = ht.build_candidate_lock(state=state, manifest_sha256=manifest_sha256, extension=extension, confirmation=confirmation, predictions=predictions, parameters_dir=self.parameters_dir,
                                        program_source=self.program_source, protocol_code_commit=self._provenance()["protocol_code_commit"], axes_T_direction=exploration["axes_vectors"]["T"],
-                                       read_direction=exploration["head"]["read_direction"])
+                                       read_direction=exploration["head"]["read_direction"], transport_v=(transport.v.tolist() if transport is not None else None))
         candidate_path = self.results_path.parent / "candidate-lock.json"
         predictions_path = self.results_path.parent / "candidate-predictions.md"
         candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
@@ -311,6 +316,9 @@ class Runner:
             except pm.IncidentError as error:
                 self._record_incident(state, "confirm", error)
                 return 2
+            except Exception as error:  # a software defect is an incident too: record it, then surface it
+                self._record_incident(state, "confirm", error)
+                raise
         finally:
             del model
             gc.collect()

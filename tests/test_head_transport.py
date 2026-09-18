@@ -233,3 +233,24 @@ def test_reconstruction_and_measurements_on_the_fake(fake_setting):
         if plural_analysis["q_T"] is not None:  # the fake's head may carry no number signal in a frame (uninformative stage)
             assert plural_analysis["q_T"] == pytest.approx(1.0) and plural_analysis["levels"]["P3"] == pytest.approx(1.0 - (plural_analysis["levels"]["remainder"] or 0.0), abs=1e-6)
         assert all(plural_analysis["fractions"]["full"][stage] in (None, pytest.approx(1.0)) for stage in cs.VECTOR_STAGES)
+
+
+def test_additivity_stage_and_ov_identity_check_and_lock_reproduction():
+    # The non-additivity stage is the first stage whose oriented gap exceeds G_MAX; NONE otherwise; the mode ties to the earliest stage.
+    assert ht.modal_stage(["R2", "T", "T", "NONE"]) == ("T", 0.5) and ht.modal_stage(["R3", "R1"]) == ("R1", 0.5) and ht.modal_stage(["NONE", "NONE"]) == ("NONE", 1.0)
+    with pytest.raises(pm.IncidentError, match="identity error"):
+        ht.check_ov_identities({"identity_error": 1e-2, "decomposition_error": 0.0}, 1.0, "x")
+    ht.check_ov_identities({"identity_error": 1e-6, "decomposition_error": 1e-6}, 1.0, "x")
+    lock = {"predictions": {"tokens": {"w": {"frames": {"f": {"q_T": 0.5, "contrast": {"mean": -1.0, "by_noun": {"n": -1.0}}, "program_007": {"mean": -0.5, "by_noun": {"n": -0.5}}}}}}}}
+    assert ht.assert_lock_predictions_reproduced(lock, lock["predictions"]) == 0.0
+    perturbed = {"tokens": {"w": {"frames": {"f": {"q_T": 0.5, "contrast": {"mean": -1.0, "by_noun": {"n": -1.0 + 1e-6}}, "program_007": {"mean": -0.5, "by_noun": {"n": -0.5}}}}}}}
+    with pytest.raises(ht.PhaseError, match="nothing was executed"):
+        ht.assert_lock_predictions_reproduced(lock, perturbed)
+
+
+def test_outcome_triple_and_not_locked():
+    base = {"cue_effect": {"passed": True}, "Y1": {"passed": True, "level": 1}, "Y2": {"passed": False}, "Y3": {"passed": None}}
+    assert ht.outcome(base)["label"] == "HEAD_MECHANISM_CONFIRMED_P1 | TRANSPORT_RULE_FAILED | NOT_LOCKED"
+    assert ht.outcome({**base, "cue_effect": {"passed": False}})["label"] == "CUE_EFFECT_NOT_REPLICATED"
+    assert ht.outcome({**base, "Y1": {"passed": False, "level": 2}, "Y3": {"passed": True}})["label"] == "HEAD_MECHANISM_NOT_SUPPORTED | TRANSPORT_RULE_FAILED | CONTRAST_RULE_PREDICTED"
+    assert ht.outcome({**base, "Y1": {"passed": None, "level": None}})["mechanism"] == "NOT_LOCKED"
