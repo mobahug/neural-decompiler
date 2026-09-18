@@ -443,3 +443,202 @@ def load_inputs(root: Path) -> tuple[ScreeningManifest, str, pm.Extension, Confi
     manifest, manifest_sha256, extension = pm.load_inputs(root)
     confirmation = load_confirmation(root / CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
     return manifest, manifest_sha256, extension, confirmation
+
+
+# ---------------------------------------------------------------------------
+# E-patch residual response on exposed prompts, and the low-rank fit.
+
+import torch  # noqa: E402
+
+from .interventions import ReplacementSource  # noqa: E402
+
+
+def e_slice(weights: pm.Weights, token_id: int) -> torch.Tensor:
+    """The weight-only E(w) shaped as the L00.MLP replacement slice [1, 1, d_model]."""
+    return pm.lexicon_vector(weights, token_id).reshape(1, 1, -1).to(torch.float32)
+
+
+@dataclass(frozen=True)
+class EPatchResponse:
+    token: str
+    token_id: int
+    frame_id: str
+    template_id: str
+    delta_residual: torch.Tensor  # [d_model] final pre-LayerNorm residual change
+    shifts: Mapping[str, float]  # noun -> E-patch contrast shift
+    circuit_share: float  # fraction of |delta_residual|^2 explained by the named T ∪ R (and E at p_t) outputs' change
+    integrity: tuple[dict[str, Any], ...]
+
+
+def measure_epatch_responses(model: Any, weights: pm.Weights, cache: pm.PromptCache, frames: Sequence[pm.Frame], tokens: Sequence[tuple[str, int]],
+                             reference_ids: Mapping[str, int], circuit: pm.MechanismSet = FIXED_CIRCUIT) -> dict[tuple[str, str], EPatchResponse]:
+    """One intervention forward per (token, frame): replace E in the reference prompt by E(w)."""
+    n_layers = int(model.cfg.n_layers)
+    final_key = f"RESID_POST.L{n_layers - 1}"
+    responses: dict[tuple[str, str], EPatchResponse] = {}
+    for frame in frames:
+        reference = pm.Prompt(frame, reference_ids[frame.template_id], "ref")
+        clean = cache.run(reference)
+        clean_final = clean.vector((final_key, reference.p_t))
+        circuit_sites = circuit.p_t_sites_for(frame)
+        clean_circuit = pm.summed_vector(clean, circuit_sites)
+        c_ref = cache.c(reference)
+        captured_reference = clean.vector(("L00.MLP", reference.p_c))
+        lexicon_gap = float((pm.lexicon_vector(weights, reference.cue_token_id) - captured_reference).abs().max())
+        if lexicon_gap > 1e-5:
+            raise pm.IncidentError(f"{frame.frame_id}: weight-only E(ref) differs from the captured L00.MLP output by {lexicon_gap:.2e}")
+        for token, token_id in tokens:
+            if token_id == reference.cue_token_id:
+                # Replacing E(ref) by E(ref) is the identity: the response is zero by definition, no forward is run.
+                responses[(token, frame.frame_id)] = EPatchResponse(token, token_id, frame.frame_id, frame.template_id, torch.zeros_like(clean_final),
+                                                                    {noun: 0.0 for noun in c_ref}, 1.0, ())
+                continue
+            site = ("L00.MLP", reference.p_c)
+            patched = pm.run_patched(model, reference, {site: e_slice(weights, token_id)}, {site: ReplacementSource.RESAMPLE},
+                                     capture_sites=[(final_key, reference.p_t)] + list(circuit_sites))
+            delta = patched.vector((final_key, reference.p_t)) - clean_final
+            circuit_delta = pm.summed_vector(patched, circuit_sites) - clean_circuit
+            norm = float(delta.double().norm() ** 2)
+            share = float((delta.double() @ circuit_delta.double()) / norm) if norm > 0 else 0.0
+            c_patched = pm.contrasts(patched.logits, cache.nouns)
+            responses[(token, frame.frame_id)] = EPatchResponse(token, token_id, frame.frame_id, frame.template_id, delta.clone(),
+                                                                {noun: c_patched[noun] - c_ref[noun] for noun in c_patched}, share, patched.integrity)
+    return responses
+
+
+@dataclass(frozen=True)
+class LowRankFit:
+    rank: int
+    mu: torch.Tensor  # [d_model] float64
+    basis: torch.Tensor  # U_r [d_model, r] float64
+    maps: Mapping[str, torch.Tensor]  # template -> V_T [d_model, r] float64
+    reference_ids: Mapping[str, int]
+    rho_frame: Mapping[str, torch.Tensor]  # frame_id -> final reference residual (float64)
+    rho_template: Mapping[str, torch.Tensor]
+    fit_tokens: tuple[str, ...]
+    singular_values: tuple[float, ...]
+
+    def z(self, e_vector: torch.Tensor) -> torch.Tensor:
+        return self.basis.T @ (e_vector.double() - self.mu)
+
+    def dz(self, template: str, e_vector: torch.Tensor, e_reference: torch.Tensor) -> torch.Tensor:
+        return self.basis.T @ (e_vector.double() - e_reference.double())
+
+
+def pca_basis(e_vectors: Sequence[torch.Tensor], rank: int) -> tuple[torch.Tensor, torch.Tensor, tuple[float, ...]]:
+    """Centered PCA: rows of X are centered E vectors; U_r = first r right singular vectors (columns, in R^d)."""
+    matrix = torch.stack([vector.double().reshape(-1) for vector in e_vectors])
+    mu = matrix.mean(dim=0)
+    centered = matrix - mu
+    _, singular, vt = torch.linalg.svd(centered, full_matrices=False)
+    if rank > vt.shape[0]:
+        raise ValueError(f"rank {rank} exceeds the number of centered vectors")
+    return mu, vt[:rank].T.contiguous(), tuple(float(value) for value in singular[:rank])
+
+
+def fit_low_rank(*, e_vectors: Mapping[str, torch.Tensor], reference_ids: Mapping[str, int], reference_vectors: Mapping[str, torch.Tensor],
+                 responses: Mapping[tuple[str, str], EPatchResponse], frames: Sequence[pm.Frame], cache: pm.PromptCache, fit_tokens: Sequence[str], rank: int) -> LowRankFit:
+    """μ_E and U_r from the fit tokens' E vectors; V_T by no-intercept least squares on Δr_Epatch ≈ V_T Δz_T."""
+    mu, basis, singular = pca_basis([e_vectors[token] for token in fit_tokens], rank)
+    n_layers = int(cache.model.cfg.n_layers)
+    final_key = f"RESID_POST.L{n_layers - 1}"
+    maps: dict[str, torch.Tensor] = {}
+    rho_frame: dict[str, torch.Tensor] = {}
+    rho_template: dict[str, torch.Tensor] = {}
+    for template in pm.TEMPLATE_ORDER:
+        template_frames = [frame for frame in frames if frame.template_id == template]
+        reference_vector = reference_vectors[template].double()
+        features, targets = [], []
+        for frame in template_frames:
+            reference = pm.Prompt(frame, reference_ids[template], "ref")
+            rho_frame[frame.frame_id] = cache.run(reference).vector((final_key, reference.p_t)).double()
+            for token in fit_tokens:
+                response = responses[(token, frame.frame_id)]
+                features.append(basis.T @ (e_vectors[token].double() - reference_vector))
+                targets.append(response.delta_residual.double())
+        rho_template[template] = torch.stack([rho_frame[frame.frame_id] for frame in template_frames]).mean(dim=0)
+        Z = torch.stack(features)  # [n, r]
+        R = torch.stack(targets)  # [n, d]
+        solution = torch.linalg.lstsq(Z, R).solution  # [r, d]
+        maps[template] = solution.T.contiguous()  # [d, r]
+    return LowRankFit(rank, mu, basis, maps, dict(reference_ids), rho_frame, rho_template, tuple(fit_tokens), singular)
+
+
+def predict_epatch_shift(fit: LowRankFit, weights: pm.Weights, template: str, frame_id: str | None, e_vector: torch.Tensor, e_reference: torch.Tensor, noun: pm.Noun) -> float:
+    """Δĉ_N(w, f) = −u_N · [LN(ρ + V_T Δz_T(w)) − LN(ρ)] with the exact final LayerNorm (float64)."""
+    rho = fit.rho_frame[frame_id] if frame_id is not None and frame_id in fit.rho_frame else fit.rho_template[template]
+    delta = fit.maps[template] @ fit.dz(template, e_vector, e_reference)
+    gamma, beta = weights.ln_final_w.double(), weights.ln_final_b.double()
+    u = weights.u(noun)
+    return float(-u @ (pm.exact_layer_norm(rho + delta, gamma, beta, weights.eps) - pm.exact_layer_norm(rho, gamma, beta, weights.eps)))
+
+
+def cue_level_values(fit: LowRankFit, weights: pm.Weights, e_vectors: Mapping[str, torch.Tensor], reference_vectors: Mapping[str, torch.Tensor],
+                     responses: Mapping[tuple[str, str], EPatchResponse], frames: Sequence[pm.Frame], nouns: Sequence[pm.Noun], token: str) -> dict[str, float]:
+    """For one token: mean predicted and measured E-patch shift over frames and nouns, and the mean absolute error."""
+    predicted, measured, errors = [], [], []
+    for frame in frames:
+        response = responses[(token, frame.frame_id)]
+        for noun in nouns:
+            if not noun.single_token:
+                continue
+            value = predict_epatch_shift(fit, weights, frame.template_id, frame.frame_id, e_vectors[token], reference_vectors[frame.template_id], noun)
+            predicted.append(value)
+            measured.append(response.shifts[noun.lexical_key])
+            errors.append(abs(value - response.shifts[noun.lexical_key]))
+    return {"predicted": pm._mean(predicted), "measured": pm._mean(measured), "mae": pm._mean(errors)}
+
+
+# ---------------------------------------------------------------------------
+# Export / load of the weight-only program; the E005-scalar baseline.
+
+
+def export_low_rank(directory: Path, weights: pm.Weights, fit: LowRankFit) -> dict[str, Any]:
+    from .provenance import tensor_digest
+
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    tensors: dict[str, torch.Tensor] = {
+        "W_E": weights.W_E, "W_U": weights.W_U, "ln_final_w": weights.ln_final_w, "ln_final_b": weights.ln_final_b,
+        "ln2_0_w": weights.ln2_0_w, "ln2_0_b": weights.ln2_0_b, "mlp0_W_in": weights.mlp0_W_in, "mlp0_b_in": weights.mlp0_b_in,
+        "mlp0_W_out": weights.mlp0_W_out, "mlp0_b_out": weights.mlp0_b_out,
+        "mu": fit.mu, "basis": fit.basis,
+    }
+    for template, matrix in fit.maps.items():
+        tensors[f"map.{template}"] = matrix
+    for frame_id, vector in fit.rho_frame.items():
+        tensors[f"rho_frame.{frame_id}"] = vector
+    for template, vector in fit.rho_template.items():
+        tensors[f"rho_template.{template}"] = vector
+    digests = {}
+    for name, tensor in tensors.items():
+        path = directory / f"{name}.pt"
+        torch.save(tensor.detach().cpu().contiguous(), path)
+        digests[name] = {"file": path.name, "shape": list(tensor.shape), "dtype": str(tensor.dtype), "sha256": tensor_digest(tensor)}
+    index = {"eps": weights.eps, "act_fn": weights.act_fn, "rank": fit.rank, "templates": list(pm.TEMPLATE_ORDER),
+             "reference_ids": dict(fit.reference_ids), "fit_tokens": list(fit.fit_tokens), "singular_values": list(fit.singular_values),
+             "frames": sorted(fit.rho_frame), "tensors": digests}
+    (directory / "parameters.json").write_text(pm.canonical_json(index) + "\n", encoding="utf-8")
+    return index
+
+
+def load_low_rank_program(parameters_dir: Path, program_path: Path) -> Any:
+    import importlib.util
+    import sys
+
+    spec = importlib.util.spec_from_file_location("low_rank_program", str(program_path))
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.LowRankProgram.load(Path(parameters_dir))
+
+
+def e005_scalar_baseline(ctx: pm.DiscoveryContext, *, parameters_dir: Path, program_path: Path, expected_index_sha256: str | None, circuit: pm.MechanismSet = FIXED_CIRCUIT) -> tuple[Any, dict[str, Any]]:
+    """Refit the frozen Experiment 005 M3 program on development data and record whether its digest matches the 005 lock."""
+    parameters = pm.estimate_program_parameters(ctx, circuit)
+    index = pm.export_program_parameters(parameters_dir, ctx.weights, parameters, vocab_size=int(ctx.weights.W_E.shape[0]))
+    digest = pm.sha256_text(pm.canonical_json(index))
+    program = pm.load_program(parameters_dir, program_path)
+    return program, {"parameters_index_sha256": digest, "matches_experiment_005_lock": (digest == expected_index_sha256) if expected_index_sha256 else None,
+                     "k_t": parameters.k_t, "gains": parameters.gains()}
