@@ -713,8 +713,35 @@ def circuit_report(manifest_floors: Mapping[str, Any], fresh_floors: Mapping[str
             "fresh_failures": list(fresh_floors["failures"]), "c002_review_eligible": both, "enters_outcome": False}
 
 
+class ConfirmationIncident(pm.IncidentError):
+    """An incident raised after fresh prompts ran; carries the invalidated measurements so the report can keep them."""
+
+    def __init__(self, message: str, payload: Mapping[str, Any]) -> None:
+        super().__init__(message)
+        self.payload = dict(payload)
+
+
+def assert_lock_predictions_reproduced(programs: Mapping[str, Any], confirmation: cd.Confirmation, lock: Mapping[str, Any]) -> float:
+    """Before any confirmation prompt runs: the on-disk programs must reproduce every preregistered prediction (no model needed)."""
+    recomputed = cd.lock_predictions(programs, confirmation, tau=float(lock["tau"]))
+    worst = 0.0
+    for word, entry in recomputed["tokens"].items():
+        for frame_id, frame_entry in entry["frames"].items():
+            locked = lock["predictions"]["tokens"][word]["frames"][frame_id]["predicted"]
+            for name, value in frame_entry["predicted"].items():
+                worst = max(worst, abs(value["mean"] - locked[name]["mean"]))
+                for noun, prediction in value["by_noun"].items():
+                    worst = max(worst, abs(prediction - locked[name]["by_noun"][noun]))
+    for frame_id, per_program in recomputed["pairs"].items():
+        for name, value in per_program.items():
+            worst = max(worst, abs(value - lock["predictions"]["pairs"][frame_id][name]))
+    if worst > LOCK_PREDICTION_TOLERANCE:
+        raise PhaseError(f"the on-disk programs do not reproduce the preregistered predictions (max difference {worst:.3e}); nothing was executed")
+    return worst
+
+
 def check_locked_predictions(measurements: Mapping[str, Any], lock: Mapping[str, Any]) -> None:
-    """Every per-(token, frame, program) mean prediction recomputed at confirm must equal the preregistered one."""
+    """After the run: every per-(token, frame, program) mean prediction used in the Y families must equal the preregistered one."""
     worst = 0.0
     for word, data in measurements["per_token"].items():
         for frame_id, entry in data["frames"].items():
@@ -722,7 +749,7 @@ def check_locked_predictions(measurements: Mapping[str, Any], lock: Mapping[str,
             for name, value in locked.items():
                 worst = max(worst, abs(entry[f"predicted:{name}"] - value["mean"]))
     if worst > LOCK_PREDICTION_TOLERANCE:
-        raise pm.IncidentError(f"confirm-time predictions differ from the preregistered lock by up to {worst:.3e}")
+        raise ConfirmationIncident(f"confirm-time predictions differ from the preregistered lock by up to {worst:.3e}", {"tokens": measurements})
 
 
 def run_confirmation(model: Any, pool: cd.ExposedPool, confirmation: cd.Confirmation, programs: Mapping[str, Any], lock: Mapping[str, Any], *, circuit: pm.MechanismSet = cd.FIXED_CIRCUIT,

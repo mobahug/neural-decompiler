@@ -293,3 +293,47 @@ def test_validate_lock_refusals(sandbox, monkeypatch):
         validate(lock, inherited={**inherited, "content_sha256": "0" * 64})
     with pytest.raises(ss.PhaseError, match="not match the results state"):
         validate(lock, state={**state, "run_id": "other"})
+
+
+def test_confirm_refuses_before_execution_when_programs_do_not_reproduce_the_lock_and_records_a_late_incident(sandbox, monkeypatch):
+    runner, logs = make_runner(sandbox, monkeypatch)
+    monkeypatch.setattr(ss, "RANKS", (1, 2))
+    assert runner.explore() == 0
+    state = cd.load_results_state(runner.results_path)
+    if not state["exploration"]["quality_gate"]["passed"]:
+        state["exploration"]["quality_gate"]["passed"] = True
+        state["exploration"]["outcome"] = {"label": None, "note": "forced for the fake"}
+        cd.write_results_state(runner.results_path, state)
+    assert runner.calibrate() == 0 and runner.lock() == 0
+    shutil.copy(runner.results_path.parent / "candidate-lock.json", sandbox / ss.LOCK_RELATIVE_PATH)
+    runner.changed_paths = lambda commit: []
+    # Pre-execution: a program that no longer reproduces the lock is a PhaseError and nothing fresh runs.
+    original = ss.load_programs
+
+    def altered(*args, **kwargs):
+        programs = original(*args, **kwargs)
+        selected = programs["selected"]
+        programs["selected"] = type("Shifted", (), {"predict_epatch_shift": lambda self, *a: selected.predict_epatch_shift(*a) + 1e-3,
+                                                    "predict_behavior_shift": lambda self, *a: selected.predict_behavior_shift(*a) + 1e-3,
+                                                    "predict_pair": lambda self, *a: selected.predict_pair(*a)})()
+        return programs
+
+    monkeypatch.setattr(ss, "load_programs", altered)
+    with pytest.raises(ss.PhaseError, match="nothing was executed"):
+        runner.confirm()
+    state = cd.load_results_state(runner.results_path)
+    assert state["phases"]["confirm"]["status"] == "not_started"
+    manifest, manifest_sha256, extension = pm.load_inputs(sandbox)
+    confirmation = cd.load_confirmation(sandbox / ss.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
+    assert not {noun.key for noun in confirmation.nouns} & set(state["executed_noun_keys"])
+    monkeypatch.setattr(ss, "load_programs", original)
+    # Post-execution: an incident after the fresh prompts ran is recorded with the invalidated measurements and blocks any re-run.
+    monkeypatch.setattr(ss, "check_locked_predictions", lambda measurements, lock: (_ for _ in ()).throw(ss.ConfirmationIncident("late mismatch", {"tokens": measurements})))
+    assert runner.confirm() == 2
+    state = cd.load_results_state(runner.results_path)
+    incident = state["confirmation"]["incident"]
+    assert incident["phase"] == "confirm" and "late mismatch" in incident["message"] and len(incident["invalidated"]["tokens"]["per_token"]) == 24
+    assert state["phases"]["confirm"]["status"] == "running" and "lock_predictions_reproduced_max_difference" in state["phases"]["confirm"]
+    with pytest.raises(cd.PhaseError):
+        runner.confirm()
+    assert runner.report() == 0 and "## Incidents" in runner.report_path.read_text()

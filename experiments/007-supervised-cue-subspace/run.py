@@ -173,6 +173,8 @@ class Runner:
 
     def _record_incident(self, state: dict[str, Any], phase: str, error: Exception) -> None:
         entry = {"message": str(error), "at": pm.utc_now(), "phase": phase, "commit": self._provenance()["protocol_code_commit"]}
+        if getattr(error, "payload", None):
+            entry["invalidated"] = dict(error.payload)  # the invalidated measurements stay with the record
         if phase == "explore":
             state["exploration"].setdefault("incidents", []).append(entry)
         else:
@@ -263,7 +265,9 @@ class Runner:
                          program_path=self.program_path, program_005_path=self.program_005_path, git_state=git, tracked=self.tracked(lock_path), changed_paths=self.changed_paths(lock["protocol_code_commit"]))
         pool = cd.exposed_pool(manifest, extension)
         programs = ss.load_programs(self.parameters_dir, self.program_path, self.program_005_path, confirmation.reference_ids)
-        state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": str(git.get("commit"))}
+        reproduced = ss.assert_lock_predictions_reproduced(programs, confirmation, lock)  # PhaseError before anything fresh runs
+        state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": str(git.get("commit")),
+                                      "lock_predictions_reproduced_max_difference": reproduced}
         pm.record_execution(state, confirmation.all_prompts + tuple(confirmation.reference_prompt(frame) for frame in confirmation.frames) + pm.manifest_prompts(pool.manifest_frames), confirmation.nouns)
         cd.write_results_state(self.results_path, state)
         seed_runtime(ss.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
