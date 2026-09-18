@@ -630,3 +630,274 @@ def load_inputs(root: Path) -> tuple[ScreeningManifest, str, Extension]:
     manifest_sha256 = manifest_digest_from_path(manifest_path)
     extension = load_extension(root / EXTENSION_RELATIVE_PATH, manifest, manifest_sha256)
     return manifest, manifest_sha256, extension
+
+
+# ---------------------------------------------------------------------------
+# Prompt-level execution primitives: sites, captures, exact replacements, readout.
+
+import torch  # noqa: E402  (kept below the model-independent section on purpose)
+
+from .candidate_screening import aligned_patch_shift, canonical_component_id, component_universe  # noqa: E402
+from .capture import CapturePlan, CaptureRequest, InstrumentationSettings, run_capture  # noqa: E402
+from .components import ComponentKind, ComponentRef, resolve_component  # noqa: E402
+from .interventions import (  # noqa: E402
+    Intervention,
+    InterventionOperation,
+    InterventionPlan,
+    ReplacementSource,
+    run_interventions,
+)
+
+ATTN_SETTINGS = InstrumentationSettings(use_attn_result=True)
+Site = tuple[str, int]
+DENOMINATOR_FLOOR_OVERALL = 0.25
+DENOMINATOR_FLOOR_STRATUM = 0.10
+RANDOM_SET_COUNT = 100
+
+_KEY_PATTERNS = {
+    "head": re.compile(r"^L(\d{2})\.H(\d{2})$"),
+    "mlp": re.compile(r"^L(\d{2})\.MLP$"),
+    "resid_pre": re.compile(r"^RESID_PRE\.L(\d+)$"),
+    "resid_post": re.compile(r"^RESID_POST\.L(\d+)$"),
+    "pattern": re.compile(r"^ATTN_PATTERN\.L(\d+)$"),
+}
+
+
+def component_key(ref: ComponentRef) -> str:
+    if ref.kind in (ComponentKind.ATTN_HEAD, ComponentKind.MLP_OUT):
+        return canonical_component_id(ref)
+    if ref.kind is ComponentKind.TOKEN_EMBED:
+        return "EMBED"
+    if ref.kind is ComponentKind.RESID_PRE:
+        return f"RESID_PRE.L{ref.layer}"
+    if ref.kind is ComponentKind.RESID_POST:
+        return f"RESID_POST.L{ref.layer}"
+    if ref.kind is ComponentKind.ATTN_PATTERN:
+        return f"ATTN_PATTERN.L{ref.layer}"
+    raise ValueError(f"no key for component kind {ref.kind.value}")
+
+
+def component_ref(key: str) -> ComponentRef:
+    if key == "EMBED":
+        return ComponentRef(ComponentKind.TOKEN_EMBED)
+    if match := _KEY_PATTERNS["head"].match(key):
+        return ComponentRef(ComponentKind.ATTN_HEAD, layer=int(match.group(1)), head=int(match.group(2)))
+    if match := _KEY_PATTERNS["mlp"].match(key):
+        return ComponentRef(ComponentKind.MLP_OUT, layer=int(match.group(1)))
+    if match := _KEY_PATTERNS["resid_pre"].match(key):
+        return ComponentRef(ComponentKind.RESID_PRE, layer=int(match.group(1)))
+    if match := _KEY_PATTERNS["resid_post"].match(key):
+        return ComponentRef(ComponentKind.RESID_POST, layer=int(match.group(1)))
+    if match := _KEY_PATTERNS["pattern"].match(key):
+        return ComponentRef(ComponentKind.ATTN_PATTERN, layer=int(match.group(1)))
+    raise ValueError(f"unknown component key {key}")
+
+
+def universe_keys(model: Any) -> tuple[str, ...]:
+    """The 54 head/MLP components in canonical order."""
+    return tuple(canonical_component_id(ref) for ref in component_universe(model))
+
+
+def is_head_key(key: str) -> bool:
+    return bool(_KEY_PATTERNS["head"].match(key))
+
+
+def is_mlp_key(key: str) -> bool:
+    return bool(_KEY_PATTERNS["mlp"].match(key))
+
+
+def key_layer(key: str) -> int:
+    for pattern in _KEY_PATTERNS.values():
+        if match := pattern.match(key):
+            return int(match.group(1))
+    raise ValueError(f"key {key} has no layer")
+
+
+def _model_device(model: Any) -> Any:
+    return getattr(getattr(model, "cfg", None), "device", "cpu")
+
+
+@dataclass(frozen=True)
+class PromptRun:
+    """Final-position logits and the requested activation slices of one prompt."""
+
+    prompt: Prompt
+    logits: torch.Tensor  # [vocab] at p_t
+    slices: Mapping[str, torch.Tensor]  # site label "KEY@POS" -> selected-shape tensor (batch 1)
+    integrity: tuple[dict[str, Any], ...] = ()
+
+    def slice(self, site: Site) -> torch.Tensor:
+        return self.slices[site_label(site)]
+
+    def vector(self, site: Site) -> torch.Tensor:
+        return self.slice(site).reshape(-1) if not site[0].startswith("ATTN_PATTERN") else self.slice(site).squeeze(0).squeeze(1)
+
+
+def site_label(site: Site) -> str:
+    return f"{site[0]}@{site[1]}"
+
+
+def parse_site(label: str) -> Site:
+    key, _, position = label.rpartition("@")
+    return key, int(position)
+
+
+def _requests_for(sites: Sequence[Site], *, sequence_length: int) -> dict[Site, CaptureRequest]:
+    requests: dict[Site, CaptureRequest] = {}
+    for key, position in sites:
+        if position < 0 or position >= sequence_length:
+            raise ValueError(f"site {site_label((key, position))} is outside the prompt")
+        ref = component_ref(key)
+        if ref.kind is ComponentKind.ATTN_PATTERN:
+            requests[(key, position)] = CaptureRequest(ref, positions=(position,))
+        else:
+            requests[(key, position)] = CaptureRequest(ref, positions=(position,))
+    return requests
+
+
+def capture_prompt(model: Any, prompt: Prompt, sites: Sequence[Site]) -> PromptRun:
+    """One forward: final-position logits plus exactly the requested sites."""
+    tokens = torch.tensor([prompt.token_ids], dtype=torch.long, device=_model_device(model))
+    requests = _requests_for(tuple(dict.fromkeys(sites)), sequence_length=len(prompt.token_ids))
+    plan = CapturePlan(tuple(requests.values()), ATTN_SETTINGS)
+    result = run_capture(model, tokens, plan, prepend_bos=False)
+    if not result.hook_settings.effective_use_attn_result or result.hook_settings.compatibility_mode:
+        raise IncidentError("capture must run with use_attn_result and without compatibility mode")
+    slices = {site_label(site): result.activations[request].tensor.clone() for site, request in requests.items()}
+    return PromptRun(prompt, result.logits[0, prompt.p_t].detach().float().cpu().clone(), slices)
+
+
+def _check_execution(execution: Any, ref: ComponentRef, position: int, replacement: torch.Tensor, source: ReplacementSource, model: Any) -> dict[str, Any]:
+    problems = []
+    expected_hook = resolve_component(ref, model).hook_name
+    if execution.component != ref or execution.hook_name != expected_hook:
+        problems.append("component/hook mismatch")
+    if execution.operation is not InterventionOperation.REPLACE or execution.source is not source:
+        problems.append("operation/source mismatch")
+    if tuple(execution.shape) != tuple(replacement.shape) or execution.dtype != str(replacement.dtype):
+        problems.append("shape/dtype mismatch")
+    if tuple(execution.normalized_positions) != (position,):
+        problems.append("position mismatch")
+    if execution.outside_max_abs_change != 0.0:
+        problems.append("outside change")
+    if not torch.equal(execution.after.to(replacement.device), replacement):
+        problems.append("inexact replacement")
+    if problems:
+        raise IncidentError(f"{component_key(ref)}@{position}: {', '.join(problems)}")
+    return {"site": site_label((component_key(ref), position)), "hook": execution.hook_name, "source": source.value,
+            "shape": list(execution.shape), "outside_max_abs_change": execution.outside_max_abs_change}
+
+
+def run_patched(model: Any, prompt: Prompt, replacements: Mapping[Site, torch.Tensor], sources: Mapping[Site, ReplacementSource], *, capture_sites: Sequence[Site] = ()) -> PromptRun:
+    """One forward with exact replacements at the given sites; optional captures of the same run."""
+    if set(replacements) != set(sources):
+        raise ValueError("every replacement needs exactly one declared source")
+    tokens = torch.tensor([prompt.token_ids], dtype=torch.long, device=_model_device(model))
+    device = _model_device(model)
+    ordered = tuple(replacements)
+    interventions = []
+    for site in ordered:
+        key, position = site
+        if position < 0 or position >= len(prompt.token_ids):
+            raise ValueError(f"site {site_label(site)} is outside the prompt")
+        interventions.append(Intervention(component_ref(key), (position,), InterventionOperation.REPLACE, replacements[site].to(device), sources[site]))
+    plan = InterventionPlan(tuple(interventions), ATTN_SETTINGS)
+    requests = _requests_for(tuple(dict.fromkeys(capture_sites)), sequence_length=len(prompt.token_ids))
+    captures = CapturePlan(tuple(requests.values()), ATTN_SETTINGS) if requests else None
+    result = run_interventions(model, tokens, plan, prepend_bos=False, captures=captures)
+    if len(result.executions) != len(ordered) or result.hook_settings.compatibility_mode or not result.hook_settings.effective_use_attn_result:
+        raise IncidentError("intervention run did not execute every declared replacement")
+    integrity = tuple(_check_execution(execution, component_ref(site[0]), site[1], replacements[site].to(device), sources[site], model)
+                      for site, execution in zip(ordered, result.executions))
+    slices = {site_label(site): result.activations[request].tensor.clone() for site, request in requests.items()}
+    return PromptRun(prompt, result.logits[0, prompt.p_t].detach().float().cpu().clone(), slices, integrity)
+
+
+def contrasts(logits: torch.Tensor, nouns: Sequence[Noun]) -> dict[str, float]:
+    """c_N = log P(singular) − log P(plural) for every single-token noun from one logits vector."""
+    log_probs = logits.float().log_softmax(dim=-1)
+    result: dict[str, float] = {}
+    for noun in nouns:
+        if not noun.single_token:
+            continue
+        value = float(log_probs[noun.sg_ids[0]] - log_probs[noun.pl_ids[0]])
+        if not torch.isfinite(torch.tensor(value)):
+            raise IncidentError(f"non-finite contrast for {noun.key}")
+        result[noun.lexical_key] = value
+    return result
+
+
+def pair_centered(slice_a: torch.Tensor, slice_b: torch.Tensor) -> torch.Tensor:
+    """Midpoint of the two observed states (pair-centered neutralization)."""
+    if slice_a.shape != slice_b.shape or slice_a.dtype != slice_b.dtype:
+        raise ValueError("pair-centered neutralization requires equal shapes and dtypes")
+    return (0.5 * (slice_a + slice_b)).to(slice_a.dtype)
+
+
+def assert_prefix_identical(run_a: PromptRun, run_b: PromptRun, sites: Sequence[Site]) -> None:
+    """Activations at positions before the cue must be bitwise identical within a pair."""
+    for site in sites:
+        if not torch.equal(run_a.slice(site), run_b.slice(site)):
+            raise IncidentError(f"prefix activation {site_label(site)} differs within a matched pair")
+
+
+@dataclass(frozen=True)
+class CaseRow:
+    """One (frame, noun) case: its full contrast shift and one intervention's aligned shift."""
+
+    frame_id: str
+    template_id: str
+    lexical_key: str
+    rule_class: str
+    d_full: float
+    d_patch: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"frame_id": self.frame_id, "template_id": self.template_id, "lexical_key": self.lexical_key,
+                "rule_class": self.rule_class, "d_full": self.d_full, "d_patch": self.d_patch}
+
+
+def case_rows(frame: Frame, nouns: Sequence[Noun], c_a: Mapping[str, float], c_b: Mapping[str, float], c_a_from_b: Mapping[str, float], c_b_from_a: Mapping[str, float]) -> tuple[CaseRow, ...]:
+    rows = []
+    for noun in nouns:
+        if not noun.single_token:
+            continue
+        key = noun.lexical_key
+        rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key],
+                            aligned_patch_shift(c_a[key], c_b[key], c_a_from_b[key], c_b_from_a[key])))
+    return tuple(rows)
+
+
+def _mean(values: Sequence[float]) -> float:
+    if not values:
+        raise ValueError("mean of empty sequence")
+    return float(sum(values) / len(values))
+
+
+def stratified_recovery(rows: Sequence[CaseRow]) -> dict[str, Any]:
+    """Aggregate recovery overall, per template, and per rule class, with denominator floors."""
+    def summary(subset: Sequence[CaseRow], floor: float) -> dict[str, Any]:
+        denominator = _mean([row.d_full for row in subset])
+        numerator = _mean([row.d_patch for row in subset])
+        valid = denominator >= floor
+        return {"cases": len(subset), "mean_d_full": denominator, "mean_d_patch": numerator,
+                "denominator_valid": valid, "recovery": (numerator / denominator) if valid else None}
+
+    templates = sorted({row.template_id for row in rows}, key=TEMPLATE_ORDER.index)
+    classes = sorted({row.rule_class for row in rows}, key=RULE_CLASSES.index)
+    return {
+        "overall": summary(rows, DENOMINATOR_FLOOR_OVERALL),
+        "templates": {template: summary([row for row in rows if row.template_id == template], DENOMINATOR_FLOOR_STRATUM) for template in templates},
+        "rule_classes": {rule: summary([row for row in rows if row.rule_class == rule], DENOMINATOR_FLOOR_STRATUM) for rule in classes},
+    }
+
+
+def deterministic_random_sets(universe: Sequence[str], size: int, *, count: int = RANDOM_SET_COUNT, seed: int = CONTROL_SEED) -> tuple[tuple[str, ...], ...]:
+    """Size-``size`` component sets drawn uniformly without replacement, in a fixed order."""
+    import random
+
+    if size <= 0 or size > len(universe):
+        raise ValueError("random set size must be within the universe")
+    generator = random.Random(seed)
+    ordered = tuple(universe)
+    return tuple(tuple(sorted(generator.sample(ordered, size), key=ordered.index)) for _ in range(count))

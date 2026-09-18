@@ -250,3 +250,113 @@ def test_execution_ledger_flags_reserve_and_extension(manifest, manifest_sha256)
     pm.record_execution(state, extension.cue_word_prompts[:1], ())
     with pytest.raises(pm.PhaseError):
         pm.assert_not_executed(state, extension=extension, reserve=reserve)
+
+
+# ---------------------------------------------------------------------------
+# Prompt-level execution primitives (TinyBridge)
+
+import torch
+
+from instrumentation_fakes import TinyBridge
+from neural_decompiler.interventions import ReplacementSource
+
+
+def _tiny_frame() -> pm.Frame:
+    return pm.Frame("cardinal", "tiny-1", (1, 2, 3), (), {"sg": 4, "pl": 7}, "a b c {cue}")
+
+
+def _tiny_nouns() -> tuple[pm.Noun, ...]:
+    return (pm.Noun("n0", Split.DEVELOPMENT, "simple-suffix", (0,), (1,)),
+            pm.Noun("n1", Split.DEVELOPMENT, "sibilant-es", (2,), (3,)),
+            pm.Noun("multi", Split.HOLDOUT, "consonant-y", (0, 1), (2, 3)))
+
+
+def test_component_keys_round_trip():
+    for key in ("L00.H01", "L01.MLP", "EMBED", "RESID_PRE.L1", "RESID_POST.L0", "ATTN_PATTERN.L1"):
+        assert pm.component_key(pm.component_ref(key)) == key
+    assert pm.is_head_key("L00.H01") and not pm.is_head_key("L00.MLP")
+    assert pm.key_layer("L03.H04") == 3 and pm.key_layer("RESID_PRE.L2") == 2
+    with pytest.raises(ValueError):
+        pm.component_ref("L00.NEURON")
+    assert len(pm.universe_keys(TinyBridge())) == 6  # 2 layers × (2 heads + MLP)
+
+
+def test_capture_prompt_returns_final_logits_and_requested_sites():
+    model = TinyBridge()
+    frame = _tiny_frame()
+    prompt = pm.Prompt(frame, frame.cue_ids["sg"], "sg")
+    run = pm.capture_prompt(model, prompt, [("L00.MLP", 3), ("L01.H01", 3), ("RESID_PRE.L1", 0), ("ATTN_PATTERN.L0", 3)])
+    direct = model(torch.tensor([prompt.token_ids]))
+    assert torch.equal(run.logits, direct[0, -1])
+    assert run.slice(("L00.MLP", 3)).shape == (1, 1, 3)
+    assert run.slice(("L01.H01", 3)).shape == (1, 1, 1, 3)
+    assert run.vector(("L01.H01", 3)).shape == (3,)
+    assert run.vector(("ATTN_PATTERN.L0", 3)).shape == (2, 4)
+    with pytest.raises(ValueError):
+        pm.capture_prompt(model, prompt, [("L00.MLP", 4)])
+
+
+def test_run_patched_is_exact_and_captures_post_patch_values():
+    model = TinyBridge()
+    frame = _tiny_frame()
+    sg, pl = pm.Prompt(frame, 4, "sg"), pm.Prompt(frame, 7, "pl")
+    site = ("L00.MLP", 3)
+    run_sg = pm.capture_prompt(model, sg, [site, ("RESID_POST.L1", 3)])
+    run_pl = pm.capture_prompt(model, pl, [site])
+    same = pm.run_patched(model, sg, {site: run_sg.slice(site)}, {site: ReplacementSource.REFERENCE}, capture_sites=[("RESID_POST.L1", 3)])
+    assert torch.equal(same.logits, run_sg.logits)
+    assert torch.equal(same.slice(("RESID_POST.L1", 3)), run_sg.slice(("RESID_POST.L1", 3)))
+    assert same.integrity[0]["outside_max_abs_change"] == 0.0
+    patched = pm.run_patched(model, sg, {site: run_pl.slice(site)}, {site: ReplacementSource.REFERENCE}, capture_sites=[site, ("RESID_POST.L1", 3)])
+    assert not torch.equal(patched.logits, run_sg.logits)
+    assert torch.equal(patched.slice(site), run_pl.slice(site))
+    assert not torch.equal(patched.slice(("RESID_POST.L1", 3)), run_sg.slice(("RESID_POST.L1", 3)))
+    with pytest.raises(ValueError):
+        pm.run_patched(model, sg, {site: run_pl.slice(site)}, {})
+
+
+def test_contrasts_and_pair_centered():
+    logits = torch.tensor([1.0, 0.0, 2.0, 2.0, -1.0])
+    values = pm.contrasts(logits, _tiny_nouns())
+    assert values == {"n0": pytest.approx(1.0), "n1": pytest.approx(0.0)}
+    a, b = torch.tensor([[1.0, 3.0]]), torch.tensor([[3.0, 5.0]])
+    assert torch.equal(pm.pair_centered(a, b), torch.tensor([[2.0, 4.0]]))
+    with pytest.raises(ValueError):
+        pm.pair_centered(a, torch.tensor([1.0, 2.0, 3.0]))
+
+
+def test_prefix_identity_assertion():
+    model = TinyBridge()
+    frame = _tiny_frame()
+    sg, pl = pm.Prompt(frame, 4, "sg"), pm.Prompt(frame, 7, "pl")
+    sites = [("RESID_POST.L1", 0), ("L00.MLP", 2)]
+    run_sg, run_pl = pm.capture_prompt(model, sg, sites), pm.capture_prompt(model, pl, sites)
+    pm.assert_prefix_identical(run_sg, run_pl, sites)
+    cue_sites = [("L00.MLP", 3)]
+    with pytest.raises(pm.IncidentError):
+        pm.assert_prefix_identical(pm.capture_prompt(model, sg, cue_sites), pm.capture_prompt(model, pl, cue_sites), cue_sites)
+
+
+def test_case_rows_and_stratified_recovery():
+    frame = _tiny_frame()
+    nouns = _tiny_nouns()
+    c_a, c_b = {"n0": 2.0, "n1": 1.0}, {"n0": -2.0, "n1": -1.0}
+    rows = pm.case_rows(frame, nouns, c_a, c_b, {"n0": -1.0, "n1": 0.0}, {"n0": 1.0, "n1": 0.0})
+    assert [row.lexical_key for row in rows] == ["n0", "n1"]  # multi-token noun excluded
+    assert rows[0].d_full == pytest.approx(4.0) and rows[0].d_patch == pytest.approx(3.0)
+    assert rows[1].d_full == pytest.approx(2.0) and rows[1].d_patch == pytest.approx(1.0)
+    summary = pm.stratified_recovery(rows)
+    assert summary["overall"]["recovery"] == pytest.approx(4.0 / 6.0)
+    assert summary["templates"]["cardinal"]["cases"] == 2
+    assert summary["rule_classes"]["sibilant-es"]["recovery"] == pytest.approx(0.5)
+    tiny = pm.stratified_recovery([pm.CaseRow("f", "cardinal", "n", "simple-suffix", 0.2, 0.1)])
+    assert tiny["overall"]["denominator_valid"] is False and tiny["overall"]["recovery"] is None
+
+
+def test_random_sets_are_deterministic_and_ordered():
+    universe = tuple(f"C{i}" for i in range(10))
+    first = pm.deterministic_random_sets(universe, 3, count=5)
+    second = pm.deterministic_random_sets(universe, 3, count=5)
+    assert first == second and len(first) == 5
+    assert all(len(set(s)) == 3 and list(s) == sorted(s, key=universe.index) for s in first)
+    assert pm.deterministic_random_sets(universe, 3, count=5, seed=1) != first

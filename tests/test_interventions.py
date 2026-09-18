@@ -226,3 +226,34 @@ def test_head_intervention_requires_explicit_result_setting(
     result = run_interventions(tiny_bridge, tiny_tokens(), enabled)
     assert result.executions[0].after.shape == (1, 1, 1, 3)
     assert tiny_bridge.setter_calls == [True, False]
+
+
+def test_captures_during_intervention_observe_post_intervention_values(
+    tiny_bridge: TinyBridge,
+) -> None:
+    tokens = tiny_tokens()
+    clean = run_capture(
+        tiny_bridge,
+        tokens,
+        CapturePlan((CaptureRequest(ComponentRef(ComponentKind.MLP_OUT, layer=0), positions=(-1,)),
+                     CaptureRequest(ComponentRef(ComponentKind.RESID_POST, layer=1), positions=(-1,)))),
+    )
+    mlp_request = CaptureRequest(ComponentRef(ComponentKind.MLP_OUT, layer=0), positions=(-1,))
+    downstream_request = CaptureRequest(ComponentRef(ComponentKind.RESID_POST, layer=1), positions=(-1,))
+    replacement = clean.activations[mlp_request].tensor + 1.0
+    plan = InterventionPlan((Intervention(ComponentRef(ComponentKind.MLP_OUT, layer=0), (-1,),
+                                          InterventionOperation.REPLACE, replacement, ReplacementSource.DIRECT),))
+    result = run_interventions(tiny_bridge, tokens, plan, captures=CapturePlan((mlp_request, downstream_request)))
+
+    assert torch.equal(result.activations[mlp_request].tensor, replacement)
+    assert not torch.equal(result.activations[downstream_request].tensor, clean.activations[downstream_request].tensor)
+    assert len(result.executions) == 1
+
+
+def test_captures_during_intervention_require_matching_settings(tiny_bridge: TinyBridge) -> None:
+    tokens = tiny_tokens()
+    plan = InterventionPlan(())
+    with pytest.raises(ValueError):
+        run_interventions(tiny_bridge, tokens, plan,
+                          captures=CapturePlan((CaptureRequest(ComponentRef(ComponentKind.MLP_OUT, layer=0), positions=(-1,)),),
+                                               InstrumentationSettings(use_attn_result=True)))

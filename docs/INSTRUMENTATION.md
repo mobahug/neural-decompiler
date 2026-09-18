@@ -109,6 +109,13 @@ Each execution record contains the resolved hook, normalized positions,
 operation, source, selected shape, dtype, device, transfer flag, before/after
 slices, and the maximum change outside the requested slice.
 
+An intervention forward may also carry a `CapturePlan` (`captures=`) with the
+same instrumentation settings. Its requests are recorded from the same forward
+after the replacements are applied, so a capture on an intervened hook sees the
+post-intervention value and captures downstream see its consequences. This
+lets an experiment measure what an intervention does to other components
+without a second, unmatched forward.
+
 ## Pythia decomposition checks
 
 The per-head `hook_result` tensors are residual-stream contributions before

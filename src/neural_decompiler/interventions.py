@@ -9,9 +9,13 @@ from typing import Any
 import torch
 
 from .capture import (
+    CapturedActivation,
+    CapturePlan,
+    CaptureRequest,
     HookSettingsRecord,
     InstrumentationSettings,
     _require_raw_bridge,
+    _validate_head_settings,
     scoped_hook_settings,
 )
 from .components import (
@@ -21,6 +25,7 @@ from .components import (
     NormalizedSelection,
     ResolvedComponent,
     normalize_positions,
+    normalize_selection,
     resolve_component,
     select_tensor,
 )
@@ -88,6 +93,7 @@ class InterventionResult:
     logits: torch.Tensor
     executions: tuple[InterventionExecution, ...]
     hook_settings: HookSettingsRecord
+    activations: dict[CaptureRequest, CapturedActivation] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -213,11 +219,21 @@ def run_interventions(
     plan: InterventionPlan,
     *,
     prepend_bos: bool = False,
+    captures: CapturePlan | None = None,
 ) -> InterventionResult:
-    """Execute validated interventions during one inference-only forward."""
+    """Execute validated interventions during one inference-only forward.
+
+    An optional capture plan records activations from the same forward. A
+    capture on a hook that is also intervened observes the post-intervention
+    value, because capture hooks are registered after intervention hooks.
+    """
 
     _require_raw_bridge(model)
     prepared = _prepare(model, inputs, plan)
+    if captures is not None:
+        if captures.settings != plan.settings:
+            raise ValueError("capture settings must equal the intervention settings")
+        _validate_head_settings(captures.requests, captures.settings)
     grouped: dict[str, list[_PreparedIntervention]] = {}
     for item in prepared:
         grouped.setdefault(item.component.hook_name, []).append(item)
@@ -292,6 +308,34 @@ def run_interventions(
 
         hooks.append((hook_name, intervention_hook))
 
+    captured: dict[CaptureRequest, CapturedActivation] = {}
+    if captures is not None:
+        for request in captures.requests:
+            component = resolve_component(request.component, model)
+
+            def capture_hook(
+                activation: torch.Tensor,
+                hook: Any,
+                *,
+                request: CaptureRequest = request,
+                component: ResolvedComponent = component,
+            ) -> torch.Tensor:
+                del hook
+                selection = normalize_selection(request.selection, component, activation.shape)
+                selected = select_tensor(activation, component, selection).detach().clone()
+                if captures.storage_device == "cpu":
+                    selected = selected.cpu()
+                captured[request] = CapturedActivation(
+                    request=request,
+                    hook_name=component.hook_name,
+                    axis_names=component.axis_names,
+                    original_shape=tuple(activation.shape),
+                    tensor=selected,
+                )
+                return activation
+
+            hooks.append((component.hook_name, capture_hook))
+
     model.eval()
     with scoped_hook_settings(model, plan.settings) as hook_record:
         with torch.inference_mode():
@@ -307,5 +351,9 @@ def run_interventions(
     missing = [item.index for item in prepared if item.index not in execution_by_index]
     if missing:
         raise RuntimeError(f"intervention hooks did not fire for indices {missing}")
+    if captures is not None:
+        missing_captures = [request for request in captures.requests if request not in captured]
+        if missing_captures:
+            raise RuntimeError(f"requested capture hooks did not fire: {missing_captures!r}")
     executions = tuple(execution_by_index[index] for index in range(len(prepared)))
-    return InterventionResult(logits, executions, hook_record)
+    return InterventionResult(logits, executions, hook_record, captured)
