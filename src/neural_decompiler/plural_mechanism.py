@@ -901,3 +901,870 @@ def deterministic_random_sets(universe: Sequence[str], size: int, *, count: int 
     generator = random.Random(seed)
     ordered = tuple(universe)
     return tuple(tuple(sorted(generator.sample(ordered, size), key=ordered.index)) for _ in range(count))
+
+
+# ---------------------------------------------------------------------------
+# Model weights needed for exact readout accounting and the mechanism program.
+
+
+@dataclass(frozen=True)
+class Weights:
+    """Detached float32 CPU copies of the weights the analyses and the program read."""
+
+    W_E: torch.Tensor  # [vocab, d_model]
+    W_U: torch.Tensor  # [d_model, vocab]
+    b_U: torch.Tensor  # [vocab]
+    ln_final_w: torch.Tensor
+    ln_final_b: torch.Tensor
+    eps: float
+    attn_b_O: tuple[torch.Tensor, ...]  # per layer [d_model]
+    ln2_0_w: torch.Tensor
+    ln2_0_b: torch.Tensor
+    mlp0_W_in: torch.Tensor  # [d_model, d_mlp]
+    mlp0_b_in: torch.Tensor
+    mlp0_W_out: torch.Tensor  # [d_mlp, d_model]
+    mlp0_b_out: torch.Tensor
+    act_fn: str
+
+    @classmethod
+    def from_model(cls, model: Any) -> "Weights":
+        def grab(tensor: torch.Tensor) -> torch.Tensor:
+            return tensor.detach().to("cpu", torch.float32).clone()
+
+        cfg = model.cfg
+        if str(getattr(cfg, "normalization_type", "LN")) != "LN":
+            raise IncidentError("the exact readout requires LayerNorm normalization")
+        block0 = model.blocks[0]
+        return cls(
+            W_E=grab(model.embed.W_E), W_U=grab(model.unembed.W_U), b_U=grab(model.unembed.b_U),
+            ln_final_w=grab(model.ln_final.w), ln_final_b=grab(model.ln_final.b), eps=float(cfg.eps),
+            attn_b_O=tuple(grab(model.blocks[layer].attn.b_O) for layer in range(int(cfg.n_layers))),
+            ln2_0_w=grab(block0.ln2.w), ln2_0_b=grab(block0.ln2.b),
+            mlp0_W_in=grab(block0.mlp.W_in), mlp0_b_in=grab(block0.mlp.b_in),
+            mlp0_W_out=grab(block0.mlp.W_out), mlp0_b_out=grab(block0.mlp.b_out),
+            act_fn=str(cfg.act_fn),
+        )
+
+    def u(self, noun: Noun) -> torch.Tensor:
+        """u_N = W_U[:, plural] − W_U[:, singular] in float64."""
+        return (self.W_U[:, noun.pl_ids[0]] - self.W_U[:, noun.sg_ids[0]]).double()
+
+
+def exact_layer_norm(r: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor, eps: float) -> torch.Tensor:
+    """LayerNorm with population variance (correction=0), in the input's dtype."""
+    centered = r - r.mean(dim=-1, keepdim=True)
+    variance = (centered * centered).mean(dim=-1, keepdim=True)
+    return weight * centered / torch.sqrt(variance + eps) + bias
+
+
+def lexicon_vector(weights: Weights, token_id: int) -> torch.Tensor:
+    """Weight-only L00.MLP output for a token: MLP_0(ln2_0(embed[token]))."""
+    if weights.act_fn != "gelu":
+        raise IncidentError(f"unsupported activation {weights.act_fn}; the lexicon assumes exact GELU")
+    hidden = exact_layer_norm(weights.W_E[int(token_id)], weights.ln2_0_w, weights.ln2_0_b, weights.eps)
+    pre = hidden @ weights.mlp0_W_in + weights.mlp0_b_in
+    return torch.nn.functional.gelu(pre) @ weights.mlp0_W_out + weights.mlp0_b_out
+
+
+# ---------------------------------------------------------------------------
+# Clean-run cache with every site the discovery measurements read.
+
+
+def standard_sites(model: Any, prompt: Prompt) -> tuple[Site, ...]:
+    n_layers = int(model.cfg.n_layers)
+    positions = sorted({prompt.p_c, prompt.p_t})
+    sites: list[Site] = []
+    for position in positions:
+        sites.extend((key, position) for key in universe_keys(model))
+        sites.append(("EMBED", position))
+        sites.extend((f"RESID_PRE.L{layer}", position) for layer in range(n_layers))
+        sites.append((f"RESID_POST.L{n_layers - 1}", position))
+    sites.extend((f"ATTN_PATTERN.L{layer}", prompt.p_t) for layer in range(n_layers))
+    for position in range(prompt.p_c):
+        sites.append((f"RESID_POST.L{n_layers - 1}", position))
+        sites.append(("EMBED", position))
+    return tuple(dict.fromkeys(sites))
+
+
+@dataclass
+class PromptCache:
+    """Clean runs and readouts for a fixed prompt set; the noun set is fixed per cache."""
+
+    model: Any
+    nouns: tuple[Noun, ...]
+    runs: dict[str, PromptRun] = field(default_factory=dict)
+    readouts: dict[str, dict[str, float]] = field(default_factory=dict)
+
+    def run(self, prompt: Prompt) -> PromptRun:
+        if prompt.key not in self.runs:
+            self.runs[prompt.key] = capture_prompt(self.model, prompt, standard_sites(self.model, prompt))
+            self.readouts[prompt.key] = contrasts(self.runs[prompt.key].logits, self.nouns)
+        return self.runs[prompt.key]
+
+    def c(self, prompt: Prompt) -> dict[str, float]:
+        self.run(prompt)
+        return self.readouts[prompt.key]
+
+    def final_residual(self, prompt: Prompt) -> torch.Tensor:
+        n_layers = int(self.model.cfg.n_layers)
+        return self.run(prompt).vector((f"RESID_POST.L{n_layers - 1}", prompt.p_t))
+
+
+def frame_prompts(frame: Frame) -> tuple[Prompt, Prompt]:
+    return Prompt(frame, frame.cue_ids["sg"], "sg"), Prompt(frame, frame.cue_ids["pl"], "pl")
+
+
+def prefix_sites(model: Any, prompt: Prompt) -> tuple[Site, ...]:
+    n_layers = int(model.cfg.n_layers)
+    return tuple((key, position) for position in range(prompt.p_c) for key in (f"RESID_POST.L{n_layers - 1}", "EMBED"))
+
+
+# ---------------------------------------------------------------------------
+# Role-addressed interventions.
+
+RoleSite = tuple[str, str]  # (component key, "p_c" | "p_t")
+
+
+def role_position(prompt: Prompt, role: str) -> int:
+    if role == "p_c":
+        return prompt.p_c
+    if role == "p_t":
+        return prompt.p_t
+    raise ValueError(f"unknown role {role}")
+
+
+def _site(prompt: Prompt, role_site: RoleSite) -> Site:
+    return role_site[0], role_position(prompt, role_site[1])
+
+
+def counterfactual_rows(model: Any, cache: PromptCache, frame: Frame, role_sites: Sequence[RoleSite], *,
+                        freeze: Sequence[RoleSite] = (), source_frame: Frame | None = None, flip_source: bool = True,
+                        capture_role_sites: Sequence[RoleSite] = ()) -> tuple[tuple[CaseRow, ...], dict[str, PromptRun]]:
+    """Bidirectional replacement of ``role_sites`` from a source run, optionally freezing other sites clean.
+
+    With ``source_frame`` None the source is the frame's own matched prompt (counterfactual). With a
+    source frame and ``flip_source`` True the source is that frame's opposite-cue prompt; with
+    ``flip_source`` False it is the same-cue prompt (resample controls). Returns the aligned rows and
+    the two patched runs keyed ``a_from_b`` / ``b_from_a``.
+    """
+    sg, pl = frame_prompts(frame)
+    src_sg, src_pl = frame_prompts(source_frame) if source_frame is not None else (sg, pl)
+    if not flip_source and source_frame is None:
+        raise ValueError("a same-cue replacement needs a source frame")
+    run_sg, run_pl = cache.run(sg), cache.run(pl)
+    run_src_sg, run_src_pl = cache.run(src_sg), cache.run(src_pl)
+    source = ReplacementSource.REFERENCE if source_frame is None else ReplacementSource.RESAMPLE
+
+    def build(target: Prompt, target_run: PromptRun, donor_run: PromptRun, donor: Prompt) -> tuple[dict[Site, torch.Tensor], dict[Site, ReplacementSource]]:
+        replacements: dict[Site, torch.Tensor] = {}
+        sources: dict[Site, ReplacementSource] = {}
+        for role_site in role_sites:
+            site = _site(target, role_site)
+            replacements[site] = donor_run.slice(_site(donor, role_site))
+            sources[site] = source
+        for role_site in freeze:
+            site = _site(target, role_site)
+            if site in replacements:
+                raise ValueError(f"{site_label(site)} cannot be both replaced and frozen")
+            replacements[site] = target_run.slice(site)
+            sources[site] = ReplacementSource.REFERENCE
+        return replacements, sources
+
+    donor_for_sg = (src_pl if flip_source else src_sg)
+    donor_for_pl = (src_sg if flip_source else src_pl)
+    captures = tuple(_site(sg, role_site) for role_site in capture_role_sites)
+    rep, src = build(sg, run_sg, cache.run(donor_for_sg), donor_for_sg)
+    a_from_b = run_patched(model, sg, rep, src, capture_sites=captures)
+    captures = tuple(_site(pl, role_site) for role_site in capture_role_sites)
+    rep, src = build(pl, run_pl, cache.run(donor_for_pl), donor_for_pl)
+    b_from_a = run_patched(model, pl, rep, src, capture_sites=captures)
+    rows = case_rows(frame, cache.nouns, cache.c(sg), cache.c(pl), contrasts(a_from_b.logits, cache.nouns), contrasts(b_from_a.logits, cache.nouns))
+    return rows, {"a_from_b": a_from_b, "b_from_a": b_from_a}
+
+
+def neutralized_runs(model: Any, cache: PromptCache, frame: Frame, role_sites: Sequence[RoleSite], *, capture_role_sites: Sequence[RoleSite] = ()) -> dict[str, PromptRun]:
+    """Both prompts with ``role_sites`` replaced by their pair-centered midpoints."""
+    sg, pl = frame_prompts(frame)
+    run_sg, run_pl = cache.run(sg), cache.run(pl)
+    results = {}
+    for label, prompt in (("sg", sg), ("pl", pl)):
+        replacements = {_site(prompt, role_site): pair_centered(run_sg.slice(_site(sg, role_site)), run_pl.slice(_site(pl, role_site))) for role_site in role_sites}
+        sources = {site: ReplacementSource.MEAN for site in replacements}
+        results[label] = run_patched(model, prompt, replacements, sources, capture_sites=tuple(_site(prompt, role_site) for role_site in capture_role_sites))
+    return results
+
+
+def neutralization_rows(cache: PromptCache, frame: Frame, runs: Mapping[str, PromptRun]) -> tuple[CaseRow, ...]:
+    """Rows whose ``d_patch`` is the contrast *lost* under neutralization: d_full − d_neutralized."""
+    sg, pl = frame_prompts(frame)
+    c_a, c_b = cache.c(sg), cache.c(pl)
+    c_a_n, c_b_n = contrasts(runs["sg"].logits, cache.nouns), contrasts(runs["pl"].logits, cache.nouns)
+    rows = []
+    for noun in cache.nouns:
+        if not noun.single_token:
+            continue
+        key = noun.lexical_key
+        full = c_a[key] - c_b[key]
+        rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, full, full - (c_a_n[key] - c_b_n[key])))
+    return tuple(rows)
+
+
+def sign_retention(cache: PromptCache, frame: Frame, runs: Mapping[str, PromptRun]) -> dict[str, int]:
+    c_a_n, c_b_n = contrasts(runs["sg"].logits, cache.nouns), contrasts(runs["pl"].logits, cache.nouns)
+    keys = [noun.lexical_key for noun in cache.nouns if noun.single_token]
+    return {"retained": sum(1 for key in keys if c_a_n[key] > 0 and c_b_n[key] < 0), "total": len(keys)}
+
+
+def isolation_runs(model: Any, cache: PromptCache, frame: Frame, keep: Sequence[RoleSite]) -> dict[str, PromptRun]:
+    """Hold ``keep`` clean and neutralize every other universe component at p_t (and p_c when distinct)."""
+    kept = {site for site in keep}
+    roles = ("p_t",) if frame.p_c == frame.p_t else ("p_c", "p_t")
+    complement = [(key, role) for role in roles for key in universe_keys(model) if (key, role) not in kept]
+    return neutralized_runs(model, cache, frame, complement)
+
+
+def joint_rows(rows_by_frame: Mapping[str, Sequence[CaseRow]]) -> tuple[CaseRow, ...]:
+    return tuple(row for rows in rows_by_frame.values() for row in rows)
+
+
+# ---------------------------------------------------------------------------
+# Site axes, number variables, and exact direct-effect accounting.
+
+
+@dataclass(frozen=True)
+class SiteAxis:
+    """Centered, scaled projection parameters of one site."""
+
+    label: str
+    mu: torch.Tensor
+    direction: torch.Tensor  # unit
+    sigma: float
+
+    def n(self, vector: torch.Tensor) -> float:
+        return float(((vector.double() - self.mu.double()) @ self.direction.double()) / self.sigma)
+
+    def projection(self, vector: torch.Tensor) -> float:
+        return float(vector.double() @ self.direction.double())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"label": self.label, "sigma": self.sigma, "mu_norm": float(self.mu.norm()), "direction_norm": float(self.direction.norm())}
+
+
+def site_axis(label: str, vectors_a: Sequence[torch.Tensor], vectors_b: Sequence[torch.Tensor]) -> SiteAxis:
+    if len(vectors_a) != len(vectors_b) or not vectors_a:
+        raise ValueError("site axis needs paired vectors")
+    a = torch.stack([v.double().reshape(-1) for v in vectors_a])
+    b = torch.stack([v.double().reshape(-1) for v in vectors_b])
+    difference = (b - a).mean(dim=0)
+    norm = float(difference.norm())
+    if norm <= 0.0:
+        raise IncidentError(f"site {label} has a zero number axis")
+    direction = difference / norm
+    mu = torch.cat([a, b]).mean(dim=0)
+    sigma = 0.5 * float(((b - a) @ direction).mean())
+    if sigma <= 0.0:
+        raise IncidentError(f"site {label} has a non-positive scale")
+    return SiteAxis(label, mu.float(), direction.float(), sigma)
+
+
+def cosine(left: torch.Tensor, right: torch.Tensor) -> float:
+    return float(torch.nn.functional.cosine_similarity(left.double().reshape(1, -1), right.double().reshape(1, -1)).item())
+
+
+def summed_vector(run: PromptRun, sites: Sequence[Site]) -> torch.Tensor:
+    return torch.stack([run.vector(site) for site in sites]).sum(dim=0)
+
+
+def direct_effects(weights: Weights, run: PromptRun, nouns: Sequence[Noun], *, p_t: int, n_layers: int, universe: Sequence[str],
+                   final_residual: torch.Tensor | None = None) -> dict[str, Any]:
+    """Exact float64 decomposition of c_N through the final LayerNorm for one run.
+
+    Terms: EMBED, every head result and MLP output at p_t, every attention output bias, and the β term.
+    """
+    terms: dict[str, torch.Tensor] = {"EMBED": run.vector(("EMBED", p_t)).double()}
+    for key in universe:
+        terms[key] = run.vector((key, p_t)).double()
+    for layer, bias in enumerate(weights.attn_b_O):
+        terms[f"b_O.L{layer}"] = bias.double()
+    residual = (final_residual if final_residual is not None else run.vector((f"RESID_POST.L{n_layers - 1}", p_t))).double()
+    reconstructed = torch.stack(list(terms.values())).sum(dim=0)
+    residual_error = float((reconstructed - residual).abs().max())
+    # The identity is stated on the decomposition's own whole; the captured residual is checked separately.
+    residual = reconstructed
+    scale = float(torch.sqrt(((residual - residual.mean()) ** 2).mean() + weights.eps))
+    gamma, beta = weights.ln_final_w.double(), weights.ln_final_b.double()
+    model_c = contrasts(run.logits, nouns)
+    per_noun: dict[str, dict[str, float]] = {}
+    max_identity_error = 0.0
+    max_model_gap = 0.0
+    for noun in nouns:
+        if not noun.single_token:
+            continue
+        u = weights.u(noun)
+        effects = {name: float(-u @ (gamma * (term - term.mean()) / scale)) for name, term in terms.items()}
+        effects["beta"] = float(-u @ beta)
+        c_recon = float(-u @ (gamma * (residual - residual.mean()) / scale + beta))
+        identity_error = abs(sum(effects.values()) - c_recon)
+        max_identity_error = max(max_identity_error, identity_error)
+        max_model_gap = max(max_model_gap, abs(c_recon - model_c[noun.lexical_key]))
+        effects["c_reconstructed"] = c_recon
+        effects["c_model"] = model_c[noun.lexical_key]
+        per_noun[noun.lexical_key] = effects
+    return {"per_noun": per_noun, "scale": scale, "residual_sum_error": residual_error,
+            "max_identity_error": max_identity_error, "max_model_gap": max_model_gap}
+
+
+DIRECT_EFFECT_IDENTITY_TOLERANCE = 1e-4
+DIRECT_EFFECT_MODEL_GAP_TOLERANCE = 1e-2
+RESIDUAL_SUM_TOLERANCE = 1e-3
+
+
+def check_direct_effects(effects: Mapping[str, Any], *, where: str) -> None:
+    if effects["max_identity_error"] > DIRECT_EFFECT_IDENTITY_TOLERANCE:
+        raise IncidentError(f"{where}: direct effects do not reconstruct the contrast ({effects['max_identity_error']:.2e} nats)")
+    if effects["residual_sum_error"] > RESIDUAL_SUM_TOLERANCE:
+        raise IncidentError(f"{where}: component outputs do not sum to the final residual ({effects['residual_sum_error']:.2e})")
+    if effects["max_model_gap"] > DIRECT_EFFECT_MODEL_GAP_TOLERANCE:
+        raise IncidentError(f"{where}: reconstructed contrast differs from the model's logits ({effects['max_model_gap']:.2e} nats)")
+
+
+def pair_direct_effects(effects_a: Mapping[str, Any], effects_b: Mapping[str, Any]) -> dict[str, float]:
+    """Mean over nouns of DE_term(x_A) − DE_term(x_B): each term's direct share of d_full in nats."""
+    nouns = list(effects_a["per_noun"])
+    names = [name for name in effects_a["per_noun"][nouns[0]] if name not in {"c_reconstructed", "c_model"}]
+    return {name: _mean([effects_a["per_noun"][noun][name] - effects_b["per_noun"][noun][name] for noun in nouns]) for name in names}
+
+
+# ---------------------------------------------------------------------------
+# Tier A measurements A1–A9. Each returns a JSON-safe dict; the runner writes it
+# before the next step is interpreted.
+
+from .candidate_screening import score_behavior_case  # noqa: E402
+
+SCREENING_REPORT_CONSTANTS = {  # from screening/behavior-candidates/report-2026-09-17.md
+    "development_mean_d_full": 5.231,
+    "validation_denominators": {"overall": 4.639, "cardinal": 4.606, "coordinated-adjective": 4.969, "quantifier": 4.343},
+}
+A1_CASE_TOLERANCE = 1e-6
+A1_AGGREGATE_TOLERANCE = 1e-3
+A1_PROMPT_LEVEL_TOLERANCE = 1e-4
+A3_FULL_COUNTERFACTUAL_TOLERANCE = 1e-4
+AXIS_SUM_TOLERANCE = 1e-3
+
+
+@dataclass
+class DiscoveryContext:
+    model: Any
+    weights: Weights
+    manifest: ScreeningManifest | None
+    frames: tuple[Frame, ...]
+    nouns: tuple[Noun, ...]
+    cache: PromptCache
+
+    @property
+    def n_layers(self) -> int:
+        return int(self.model.cfg.n_layers)
+
+    @property
+    def universe(self) -> tuple[str, ...]:
+        return universe_keys(self.model)
+
+    def frames_of(self, template_id: str) -> tuple[Frame, ...]:
+        return tuple(frame for frame in self.frames if frame.template_id == template_id)
+
+    @property
+    def coordinated(self) -> tuple[Frame, ...]:
+        return self.frames_of(COORDINATED_TEMPLATE)
+
+
+def new_discovery_context(model: Any, manifest: ScreeningManifest, nouns: Sequence[Noun]) -> DiscoveryContext:
+    frames = derive_frames(manifest)
+    return DiscoveryContext(model, Weights.from_model(model), manifest, frames, tuple(nouns), PromptCache(model, tuple(nouns)))
+
+
+def _rows_summary(rows: Sequence[CaseRow]) -> dict[str, Any]:
+    return stratified_recovery(rows)
+
+
+def _recovery(rows: Sequence[CaseRow]) -> float | None:
+    return stratified_recovery(rows)["overall"]["recovery"]
+
+
+# -- A1 ---------------------------------------------------------------------
+
+def _screening_measurements(path: Path | None) -> dict[str, Any] | None:
+    if path is None or not Path(path).exists():
+        return None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    screen = payload["behavioral"].get(PYTHIA_70M.model_id) or {}
+    return dict(screen.get("measurements") or {})
+
+
+def a1_baseline(ctx: DiscoveryContext, screening_results_path: Path | None) -> dict[str, Any]:
+    """Recompute the behavioral baselines case by case and check them against the screen."""
+    stored = _screening_measurements(screening_results_path)
+    measurements: dict[str, Any] = {}
+    max_case_gap = 0.0
+    compared = 0
+    for split in (Split.DEVELOPMENT, Split.HOLDOUT):
+        for case in regular_plural_cases(ctx.manifest, split):
+            measured = score_behavior_case(ctx.model, case).to_dict()
+            measurements[case.case_id] = measured
+            if stored is not None:
+                reference = stored.get(case.case_id)
+                if reference is None:
+                    raise IncidentError(f"{case.case_id} is missing from the screening results")
+                for condition in ("x_a", "x_b"):
+                    gap = abs(measured[condition]["contrast"] - reference[condition]["contrast"])
+                    max_case_gap = max(max_case_gap, gap)
+                    if gap > A1_CASE_TOLERANCE:
+                        raise IncidentError(f"{case.case_id}/{condition}: contrast differs from the screen by {gap:.2e}")
+                compared += 1
+    development = [case for case in regular_plural_cases(ctx.manifest, Split.DEVELOPMENT)]
+    dev_d_full = [measurements[case.case_id]["d_full"] for case in development]
+    aggregates = {"development_mean_d_full": _mean(dev_d_full)}
+    validation = [case for case in development if case.compactness_partition is not None and case.compactness_partition.value == "validation"]
+    aggregates["validation_denominators"] = {"overall": _mean([measurements[case.case_id]["d_full"] for case in validation])}
+    for template in TEMPLATE_ORDER:
+        aggregates["validation_denominators"][template] = _mean([measurements[case.case_id]["d_full"] for case in validation if case.template_id == template])
+    gaps = {"development_mean_d_full": abs(aggregates["development_mean_d_full"] - SCREENING_REPORT_CONSTANTS["development_mean_d_full"])}
+    for name, value in SCREENING_REPORT_CONSTANTS["validation_denominators"].items():
+        gaps[f"validation_{name}"] = abs(aggregates["validation_denominators"][name] - value)
+    for name, gap in gaps.items():
+        if gap > A1_AGGREGATE_TOLERANCE:
+            raise IncidentError(f"{name}: aggregate differs from the screening report by {gap:.2e}")
+    # Prompt-level readout must agree with the case-level teacher-forced contrasts.
+    max_prompt_gap = 0.0
+    by_key = {noun.lexical_key: noun for noun in ctx.nouns}
+    for case in development:
+        frame = next(frame for frame in ctx.frames if frame.prompt_ids(frame.cue_ids["sg"]) == case.x_a.prompt_token_ids)
+        sg, pl = frame_prompts(frame)
+        noun = by_key[case.lexical_key]
+        gap = max(abs(ctx.cache.c(sg)[noun.lexical_key] - measurements[case.case_id]["x_a"]["contrast"]),
+                  abs(ctx.cache.c(pl)[noun.lexical_key] - measurements[case.case_id]["x_b"]["contrast"]))
+        max_prompt_gap = max(max_prompt_gap, gap)
+    if max_prompt_gap > A1_PROMPT_LEVEL_TOLERANCE:
+        raise IncidentError(f"prompt-level readout differs from case-level scoring by {max_prompt_gap:.2e}")
+    return {"screening_results_compared": compared, "max_case_gap": max_case_gap, "aggregates": aggregates, "aggregate_gaps": gaps,
+            "max_prompt_level_gap": max_prompt_gap, "measurements": measurements}
+
+
+# -- A2 ---------------------------------------------------------------------
+
+def a2_position_map(ctx: DiscoveryContext) -> dict[str, Any]:
+    """Singleton counterfactual replacement of every component at p_c and p_t, with prefix-identity checks."""
+    for frame in ctx.frames:
+        sg, pl = frame_prompts(frame)
+        assert_prefix_identical(ctx.cache.run(sg), ctx.cache.run(pl), prefix_sites(ctx.model, sg))
+    roles_by_frame = {frame.frame_id: (("p_t",) if frame.p_c == frame.p_t else ("p_c", "p_t")) for frame in ctx.frames}
+    rows: dict[str, dict[str, list[CaseRow]]] = {"p_c": {}, "p_t": {}}
+    for frame in ctx.frames:
+        for role in roles_by_frame[frame.frame_id]:
+            for key in ctx.universe:
+                frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, [(key, role)])
+                rows[role].setdefault(key, []).extend(frame_rows)
+    result: dict[str, Any] = {"prefix_identity": "verified", "roles": {}}
+    for role, by_key in rows.items():
+        entries = {}
+        for key, key_rows in by_key.items():
+            summary = stratified_recovery(key_rows)
+            entries[key] = {"mean_d_patch": summary["overall"]["mean_d_patch"], "recovery": summary["overall"]["recovery"],
+                            "templates": {template: value["recovery"] for template, value in summary["templates"].items()},
+                            "template_mean_d_patch": {template: value["mean_d_patch"] for template, value in summary["templates"].items()}}
+        result["roles"][role] = entries
+    coordinated_p_t = {key: entry["template_mean_d_patch"].get(COORDINATED_TEMPLATE, 0.0) for key, entry in result["roles"]["p_t"].items()}
+    result["rankings"] = {
+        "p_t_all_templates": sorted(ctx.universe, key=lambda key: (-result["roles"]["p_t"][key]["mean_d_patch"], ctx.universe.index(key))),
+        "p_t_coordinated": sorted(ctx.universe, key=lambda key: (-coordinated_p_t[key], ctx.universe.index(key))),
+        "p_c_coordinated": sorted(ctx.universe, key=lambda key: (-result["roles"]["p_c"][key]["mean_d_patch"], ctx.universe.index(key))),
+    }
+    return result
+
+
+# -- A3 ---------------------------------------------------------------------
+
+def a3_layer_profile(ctx: DiscoveryContext) -> dict[str, Any]:
+    profile = {}
+    for layer in range(ctx.n_layers):
+        layer_rows: list[CaseRow] = []
+        for frame in ctx.coordinated:
+            rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, [(f"RESID_PRE.L{layer}", "p_c")])
+            layer_rows.extend(rows)
+        profile[f"L{layer}"] = stratified_recovery(layer_rows)["overall"]
+    full = profile["L0"]["recovery"]
+    if full is None or abs(full - 1.0) > A3_FULL_COUNTERFACTUAL_TOLERANCE:
+        raise IncidentError(f"layer-0 residual replacement at p_c should equal the full counterfactual (recovery {full})")
+    return {"recovery_by_layer": profile}
+
+
+# -- A4 ---------------------------------------------------------------------
+
+def a4_attention(ctx: DiscoveryContext) -> dict[str, Any]:
+    n_heads = int(ctx.model.cfg.n_heads)
+    to_cue: dict[str, list[float]] = {}
+    argmax_key: dict[str, list[int]] = {}
+    for frame in ctx.coordinated:
+        for prompt in frame_prompts(frame):
+            run = ctx.cache.run(prompt)
+            for layer in range(ctx.n_layers):
+                pattern = run.vector((f"ATTN_PATTERN.L{layer}", prompt.p_t))  # [n_heads, n_keys]
+                for head in range(n_heads):
+                    key = f"L{layer:02d}.H{head:02d}"
+                    to_cue.setdefault(key, []).append(float(pattern[head, prompt.p_c]))
+                    argmax_key.setdefault(key, []).append(int(pattern[head].argmax()))
+    heads = {key: {"attention_to_cue": _mean(values), "attention_to_cue_by_prompt": values, "argmax_keys": argmax_key[key]} for key, values in to_cue.items()}
+    ranking = sorted(heads, key=lambda key: (-heads[key]["attention_to_cue"], key))
+    return {"heads": heads, "ranking_by_attention_to_cue": ranking}
+
+
+# -- A5 ---------------------------------------------------------------------
+
+def d_num_axes(ctx: DiscoveryContext) -> dict[str, Any]:
+    """Mean pair-difference axes per template at p_c and p_t for every residual layer and the final residual."""
+    axes: dict[str, dict[str, dict[str, torch.Tensor]]] = {}
+    for template in TEMPLATE_ORDER:
+        axes[template] = {}
+        frames = ctx.frames_of(template)
+        for role in ("p_c", "p_t"):
+            layer_axes = {}
+            for layer in range(ctx.n_layers):
+                key = f"RESID_PRE.L{layer}"
+                diffs = [ctx.cache.run(pl).vector((key, role_position(pl, role))) - ctx.cache.run(sg).vector((key, role_position(sg, role))) for sg, pl in map(frame_prompts, frames)]
+                layer_axes[key] = torch.stack(diffs).double().mean(dim=0)
+            final = f"RESID_POST.L{ctx.n_layers - 1}"
+            diffs = [ctx.cache.run(pl).vector((final, role_position(pl, role))) - ctx.cache.run(sg).vector((final, role_position(sg, role))) for sg, pl in map(frame_prompts, frames)]
+            layer_axes[final] = torch.stack(diffs).double().mean(dim=0)
+            axes[template][role] = layer_axes
+    return axes
+
+
+def a5_axes_and_direct_effects(ctx: DiscoveryContext, *, e_keys: Sequence[str], t_keys: Sequence[str], r_keys: Sequence[str], l_r: int, l_t: int | None) -> dict[str, Any]:
+    """Number axes, site variables, component contributions, cosines, and exact direct effects."""
+    axes = d_num_axes(ctx)
+    final = f"RESID_POST.L{ctx.n_layers - 1}"
+    norms = {template: {role: {key: float(vector.norm()) for key, vector in layer_axes.items()} for role, layer_axes in roles.items()} for template, roles in axes.items()}
+    cosines = {"across_templates_p_t": {}, "across_frames_p_t": {}}
+    for key in list(axes[TEMPLATE_ORDER[0]]["p_t"]):
+        pairs = {}
+        for i, left in enumerate(TEMPLATE_ORDER):
+            for right in TEMPLATE_ORDER[i + 1:]:
+                pairs[f"{left}|{right}"] = cosine(axes[left]["p_t"][key], axes[right]["p_t"][key])
+        cosines["across_templates_p_t"][key] = pairs
+        frame_cos = {}
+        for template in TEMPLATE_ORDER:
+            frames = ctx.frames_of(template)
+            (sg1, pl1), (sg2, pl2) = frame_prompts(frames[0]), frame_prompts(frames[1])
+            d1 = ctx.cache.run(pl1).vector((key, pl1.p_t)) - ctx.cache.run(sg1).vector((key, sg1.p_t))
+            d2 = ctx.cache.run(pl2).vector((key, pl2.p_t)) - ctx.cache.run(sg2).vector((key, sg2.p_t))
+            frame_cos[template] = cosine(d1, d2)
+        cosines["across_frames_p_t"][key] = frame_cos
+    # Site axes.
+    e_a = [summed_vector(ctx.cache.run(sg), [(key, sg.p_c) for key in e_keys]) for sg, _ in map(frame_prompts, ctx.frames)]
+    e_b = [summed_vector(ctx.cache.run(pl), [(key, pl.p_c) for key in e_keys]) for _, pl in map(frame_prompts, ctx.frames)]
+    site_axes = {"E": site_axis("E", e_a, e_b)}
+    if t_keys:
+        t_a = [summed_vector(ctx.cache.run(sg), [(key, sg.p_t) for key in t_keys]) for sg, _ in map(frame_prompts, ctx.coordinated)]
+        t_b = [summed_vector(ctx.cache.run(pl), [(key, pl.p_t) for key in t_keys]) for _, pl in map(frame_prompts, ctx.coordinated)]
+        site_axes["T"] = site_axis("T", t_a, t_b)
+    r_in_key = f"RESID_PRE.L{l_r}"
+    r_a = [ctx.cache.run(sg).vector((r_in_key, sg.p_t)) for sg, _ in map(frame_prompts, ctx.frames)]
+    r_b = [ctx.cache.run(pl).vector((r_in_key, pl.p_t)) for _, pl in map(frame_prompts, ctx.frames)]
+    site_axes["R_in"] = site_axis("R_in", r_a, r_b)
+    if r_keys:
+        ro_a = [summed_vector(ctx.cache.run(sg), [(key, sg.p_t) for key in r_keys]) for sg, _ in map(frame_prompts, ctx.frames)]
+        ro_b = [summed_vector(ctx.cache.run(pl), [(key, pl.p_t) for key in r_keys]) for _, pl in map(frame_prompts, ctx.frames)]
+        site_axes["R_out"] = site_axis("R_out", ro_a, ro_b)
+    variables = {label: {prompt.key: axis.n(_site_vector(ctx, prompt, label, e_keys, t_keys, r_keys, l_r)) for frame in ctx.frames for prompt in frame_prompts(frame)
+                         if label != "T" or frame.template_id == COORDINATED_TEMPLATE}
+                 for label, axis in site_axes.items()}
+    # Component number contributions at L_R, per template and overall (exact decomposition of what arrives).
+    contributions = {}
+    direction = site_axes["R_in"].direction
+    for template in list(TEMPLATE_ORDER) + ["all"]:
+        frames = ctx.frames if template == "all" else ctx.frames_of(template)
+        entries = {}
+        keys = ["EMBED"] + [key for key in ctx.universe if key_layer(key) < l_r]
+        for key in keys:
+            diffs = [ctx.cache.run(pl).vector((key, pl.p_t)) - ctx.cache.run(sg).vector((key, sg.p_t)) for sg, pl in map(frame_prompts, frames)]
+            entries[key] = float(torch.stack(diffs).double().mean(dim=0) @ direction.double())
+        total = sum(entries.values())
+        axis_projection = float(torch.stack([ctx.cache.run(pl).vector((r_in_key, pl.p_t)) - ctx.cache.run(sg).vector((r_in_key, sg.p_t)) for sg, pl in map(frame_prompts, frames)]).double().mean(dim=0) @ direction.double())
+        if abs(total - axis_projection) > AXIS_SUM_TOLERANCE:
+            raise IncidentError(f"{template}: component contributions ({total:.4f}) do not sum to the axis projection ({axis_projection:.4f})")
+        contributions[template] = {"entries": entries, "total": total, "axis_projection": axis_projection}
+    # Encoding branch decomposition at the transport layer's input, coordinated only.
+    encoding = None
+    if l_t is not None:
+        lt_key = f"RESID_PRE.L{l_t}"
+        axis_lt = axes[COORDINATED_TEMPLATE]["p_c"][lt_key]
+        unit = axis_lt / axis_lt.norm()
+        entries = {}
+        for key in ["EMBED"] + [key for key in ctx.universe if key_layer(key) < l_t]:
+            diffs = [ctx.cache.run(pl).vector((key, pl.p_c)) - ctx.cache.run(sg).vector((key, sg.p_c)) for sg, pl in map(frame_prompts, ctx.coordinated)]
+            entries[key] = float(torch.stack(diffs).double().mean(dim=0) @ unit)
+        total = float(axis_lt.norm())
+        encoding = {"layer": l_t, "entries": entries, "axis_norm": total, "embedding_share": entries["EMBED"] / total,
+                    "e_share": sum(entries[key] for key in e_keys if key in entries) / total}
+    # Exact direct effects for every prompt; pair shares per frame and template.
+    effects = {}
+    pair_shares = {}
+    for frame in ctx.frames:
+        sg, pl = frame_prompts(frame)
+        de_a = direct_effects(ctx.weights, ctx.cache.run(sg), ctx.nouns, p_t=sg.p_t, n_layers=ctx.n_layers, universe=ctx.universe)
+        de_b = direct_effects(ctx.weights, ctx.cache.run(pl), ctx.nouns, p_t=pl.p_t, n_layers=ctx.n_layers, universe=ctx.universe)
+        check_direct_effects(de_a, where=sg.key)
+        check_direct_effects(de_b, where=pl.key)
+        effects[sg.key] = {k: v for k, v in de_a.items() if k != "per_noun"}
+        effects[pl.key] = {k: v for k, v in de_b.items() if k != "per_noun"}
+        pair_shares[frame.frame_id] = pair_direct_effects(de_a, de_b)
+    template_shares = {}
+    for template in TEMPLATE_ORDER:
+        frames = ctx.frames_of(template)
+        names = list(pair_shares[frames[0].frame_id])
+        template_shares[template] = {name: _mean([pair_shares[frame.frame_id][name] for frame in frames]) for name in names}
+    return {"axis_norms": norms, "cosines": cosines, "site_axes": {label: axis.to_dict() for label, axis in site_axes.items()},
+            "number_variables": variables, "contributions_at_L_R": contributions, "encoding_decomposition": encoding,
+            "direct_effects": {"runs": effects, "pair_shares_by_frame": pair_shares, "pair_shares_by_template": template_shares},
+            "_site_axes": site_axes}
+
+
+def _site_vector(ctx: DiscoveryContext, prompt: Prompt, label: str, e_keys: Sequence[str], t_keys: Sequence[str], r_keys: Sequence[str], l_r: int) -> torch.Tensor:
+    run = ctx.cache.run(prompt)
+    if label == "E":
+        return summed_vector(run, [(key, prompt.p_c) for key in e_keys])
+    if label == "T":
+        return summed_vector(run, [(key, prompt.p_t) for key in t_keys])
+    if label == "R_in":
+        return run.vector((f"RESID_PRE.L{l_r}", prompt.p_t))
+    if label == "R_out":
+        return summed_vector(run, [(key, prompt.p_t) for key in r_keys])
+    raise ValueError(label)
+
+
+# -- A6 ---------------------------------------------------------------------
+
+def _projection_fraction(ctx: DiscoveryContext, frames: Sequence[Frame], runs_by_frame: Mapping[str, Mapping[str, PromptRun]], axis: SiteAxis, sites_for: Any) -> float:
+    """Ratio of means: reproduced projection change over the full counterfactual projection change."""
+    reproduced, full = [], []
+    for frame in frames:
+        sg, pl = frame_prompts(frame)
+        n_a, n_b = axis.projection(sites_for(ctx.cache.run(sg), sg)), axis.projection(sites_for(ctx.cache.run(pl), pl))
+        patched = runs_by_frame[frame.frame_id]
+        n_a_from_b = axis.projection(sites_for(patched["a_from_b"], sg))
+        n_b_from_a = axis.projection(sites_for(patched["b_from_a"], pl))
+        reproduced.append(0.5 * ((n_a_from_b - n_a) + (n_b - n_b_from_a)))
+        full.append(n_b - n_a)
+    return _mean(reproduced) / _mean(full)
+
+
+def a6_chain(ctx: DiscoveryContext, site_axes: Mapping[str, SiteAxis], *, e_keys: Sequence[str], t_keys: Sequence[str], t_candidates: Sequence[str], r_keys: Sequence[str], l_t: int) -> dict[str, Any]:
+    """Chain, path, and mediation tests on the coordinated-adjective template.
+
+    ``t_keys`` is the declared T set behind the T site axis; ``t_candidates`` are the ranked heads
+    tested one by one (the first is the top head).
+    """
+    frames = ctx.coordinated
+    e_sites = [(key, "p_c") for key in e_keys]
+    r_sites = [(key, "p_t") for key in r_keys]
+    result: dict[str, Any] = {"e_keys": list(e_keys), "t_keys": list(t_keys), "t_candidates": list(t_candidates), "r_keys": list(r_keys), "l_t": l_t}
+
+    def t_vector(keys: Sequence[str]):
+        return lambda run, prompt: summed_vector(run, [(key, prompt.p_t) for key in keys])
+
+    def r_vector(run: PromptRun, prompt: Prompt) -> torch.Tensor:
+        return summed_vector(run, [(key, prompt.p_t) for key in r_keys])
+
+    capture_sites = list(dict.fromkeys([(key, "p_t") for key in list(t_candidates) + list(t_keys)] + r_sites))
+    # (i) E alone, everything downstream recomputes.
+    runs = {}
+    rows: list[CaseRow] = []
+    for frame in frames:
+        frame_rows, patched = counterfactual_rows(ctx.model, ctx.cache, frame, e_sites, capture_role_sites=capture_sites)
+        rows.extend(frame_rows)
+        runs[frame.frame_id] = patched
+    e_alone = {"recovery": stratified_recovery(rows)["overall"], "m_R": _projection_fraction(ctx, frames, runs, site_axes["R_out"], r_vector)}
+    e_alone["m_T_by_head"] = {key: _projection_fraction(ctx, frames, runs, site_axis(key, [summed_vector(ctx.cache.run(sg), [(key, sg.p_t)]) for sg, _ in map(frame_prompts, frames)],
+                                                                                         [summed_vector(ctx.cache.run(pl), [(key, pl.p_t)]) for _, pl in map(frame_prompts, frames)]), t_vector([key]))
+                              for key in t_candidates}
+    if "T" in site_axes and t_keys:
+        e_alone["m_T"] = _projection_fraction(ctx, frames, runs, site_axes["T"], t_vector(list(t_keys)))
+    result["e_alone"] = e_alone
+    # (ii) E alone with each candidate T head frozen; and with the top-3 frozen jointly.
+    frozen = {}
+    freeze_sets = {key: [key] for key in t_candidates}
+    freeze_sets["top3"] = list(t_candidates[:3])
+    for label, keys in freeze_sets.items():
+        runs_f, rows_f = {}, []
+        for frame in frames:
+            frame_rows, patched = counterfactual_rows(ctx.model, ctx.cache, frame, e_sites, freeze=[(key, "p_t") for key in keys], capture_role_sites=r_sites)
+            rows_f.extend(frame_rows)
+            runs_f[frame.frame_id] = patched
+        frozen[label] = {"recovery": stratified_recovery(rows_f)["overall"], "m_R_given_T_frozen": _projection_fraction(ctx, frames, runs_f, site_axes["R_out"], r_vector)}
+    result["e_alone_t_frozen"] = frozen
+    # (iii) Residual at the transport layer's input at p_c, alone and with T frozen: blocked fraction.
+    resid_site = [(f"RESID_PRE.L{l_t}", "p_c")]
+    rows_u: list[CaseRow] = []
+    for frame in frames:
+        frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, resid_site)
+        rows_u.extend(frame_rows)
+    unfrozen = _recovery(rows_u)
+    blocked = {}
+    for label, keys in freeze_sets.items():
+        rows_b: list[CaseRow] = []
+        for frame in frames:
+            frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, resid_site, freeze=[(key, "p_t") for key in keys])
+            rows_b.extend(frame_rows)
+        r_frozen = _recovery(rows_b)
+        blocked[label] = {"recovery_frozen": r_frozen, "blocked_fraction": (unfrozen - r_frozen) / unfrozen if unfrozen else None}
+    result["residual_patch"] = {"recovery_unfrozen": unfrozen, "frozen": blocked}
+    # (iv) R outputs alone; and joint E∪T as sufficiency only.
+    rows_r: list[CaseRow] = []
+    for frame in frames:
+        frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, r_sites)
+        rows_r.extend(frame_rows)
+    result["r_alone"] = {"recovery": _recovery(rows_r)}
+    singles, cumulative = {}, {}
+    for index, key in enumerate(t_candidates):
+        rows_s, rows_c = [], []
+        for frame in frames:
+            frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, [(key, "p_t")])
+            rows_s.extend(frame_rows)
+            frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, [(k, "p_t") for k in t_candidates[:index + 1]])
+            rows_c.extend(frame_rows)
+        singles[key] = _recovery(rows_s)
+        cumulative[f"top{index + 1}"] = _recovery(rows_c)
+    result["t_alone"] = {"singles": singles, "cumulative": cumulative}
+    rows_et: list[CaseRow] = []
+    for frame in frames:
+        frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, frame, e_sites + [(key, "p_t") for key in t_candidates[:1]])
+        rows_et.extend(frame_rows)
+    result["joint_e_top_t_sufficiency_only"] = {"recovery": _recovery(rows_et)}
+    return result
+
+
+# -- A7 ---------------------------------------------------------------------
+
+def a7_abstractness(ctx: DiscoveryContext, *, e_keys: Sequence[str], t_candidates: Sequence[str], r_keys: Sequence[str]) -> dict[str, Any]:
+    """Cross-cue (cue-final) and cross-frame (all templates) resample replacements."""
+    result: dict[str, Any] = {"cross_cue": {}, "cross_frame": {}}
+    cardinal, quantifier = ctx.frames_of("cardinal"), ctx.frames_of("quantifier")
+    for target_frames, source_frames, label in ((cardinal, quantifier, "cardinal<-quantifier"), (quantifier, cardinal, "quantifier<-cardinal")):
+        entry = {}
+        for flip, name in ((True, "opposite_number"), (False, "same_number")):
+            rows: list[CaseRow] = []
+            for target, source in zip(target_frames, source_frames):
+                frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, target, [(key, "p_t") for key in e_keys], source_frame=source, flip_source=flip)
+                rows.extend(frame_rows)
+            entry[name] = _recovery(rows)
+        result["cross_cue"][label] = entry
+    sets = {"E": [(key, "p_c") for key in e_keys], "R": [(key, "p_t") for key in r_keys]}
+    for key in t_candidates:
+        sets[f"T:{key}"] = [(key, "p_t")]
+    for label, role_sites in sets.items():
+        per_template = {}
+        for template in TEMPLATE_ORDER:
+            frames = ctx.frames_of(template)
+            entry = {}
+            for flip, name in ((True, "opposite_cue"), (False, "same_cue")):
+                rows = []
+                for target, source in ((frames[0], frames[1]), (frames[1], frames[0])):
+                    frame_rows, _ = counterfactual_rows(ctx.model, ctx.cache, target, role_sites, source_frame=source, flip_source=flip)
+                    rows.extend(frame_rows)
+                entry[name] = _recovery(rows)
+            per_template[template] = entry
+        result["cross_frame"][label] = per_template
+    return result
+
+
+# -- A8 ---------------------------------------------------------------------
+
+def a8_neutralization(ctx: DiscoveryContext, *, e_keys: Sequence[str], t_candidates: Sequence[str], r_keys: Sequence[str]) -> dict[str, Any]:
+    """Pair-centered neutralization: contrast loss, direct-effect compensation, conditional co-neutralization."""
+    targets: dict[str, list[RoleSite]] = {f"E:{key}": [(key, "p_c")] for key in e_keys}
+    targets.update({f"T:{key}": [(key, "p_t")] for key in t_candidates})
+    targets.update({f"R:{key}": [(key, "p_t")] for key in r_keys})
+    targets["candidate_set"] = [(key, "p_c") for key in e_keys] + [(key, "p_t") for key in t_candidates[:1]] + [(key, "p_t") for key in r_keys]
+    capture = [(key, "p_t") for key in ctx.universe] + [("EMBED", "p_t"), (f"RESID_POST.L{ctx.n_layers - 1}", "p_t")]
+    result: dict[str, Any] = {}
+    for label, role_sites in targets.items():
+        per_template = {}
+        compensation_all = {}
+        for template in TEMPLATE_ORDER:
+            frames = ctx.frames_of(template)
+            rows: list[CaseRow] = []
+            retention = {"retained": 0, "total": 0}
+            comp_terms: dict[str, list[float]] = {}
+            clean_terms: list[dict[str, float]] = []
+            for frame in frames:
+                sites = list(dict.fromkeys((key, role) for key, role in role_sites))
+                if frame.p_c == frame.p_t:
+                    sites = list(dict.fromkeys((key, "p_t") for key, _ in sites))
+                runs = neutralized_runs(ctx.model, ctx.cache, frame, sites, capture_role_sites=capture)
+                rows.extend(neutralization_rows(ctx.cache, frame, runs))
+                kept = sign_retention(ctx.cache, frame, runs)
+                retention["retained"] += kept["retained"]
+                retention["total"] += kept["total"]
+                sg, pl = frame_prompts(frame)
+                clean = pair_direct_effects(direct_effects(ctx.weights, ctx.cache.run(sg), ctx.nouns, p_t=sg.p_t, n_layers=ctx.n_layers, universe=ctx.universe),
+                                            direct_effects(ctx.weights, ctx.cache.run(pl), ctx.nouns, p_t=pl.p_t, n_layers=ctx.n_layers, universe=ctx.universe))
+                de_sg = direct_effects(ctx.weights, runs["sg"], ctx.nouns, p_t=sg.p_t, n_layers=ctx.n_layers, universe=ctx.universe)
+                de_pl = direct_effects(ctx.weights, runs["pl"], ctx.nouns, p_t=pl.p_t, n_layers=ctx.n_layers, universe=ctx.universe)
+                check_direct_effects(de_sg, where=f"{label}/{sg.key}")
+                check_direct_effects(de_pl, where=f"{label}/{pl.key}")
+                after = pair_direct_effects(de_sg, de_pl)
+                clean_terms.append(clean)
+                for name in clean:
+                    comp_terms.setdefault(name, []).append(after[name] - clean[name])
+            removed_keys = [key for key, _ in role_sites]
+            deltas = {name: _mean(values) for name, values in comp_terms.items()}
+            clean_removed = _mean([sum(clean_by_frame[key] for key in removed_keys if key in clean_by_frame) for clean_by_frame in clean_terms])
+            others = {name: value for name, value in deltas.items() if name not in removed_keys}
+            compensation = (sum(others.values()) / clean_removed) if clean_removed != 0.0 else None
+            top = sorted(others, key=lambda name: -abs(others[name]))[:3]
+            per_template[template] = {"loss": stratified_recovery(rows)["overall"], "sign_retention": retention,
+                                      "clean_direct_effect_removed": clean_removed,
+                                      "direct_effect_change_removed": sum(deltas[key] for key in removed_keys if key in deltas),
+                                      "compensation_ratio": compensation, "top_compensators": {name: others[name] for name in top}}
+            compensation_all[template] = top[0] if top else None
+        result[label] = {"templates": per_template}
+    # Conditional co-neutralization for the single top T head on the coordinated template.
+    if t_candidates:
+        top_t = t_candidates[0]
+        frames = ctx.coordinated
+        comp = result[f"T:{top_t}"]["templates"][COORDINATED_TEMPLATE]["top_compensators"]
+        if comp:
+            partner = next(iter(comp))
+            if partner in ctx.universe:
+                rows: list[CaseRow] = []
+                for frame in frames:
+                    runs = neutralized_runs(ctx.model, ctx.cache, frame, [(top_t, "p_t"), (partner, "p_t")])
+                    rows.extend(neutralization_rows(ctx.cache, frame, runs))
+                result["conditional_co_neutralization"] = {"primary": top_t, "partner": partner,
+                                                           "loss_alone": result[f"T:{top_t}"]["templates"][COORDINATED_TEMPLATE]["loss"]["recovery"],
+                                                           "loss_joint": stratified_recovery(rows)["overall"]["recovery"]}
+    return result
+
+
+# -- A9 ---------------------------------------------------------------------
+
+def a9_isolation(ctx: DiscoveryContext, keep: Sequence[RoleSite]) -> dict[str, Any]:
+    rows: list[CaseRow] = []
+    retention = {"retained": 0, "total": 0}
+    for frame in ctx.frames:
+        kept = list(keep)
+        if frame.p_c == frame.p_t:
+            kept = list(dict.fromkeys((key, "p_t") for key, _ in kept))
+        runs = isolation_runs(ctx.model, ctx.cache, frame, kept)
+        sg, pl = frame_prompts(frame)
+        c_a, c_b = ctx.cache.c(sg), ctx.cache.c(pl)
+        c_a_i, c_b_i = contrasts(runs["sg"].logits, ctx.nouns), contrasts(runs["pl"].logits, ctx.nouns)
+        for noun in ctx.nouns:
+            if not noun.single_token:
+                continue
+            key = noun.lexical_key
+            rows.append(CaseRow(frame.frame_id, frame.template_id, key, noun.rule_class, c_a[key] - c_b[key], c_a_i[key] - c_b_i[key]))
+        kept_signs = sign_retention(ctx.cache, frame, runs)
+        retention["retained"] += kept_signs["retained"]
+        retention["total"] += kept_signs["total"]
+    summary = stratified_recovery(rows)
+    return {"faithfulness": summary, "sign_retention": retention, "keep": [list(site) for site in keep]}
