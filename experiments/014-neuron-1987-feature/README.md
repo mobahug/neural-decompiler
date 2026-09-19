@@ -69,7 +69,81 @@ identities, the neuron's activation identity against the block-2 ledger, and the
 re-captured frames are enforced and any failure is an incident recorded with its commit; no fresh cue prompt runs
 before its frame's stage-1 predictions are digested; the firing set's interpretation comes after the scoring.
 
-## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+## Status — 2026-09-19: complete; outcome `NEURON_FEATURE_PREDICTED_TOKENS | NEURON_FEATURE_PREDICTED_FRAMES_CONDITIONAL | AXIS_ONLY_REJECTED`
+
+The lock was installed byte-identical to the Tier A candidates and committed by hand (`d008dae`; lock content sha256
+`34b97174ebd68617f7a13a7d876f405761a8faaf42c6675ac8fa42de8c805d01`, predictions sha256
+`a0b7448a4c42faee538b180794f95abf6fbf5e3049ab8358ba83875ce05b091e`), the read-only post-lock check passed (hashes,
+scientific-path immutability since `bcb0bfe`, `validate_lock`, frozen floors, the complete table with its firing flags
+reproduced exactly, runtime equal to the explore record, no overlap with executed prompts), the reviewer signed off, and
+the single `confirm` ran at `d008dae` on a clean tree (results state sha256
+`96a80d9cd129e7aa37496ee563b7511acbd75884120c46a42f682092acd9448b`). **Stage 1** ran only the six fresh frames'
+reference prompts and cue pairs — all six valid, operating points −2.36 to +0.03 — computed the 144 frame-conditional
+predictions (22 predicted firing pairs) and digested them (`102103ed6f746e5b24698c6c07441e7965b7fa04cf9a6a67206ed738522e217a`);
+**stage 2** started only after re-reading that digest from disk and ran the 24 fresh cues in the 42 exposed frames
+(1008 pairs) and the six fresh frames (144 pairs); no patched residual ever entered the predictor. The final report is
+copied verbatim to [`evidence/final-report-2026-09-19.md`](evidence/final-report-2026-09-19.md). Ledger after
+confirm: 1296 prompt keys, 80 noun keys. Experiment 014 is closed; nothing is amended or rerun.
+
+A note on nomenclature, raised at the sign-off: in the report's classification lines, "majority baseline" is the
+*ordinary* accuracy of an always-majority-class classifier (`max(firing, non-firing) / n`; 0.79 on Y1's pairs); the
+balanced accuracy is `½(sensitivity + specificity)` and is computed separately — an always-one-class classifier scores
+0.5 on it. The line is descriptive; the frozen floor is on the balanced accuracy.
+
+- **Identities:** the neuron's activation identity against the block-2 ledger and Experiment 012's identities held in
+  all 1152 fresh pairs (ρ identity 1.0e-7, P1 cross-check 4e-16, neuron sum 2e-8); every re-captured reference state
+  matched its locked copy or stage-1 digest.
+- **Y1 — strict boundary (24 new cues × 42 exposed frames): PASS on all three floors.** Token means `Δâ` vs `Δa`:
+  Spearman **0.950** (floor 0.80), **R² 0.970** (floor 0.50), MAE 0.040, bias +0.002 (spread sd 0.45). Pairs: Spearman
+  0.979, R² 0.940, MAE 0.060; `Δp̂re` vs `Δpre` R² 0.954. **Balanced firing accuracy 0.923** (floor 0.90): sensitivity
+  0.852, specificity **0.994**; 210 of 1008 pairs fire (majority baseline 0.79); 31 false negatives, 5 false positives.
+  Amplitude error among firing pairs 0.20 on a mean `Δa` of 0.99.
+- **Y2 — frame-conditional (24 new cues × 6 previously untested frames, predictions digested at stage 1): PASS.**
+  Spearman **0.910**, **R² 0.957**, MAE 0.043, bias −0.009; pairs 0.957 / 0.937. **Balanced accuracy 0.927** (sensitivity
+  0.870, specificity 0.983; 23 of 144 pairs fire; 3 false negatives, 2 false positives).
+- **Y3 — the number-axis alternative is rejected** on the same 48 token means and 1152 pairs: R² **−1.41** (rejected iff
+  below 0.30), balanced accuracy **0.601** (rejected iff below 0.70; sensitivity 0.87, specificity **0.33** — it fires for
+  818 of 1152 pairs against 233 measured). The predictor on the same token means: 0.977 / R² 0.965.
+- **The committed calls.** The three strong predictions fired in every frame: `dozens` +1.49 → **+1.27** (42/42 frames),
+  `hundreds` +1.19 → **+0.99** (39/42), `thousands` +1.09 → **+1.16** (42/42). The eighteen predicted vetoes held without
+  exception: `rough`, `smooth`, `golden`, `sharp`, `narrow`, `second`, `third`, `former`, `latter`, `only`, `excess`,
+  `lesser`, `minimal`, `considerable`, `everybody`, `anybody`, `anyone`, `somebody` — predicted −0.09 to −0.12, measured
+  −0.06 to −0.13, **0 firing frames of 756**; `considerable`, whose number-axis part alone would have pushed the
+  preactivation up by +1.7 (axis-only `Δâ` +1.25), stayed at −0.13. The committed borderline cases came out borderline,
+  with the predictor under-shooting them: `infinite` +0.57 → +0.63 (fires 57% → **69%** of frames), `millions` +0.53 →
+  +0.70 (50% → **74%**), `billions` +0.44 → +0.59 (33% → **64%**). Every one of the 31 Y1 false negatives is a
+  `billions`, `millions`, `infinite` or (once) `thousands` frame in which the neuron fired while the prediction sat just
+  below 0.5 (for example `billions` in `cardinal-1`: predicted 0.46, measured 0.62); the 5 false positives are
+  `hundreds` and `infinite` frames the other way. The under-shoot is template-shaped: in the coordinated-adjective
+  frames `millions` and `billions` fired in 6 and 7 of 14 frames against 1 predicted, in the cardinal and quantifier
+  frames prediction and measurement agree closely. So the model knew *which* cues sit at the boundary and got their
+  frame-level firing right in most frames, but placed the plural numerals a little too low.
+- **Accounting on the fresh set (mean |Jacobian contribution|):** `ΔE` 0.65, `MLP₁` 0.30, the layer-1 heads 0.47
+  (negative for nearly every cue); number-axis part 1.18, off-axis part 1.29. The Jacobian form itself reaches R² 0.75
+  per token but balanced accuracy 0.955 (the exact LayerNorm matters for the amplitude, not for the firing). Remainders:
+  pattern change |.| 0.165, LayerNorm linearization |.| 0.21–0.26 (preactivation units).
+- **The firing set, interpreted only now.** Exposed and fresh together, the neuron fires for the plural cues, every
+  cardinal numeral from `three` upward, `dozen`/`dozens`, `hundreds`, `thousands`, `few`, `fewer`, `many`, `multiple`,
+  `numerous`, `countless`, `myriad`, `various`, and — at the boundary — `millions`, `billions`, `infinite`; it does not
+  fire for any determiner (`these`, `those`, `both`, `all`, `some`, `most`, `every`, `second`, `third`, `only`, …), any
+  possessive or pronoun, any adjective, `zero`, or the graded quantity words `excess`, `lesser`, `minimal`,
+  `considerable`, `limited`, `surplus`. In the network's own terms, the cues that fire are those whose predicted
+  arriving change carries the number-axis excitation *without* the off-axis veto.
+
+What this settles and what it does not. Stated at its safe strength: block-2 neuron 1987's cue-induced activation
+change is prospectively reconstructed — for 24 never-seen cues in the 42 exposed frames and in six previously untested
+frames — from its own weight-defined input direction applied, through the exact LayerNorm at the frame's reference
+operating point, to the upstream state change the previously decoded circuit predicts; and a simple number-axis model
+fails on the same data because off-axis structure in that predicted change suppresses the activation for most number-
+and plural-associated cues. The claim is about the computation, not a label: the firing set is described afterwards
+and is consistent with a count-magnitude reading, but the experiment tests the mechanism (excitation along the number
+axis, veto from off-axis structure, one neuron), not the gloss. Limits: the predictor under-shoots the boundary cases,
+most in the coordinated-adjective template; it inherits Experiment 013's approximations (the pattern-change remainder
+is |.| 0.17 in preactivation units); one neuron, five lexical classes, three templates, this checkpoint. C002 is
+unchanged (out of scope here).
+
+### Tier A (2026-09-19, for the record)
+
 
 `explore` ran once on protocol/code commit `bcb0bfe` (run `00eef3b8bb95c8b8`, results state sha256
 `fbae608d39f21599f084b9a4180e69960f250bbf4aafae07a4af32b0bfee672c`; A0 passed). The report is copied to
@@ -115,6 +189,3 @@ ran no prompt at all.
   off-axis part pulls it down by −1.9 to −2.4; for `dozens` both parts are positive (+1.65, +0.67). The Y2 table (fresh
   frames) does not exist yet: it is computed at `confirm` stage 1 from each fresh frame's reference state and digested
   before any fresh cue prompt.
-
-Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
-preregistration act; the reviewer's sign-off precedes `confirm`.
