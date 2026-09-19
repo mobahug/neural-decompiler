@@ -2,8 +2,10 @@
 
 **Date:** 2026-09-19
 
-**Status:** Revision 1 — draft for review. No Experiment 012 directory, confirmation set, lock, or model run exists.
-Experiments 005–011 are closed and are not amended by this document.
+**Status:** Revision 2 — direction approved at revision 1 subject to three pre-measurement revisions under
+"Revision history" (out-of-frame calibration of the tolerances, a magnitude-fidelity gate on Y1, and pair-level
+composite arithmetic), which this revision makes. No Experiment 012 directory, confirmation set, lock, or model run
+exists. Experiments 005–011 are closed and are not amended by this document.
 
 **Kind:** Prospective, zero-parameter. The quantity under test is a **token-local forward model of the two MLPs of
 blocks 1 and 2 at the cue position**, applied to the cue's layer-0 encoding difference with attention held at the
@@ -45,19 +47,23 @@ encoding difference, with attention held fixed**.
 > the base state and attention heads of layers 1–2 contributing no systematic amount — for cue words and frames the
 > model has never been measured on, **before any of their layer-1–2 or head behaviour is observed**?
 
-**Design check on exposed data (outside any results state; to be recomputed inside Tier A).** On Experiment 010's 63
-tokens × 24 frames, with Experiment 011's locked read direction: (i) block 1's MLP change computed from the frame's own
-reference state and `ΔE` equals the recorded `ρ_f(Δout_{L01.MLP})` to 6.6e-7 relative — the exactness above, verified;
-(ii) the token-local model with each frame's own reference state (omitting only block 1's attention change in block
-2's input) reproduces the recorded net layer change per token with Spearman 0.950 and MAE 0.035 (spread 0.118); (iii)
-with the **template's mean exposed reference state** instead of the frame's own — the form usable before any fresh
-prompt runs — Spearman 0.946 and MAE 0.048 per token, 0.884 and 0.073 per pair; the residual is largest in the
-quantifier template (pair Spearman 0.72, MAE 0.09), where the correction is largest; (iv) the composite "encoding read
-plus modelled correction" predicts the head's exact P1 fraction per token with Spearman 0.977 and MAE 0.037, against
-0.887 and 0.085 for the encoding read alone — while against measured transport `q_T` the two are equivalent (0.907
-versus 0.925 rank, 0.071 versus 0.064 MAE), because `g_E`'s plural-cue normalization happens to absorb the average
-correction and the remaining gap to `q_T` is the head's own attention modulation (Experiment 009's P3 − P1). Experiment
-012 tests (iii) and (iv) prospectively; it does not aim to improve the prediction of `q_T`.
+**Design check on exposed data (outside any results state; to be recomputed inside Tier A).** On the 1630 recorded
+pairs (Experiment 010's 63 tokens × 24 frames, Experiment 011's 24 × 6), with Experiment 011's locked read direction
+and the quantities defined in the next section: (i) block 1's MLP change computed from the frame's own reference
+state and `ΔE` equals the recorded `ρ_f(Δout_{L01.MLP})` to 6.6e-7 relative — the exactness above, verified; (ii) with
+each frame's own reference state (omitting only block 1's attention change in block 2's input) the token-local model
+reproduces the measured net layer change per token with Spearman 0.956 and MAE 0.039 (spread 0.145, 87 tokens); (iii)
+with a **leave-one-frame-out template base** — each exposed frame predicted from the mean reference state of the
+other exposed frames of its template, the situation of a new frame — Spearman 0.931, MAE 0.057, explained variance
+0.76 per token (0.883 and 0.089 per pair); on the 24 Experiment 011 tokens alone, whose frames were new to every
+earlier experiment, 0.929, 0.050 and 0.84; the residual is largest in the quantifier template (pair MAE 0.11), where
+the correction is largest (+0.35); the all-frames template base gives the same figures within 0.005, so the in-sample
+base matters little, but the leave-one-frame-out form is the one used for calibration; (iv) the composite "encoding
+read plus modelled correction", in the head's units, predicts the exact P1 fraction per token with Spearman 0.982 and
+MAE 0.041 (explained variance 0.97), against 0.898 and 0.095 for the encoding read alone — while against measured
+transport `q_T` the encoding read alone was already as good (Experiment 011), because its plural-cue normalization
+absorbs the average correction and the remaining gap to `q_T` is the head's own attention modulation (Experiment
+009's P3 − P1). Experiment 012 tests (iii) and (iv) prospectively; it does not aim to improve the prediction of `q_T`.
 
 ## The quantities under test (frozen definitions)
 
@@ -67,12 +73,24 @@ the vectors and scalar locked by Experiment 011** (digest-bound; not re-estimate
 and `confirm` re-checks the recomputed axes against them as Experiment 011 did), `ref_T` and `pl_T` the template's
 reference and plural cues, `E(w)` the weight-only layer-0 encoding, `ΔE = E(w) − E(ref_T)`.
 
-**Measured (exact, from the E-patch of `w` into frame `f`'s reference prompt; Experiment 010's identity):**
+**Two normalizations, stated once.** Every quantity below is a ratio of inner reads at the cue position; the
+frame's read-functional scalars cancel in every ratio. Y1 isolates the correction: measured and predicted correction
+share the **weight-only denominator** `r(E(pl_T) − E(ref_T))` of Experiment 011's `g_E`, so that the only predicted
+number is the correction itself and the measured E-term equals `g_E` exactly. Y2 states the cumulative account in the
+**head's units** — fractions of the plural cue's total arriving signal, Experiments 010–011's `f`/P1 fractions — where
+the model must also predict the plural cue's own correction. Both are defined pointwise, per (token, frame) on the
+measured side and per (token, template) on the predicted side, and averaged over one identical frame set per token;
+no component is aggregated separately.
+
+**Measured (exact, from the E-patch of `w` into frame `f`'s reference prompt; Experiment 010's identity
+`r(Δr_c) = r(ΔE) + Σ_k r(Δout_k)` over the 18 components of layers 1–2):**
 
 ```text
-c_M(w, f) = [ρ_f(Δout_{L01.MLP}) + ρ_f(Δout_{L02.MLP})] / ρ_f(Δr_c(pl_T, f))      the MLP correction
-c_H(w, f) = Σ_{16 heads of layers 1–2} ρ_f(Δout_k) / ρ_f(Δr_c(pl_T, f))            the head correction
-c_L(w, f) = c_M + c_H                                                               the net layer change (010's f_layers)
+c_L(w, f)  = [ r(Δr_c(w, f)) − r(ΔE(w)) ] / r(E(pl_T) − E(ref_T))                 net layer change, heads included (Y1 target)
+           = Σ_k r(Δout_k(w, f)) / r(E(pl_T) − E(ref_T))
+c_M, c_H   = the same with the sum restricted to the two MLPs / the sixteen heads   (reported; c_L = c_M + c_H)
+P1'(w, f)  = r(Δr_c(w, f)) / r(E(pl_T) − E(ref_T))  =  g_E(w, T) + c_L(w, f)        exact, the auditable identity
+P1(w, f)   = r(Δr_c(w, f)) / r(Δr_c(pl_T, f))                                       the head's P1 fraction (Y2 target)
 ```
 
 **Predicted (token-local model; weights, the locked axes, and locked exposed base states — no fresh prompt):** with
@@ -82,19 +100,23 @@ over the exposed frames of template `T`, and `ln2ₗ`, `MLPₗ` block `l`'s MLP 
 ```text
 Δ̂₁(w, T) = MLP₁(ln2₁(x̄₁,T + ΔE)) − MLP₁(ln2₁(x̄₁,T))
 Δ̂₂(w, T) = MLP₂(ln2₂(x̄₂,T + ΔE + Δ̂₁)) − MLP₂(ln2₂(x̄₂,T))
-D̂_T      = r(E(pl_T) − E(ref_T)) + r(Δ̂₁ + Δ̂₂)(pl_T, T)                             the plural cue's modelled total
-ĉ(w, T)  = r(Δ̂₁ + Δ̂₂)(w, T) / D̂_T                                                  the predicted layer correction
-q̂(w, T)  = [r(ΔE) + r(Δ̂₁ + Δ̂₂)(w, T)] / D̂_T                                        the composite P1-level prediction
+ĉ(w, T)   = r(Δ̂₁ + Δ̂₂)(w, T) / r(E(pl_T) − E(ref_T))                              predicted layer correction (Y1)
+q̂'(w, T)  = g_E(w, T) + ĉ(w, T)                                                     the composite in Y1's units (reported)
+D̂_T       = r(E(pl_T) − E(ref_T)) + r(Δ̂₁ + Δ̂₂)(pl_T, T)                             the plural cue's modelled total
+q̂(w, T)   = [ r(ΔE) + r(Δ̂₁ + Δ̂₂)(w, T) ] / D̂_T                                     the composite in the head's units (Y2)
 ```
 
-`ĉ` and `q̂` depend on the template only. Their companions, defined the same way and locked beside them: the split
-into the `MLP₁` and `MLP₂` parts; the model evaluated on the number-axis part `ΔE_∥` alone and on `ΔE_⊥` alone, with
-the interaction `ĉ(ΔE) − ĉ(ΔE_∥) − ĉ(ΔE_⊥)` (the model is nonlinear; this is an exact evaluation, not a decomposition
-claim); and the encoding read `g_E` of Experiment 011 for the fresh tokens, reported for continuity.
+`ĉ`, `q̂'` and `q̂` depend on the template only. Because `P1' − q̂' = c_L − ĉ` pointwise, a composite test in Y1's units
+would repeat Y1's residuals; Y2 is therefore stated in the head's units, where the E-term's denominator is predicted
+too. Companions, defined the same way and locked beside them: the split of `ĉ` into its `MLP₁` and `MLP₂` parts; the
+model evaluated on the number-axis part `ΔE_∥` alone and on `ΔE_⊥` alone, with the interaction
+`ĉ(ΔE) − ĉ(ΔE_∥) − ĉ(ΔE_⊥)` (the model is nonlinear; this is an exact evaluation, not a decomposition claim); and
+`g_E` itself for the fresh tokens.
 
 **Denominator validity (frozen before any fresh measurement):** a template's predictions are `PREDICTION_UNDEFINED`
-if `D̂_T` is below `0.25 × max_T |D̂_T|` or below `0.25 σ_r` (Experiment 011's rule and `σ_r`); such a template's fresh
-frames are excluded before the lock, and with fewer than two templates the experiment stops at `PREDICTION_UNDEFINED`.
+if `r(E(pl_T) − E(ref_T))` or `D̂_T` is below `0.25 × max_T` of its kind or below `0.25 σ_r` (Experiment 011's rule and
+`σ_r`); such a template's fresh frames are excluded before the lock, and with fewer than two templates the experiment
+stops at `PREDICTION_UNDEFINED`.
 
 **What the model omits, exactly.** With the frame's own reference state, `Δ̂₁` is the measured `Δout_{L01.MLP}`
 (no approximation), and `Δ̂₂` omits one term of block 2's input: block 1's attention output change at the cue
@@ -123,13 +145,16 @@ The 87 exposed cue tokens (Experiment 010's 63 and Experiment 011's 24) and the 
 - computes the base states `x̄₁,T`, `x̄₂,T` (means over the template's ten exposed frames) and locks them;
 - computes the exact MLP neuron ledgers of blocks 1 and 2 from the captured residuals (`Δa_j` from the captured
   inputs; identity `Σ_j Δa_j W_out[j] = Δout` within 1e-4 relative, an incident otherwise);
-- evaluates the template-base model and the own-base ladder on the 87 tokens; fixes the tolerances from exposed
-  residuals at exactly the aggregation level at which the floors are scored, **token means over one frame set**
-  (`F(w)` = the token's informative exposed frames, own-reference frames excluded):
-  `τ_c = max(0.10, 3 × RMSE over the 87 tokens of (c̄̂(w) − c̄_L(w)))` and
-  `τ_P = max(0.10, 3 × RMSE over the 87 tokens of (q̄̂(w) − P̄1(w)))`, where `P1(w, f) = ρ_f(Δr_c) / ρ_f(Δr_c(pl_T, f))`
-  is the head's exact P1 fraction; the base states are in-sample for these residuals (means over the same frames) and
-  this is stated in the lock;
+- calibrates **out of frame**: for every exposed frame `f`, the model is evaluated with the leave-one-frame-out
+  base `x̄ₗ,T∖f` (the mean reference state of the *other* nine exposed frames of its template), which is the situation
+  of a new frame; the tolerances are fixed from these residuals at exactly the aggregation level at which the floors
+  are scored, **token means over one frame set** (`F(w)` = the token's informative exposed frames, own-reference
+  frames excluded):
+  `τ_c = max(0.10, 3 × RMSE over the 87 tokens of (c̄̂_LOFO(w) − c̄_L(w)))` and
+  `τ_P = max(0.10, 3 × RMSE over the 87 tokens of (q̄̂_LOFO(w) − P̄1(w)))`;
+  the exposed explained variance `R²_LOFO` of `c̄̂_LOFO` against `c̄_L`, and its distribution over 24-token subsamples
+  (5000 seeded draws), are recorded for the record beside the frozen floor below. The locked predictor itself uses the
+  all-frames template base; leave-one-frame-out serves calibration only;
 - records the exposed descriptive statistics (Spearman, MAE, explained variance, mean signed residual of `ĉ` against
   `c̄_L` and against `c̄_M`; the heads' share `mean|c_H| / mean|c_M|`; the `∥`/`⊥` evaluations; the neuron ledgers).
 
@@ -178,17 +203,24 @@ The 87 exposed cue tokens (Experiment 010's 63 and Experiment 011's 24) and the 
   own values. `PRECONDITION_FAILED` if fewer than four of the six frames are valid or fewer than sixteen tokens are
   scored; nothing is then judged.
 - **Y1 — the layer correction is the token-local MLP computation (numbers committed before `confirm`):** over the
-  scored fresh tokens, `c̄̂(w)` versus measured `c̄_L(w)` (the full net layer change, heads included, so that a
-  systematic head contribution counts against the hypothesis): Spearman ≥ 0.80 and MAE ≤ `τ_c`. Pass →
-  `LAYER_CORRECTION_TOKEN_LOCAL_MLP`; fail → `LAYER_CORRECTION_NOT_TOKEN_LOCAL` (naming the floor). The same
-  comparison against `c̄_M` (MLP part only), the explained variance, and the mean signed residual are reported beside
-  it, never judged.
-- **Y2 — the composite account reaches the head's linear read-out:** over the scored fresh tokens, `q̄̂(w)` versus
-  the measured P1 fraction `P̄1(w)` (exact from the arriving residuals; frame scalars cancel): Spearman ≥ 0.90 and
-  MAE ≤ `τ_P`. Pass → `COMPOSITE_PREDICTS_P1`; fail → `COMPOSITE_FAILS_P1`. Experiment 011's `g_E` against the same
+  scored fresh tokens, `c̄̂(w) = mean_{f ∈ F(w)} ĉ(w, T(f))` versus measured `c̄_L(w) = mean_{f ∈ F(w)} c_L(w, f)` (the
+  full net layer change, heads included, so that a systematic head contribution counts against the hypothesis), three
+  conditions, all required — ordering, absolute error, and magnitude: **Spearman ≥ 0.80**, **MAE ≤ `τ_c`**, and
+  **explained variance `R² = 1 − Σ_w (c̄̂ − c̄_L)² / Σ_w (c̄_L − mean c̄_L)² ≥ 0.50`**. The `R²` floor is frozen here from
+  exposed leave-one-frame-out behaviour: the exposed value is 0.76 (87 tokens; 5th percentile over 24-token subsamples
+  0.57), a perfectly ordered predictor at half or at 1.5× the true scale scores 0.40, so 0.50 rejects compression or
+  inflation beyond about ±45% while leaving margin for 24-token sampling; it is not recomputed. Pass →
+  `LAYER_CORRECTION_TOKEN_LOCAL_MLP`; fail → `LAYER_CORRECTION_NOT_TOKEN_LOCAL` (naming the failed floor or floors). The
+  same comparison against `c̄_M` (MLP part only), the mean signed residual, and `q̄̂'` against `P̄1'` (whose residuals
+  equal Y1's) are reported beside it, never judged.
+- **Y2 — the composite account reaches the head's linear read-out, in the head's units:** `q̂(w, T)` is defined per
+  (token, template) and `P1(w, f)` per (token, frame) exactly as above, with one denominator on each side (the
+  modelled plural total `D̂_T`, the measured plural total); over the scored fresh tokens,
+  `q̄̂(w) = mean_{f ∈ F(w)} q̂(w, T(f))` versus `P̄1(w) = mean_{f ∈ F(w)} P1(w, f)` over the **same** `F(w)`: Spearman ≥ 0.90
+  and MAE ≤ `τ_P`. Pass → `COMPOSITE_PREDICTS_P1`; fail → `COMPOSITE_FAILS_P1`. Experiment 011's `g_E` against the same
   `P̄1(w)`, and both against measured `q̄_T(w)`, are reported beside it, never judged.
-- **Descriptive (no floor):** the heads' share on the fresh set against the exposed baseline; the own-base ladder
-  (base-point term and attention-input term per token); the `∥`/`⊥` evaluations of the model; the block-2 neuron
+- **Descriptive (no floor, post-`confirm` only):** the heads' share on the fresh set against the exposed baseline; the
+  own-base ladder (base-point term and attention-input term per token); the `∥`/`⊥` evaluations of the model; the block-2 neuron
   ledger — `n_80` on absolute mass, positive and negative mass, the top-20 neurons per template and their overlap
   across templates and between exposed and fresh tokens (Jaccard), and for the exposed top-20 the cosine of each
   neuron's LayerNorm-input weight with `d̂_E` (what the neurons read, descriptively); class-wise means as descriptive
@@ -202,9 +234,10 @@ The 87 exposed cue tokens (Experiment 010's 63 and Experiment 011's 24) and the 
 - The prediction uses the weights, the axes locked by Experiment 011, and **exposed reference states** (template means
   of ten exposed frames each); the design never calls it "weight-only". What is not observed before the lock is
   anything about the fresh tokens or the fresh frames.
-- Passing Y1 shows that the correction layers 1–2 add to the encoding read is, up to the two omissions of measured
-  size, the MLPs' own nonlinear evaluation of the encoding difference at the cue position — a token-local computation
-  — for this preregistered heterogeneous cue set (five lexical classes), not for arbitrary English words. It does not
+- Passing Y1 shows that the correction layers 1–2 add to the encoding read is, in ordering, absolute error, and
+  magnitude, and up to the two omissions of measured size, the MLPs' own nonlinear evaluation of the encoding
+  difference at the cue position — a token-local computation — for this preregistered heterogeneous cue set (five
+  lexical classes), not for arbitrary English words. It does not
   say which features of the encoding the block-2 neurons read; the neuron ledger describes that, without a floor.
 - Passing Y2 closes the account up to the head: encoding read plus MLP correction equals what the head reads linearly.
   It says nothing new about the head's attention modulation (Experiment 009's P3 − P1) or the behavioral contrast.
@@ -231,4 +264,17 @@ report. No token, frame, or prediction may be changed after the lock; no fresh p
 
 ## Revision history
 
-- **Revision 1**: initial draft.
+- **Revision 1** (commit `fc7727d`): initial draft. Reviewed: direction approved with three pre-measurement
+  revisions — calibrate the prospective tolerances out of frame (leave-one-frame-out template bases), add one
+  magnitude-fidelity gate to Y1 frozen from exposed leave-one-frame-out behaviour, and freeze the composite arithmetic
+  at pair level with identical per-frame normalization and identical frame sets; keep Y1's target inclusive of the
+  heads and the own-base ladder descriptive and post-confirm.
+- **Revision 2**: (1) `τ_c` and `τ_P` are derived from leave-one-frame-out exposed predictions (each exposed frame
+  predicted from the other nine frames of its template); the locked predictor keeps the all-frames base. (2) Y1
+  requires Spearman ≥ 0.80, MAE ≤ `τ_c`, and explained variance `R² ≥ 0.50`, the floor frozen now from the exposed
+  leave-one-frame-out value 0.76 (5th percentile at 24 tokens 0.57; a half- or 1.5×-scale predictor scores 0.40).
+  (3) The two normalizations are stated once: Y1's measured and predicted corrections share the weight-only
+  denominator of `g_E`, giving the exact pointwise identity `P1' = g_E + c_L` and its predicted counterpart
+  `q̂' = g_E + ĉ`; because that composite would repeat Y1's residuals, Y2 is stated in the head's units with one
+  denominator per side and pointwise definitions, and every token mean on both sides is over the same frame set.
+  Design-check figures restated in leave-one-frame-out form. No floor of revision 1 was loosened.
