@@ -180,8 +180,8 @@ The 159 exposed cue tokens (Experiment 014's 135 and its 24 confirmed) and the 4
 with the 80 nouns. `explore`:
 
 - captures the 48 reference states with the residuals before blocks 1 and 2 at every position `≤ p_c` and the
-  layer-1–2 pattern rows at `p_c`, checks I1 on each, and locks the states (the Experiment 013/014 cue-position
-  residuals must agree with the locked ones within `1e-6`);
+  layer-1–2 pattern rows at `p_c`, checks I1 on each, and locks the states (the cue-position residuals must agree
+  with the Experiment 014 lock within `1e-9`, its own tolerance);
 - re-measures the E-patch of every recorded pair of Experiment 014's ledger (its 3732 + 1008 + 144 pairs) with the
   patched residuals before blocks 1 and 2 and the patched pattern rows captured; replicates Experiment 014's per-pair
   `c_L`, `c_M`, `c_H` within `1e-6` (a committed extract) and Experiment 013's sixteen self-weight changes and its
