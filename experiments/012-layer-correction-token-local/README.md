@@ -107,18 +107,22 @@ weights, the locked axes and the locked base states before any fresh prompt (max
   0.33 (cardinal), 0.67 (quantifier), 0.54 (coordinated-adjective). Class means (`c̄_L` / locked `ĉ̄`): numeral 0.43 /
   0.47, quantity 0.22 / 0.27, adjective 0.16 / 0.13, possessive-or-pronoun 0.16 / 0.11, determiner-like 0.10 / 0.07.
 
-What this settles and what it does not. The systematic residual Experiment 011 left — what layers 1–2 add to the
-encoding read before `L03.H04` reads it — is, for 24 never-seen cues in six never-seen frames, predicted in ordering,
-absolute error and magnitude by a computation with no fitted parameter: the two MLPs of blocks 1 and 2 evaluated at
-the cue position on the encoding difference, attention held at the reference, base states from exposed frames. Block
-1's part is exact by the architecture; block 2's part omits attention's effect on its input, and the heads' own writes
-are omitted altogether; both omissions are real and measured (about 0.05–0.07 each on average) and did not break the
-prediction at the token-mean level for this set, but they are why the pair level is looser (R² 0.65) and why one sign
-(`which`) was missed. The composite "encoding read + token-local MLP correction" now accounts for what the head reads
-linearly (Y2), extending the decoded chain from the token embedding through the layer-0 encoding and the layer-1–2
-MLPs to the confirmed head read-out. The claim is proportional to the set: five lexical classes, three templates, this
-checkpoint; the ledger describes but does not test what the block-2 neurons read (the off-axis part of the encoding,
-one dominant neuron, a distributed remainder). C002 is unchanged (out of scope here).
+What this settles and what it does not. Stated at its safe strength: a frozen token-local MLP model, derived before
+any exposure to the test prompts, prospectively predicts most of the net layers-1–2 correction on unseen cues in unseen
+frames (ordering, absolute error and magnitude), and adding that predicted correction to the encoding read
+substantially improves the prediction of the representation `L03.H04` reads (`g_E` alone against `P̄1` 0.856 / 0.127;
+the composite 0.922 / 0.062). The model is the two MLPs of blocks 1 and 2 evaluated at the cue position on the encoding
+difference, attention held at the reference, base states from exposed frames; block 1's part is exact by the
+architecture, block 2's part omits attention's effect on its input, and the heads' own writes are omitted altogether.
+Both omissions are real and measured (about 0.05–0.07 each on average): they are why the pair level is looser (R² 0.65)
+and why one sign (`which`) was missed, and `thy` shows that the *net* correction can be right while the internal
+attribution between the MLPs and attention is wrong — the design does not claim to have decoded the layer-1–2 MLP
+correction itself, only to have predicted the net correction and its effect on the head's input. The `∥`/`⊥`
+evaluations add a representational point: the MLPs respond to the off-axis part of the encoding (0.28 against 0.03),
+not to the number-axis scalar, so the correction is a computation on the multidimensional layer-0 state rather than a
+gain on the number signal. The claim is proportional to the set: five lexical classes, three templates, this
+checkpoint; the ledger describes but does not test what the block-2 neurons read (one dominant neuron, a distributed
+remainder). The omitted attention paths are the natural next question. C002 is unchanged (out of scope here).
 
 ### Tier A (2026-09-19, for the record)
 
