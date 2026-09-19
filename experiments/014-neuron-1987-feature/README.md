@@ -57,6 +57,11 @@ uv run python experiments/014-neuron-1987-feature/run.py report
   (frame-conditional; the valid fresh frames) and Y3 (the axis-only alternative over both sets) against the two tables.
 - `report` renders `outputs/experiment-014/report.md`.
 
+Scoring conventions fixed before Tier A: Y3's degenerate-spread guard is evaluated on the pooled pairs of both sets (a
+class missing in one set alone does not make Y3 non-evaluable), and a token scored in Y2 by its three valid frames
+feeds Y3 even if Y2's own frame precondition fails; the Jacobian form's activation statistics are reported beside the
+predictor's and never judged.
+
 Boundaries: the invariant that every prediction uses the *predicted* arriving change and never a patched residual is
 tested (the prediction table is computed with every capture entry point disabled); no candidate is ever excluded on
 the basis of its own measured value; a token needs three valid frames in a set to be scored there; Experiment 012's

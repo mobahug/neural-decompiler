@@ -71,7 +71,7 @@ REPLICATION_TOLERANCE = 1e-6
 LOCKED_STATE_TOLERANCE = 1e-9
 ACTIVATION_IDENTITY_TOLERANCE = 1e-6  # Δa from the captured residual against the neuron's term in the exact ledger, relative to the term's scale
 EXPECTED_LEDGER_SIZE = 3732  # Experiment 013's 2724 exposed pairs + its 864 + 144 confirmed pairs
-PREDICTION_COLUMNS = ("token", "frame_id", "template", "pre_ref", "dpre_hat", "da_hat", "fires_hat", "dpre_J", "dpre_J_E", "dpre_J_mlp1", "dpre_J_heads1", "dpre_J_axis", "dpre_J_offaxis",
+PREDICTION_COLUMNS = ("token", "frame_id", "template", "pre_ref", "dpre_hat", "da_hat", "fires_hat", "dpre_J", "da_J", "fires_J", "dpre_J_E", "dpre_J_mlp1", "dpre_J_heads1", "dpre_J_axis", "dpre_J_offaxis",
                       "dpre_axis", "da_axis", "fires_axis", "term_hat")
 
 CANDIDATES: dict[str, tuple[str, ...]] = {
@@ -184,8 +184,10 @@ def predict(neuron: NeuronWeights, fpm: ap.FrozenPatternModel, weights: pm.Weigh
     dpre_axis = neuron.pre(x2 + axis) - pre_ref
     da_axis = gelu(pre_ref + dpre_axis) - gelu(pre_ref)
     denominator = fpm.read.denominator(weights, template)
+    dpre_J = neuron.jacobian_pre(x2, v)
+    da_J = gelu(pre_ref + dpre_J) - gelu(pre_ref)
     return {"pre_ref": pre_ref, "dpre_hat": dpre_hat, "da_hat": da_hat, "fires_hat": fires(da_hat),
-            "dpre_J": neuron.jacobian_pre(x2, v), "dpre_J_E": neuron.jacobian_pre(x2, change["E"]), "dpre_J_mlp1": neuron.jacobian_pre(x2, change["mlp1"]), "dpre_J_heads1": neuron.jacobian_pre(x2, change["heads1"]),
+            "dpre_J": dpre_J, "da_J": da_J, "fires_J": fires(da_J), "dpre_J_E": neuron.jacobian_pre(x2, change["E"]), "dpre_J_mlp1": neuron.jacobian_pre(x2, change["mlp1"]), "dpre_J_heads1": neuron.jacobian_pre(x2, change["heads1"]),
             "dpre_J_axis": neuron.jacobian_pre(x2, axis), "dpre_J_offaxis": neuron.jacobian_pre(x2, v - axis),
             "dpre_axis": dpre_axis, "da_axis": da_axis, "fires_axis": fires(da_axis), "term_hat": da_hat * neuron.read_out / denominator}
 
@@ -199,7 +201,8 @@ def predict_from_locked(neuron: NeuronWeights, fpm: ap.FrozenPatternModel, weigh
 
 
 def locked_state(state: ap.FrameState013, neuron: NeuronWeights) -> dict[str, Any]:
-    return {**state.locked_state(), "pre_ref": neuron.pre(state.x2)}
+    x2 = state.x2.double()
+    return {**state.locked_state(), "pre_ref": neuron.pre(state.x2), "sigma_ref": float(torch.sqrt(((x2 - x2.mean()) ** 2).mean() + neuron.eps))}
 
 
 def prediction_row(word: str, frame_id: str, template: str, prediction: Mapping[str, Any]) -> dict[str, Any]:
@@ -234,8 +237,7 @@ def analyse_pair_014(record: ra.Attribution, plural: ra.Attribution, *, neuron: 
             "pre_ref": pre_ref, "dpre": dpre, "da": da, "fires": fires(da), "term": term, "c_mlp2": base["c_k"]["L02.MLP"],
             "c_L": base["c_L"], "c_M": base["c_M"], "c_H": base["c_H"], "c_k": base["c_k"], "P1": base["P1"], "q_T": base["q_T"], "g_E": base["g_E"],
             "prediction": prediction,
-            "remainders": {"pattern_change": dpre - prediction["dpre_hat"], "jacobian": prediction["dpre_hat"] - prediction["dpre_J"],
-                           "measured_change_J": neuron.jacobian_pre(state.x2, measured_change), "ln_exact_at_measured": neuron.pre(x2_patch) - pre_ref},
+            "remainders": {"pattern_change": dpre - prediction["dpre_hat"], "jacobian": prediction["dpre_hat"] - prediction["dpre_J"], "measured_change_J": neuron.jacobian_pre(state.x2, measured_change)},
             "identities": base["identities"], "ledger_da": ledger_da}
 
 
@@ -537,6 +539,10 @@ comparison = lc.comparison
 explained_variance = lc.explained_variance
 
 
+def _mean_or_none(values: Sequence[float]) -> float | None:
+    return pm._mean(list(values)) if values else None
+
+
 def balanced_accuracy(predicted: Sequence[bool], measured: Sequence[bool]) -> dict[str, Any]:
     """½(sensitivity + specificity) of the predicted firing against the measured firing; None when a measured class is absent (the guard)."""
     tp = sum(1 for p, m in zip(predicted, measured) if p and m)
@@ -563,7 +569,7 @@ def _token_means(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Ma
             "da_mean": mean(a["da"] for a in analyses), "dpre_mean": mean(a["dpre"] for a in analyses), "term_mean": mean(a["term"] for a in analyses), "c_mlp2_mean": mean(a["c_mlp2"] for a in analyses),
             "pre_ref_mean": mean(a["pre_ref"] for a in analyses), "fires_fraction": mean(1.0 if a["fires"] else 0.0 for a in analyses),
             "da_hat_mean": mean(p["da_hat"] for p in predictions), "dpre_hat_mean": mean(p["dpre_hat"] for p in predictions), "dpre_J_mean": mean(p["dpre_J"] for p in predictions),
-            "da_axis_mean": mean(p["da_axis"] for p in predictions), "fires_hat_fraction": mean(1.0 if p["fires_hat"] else 0.0 for p in predictions),
+            "da_axis_mean": mean(p["da_axis"] for p in predictions), "fires_hat_fraction": mean(1.0 if p["fires_hat"] else 0.0 for p in predictions), "da_J_mean": mean(p["da_J"] for p in predictions),
             "J_E_mean": mean(p["dpre_J_E"] for p in predictions), "J_mlp1_mean": mean(p["dpre_J_mlp1"] for p in predictions), "J_heads1_mean": mean(p["dpre_J_heads1"] for p in predictions),
             "J_axis_mean": mean(p["dpre_J_axis"] for p in predictions), "J_offaxis_mean": mean(p["dpre_J_offaxis"] for p in predictions), "term_hat_mean": mean(p["term_hat"] for p in predictions)}
 
@@ -576,9 +582,10 @@ def statistics_for(pairs: Sequence[Mapping[str, Any]], predictions: Sequence[Map
     m = lambda key: [means[n][key] for n in names]  # noqa: E731
     firing_pairs = [(a, p) for a, p in zip(pairs, predictions) if a["fires"]]
     return {"n_tokens": len(names), "n_pairs": len(pairs),
-            "token_means": {"da_hat_vs_da": comparison(m("da_hat_mean"), m("da_mean")), "da_axis_vs_da": comparison(m("da_axis_mean"), m("da_mean")),
+            "token_means": {"da_hat_vs_da": comparison(m("da_hat_mean"), m("da_mean")), "da_axis_vs_da": comparison(m("da_axis_mean"), m("da_mean")), "da_J_vs_da": comparison(m("da_J_mean"), m("da_mean")),
                             "dpre_hat_vs_dpre": comparison(m("dpre_hat_mean"), m("dpre_mean")), "dpre_J_vs_dpre": comparison(m("dpre_J_mean"), m("dpre_mean")), "da_spread": ap.spread(m("da_mean"))},
             "pairs": {"da_hat_vs_da": comparison([p["da_hat"] for p in predictions], [a["da"] for a in pairs]), "da_axis_vs_da": comparison([p["da_axis"] for p in predictions], [a["da"] for a in pairs]),
+                      "da_J_vs_da": comparison([p["da_J"] for p in predictions], [a["da"] for a in pairs]), "classification_J": balanced_accuracy([p["fires_J"] for p in predictions], [a["fires"] for a in pairs]),
                       "dpre_hat_vs_dpre": comparison([p["dpre_hat"] for p in predictions], [a["dpre"] for a in pairs]), "dpre_J_vs_dpre": comparison([p["dpre_J"] for p in predictions], [a["dpre"] for a in pairs]),
                       "dpre_J_vs_dpre_hat": comparison([p["dpre_J"] for p in predictions], [p["dpre_hat"] for p in predictions]),
                       "amplitude_error_firing": pm._mean([abs(p["da_hat"] - a["da"]) for a, p in firing_pairs]) if firing_pairs else None, "mean_da_firing": pm._mean([a["da"] for a, _ in firing_pairs]) if firing_pairs else None,
@@ -589,7 +596,7 @@ def statistics_for(pairs: Sequence[Mapping[str, Any]], predictions: Sequence[Map
                            "pattern_change_remainder_abs": pm._mean([abs(a["remainders"]["pattern_change"]) for a in pairs]), "jacobian_remainder_abs": pm._mean([abs(a["remainders"]["jacobian"]) for a in pairs]),
                            "pre_ref_min": min(a["pre_ref"] for a in pairs) if pairs else None, "pre_ref_max": max(a["pre_ref"] for a in pairs) if pairs else None,
                            "reference_activation_max": max(gelu(a["pre_ref"]) for a in pairs) if pairs else None,
-                           "term_share_of_mlp2_firing": pm._mean([a["term"] / a["c_mlp2"] for a, _ in firing_pairs if abs(a["c_mlp2"]) > 0.05]) if firing_pairs else None,
+                           "term_share_of_mlp2_firing": _mean_or_none([a["term"] / a["c_mlp2"] for a, _ in firing_pairs if abs(a["c_mlp2"]) > 0.05]),
                            "term_mean_firing": pm._mean([a["term"] for a, _ in firing_pairs]) if firing_pairs else None,
                            "term_mean_not_firing": pm._mean([a["term"] for a in pairs if not a["fires"]]) if any(not a["fires"] for a in pairs) else None},
             "token_means_table": means}
@@ -599,7 +606,7 @@ def firing_set(means: Mapping[str, Mapping[str, Any]], categories: Mapping[str, 
     """Tokens that fire in at least half of their frames, by lexical class (descriptive; the frozen threshold applied per pair)."""
     out: dict[str, list[str]] = {}
     for name, entry in sorted(means.items()):
-        if entry[key] >= 0.5:
+        if entry.get(key, 0.0) >= 0.5:
             out.setdefault(categories.get(name, "?"), []).append(name)
     return out
 
@@ -624,7 +631,7 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     exploration["sigma_T"] = axis_T.sigma
     exploration["read_weight"] = fpm.read.weight.tolist()
     exploration["defined_templates"] = list(lock_012["defined_templates"])
-    exploration["neuron"] = {"layer": NEURON_LAYER, "index": NEURON, "b_in": neuron.b_in, "read_out": neuron.read_out, "cos_u_dE": pm.cosine(neuron.u, d_E), "u_norm": float(neuron.u.norm()), "w_out_norm": float(neuron.w_out.norm()),
+    exploration["neuron"] = {"layer": neuron.layer, "index": neuron.index, "b_in": neuron.b_in, "read_out": neuron.read_out, "cos_u_dE": pm.cosine(neuron.u, d_E), "u_norm": float(neuron.u.norm()), "w_out_norm": float(neuron.w_out.norm()),
                              "read_out_over_denominators": {template: neuron.read_out / fpm.read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}}
     recorded = inherited["entries"]
     say(f"reference states of the {len(pool.frames)} exposed frames; re-measurement of the {len(recorded)} recorded pairs with the residual before block 2 captured")
@@ -696,9 +703,10 @@ def token_means_from_table(rows: Sequence[Mapping[str, Any]], tokens: Sequence[s
     for word in tokens:
         mine = [row for row in rows if row["token"] == word]
         if mine:
-            out[word] = {key: pm._mean([row[key] for row in mine]) for key in ("pre_ref", "dpre_hat", "da_hat", "dpre_J", "dpre_axis", "da_axis", "term_hat", "dpre_J_E", "dpre_J_mlp1", "dpre_J_heads1", "dpre_J_axis", "dpre_J_offaxis")}
+            out[word] = {key: pm._mean([row[key] for row in mine]) for key in ("pre_ref", "dpre_hat", "da_hat", "dpre_J", "da_J", "dpre_axis", "da_axis", "term_hat", "dpre_J_E", "dpre_J_mlp1", "dpre_J_heads1", "dpre_J_axis", "dpre_J_offaxis")}
             out[word]["n_frames"] = len(mine)
             out[word]["fires_hat_fraction"] = pm._mean([1.0 if row["fires_hat"] else 0.0 for row in mine])
+            out[word]["fires_J_fraction"] = pm._mean([1.0 if row["fires_J"] else 0.0 for row in mine])
             out[word]["fires_axis_fraction"] = pm._mean([1.0 if row["fires_axis"] else 0.0 for row in mine])
     return out
 
@@ -840,7 +848,8 @@ def stage_one(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
             rows.append(prediction_row(token["word"], frame.frame_id, template, predict_from_state(neuron, fpm, weights, state_f, token["token_id"], template, d_E)))
         say(f"  {frame.frame_id}: {'valid' if valid else 'INVALID'} (head informative {head_informative}, cue effect {positive}/{required}); pre_ref {neuron.pre(state_f.x2):.2f}; {len(confirmation.tokens)} predictions")
     return {"frames": frames_out, "states": states, "state_digests": {frame_id: ap.state_digest(entry) for frame_id, entry in states.items()}, "rows": rows, "identities": identities,
-            "token_means": token_means_from_table(rows, [token["word"] for token in confirmation.tokens]), "predicted_firing_counts": {"pairs_firing": sum(1 for row in rows if row["fires_hat"]), "pairs_total": len(rows)},
+            "token_means": token_means_from_table(rows, [token["word"] for token in confirmation.tokens]),
+            "predicted_firing_counts": {"pairs_firing": sum(1 for row in rows if row["fires_hat"]), "pairs_total": len(rows), "axis_pairs_firing": sum(1 for row in rows if row["fires_axis"])},
             "digest": ap.table_digest(rows, states), "commit": protocol_code_commit, "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()}
 
 
@@ -926,13 +935,14 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
         result["axis"] = {**axis, "classification": balanced_accuracy([p["fires_axis"] for _, p in scored_pairs], [a["fires"] for a, _ in scored_pairs])}
         firing_pairs = [(a, p) for a, p in scored_pairs if a["fires"]]
         result["descriptive"] = {"pairs_da_hat_vs_da": comparison([p["da_hat"] for _, p in scored_pairs], [a["da"] for a, _ in scored_pairs]),
+                                 "token_means_da_J_vs_da": comparison([tokens_out[w]["da_J_mean"] for w in scored], da), "classification_J": balanced_accuracy([p["fires_J"] for _, p in scored_pairs], [a["fires"] for a, _ in scored_pairs]),
                                  "pairs_dpre_hat_vs_dpre": comparison([p["dpre_hat"] for _, p in scored_pairs], [a["dpre"] for a, _ in scored_pairs]),
                                  "pairs_dpre_J_vs_dpre": comparison([p["dpre_J"] for _, p in scored_pairs], [a["dpre"] for a, _ in scored_pairs]),
                                  "token_means_dpre_J_vs_dpre": comparison([tokens_out[w]["dpre_J_mean"] for w in scored], [tokens_out[w]["dpre_mean"] for w in scored]),
                                  "mae_da": pm._mean([abs(p["da_hat"] - a["da"]) for a, p in scored_pairs]), "amplitude_error_firing": pm._mean([abs(p["da_hat"] - a["da"]) for a, p in firing_pairs]) if firing_pairs else None,
                                  "mean_da_firing": pm._mean([a["da"] for a, _ in firing_pairs]) if firing_pairs else None, "da_spread": ap.spread(da),
                                  "pattern_change_remainder_abs": pm._mean([abs(a["remainders"]["pattern_change"]) for a, _ in scored_pairs]), "jacobian_remainder_abs": pm._mean([abs(a["remainders"]["jacobian"]) for a, _ in scored_pairs]),
-                                 "term_share_of_mlp2_firing": pm._mean([a["term"] / a["c_mlp2"] for a, _ in firing_pairs if abs(a["c_mlp2"]) > 0.05]) if firing_pairs else None,
+                                 "term_share_of_mlp2_firing": _mean_or_none([a["term"] / a["c_mlp2"] for a, _ in firing_pairs if abs(a["c_mlp2"]) > 0.05]),
                                  "accounting_abs": {"E": pm._mean([abs(p["dpre_J_E"]) for _, p in scored_pairs]), "mlp1": pm._mean([abs(p["dpre_J_mlp1"]) for _, p in scored_pairs]), "heads1": pm._mean([abs(p["dpre_J_heads1"]) for _, p in scored_pairs]),
                                                     "axis": pm._mean([abs(p["dpre_J_axis"]) for _, p in scored_pairs]), "offaxis": pm._mean([abs(p["dpre_J_offaxis"]) for _, p in scored_pairs])}}
     return result
@@ -1015,6 +1025,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- Token means ({x['n_tokens']}): Δâ vs Δa — {cmp_line(x['token_means']['da_hat_vs_da'])}; Δa spread sd {f(x['token_means']['da_spread'], 3)}; axis-only Δâ vs Δa — {cmp_line(x['token_means']['da_axis_vs_da'])}",
                   f"- Pairs ({x['n_pairs']}): Δâ vs Δa — {cmp_line(x['pairs']['da_hat_vs_da'])}; Δp̂re vs Δpre — {cmp_line(x['pairs']['dpre_hat_vs_dpre'])}; Jacobian form vs Δpre — {cmp_line(x['pairs']['dpre_J_vs_dpre'])} (vs the exact form R² {f(x['pairs']['dpre_J_vs_dpre_hat']['r2'], 3)})",
                   f"- Classification (pairs): predictor {cls_line(x['pairs']['classification'])}; axis-only {cls_line(x['pairs']['classification_axis'])}",
+                  f"- Jacobian form (descriptive): Δâ_J vs Δa token means — {cmp_line(x['token_means']['da_J_vs_da'])}; pairs — {cmp_line(x['pairs']['da_J_vs_da'])}; {cls_line(x['pairs']['classification_J'])}",
                   f"- Amplitude among firing pairs: error {f(x['pairs']['amplitude_error_firing'], 3)} on a mean Δa of {f(x['pairs']['mean_da_firing'], 2)}; MAE all pairs {f(x['pairs']['da_hat_vs_da']['mae'], 3)}",
                   f"- Accounting (mean |Jacobian contribution|): E {f(acc['J_E_abs'], 2)}, MLP₁ {f(acc['J_mlp1_abs'], 2)}, heads₁ {f(acc['J_heads1_abs'], 2)} (negative in {f(acc['J_heads1_negative_fraction'], 2)} of pairs); axis {f(acc['J_axis_abs'], 2)}, off-axis {f(acc['J_offaxis_abs'], 2)}; remainders: pattern change |.| {f(acc['pattern_change_remainder_abs'], 3)}, LayerNorm linearization |.| {f(acc['jacobian_remainder_abs'], 3)}",
                   f"- Neuron's share of the block-2 read change among firing pairs {f(acc['term_share_of_mlp2_firing'], 2)}; mean term firing {f(acc['term_mean_firing'], 3)}, not firing {f(acc['term_mean_not_firing'], 3)}",
@@ -1044,6 +1055,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                 lines.append(f"  - pairs: Δâ vs Δa {cmp_line(d['pairs_da_hat_vs_da'])}; Δp̂re vs Δpre {cmp_line(d['pairs_dpre_hat_vs_dpre'])}; Jacobian form vs Δpre {cmp_line(d['pairs_dpre_J_vs_dpre'])}; amplitude error among firing pairs {f(d['amplitude_error_firing'], 3)} (mean Δa firing {f(d['mean_da_firing'], 2)}); MAE {f(d['mae_da'], 3)}; Δa spread sd {f(d['da_spread'], 3)}")
                 lines.append(f"  - accounting |.|: E {f(d['accounting_abs']['E'], 2)}, MLP₁ {f(d['accounting_abs']['mlp1'], 2)}, heads₁ {f(d['accounting_abs']['heads1'], 2)}, axis {f(d['accounting_abs']['axis'], 2)}, off-axis {f(d['accounting_abs']['offaxis'], 2)}; remainders pattern change {f(d['pattern_change_remainder_abs'], 3)}, LayerNorm {f(d['jacobian_remainder_abs'], 3)}; neuron's share of the block-2 read change among firing pairs {f(d['term_share_of_mlp2_firing'], 2)}")
                 lines.append(f"  - axis-only on this set: {cmp_line(y['axis'])}; {cls_line(y['axis']['classification'])}")
+                lines.append(f"  - Jacobian form on this set (descriptive): token means {cmp_line(d['token_means_da_J_vs_da'])}; {cls_line(d['classification_J'])}")
                 sets = confirmation["firing_sets"][key]
                 lines.append(f"  - measured firing set: {firing_line(sets['measured'])} | predicted: {firing_line(sets['predicted'])}")
             else:

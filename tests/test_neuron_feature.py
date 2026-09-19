@@ -177,10 +177,12 @@ def test_neuron_computation_predictor_and_invariant_on_the_fake(inputs, monkeypa
     assert p["da_hat"] == pytest.approx(nf.gelu(p["pre_ref"] + p["dpre_hat"]) - nf.gelu(p["pre_ref"])) and p["fires_hat"] == nf.fires(p["da_hat"])
     assert p["dpre_J"] == pytest.approx(p["dpre_J_E"] + p["dpre_J_mlp1"] + p["dpre_J_heads1"]) and p["dpre_J"] == pytest.approx(p["dpre_J_axis"] + p["dpre_J_offaxis"])  # the Jacobian is linear in the change
     assert analysis["remainders"]["pattern_change"] == pytest.approx(analysis["dpre"] - p["dpre_hat"]) and analysis["remainders"]["jacobian"] == pytest.approx(p["dpre_hat"] - p["dpre_J"])
-    # The axis alternative equals the predictor when the arriving change lies along d̂_E.
-    change = nf.arriving_change(fpm, weights, state.x1, {key: state.pattern_weight(key) for key in ap.HEAD_KEYS}, token_id, template)
-    along = (change["total"] @ d_E) * d_E
-    assert neuron.pre(state.x2 + along) - neuron.pre(state.x2) == pytest.approx(p["dpre_axis"])
+    # The axis alternative equals the predictor when the arriving change lies along d̂_E (a synthetic arriving change c·d̂_E).
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(nf, "arriving_change", lambda *args, **kwargs: {"E": 0.7 * d_E, "mlp1": torch.zeros(8, dtype=torch.float64), "heads1": torch.zeros(8, dtype=torch.float64), "total": 0.7 * d_E})
+        along = nf.predict_from_state(neuron, fpm, weights, state, token_id, template, d_E)
+    assert along["dpre_hat"] == pytest.approx(along["dpre_axis"], abs=1e-7) and along["da_hat"] == pytest.approx(along["da_axis"], abs=1e-7) and along["fires_hat"] == along["fires_axis"] and abs(along["dpre_J_offaxis"]) < 1e-7  # d̂_E is unit to float32 precision
+    assert p["da_J"] == pytest.approx(nf.gelu(p["pre_ref"] + p["dpre_J"]) - nf.gelu(p["pre_ref"])) and p["fires_J"] == nf.fires(p["da_J"])
     # The invariant: the prediction table is computed with every capture and intervention entry point disabled.
     locked = {frame.frame_id: nf.locked_state(states[frame.frame_id], neuron) for frame in small.frames}
     with pytest.MonkeyPatch.context() as guard:
@@ -201,8 +203,8 @@ def _analysis(token, frame_id, template, da, pre_ref=-0.5, c_mlp2=0.3):
 
 
 def _row(token, frame_id, template, da_hat, da_axis, pre_ref=-0.5):
-    prediction = {"pre_ref": pre_ref, "dpre_hat": da_hat + 0.1, "da_hat": da_hat, "fires_hat": nf.fires(da_hat), "dpre_J": da_hat + 0.1, "dpre_J_E": da_hat, "dpre_J_mlp1": 0.05, "dpre_J_heads1": 0.05, "dpre_J_axis": 0.3, "dpre_J_offaxis": da_hat - 0.2,
-                  "dpre_axis": da_axis + 0.1, "da_axis": da_axis, "fires_axis": nf.fires(da_axis), "term_hat": da_hat * 0.2}
+    prediction = {"pre_ref": pre_ref, "dpre_hat": da_hat + 0.1, "da_hat": da_hat, "fires_hat": nf.fires(da_hat), "dpre_J": da_hat + 0.1, "da_J": da_hat, "fires_J": nf.fires(da_hat), "dpre_J_E": da_hat, "dpre_J_mlp1": 0.05, "dpre_J_heads1": 0.05,
+                  "dpre_J_axis": 0.3, "dpre_J_offaxis": da_hat - 0.2, "dpre_axis": da_axis + 0.1, "da_axis": da_axis, "fires_axis": nf.fires(da_axis), "term_hat": da_hat * 0.2}
     return nf.prediction_row(token, frame_id, template, prediction)
 
 
@@ -246,6 +248,13 @@ def test_scoring_rules_the_guard_and_the_axis_rejection_on_synthetic_tables():
     lock_f, stage1_f = tables(lambda w: da_values[w] + 1.0, lambda w: 1.0)
     always = nf.score_confirmation(stage1_f, measured(exposed), measured(fresh), confirmation, lock_f, categories)
     assert "balanced_accuracy" in always["Y1"]["test"]["failing"] and always["Y1"]["test"]["classification"]["specificity"] == 0.0
+    # Reversed ordering fails Spearman (the compressed predictor above keeps it).
+    lock_r = {"predictions": {"rows": [_row(w, fid, t, da_values[words[17 - i]], 1.0) for fid, t in exposed for i, w in enumerate(words)]}}
+    assert "spearman" in nf.score_confirmation(stage1, measured(exposed), measured(fresh), confirmation, lock_r, categories)["Y1"]["test"]["failing"]
+    # A descriptive share over an empty filtered list must not crash (every firing pair with |c_mlp2| ≤ 0.05).
+    tiny = {k: {**v, "c_mlp2": 0.01} for k, v in measured(exposed).items()}
+    assert nf.score_confirmation(stage1, tiny, measured(fresh), confirmation, lock, categories)["Y1"]["descriptive"]["term_share_of_mlp2_firing"] is None
+    assert nf.firing_set({"w": {"da_mean": 1.0}}, {"w": "x"}) == {}
     # Guard: when nothing fires in the measured set, the classification is non-evaluable and the label says so; Y3 is non-evaluable too.
     none_fire = nf.score_confirmation(stage1, measured(exposed, scale=0.1), measured(fresh, scale=0.1), confirmation, lock, categories)
     assert not none_fire["Y1"]["test"]["classification_evaluable"] and none_fire["outcome"]["Y1"].endswith(nf.CLASSIFICATION_NOT_EVALUABLE_SUFFIX) and none_fire["outcome"]["Y3"] == "AXIS_ONLY_NOT_EVALUABLE"
