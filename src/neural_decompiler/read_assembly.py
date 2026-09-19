@@ -16,7 +16,7 @@ import json
 import math
 import os
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -280,6 +280,7 @@ class Attribution:
     neuron_sum_error: float
     g_E_inner: float  # ⟨ΔE − mean, γ₃ ⊙ m⟩ (weight-only inner read)
     terms: torch.Tensor  # c_j per layer-0 MLP neuron (float64)
+    extra: dict[str, torch.Tensor] = field(default_factory=dict)  # optional extra captured sites of the patched run (label -> float64 vector); empty for own-reference pairs
 
 
 def _component_sites(frame: pm.Frame) -> list[pm.Site]:
@@ -307,7 +308,7 @@ def capture_reference(model: Any, head: ht.HeadWeights, reference: pm.Prompt, no
 
 
 def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref: ht.FrameReference, ref_components: Mapping[str, torch.Tensor], functional: ReadFunctional,
-                      name: str, token_id: int, e_axis: pm.SiteAxis, axis_T: pm.SiteAxis, nouns: Sequence[pm.Noun]) -> Attribution:
+                      name: str, token_id: int, e_axis: pm.SiteAxis, axis_T: pm.SiteAxis, nouns: Sequence[pm.Noun], *, extra_sites: Sequence[pm.Site] = ()) -> Attribution:
     frame = ref.frame
     sites = cs._sites(model, frame)
     e_ref = pm.lexicon_vector(weights, ref.reference.cue_token_id).double()
@@ -324,7 +325,7 @@ def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref
         return Attribution(name, token_id, frame.frame_id, frame.template_id, 0.0, 0.0, 0.0, components, 0.0, 0.0, 0.0, True, 0.0, {noun.lexical_key: 0.0 for noun in nouns if noun.single_token},
                            neuron_concentration(torch.zeros_like(terms)), 0.0, 0.0, torch.zeros_like(terms))
     e_site = ("L00.MLP", frame.p_c)
-    run = pm.run_patched(model, ref.reference, {e_site: e_w.reshape(1, 1, -1).to(torch.float32)}, {e_site: ReplacementSource.RESAMPLE}, capture_sites=_capture_sites(model, frame))
+    run = pm.run_patched(model, ref.reference, {e_site: e_w.reshape(1, 1, -1).to(torch.float32)}, {e_site: ReplacementSource.RESAMPLE}, capture_sites=_capture_sites(model, frame) + list(extra_sites))
     delta_r0 = run.vector(sites["R0"]).double() - ref.vectors["R0"]
     identity_r0 = float((delta_r0 - delta_e).abs().max())
     if identity_r0 > cs.IDENTITY_TOLERANCE:
@@ -341,7 +342,8 @@ def measure_token_010(model: Any, weights: pm.Weights, head: ht.HeadWeights, ref
     c_patched = pm.contrasts(run.logits, nouns)
     shifts = {noun.lexical_key: c_patched[noun.lexical_key] - ref.c_by_noun[noun.lexical_key] for noun in nouns if noun.single_token}
     return Attribution(name, token_id, frame.frame_id, frame.template_id, rho_E, functional(parallel), functional(delta_e - parallel), components, rho_total, identity_error, p1_cross, False,
-                       float(delta_head @ axis_T.direction.double()), shifts, neuron_concentration(terms), neuron_sum_error, functional.inner(delta_e), terms)
+                       float(delta_head @ axis_T.direction.double()), shifts, neuron_concentration(terms), neuron_sum_error, functional.inner(delta_e), terms,
+                       {pm.site_label(site): run.vector(site).double() for site in extra_sites})
 
 
 # ---------------------------------------------------------------------------
