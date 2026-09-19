@@ -25,9 +25,11 @@ descriptive competitors with a predeclared interpretation rule. No label is prer
   read ([`inherited/experiment-013-pattern-extract.json`](inherited/experiment-013-pattern-extract.json), 3732 pairs,
   replicated within `1e-6`); the Experiment 011 lock's axes and read weight, the Experiment 012 lock's bases and the
   Experiment 014 lock's cue-position reference states (checked against the re-captured ones), used verbatim.
-- `confirmation-v1.json` — frozen by tokenizer rules before any Experiment 015 model output: 24 fresh cue tokens by
-  lexical class, **with no expectation attached** (the classes of the design: determiner-like, ordinal-or-numeral,
-  quantity, possessive-or-pronoun, adjective); six fresh frames (`The farmer grows`, `The printer produces`, `The clinic
+- `confirmation-v1.json` — frozen on 2026-09-19 by tokenizer rules before any Experiment 015 model output, content
+  sha256 `66afcba4cddb872c91a99611a1d0d726e0b2d88e2e2c4e240bfec393fa1ce633`: 24 fresh cue tokens by lexical class,
+  **with no expectation attached** — `fourth fifth particular previous final` (determiner-like), `sixth seventh eighth
+  ninth tenth` (ordinal-or-numeral), `scant adequate moderate substantial enormous` (quantity), `himself herself itself
+  ourselves` (possessive-or-pronoun), `plastic frozen ancient modern loud` (adjective); six fresh frames (`The farmer grows`, `The printer produces`, `The clinic
   treats`, `The agency recruits`, `Emma and Marco gathered … dry`, `Sam and Julia loaded … warm`); two prompt lists: the
   fresh tokens in the 48 exposed frames (1152, Y1) and in the 6 fresh frames (144, Y2). Executed only by `confirm`.
 
