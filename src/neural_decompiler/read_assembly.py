@@ -292,10 +292,11 @@ def _capture_sites(model: Any, frame: pm.Frame) -> list[pm.Site]:
     return [sites["R0"], sites["R1"], sites["T"], sites["A"], sites["R3"]] + _component_sites(frame) + [(f"RESID_PRE.L{ht.HEAD_LAYER}", k) for k in range(frame.p_t + 1)]
 
 
-def capture_reference(model: Any, head: ht.HeadWeights, reference: pm.Prompt, nouns: Sequence[pm.Noun]) -> tuple[ht.FrameReference, dict[str, torch.Tensor]]:
+def capture_reference(model: Any, head: ht.HeadWeights, reference: pm.Prompt, nouns: Sequence[pm.Noun], *, extra_sites: Sequence[pm.Site] = ()) -> tuple[ht.FrameReference, dict[str, torch.Tensor]]:
+    """One reference forward with the head's internals and the 18 component outputs at p_c; ``extra_sites`` are captured in the same run and returned under their site labels."""
     frame = reference.frame
     sites = cs._sites(model, frame)
-    run = pm.capture_prompt(model, reference, _capture_sites(model, frame))
+    run = pm.capture_prompt(model, reference, _capture_sites(model, frame) + list(extra_sites))
     vectors = {stage: run.vector(sites[stage]).double() for stage in ("R0", "R1", "T")}
     residuals = [run.vector((f"RESID_PRE.L{ht.HEAD_LAYER}", k)).double() for k in range(frame.p_t + 1)]
     attention = run.vector(sites["A"])[ht.HEAD_INDEX].double()
@@ -304,6 +305,7 @@ def capture_reference(model: Any, head: ht.HeadWeights, reference: pm.Prompt, no
     if error > ht.RECONSTRUCTION_TOLERANCE:
         raise pm.IncidentError(f"{frame.frame_id}: Σ_k A_k v_k W_O does not reproduce the captured {ht.HEAD_KEY} result (relative error {error:.2e})")
     components = {key: run.vector((key, frame.p_c)).double() for key in COMPONENT_ORDER}
+    components.update({pm.site_label(site): run.vector(site).double() for site in extra_sites})
     return ht.FrameReference(frame, reference, vectors, residuals, attention, vectors["T"], pm.contrasts(run.logits, nouns), error), components
 
 

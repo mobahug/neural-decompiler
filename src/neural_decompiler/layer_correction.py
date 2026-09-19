@@ -71,8 +71,9 @@ REPLICATION_TOLERANCE = 1e-6
 AXIS_COSINE_TOLERANCE = 1e-6  # recomputed stage axes against the Experiment 011 lock
 SIGMA_TOLERANCE = 1e-9
 READ_WEIGHT_TOLERANCE = 1e-9
-LADDER_IDENTITY_TOLERANCE = 1e-4  # block-1 exactness and the block-2 identity at the captured patched input, in units of r(E(pl) − E(ref))
-NEURON_IDENTITY_TOLERANCE = 1e-4  # Σ_j Δa_j r(W_out[j]) against r(Δout) of the same MLP, same units
+LADDER_IDENTITY_TOLERANCE = 1e-4  # relative: ‖Δ̂ − Δout‖ / max(‖Δout‖, ‖out_ref‖) for block 1 at the own base and for block 2 at the captured patched input
+NEURON_IDENTITY_TOLERANCE = 1e-4  # relative: ‖Σ_j Δa_j W_out[j] − Δout‖ / max(‖Δout‖, ‖out_ref‖) for each MLP
+SIGMA_R_TOLERANCE = 1e-9  # σ_r over the 30 exposed frames against the Experiment 011 lock (identical by equal template weights)
 SUBSAMPLE_SIZE = 24
 SUBSAMPLE_DRAWS = 5000
 SUBSAMPLE_SEED = 20260916
@@ -288,29 +289,42 @@ class FrameState:
 
 
 def extra_sites(frame: pm.Frame) -> list[pm.Site]:
-    return [("RESID_PRE.L1", frame.p_c), ("RESID_PRE.L2", frame.p_c)]
+    """The cue position's residuals before blocks 1 and 2 and the two MLP outputs (the latter already among the component sites; captured in the same run)."""
+    return [("RESID_PRE.L1", frame.p_c), ("RESID_PRE.L2", frame.p_c), ("L01.MLP", frame.p_c), ("L02.MLP", frame.p_c)]
 
 
 def capture_frame(model: Any, head: ht.HeadWeights, reference: pm.Prompt, nouns: Sequence[pm.Noun], axis_T: pm.SiteAxis) -> FrameState:
-    ref, components = ra.capture_reference(model, head, reference, nouns)
-    run = pm.capture_prompt(model, reference, [("RESID_PRE.L2", reference.frame.p_c)])
-    return FrameState(ref, components, ra.read_functional(head, ref, axis_T), ref.vectors["R0"].double(), run.vector(("RESID_PRE.L2", reference.frame.p_c)).double())
+    """One reference forward: the head's internals, the 18 components, and the residuals before blocks 1 and 2 at p_c, all from the same run."""
+    p_c = reference.frame.p_c
+    ref, components = ra.capture_reference(model, head, reference, nouns, extra_sites=[("RESID_PRE.L1", p_c), ("RESID_PRE.L2", p_c)])
+    x1 = components.pop(pm.site_label(("RESID_PRE.L1", p_c)))
+    x2 = components.pop(pm.site_label(("RESID_PRE.L2", p_c)))
+    if not torch.equal(x1, ref.vectors["R0"].double()):
+        raise pm.IncidentError(f"{reference.frame.frame_id}: the captured residual before block 1 disagrees with the R0 stage vector of the same run")
+    return FrameState(ref, components, ra.read_functional(head, ref, axis_T), x1, x2)
 
 
 def measure_pair(model: Any, weights: pm.Weights, head: ht.HeadWeights, state: FrameState, name: str, token_id: int, e_axis: pm.SiteAxis, axis_T: pm.SiteAxis, nouns: Sequence[pm.Noun]) -> ra.Attribution:
     return ra.measure_token_010(model, weights, head, state.ref, state.components, state.functional, name, token_id, e_axis, axis_T, nouns, extra_sites=extra_sites(state.ref.frame))
 
 
-def neuron_ledger(read: CorrectionRead, lw: LayerWeights, layer: int, x_ref: torch.Tensor, x_patch: torch.Tensor, denominator: float, expected: float) -> tuple[torch.Tensor, dict[str, Any]]:
-    """Exact per-neuron terms Δa_j · r(W_out[j]) / r(E(pl) − E(ref)) from the captured inputs; their sum must equal the MLP's measured read."""
+def relative_vector_error(candidate: torch.Tensor, measured_delta: torch.Tensor, reference_output: torch.Tensor) -> float:
+    """‖candidate − Δout‖ / max(‖Δout‖, ‖out_ref‖): float32 capture noise is ~1e-6 of the output's size; a wrong LayerNorm, block or activation is of order one."""
+    scale = max(float(measured_delta.double().norm()), float(reference_output.double().norm()), 1e-12)
+    return float((candidate.double() - measured_delta.double()).norm()) / scale
+
+
+def neuron_ledger(read: CorrectionRead, lw: LayerWeights, layer: int, x_ref: torch.Tensor, x_patch: torch.Tensor, denominator: float, *, delta_out: torch.Tensor, out_ref: torch.Tensor, where: str) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Exact per-neuron terms Δa_j · r(W_out[j]) / r(E(pl) − E(ref)) from the captured inputs; Σ_j Δa_j W_out[j] must equal the captured Δout (vector identity, relative)."""
     delta_a = lw.hidden(layer, x_patch) - lw.hidden(layer, x_ref)
-    terms = delta_a * read.rows(lw.W_out[layer]) / denominator
-    identity_error = abs(float(terms.sum()) - expected)
+    identity_error = relative_vector_error(delta_a @ lw.W_out[layer], delta_out, out_ref)
     if identity_error > NEURON_IDENTITY_TOLERANCE:
-        raise pm.IncidentError(f"block-{layer} neuron terms do not sum to the MLP's measured read (error {identity_error:.2e})")
+        raise pm.IncidentError(f"{where}: block-{layer} neuron terms do not sum to the captured MLP output change (relative error {identity_error:.2e})")
+    terms = delta_a * read.rows(lw.W_out[layer]) / denominator
     concentration = ra.neuron_concentration(terms)
     concentration["top"] = concentration["top"][:TOP_NEURONS_PER_PAIR]
     concentration["identity_error"] = identity_error
+    concentration["projected_sum_error"] = abs(float(terms.sum()) - read.inner(delta_out) / denominator)
     return terms, concentration
 
 
@@ -332,21 +346,26 @@ def analyse_pair(record: ra.Attribution, plural: ra.Attribution, *, read: Correc
     own_total = read.plural_total(weights, lw, own_base, template)
     x1_patch = record.extra[pm.site_label(("RESID_PRE.L1", frame.p_c))]
     x2_patch = record.extra[pm.site_label(("RESID_PRE.L2", frame.p_c))]
-    mlp1_exact_error = abs(own["c_mlp1"] - c_k["L01.MLP"])
-    mlp2_identity_error = abs(read.inner(lw.delta_out(2, state.x2, x2_patch - state.x2)) / denominator - c_k["L02.MLP"])
+    delta_out = {key: record.extra[pm.site_label((key, frame.p_c))] - state.components[key] for key in MLP_KEYS}
+    where = f"{frame.frame_id}/{record.token}"
+    # Block 1 at the frame's own base is exact (Δx₁ = ΔE); block 2 is reproduced from its captured patched input. Both as relative vector identities.
+    delta_e = read.encoding_delta(weights, record.token_id, template)
+    own_delta_1, _ = propagate(lw, own_base, delta_e)
+    mlp1_exact_error = relative_vector_error(own_delta_1, delta_out["L01.MLP"], state.components["L01.MLP"])
+    mlp2_identity_error = relative_vector_error(lw.delta_out(2, state.x2, x2_patch - state.x2), delta_out["L02.MLP"], state.components["L02.MLP"])
     if mlp1_exact_error > LADDER_IDENTITY_TOLERANCE:
-        raise pm.IncidentError(f"{frame.frame_id}/{record.token}: block 1's MLP change is not the token-local evaluation at the frame's own base (error {mlp1_exact_error:.2e})")
+        raise pm.IncidentError(f"{where}: block 1's MLP change is not the token-local evaluation at the frame's own base (relative error {mlp1_exact_error:.2e})")
     if mlp2_identity_error > LADDER_IDENTITY_TOLERANCE:
-        raise pm.IncidentError(f"{frame.frame_id}/{record.token}: block 2's MLP change is not reproduced from its captured input (error {mlp2_identity_error:.2e})")
+        raise pm.IncidentError(f"{where}: block 2's MLP change is not reproduced from its captured input (relative error {mlp2_identity_error:.2e})")
     neurons = {}
     for key, layer, x_ref, x_patch in (("L01.MLP", 1, state.x1, x1_patch), ("L02.MLP", 2, state.x2, x2_patch)):
-        _, neurons[key] = neuron_ledger(read, lw, layer, x_ref, x_patch, denominator, c_k[key])
+        _, neurons[key] = neuron_ledger(read, lw, layer, x_ref, x_patch, denominator, delta_out=delta_out[key], out_ref=state.components[key], where=where)
     return {"token": record.token, "token_id": record.token_id, "frame_id": frame.frame_id, "template": template,
             "c_L": c_M + c_H, "c_M": c_M, "c_H": c_H, "c_k": c_k, "g_E": record.g_E_inner / denominator, "P1_prime": record.rho_total / unit,
             "P1": record.rho_total / plural.rho_total, "q_T": fractions_010["q_T"],
             "fractions_010": {"f_E": fractions_010["f_E"], "f_total": fractions_010["f_total"], "f_layers": fractions_010["f_layers"], "G": fractions_010["G"], "f_k": dict(fractions_010["f_k"])},
             "own": {**own, "D_hat": own_total["D_hat"], "q_hat": composite(own, own_total["D_hat"])},
-            "ladder": {"mlp1_exact_error": mlp1_exact_error, "mlp2_identity_error": mlp2_identity_error, "attention_input_term": c_M - own["c_hat"]},
+            "ladder": {"mlp1_exact_error": mlp1_exact_error, "mlp2_identity_error": mlp2_identity_error, "mlp1_projected_error": abs(own["c_mlp1"] - c_k["L01.MLP"]), "attention_input_term": c_M - own["c_hat"]},
             "neurons": neurons, "identities": identities}
 
 
@@ -720,13 +739,17 @@ def subsample_distribution(predicted_by_token: Mapping[str, float], measured_by_
     if len(names) <= size:
         return {"n_tokens": len(names), "size": size, "draws": 0, "percentiles": {}, "note": "no subsampling: at most `size` tokens"}
     rng = random.Random(seed)
-    values = []
+    values, undefined = [], 0
     for _ in range(draws):
         chosen = rng.sample(names, size)
         r2 = explained_variance([predicted_by_token[n] for n in chosen], [measured_by_token[n] for n in chosen])
-        values.append(r2 if r2 is not None else float("-inf"))
+        if r2 is None:
+            undefined += 1
+        else:
+            values.append(r2)
     values.sort()
-    return {"n_tokens": len(names), "size": size, "draws": draws, "percentiles": {str(q): values[min(len(values) - 1, int(q / 100 * len(values)))] for q in SUBSAMPLE_PERCENTILES}}
+    percentiles = {str(q): values[min(len(values) - 1, int(q / 100 * len(values)))] for q in SUBSAMPLE_PERCENTILES} if values else {}
+    return {"n_tokens": len(names), "size": size, "draws": draws, "undefined_draws": undefined, "percentiles": percentiles}
 
 
 def token_mean(values_by_frame: Mapping[str, float | None]) -> float | None:
@@ -797,6 +820,8 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     lofo_bases = {frame.frame_id: template_bases(pool.frames, residuals, exclude=frame.frame_id)[frame.template_id] for frame in pool.frames}
     full_totals = _frame_denominators(read, weights, lw, full_bases)
     sigma_r = er.sigma_r_from_pairs(read, weights, pool.frames)
+    if abs(sigma_r - float(lock_011["denominators"]["sigma_r"])) > SIGMA_R_TOLERANCE:
+        raise pm.IncidentError(f"σ_r over the 30 exposed frames ({sigma_r:.6f}) differs from the Experiment 011 lock ({float(lock_011['denominators']['sigma_r']):.6f})")
     validity_E = er.denominator_validity(denominators_E, sigma_r)
     validity_D = er.denominator_validity({template: full_totals[template]["D_hat"] for template in pm.TEMPLATE_ORDER}, sigma_r)
     defined = {template: bool(validity_E["defined"][template] and validity_D["defined"][template]) for template in pm.TEMPLATE_ORDER}
@@ -824,6 +849,8 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     exploration["pairs"] = pairs
     exploration["tokens"] = per_token
     scored = [row for row in per_token.values() if row["n_frames"] > 0]
+    if len(scored) < 2:
+        raise pm.IncidentError("fewer than two exposed tokens have an informative frame in a defined template; no calibration is possible")
     c_hat_lofo = {row["token"]: row["c_hat_lofo_mean"] for row in scored}
     c_L = {row["token"]: row["c_L_mean"] for row in scored}
     tau_c = tau([c_hat_lofo[n] - c_L[n] for n in c_hat_lofo])
@@ -971,6 +998,8 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests:
     recorded = (lock["manifest_sha256"], lock["extension_sha256"], lock["confirmation_sha256"], lock["confirmation_009_sha256"], lock["confirmation_011_sha256"], lock["confirmation_012_sha256"], lock["lock_011_sha256"])
     if recorded != (digests["manifest"], digests["extension"], digests["confirmation_006"], digests["confirmation_009"], digests["confirmation_011"], confirmation.content_sha256, digests["lock_011"]):
         raise PhaseError("lock was built against different frozen inputs")
+    if dict(lock.get("inherited_ledgers_sha256", {})) != {"010": digests["ledger_010"], "011": digests["ledger_011"]}:
+        raise PhaseError("lock was built against different inherited ledgers")
     if not state.get("lock") or lock["content_sha256"] != state["lock"]["content_sha256"] or lock["run_id"] != state["run_id"]:
         raise PhaseError("the installed lock is not the candidate lock written by the lock phase")
     if pm.sha256_text(predictions_text) != state["lock"]["predictions_sha256"]:

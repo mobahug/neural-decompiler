@@ -132,8 +132,8 @@ class Runner:
             if not (self.root / relative).exists() or not self.tracked(self.root / relative):
                 raise lc.PhaseError(f"{relative} must exist and be tracked and committed")
         lock_011 = self.lock_011_loader(self.root / lc.EXPERIMENT_011_LOCK_PATH)
-        if any(key not in lock_011 for key in LOCK_011_REQUIRED_KEYS) or lock_011["confirmation_011_sha256"] != confirmation_011.content_sha256:
-            raise lc.PhaseError("the Experiment 011 lock does not carry the locked axes, read weight, σ_T and denominators for the frozen 011 confirmation set")
+        if any(key not in lock_011 for key in LOCK_011_REQUIRED_KEYS) or lock_011["confirmation_011_sha256"] != confirmation_011.content_sha256 or not {"denominators", "sigma_r"} <= set(lock_011["denominators"]):
+            raise lc.PhaseError("the Experiment 011 lock does not carry the locked axes, read weight, σ_T, denominators and σ_r for the frozen 011 confirmation set")
         digests = {"manifest": manifest_sha256, "extension": extension.content_sha256, "confirmation_006": confirmation_006.content_sha256, "confirmation_009": confirmation_009.content_sha256,
                    "confirmation_011": confirmation_011.content_sha256, "lock_011": lock_011["content_sha256"]}
         ledgers = {"010": lc.load_inherited_ledger(self.root / lc.INHERITED_010_LEDGER_RELATIVE_PATH, experiment="010", digests=digests, expected_size=63 * 24),

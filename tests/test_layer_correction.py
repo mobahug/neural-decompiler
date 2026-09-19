@@ -185,12 +185,12 @@ def test_token_local_model_on_the_fake_is_exact_for_block_one(inputs, monkeypatc
     plural = lc.measure_pair(model, weights, head, state, pool.plural_cue[template], plural_ids[template], axes["R0"], axes["T"], small.single_nouns)
     name, token_id = next((n, t) for n, t in small.tokens if t not in (pool.reference_ids[template], plural_ids[template]))
     record = lc.measure_pair(model, weights, head, state, name, token_id, axes["R0"], axes["T"], small.single_nouns)
-    assert set(record.extra) == {f"RESID_PRE.L1@{frame.p_c}", f"RESID_PRE.L2@{frame.p_c}"}
+    assert set(record.extra) == {f"RESID_PRE.L1@{frame.p_c}", f"RESID_PRE.L2@{frame.p_c}", f"L01.MLP@{frame.p_c}", f"L02.MLP@{frame.p_c}"}
     analysis = lc.analyse_pair(record, plural, read=read, lw=lw, weights=weights, state=state, axis_T=axes["T"])
     assert analysis is not None
-    # Block 1 is exact at the frame's own base (Δx₁ = ΔE), block 2 is reproduced from its captured input, and the neuron terms sum to the MLP reads.
-    assert analysis["ladder"]["mlp1_exact_error"] < 1e-6 and analysis["ladder"]["mlp2_identity_error"] < 1e-6
-    assert all(analysis["neurons"][key]["identity_error"] < 1e-6 for key in lc.MLP_KEYS)
+    # Block 1 is exact at the frame's own base (Δx₁ = ΔE), block 2 is reproduced from its captured input, and the neuron terms sum to the captured MLP output changes (relative vector identities).
+    assert analysis["ladder"]["mlp1_exact_error"] < 1e-5 and analysis["ladder"]["mlp2_identity_error"] < 1e-5 and analysis["ladder"]["mlp1_projected_error"] < 1e-5
+    assert all(analysis["neurons"][key]["identity_error"] < 1e-5 and analysis["neurons"][key]["projected_sum_error"] < 1e-5 for key in lc.MLP_KEYS)
     assert analysis["c_L"] == pytest.approx(analysis["c_M"] + analysis["c_H"]) and analysis["P1_prime"] == pytest.approx(analysis["g_E"] + analysis["c_L"], rel=1e-6, abs=1e-6)
     assert analysis["own"]["c_hat"] == pytest.approx(analysis["own"]["c_mlp1"] + analysis["own"]["c_mlp2"])
     assert analysis["ladder"]["attention_input_term"] == pytest.approx(analysis["c_M"] - analysis["own"]["c_hat"])
@@ -205,8 +205,10 @@ def test_token_local_model_on_the_fake_is_exact_for_block_one(inputs, monkeypatc
     tilt = torch.linspace(-1.0, 1.0, 8, dtype=torch.float64)
     other = read.predict(weights, lw, (state.x1 + tilt, state.x2 - tilt), token_id, template)
     assert other["g_E"] == pytest.approx(analysis["own"]["g_E"]) and other["c_hat"] != pytest.approx(analysis["own"]["c_hat"])
-    with pytest.raises(pm.IncidentError):
-        lc.neuron_ledger(read, lw, 2, state.x2, state.x2 + 1.0, read.denominator(weights, template), expected=1e3)
+    x2_patch = record.extra[f"RESID_PRE.L2@{frame.p_c}"]
+    with pytest.raises(pm.IncidentError, match="neuron terms"):
+        lc.neuron_ledger(read, lw, 2, state.x2, x2_patch, read.denominator(weights, template), delta_out=torch.zeros(8, dtype=torch.float64), out_ref=state.components["L02.MLP"], where="x")
+    assert lc.relative_vector_error(torch.ones(3), torch.ones(3), torch.ones(3)) == 0.0 and lc.relative_vector_error(torch.zeros(3), torch.ones(3), torch.zeros(3)) == pytest.approx(1.0)
     d1, d2 = lc.propagate(lw, (state.x1, state.x2), torch.zeros(8, dtype=torch.float64))
     assert float(d1.abs().max()) == 0.0 and float(d2.abs().max()) == 0.0
 

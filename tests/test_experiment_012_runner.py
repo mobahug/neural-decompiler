@@ -62,7 +62,8 @@ def sandbox(tmp_path, monkeypatch):
     plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
     read = lc.CorrectionRead(ra.read_weight(head, axes["T"]).double(), axes["R0"].direction.double(), dict(pool.reference_ids), plural_ids)
     fake_lock_011 = {"experiment": "011", "axes_vectors": {"T": axes["T"].direction.double().tolist(), "R0": axes["R0"].direction.double().tolist()}, "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
-                     "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}}, "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
+                     "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}, "sigma_r": er.sigma_r_from_pairs(read, weights, pool_010.frames)},
+                     "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
     # The two extracts: the fake's per-component fractions over 63 × 24 (Experiment 010) and over the 011 tokens' licensed 011 frames (142), computed with the code path Experiment 012 uses.
     entries_010, entries_011 = {}, {}
     frames_011 = {frame.frame_id for frame in confirmation_011.frames}
@@ -192,3 +193,39 @@ def test_validity_is_independent_of_candidates(sandbox, monkeypatch):
     for token in confirmation.tokens:
         expected = sorted(frame_id for frame_id in token["licensed_frames"] if frame_id in valid)
         assert results["tokens"][token["word"]]["frames"] == expected  # no candidate dropped by its own values
+
+
+def test_incidents_are_recorded_and_block_reruns(sandbox, monkeypatch):
+    """An IncidentError inside explore or confirm is recorded with its commit and the phase cannot be re-run at that commit / in this protocol version."""
+    runner, logs = make_runner(sandbox, monkeypatch)
+    assert runner.freeze_confirmation() == 0
+    original = lc.analyse_pair
+    calls = {"n": 0}
+
+    def failing(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            raise pm.IncidentError("synthetic identity failure")
+        return original(*args, **kwargs)
+
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(lc, "analyse_pair", failing)
+        assert runner.explore() == 2
+    state = lc.load_results_state(runner.results_path)
+    incident = state["exploration"]["incidents"][-1]
+    assert incident["phase"] == "explore" and incident["commit"] == "a" * 40 and "synthetic" in incident["message"] and state["phases"]["explore"]["status"] == "running"
+    with pytest.raises(lc.PhaseError, match="incident"):
+        runner.explore()
+    # A committed fix (a new commit) permits explore to run again; then the same failure at confirm is terminal.
+    runner.git_state = lambda: {"commit": "b" * 40, "dirty": False}
+    assert runner.explore() == 0 and runner.lock() == 0
+    shutil.copy(runner.results_path.parent / "candidate-lock.json", runner.root / lc.LOCK_RELATIVE_PATH)
+    shutil.copy(runner.results_path.parent / "candidate-predictions.md", runner.root / lc.PREDICTIONS_RELATIVE_PATH)
+    with pytest.MonkeyPatch.context() as guard:  # the plural cue's E-patch runs in every defined fresh frame, valid or not
+        guard.setattr(lc, "measure_pair", lambda *args, **kwargs: (_ for _ in ()).throw(pm.IncidentError("synthetic confirm failure")))
+        assert runner.confirm() == 2
+    state = lc.load_results_state(runner.results_path)
+    assert state["confirmation"]["incident"]["phase"] == "confirm" and state["phases"]["confirm"]["status"] == "running"
+    with pytest.raises(lc.PhaseError, match="confirm"):
+        runner.confirm()
+    assert runner.report() == 0 and "## Incidents" in runner.report_path.read_text()
