@@ -286,11 +286,14 @@ def analyse_pair_013(record: ra.Attribution, plural: ra.Attribution, *, model: F
     identities = {key: head_identity(model.heads, key, state, record) for key in HEAD_KEYS}
     direct_pattern_change = sum(model.read.inner(entry["pattern_change"]) for entry in identities.values()) / denominator
     remainder = base["c_L"] - prediction["c_L_hat"]
+    mlp_indirect = base["c_M"] - prediction["c_M_hat"]  # the pattern-change effect through block 2's MLP (and block 1's attention change reaching it)
+    heads_arrival = remainder - direct_pattern_change - mlp_indirect  # layer-2 heads' frozen value path on the measured rather than the predicted arriving change
     return {"token": record.token, "token_id": record.token_id, "frame_id": state.ref.frame.frame_id, "template": template,
             "c_L": base["c_L"], "c_M": base["c_M"], "c_H": base["c_H"], "c_k": base["c_k"], "P1": base["P1"], "P1_prime": base["P1_prime"], "q_T": base["q_T"], "g_E": base["g_E"],
             "f_layers_010": base["fractions_010"]["f_layers"], "prediction": prediction, "r": base["c_L"] - prediction["c_012"],
             "ladder": {"base_point": prediction["base_point"], "frozen_attention": prediction["frozen_attention"], "remainder": remainder,
                        "remainder_direct_pattern_change": direct_pattern_change, "remainder_indirect": remainder - direct_pattern_change,
+                       "remainder_mlp_indirect": mlp_indirect, "remainder_heads_arrival": heads_arrival,
                        "attention_input_term": base["ladder"]["attention_input_term"], "mlp1_exact_error": base["ladder"]["mlp1_exact_error"], "mlp2_identity_error": base["ladder"]["mlp2_identity_error"]},
             "head_identity_max_error": max(entry["error"] for entry in identities.values()), "delta_A_pc": {key: entry["delta_A_pc"] for key, entry in identities.items()},
             "identities": base["identities"], "compensation_case": is_compensation_case(prediction["c_M_hat"], prediction["c_H_hat"])}
@@ -550,9 +553,9 @@ def load_confirmation(path: Path, pool: cs.Pool008, digests: Mapping[str, str]) 
 # Results state, phases, statistics.
 
 _STATE_KEYS = {"schema_version", "run_id", "created_at", "manifest_sha256", "extension_sha256", "confirmation_sha256", "confirmation_009_sha256", "confirmation_011_sha256", "confirmation_012_sha256", "confirmation_013_sha256",
-               "lock_011_sha256", "lock_012_sha256", "protocol_code_commit", "git_dirty", "model", "versions", "phases", "executed_prompt_keys", "executed_noun_keys", "exploration", "lock", "confirmation", "invalidated_runs", "state_sha256"}
-DIGEST_KEYS = ("manifest", "extension", "confirmation_006", "confirmation_009", "confirmation_011", "confirmation_012", "confirmation_013", "lock_011", "lock_012")
-STATE_DIGEST_FIELDS = ("manifest_sha256", "extension_sha256", "confirmation_sha256", "confirmation_009_sha256", "confirmation_011_sha256", "confirmation_012_sha256", "confirmation_013_sha256", "lock_011_sha256", "lock_012_sha256")
+               "lock_011_sha256", "lock_012_sha256", "ledger_012_sha256", "protocol_code_commit", "git_dirty", "model", "versions", "phases", "executed_prompt_keys", "executed_noun_keys", "exploration", "lock", "confirmation", "invalidated_runs", "state_sha256"}
+DIGEST_KEYS = ("manifest", "extension", "confirmation_006", "confirmation_009", "confirmation_011", "confirmation_012", "confirmation_013", "lock_011", "lock_012", "ledger_012")
+STATE_DIGEST_FIELDS = ("manifest_sha256", "extension_sha256", "confirmation_sha256", "confirmation_009_sha256", "confirmation_011_sha256", "confirmation_012_sha256", "confirmation_013_sha256", "lock_011_sha256", "lock_012_sha256", "ledger_012_sha256")
 
 
 def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> dict[str, Any]:
@@ -707,6 +710,8 @@ def exposed_statistics(pairs: Mapping[str, Mapping[str, Any]], tokens: Sequence[
                          "remainder": pm._mean([a["ladder"]["remainder"] for a in analyses]), "remainder_abs": pm._mean([abs(a["ladder"]["remainder"]) for a in analyses]),
                          "remainder_direct_pattern_change_abs": pm._mean([abs(a["ladder"]["remainder_direct_pattern_change"]) for a in analyses]),
                          "remainder_indirect_abs": pm._mean([abs(a["ladder"]["remainder_indirect"]) for a in analyses]),
+                         "remainder_mlp_indirect_abs": pm._mean([abs(a["ladder"]["remainder_mlp_indirect"]) for a in analyses]),
+                         "remainder_heads_arrival_abs": pm._mean([abs(a["ladder"]["remainder_heads_arrival"]) for a in analyses]),
                          "remainder_token_mean_abs": pm._mean([abs(means[n]["remainder_mean"]) for n in names]) if names else None},
         "compensation": _compensation_summary(analyses, predictions),
         "head_identity_max_error": max(a["head_identity_max_error"] for a in analyses) if analyses else None,
@@ -732,6 +737,9 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     exploration["sigma_T"] = axis_T.sigma
     exploration["read_weight"] = fpm.read.weight.tolist()
     exploration["denominators_E"] = {template: fpm.read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}
+    for template, value in exploration["denominators_E"].items():
+        if abs(value - float(lock_011["denominators"]["denominators"][template])) > lc.READ_WEIGHT_TOLERANCE:
+            raise pm.IncidentError(f"{template}: the weight-only denominator differs from the Experiment 011 lock")
     exploration["defined_templates"] = list(lock_012["defined_templates"])
     recorded = inherited["entries"]
     say(f"reference states of the {len(pool.frames)} exposed frames; re-measurement of the {len(recorded)} recorded pairs with the pattern rows captured")
@@ -831,6 +839,11 @@ def render_predictions(lock: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def frozen_floors() -> dict[str, Any]:
+    return {"y_spearman": Y_SPEARMAN, "y_r2": Y_R2, "y3_spearman_h": Y3_SPEARMAN_H, "y3_spearman_m": Y3_SPEARMAN_M, "c_h_degenerate_sd": C_H_DEGENERATE_SD, "compensation_min": COMPENSATION_MIN,
+            "min_valid_frames": MIN_VALID_FRAMES, "min_valid_frames_per_token": MIN_VALID_FRAMES_PER_TOKEN, "min_scored_tokens": MIN_SCORED_TOKENS, "frame_cue_effect_rate": FRAME_CUE_EFFECT_RATE, "head_stage_floor": cs.STAGE_UNINFORMATIVE_FLOOR}
+
+
 def build_candidate_lock(*, state: Mapping[str, Any], digests: Mapping[str, str], confirmation: Confirmation013, predictions: Mapping[str, Any], protocol_code_commit: str) -> dict[str, Any]:
     exploration = state["exploration"]
     if exploration["summary"]["prediction_undefined"]:
@@ -843,8 +856,7 @@ def build_candidate_lock(*, state: Mapping[str, Any], digests: Mapping[str, str]
                  "axes_vectors": exploration["axes_vectors"], "sigma_T": exploration["sigma_T"], "read_weight": exploration["read_weight"], "denominators_E": exploration["denominators_E"],
                  "defined_templates": exploration["defined_templates"], "locked_states": exploration["locked_states"], "locked_state_digests": exploration["locked_state_digests"],
                  "tolerances": {"tau_r": TAU_R, "tau_a": TAU_A, "design_rmse_r": DESIGN_RMSE_R, "design_rmse_a": DESIGN_RMSE_A, "recomputed_rmse_r": exploration["calibration"]["rmse_r"], "recomputed_rmse_a": exploration["calibration"]["rmse_a"]},
-                 "floors": {"y_spearman": Y_SPEARMAN, "y_r2": Y_R2, "y3_spearman_h": Y3_SPEARMAN_H, "y3_spearman_m": Y3_SPEARMAN_M, "c_h_degenerate_sd": C_H_DEGENERATE_SD, "compensation_min": COMPENSATION_MIN,
-                            "min_valid_frames": MIN_VALID_FRAMES, "min_valid_frames_per_token": MIN_VALID_FRAMES_PER_TOKEN, "min_scored_tokens": MIN_SCORED_TOKENS, "frame_cue_effect_rate": FRAME_CUE_EFFECT_RATE, "head_stage_floor": cs.STAGE_UNINFORMATIVE_FLOOR},
+                 "floors": frozen_floors(),
                  "tokens": [dict(token) for token in confirmation.tokens], "exposed_check": exploration["exposed_check"], "thy": exploration.get("thy"),
                  "predictions": dict(predictions), "tier_a_results_sha256": state.get("state_sha256")})
     lock["content_sha256"] = pm.sha256_text(pm.canonical_json({key: value for key, value in lock.items() if key != "content_sha256"}))
@@ -865,7 +877,7 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests:
         raise PhaseError("the installed lock is not the candidate lock written by the lock phase")
     if pm.sha256_text(predictions_text) != state["lock"]["predictions_sha256"]:
         raise PhaseError("the installed predictions.md is not the artifact written by the lock phase")
-    if lock["tolerances"]["tau_r"] != TAU_R or lock["tolerances"]["tau_a"] != TAU_A or lock["floors"]["y_r2"] != Y_R2:
+    if {key: value for key, value in lock["tolerances"].items() if not key.startswith("recomputed_")} != {"tau_r": TAU_R, "tau_a": TAU_A, "design_rmse_r": DESIGN_RMSE_R, "design_rmse_a": DESIGN_RMSE_A} or dict(lock["floors"]) != frozen_floors():
         raise PhaseError("the lock's tolerances or floors are not the frozen constants")
     if changed_paths is None:
         raise PhaseError("the lock commit is not an ancestor of the current commit")
@@ -917,6 +929,7 @@ def stage_one(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
     frames_out: dict[str, Any] = {}
     states: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
+    identities: dict[str, float] = {}
     for frame in confirmation.frames:
         template = frame.template_id
         if template not in lock["defined_templates"]:
@@ -928,7 +941,7 @@ def stage_one(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
         positive = sum(1 for noun in nouns if c_a[noun.lexical_key] - c_b[noun.lexical_key] > 0)
         required = pm.exact_count_floor(FRAME_CUE_EFFECT_RATE, len(nouns))
         plural = measure_pair_013(model, weights, head, state_f, pool.plural_cue[template], pl.cue_token_id, e_axis, axis_T, nouns)
-        er.enforce_identities(plural, plural, f"{frame.frame_id}/{pool.plural_cue[template]}")
+        er._max_errors(identities, er.enforce_identities(plural, plural, f"{frame.frame_id}/{pool.plural_cue[template]}"))
         head_informative = abs(plural.head_change) >= cs.STAGE_UNINFORMATIVE_FLOOR * axis_T.sigma
         valid = head_informative and positive >= required
         frames_out[frame.frame_id] = {"template_id": template, "valid": valid, "head_informative": head_informative, "plural_head_change": plural.head_change, "cue_effect_positive": positive, "cue_effect_required": required,
@@ -938,7 +951,7 @@ def stage_one(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
             rows.append(prediction_row(token["word"], frame.frame_id, template, fpm.predict_from_state(weights, state_f, token["token_id"], template)))
         say(f"  {frame.frame_id}: {'valid' if valid else 'INVALID'} (head informative {head_informative}, cue effect {positive}/{required}); {len(confirmation.tokens)} predictions")
     digest = table_digest(rows, states)
-    return {"frames": frames_out, "states": states, "state_digests": {frame_id: state_digest(entry) for frame_id, entry in states.items()}, "rows": rows,
+    return {"frames": frames_out, "states": states, "state_digests": {frame_id: state_digest(entry) for frame_id, entry in states.items()}, "rows": rows, "identities": identities,
             "token_means": token_means_from_table(rows, [token["word"] for token in confirmation.tokens]), "digest": digest, "commit": protocol_code_commit,
             "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()}
 
@@ -1006,6 +1019,7 @@ def stage_two(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
             pairs_fresh[f"{token['word']}|{frame.frame_id}"] = analysis
         say(f"  {frame.frame_id} (fresh): {len(confirmation.tokens)} tokens")
     results = score_confirmation(stage1, pairs_exposed, pairs_fresh, confirmation, lock)
+    er._max_errors(identities, stage1.get("identities", {}))
     results["identities"] = identities
     results["head_identity_max_error"] = max([a["head_identity_max_error"] for a in list(pairs_exposed.values()) + list(pairs_fresh.values())] or [0.0])
     return results
@@ -1128,7 +1142,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- Token means: full ĉ_L vs c_L — {cmp_line(x['token_means']['full_c_L_hat_vs_c_L'])}; the 012 model vs c_L — {cmp_line(x['token_means']['model_012_vs_c_L'])}; own base vs c_L — {cmp_line(x['token_means']['own_base_vs_c_L'])}",
                   f"- Pairs ({x['n_pairs']}): residual — {cmp_line(x['pairs']['residual_r_hat_vs_r'])}; ĉ_H vs c_H — {cmp_line(x['pairs']['c_H_hat_vs_c_H'])} (c_H spread sd {f(x['pairs']['c_H_spread'], 4)}); ĉ_M vs c_M — {cmp_line(x['pairs']['c_M_hat_vs_c_M'])}; attention-input — {cmp_line(x['pairs']['attention_input_hat_vs_measured'])}",
                   f"- Per template (pairs, residual): {{{', '.join(f'{t}: {f(v['spearman'], 3)}/{f(v['mae'], 3)}' for t, v in x['per_template_pairs_residual'].items())}}}",
-                  f"- Ladder means: base-point {f(x['ladder_means']['base_point'], 3)}, frozen-attention {f(x['ladder_means']['frozen_attention'], 3)}, remainder {f(x['ladder_means']['remainder'], 3)} (|.| {f(x['ladder_means']['remainder_abs'], 3)}; direct pattern change |.| {f(x['ladder_means']['remainder_direct_pattern_change_abs'], 3)}, indirect |.| {f(x['ladder_means']['remainder_indirect_abs'], 3)}; token-mean |.| {f(x['ladder_means']['remainder_token_mean_abs'], 3)})",
+                  f"- Ladder means: base-point {f(x['ladder_means']['base_point'], 3)}, frozen-attention {f(x['ladder_means']['frozen_attention'], 3)}, remainder {f(x['ladder_means']['remainder'], 3)} (|.| {f(x['ladder_means']['remainder_abs'], 3)}; direct pattern change |.| {f(x['ladder_means']['remainder_direct_pattern_change_abs'], 3)}, through block 2's MLP |.| {f(x['ladder_means']['remainder_mlp_indirect_abs'], 3)}, layer-2 heads' arrival |.| {f(x['ladder_means']['remainder_heads_arrival_abs'], 3)}; token-mean |.| {f(x['ladder_means']['remainder_token_mean_abs'], 3)})",
                   f"- Per head (pairs Spearman): {{{', '.join(f'{k} {f(v['spearman'], 2)}' for k, v in x['per_head_pairs'].items())}}}",
                   f"- Compensation cases (frozen rule): {x['compensation']['n']} pairs, measured signs as predicted in {f(x['compensation']['fraction_signs_as_predicted'], 2)}",
                   f"- thy (measured c_M / c_H vs predicted): {{{', '.join(f'{fid}: ({f(v['c_M'], 3)}, {f(v['c_H'], 3)}) vs ({f(v['c_M_hat'], 3)}, {f(v['c_H_hat'], 3)})' for fid, v in exploration.get('thy', {}).items())}}}", ""]

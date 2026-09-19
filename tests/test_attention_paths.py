@@ -171,6 +171,8 @@ def test_frozen_pattern_model_and_exact_head_split_on_the_fake(inputs, monkeypat
     assert p["c_L_hat"] == pytest.approx(p["c_M_hat"] + p["c_H_hat"]) and p["c_H_hat"] == pytest.approx(sum(p["head_terms"].values()))
     assert p["r_hat"] == pytest.approx(p["c_L_hat"] - p["c_012"]) and ladder["base_point"] + ladder["frozen_attention"] + ladder["remainder"] == pytest.approx(analysis["r"])
     assert ladder["remainder"] == pytest.approx(ladder["remainder_direct_pattern_change"] + ladder["remainder_indirect"]) and analysis["c_L"] == pytest.approx(analysis["c_M"] + analysis["c_H"])
+    assert ladder["remainder_indirect"] == pytest.approx(ladder["remainder_mlp_indirect"] + ladder["remainder_heads_arrival"]) and ladder["remainder_mlp_indirect"] == pytest.approx(analysis["c_M"] - p["c_M_hat"])
+    assert set(ap.frozen_floors()) == {"y_spearman", "y_r2", "y3_spearman_h", "y3_spearman_m", "c_h_degenerate_sd", "compensation_min", "min_valid_frames", "min_valid_frames_per_token", "min_scored_tokens", "frame_cue_effect_rate", "head_stage_floor"}
     # Level 1 (the 012 model at the frame's own base) equals the frozen-pattern model with every pattern weight zero, and c_012 is the model at the locked base.
     zero = fpm.predict(weights, state.x1, state.x2, {key: 0.0 for key in ap.HEAD_KEYS}, token_id, template)
     assert zero["c_L_hat"] == pytest.approx(p["c_own"]) and zero["c_H_hat"] == 0.0

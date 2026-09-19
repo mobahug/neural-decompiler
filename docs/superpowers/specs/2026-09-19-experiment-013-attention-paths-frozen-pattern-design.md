@@ -113,8 +113,9 @@ The ladder is exact by construction: `c_L − ĉ_012 = [ĉ_own − ĉ_012] + [ĉ
 term (Experiment 012's Level 1 minus Level 0), the frozen-pattern attention term, and the pattern-change remainder.
 The remainder is further split exactly from the patched run's captures: the heads' direct pattern-change part
 `Σ_h Σ_k ΔA_h(p_c, k) v_h^patch(k) W_O^h` (Experiment 009's identity, checked per head against the captured head
-outputs, an incident above `1e-4` relative) and the indirect part through block 2's MLP (`c_M − ĉ_M`). Every term is
-recorded per pair. Denominator validity is inherited from Experiment 012's lock (all three templates defined).
+outputs, an incident above `1e-4` relative), the part through block 2's MLP (`c_M − ĉ_M`, the pattern changes and
+block 1's attention change reaching block 2's input), and the layer-2 heads' frozen value path evaluated on the
+measured rather than the predicted arriving change (what is left). Every term is recorded per pair. Denominator validity is inherited from Experiment 012's lock (all three templates defined).
 
 **Compensation cases (frozen rule, descriptive):** a (token, frame) pair is a *compensation case* if `ĉ_M` and `ĉ_H`
 have opposite signs and each exceeds 0.05 in magnitude; the report states, over the fresh compensation cases, the
@@ -289,4 +290,6 @@ fresh cue prompt runs before its frame's stage-1 predictions are digested.
 - **Revision 2**: all six made. `τ_r = 0.070`, `τ_A = 0.106` (from exposed RMSE 0.0233 and 0.0355, `max(0.05, 3 × RMSE)`);
   degenerate-spread threshold 0.017 for `c_H`; Y1/Y2 on token means, Y3 on pairs; the lock and the stage-1 table carry
   every per-pair prediction column; the design-check figures restated under the frozen definition (`ĉ_012` = the
-  locked 012 model for every pair). No floor of revision 1 was loosened; Y2's labels carry `_CONDITIONAL`.
+  locked 012 model for every pair). No floor of revision 1 was loosened; Y2's labels carry `_CONDITIONAL`. Editorial
+  clarification after the implementation review, before Tier A: the remainder's split names three exact parts (direct
+  pattern change, through block 2's MLP, the layer-2 heads' arrival term); descriptive only.

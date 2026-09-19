@@ -309,6 +309,10 @@ class Runner:
         ap.validate_lock(lock, state=state, digests=digests, confirmation=confirmation, predictions_text=predictions_path.read_text(encoding="utf-8"), git_state=git,
                          tracked=self.tracked(lock_path) and self.tracked(predictions_path), changed_paths=self.changed_paths(lock["protocol_code_commit"]))
         commit = str(git.get("commit"))
+        runtime = runtime_record(PYTHIA_70M)
+        recorded_runtime = state["phases"]["explore"].get("runtime")
+        if recorded_runtime is not None and {k: v for k, v in runtime.items() if k != "seed"} != {k: v for k, v in recorded_runtime.items() if k != "seed"}:
+            raise ap.PhaseError(f"the confirm runtime {runtime} differs from the explore runtime {recorded_runtime}; the re-captured reference states must be bitwise reproducible")
         seed_runtime(ap.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
         model = self.model_loader(PYTHIA_70M)
         try:
