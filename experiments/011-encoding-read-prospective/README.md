@@ -55,4 +55,30 @@ the template's reference cue and `r` is linear, `σ_r` as defined equals half th
 template denominators, so the `0.25 σ_r` floor cannot bind below the `0.25 × max` floor; the rule is applied as
 written and the vacuity is noted rather than repaired.
 
-## Status — 2026-09-19: confirmation set frozen; Tier A not yet run
+## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+
+`explore` ran once on protocol/code commit `69c7a14` (run recorded in the results state, sha256
+`b1b0e47ffdbde872a26c76aa4efa1d3cb699bcc9ac06e23c60c82152a3a23b76`; A0 passed). The report is copied to
+[`evidence/exploration-report-2026-09-19.md`](evidence/exploration-report-2026-09-19.md) and the candidate prediction
+table to [`evidence/candidate-predictions-2026-09-19.md`](evidence/candidate-predictions-2026-09-19.md). Ledger: 72
+prompt keys (exposed frames' cue and reference prompts), 80 noun keys; no fresh prompt ran, and the lock phase ran no
+prompt at all.
+
+- Replication of Experiment 010's 1512 transport fractions: exact. Identity checks enforced on every exposed run.
+- Template denominators `r(E(pl_T) − E(ref_T))`: cardinal 1.630, quantifier 1.496, coordinated-adjective 1.630 — all
+  three defined (floor 0.41).
+- Tolerances from exposed residuals at the floors' own levels: **τ_g = 0.248** (token means, 63 tokens) and
+  **τ_M = 0.313** (1488 pairs). Descriptive exposed check: `ḡ_E` vs `q̄_T` Spearman 0.925, MAE 0.064; P1 pair MAE 0.073.
+  Exposed net layer change range −0.08 to +0.40.
+- **Candidate lock** `outputs/experiment-011/candidate-lock.json`, content sha256
+  `769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b`; predictions artifact
+  `candidate-predictions.md`, sha256 `6ce4cd0c1bf8c0bc7b312972513499e97c3bf04cfa455a98dc9448421042d033`. Committed
+  predictions (mean `g_E` over licensed frames): numerals `eighteen` 0.93, `twenty` 0.88, `forty` 0.87, `nineteen`
+  0.85, `thirty` 0.84; adjectives `cheap` 0.82, `dark` 0.69, `huge` 0.70, `warm` 0.61, `green` 0.55; quantity
+  `additional` 0.65, `abundant` 0.52, `extra` 0.52, `ample` 0.51, `sufficient` 0.45; determiner-like `little` 0.62,
+  `less` 0.57, `such` 0.43, `much` 0.42, **`an` 0.18** (axis part +0.54, rest −0.36 — the same encoding-borne opposition
+  as `a`); possessive/pronoun `whose` 0.53, `its` 0.48, `yours` 0.44, `mine` 0.35. Experiment 009's rank-1 rule is
+  locked beside them as the reported baseline.
+
+Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
+preregistration act; the reviewer's sign-off precedes `confirm`.
