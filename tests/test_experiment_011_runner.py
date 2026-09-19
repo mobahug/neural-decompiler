@@ -76,7 +76,15 @@ def make_runner(sandbox, monkeypatch, *, logs=None):
     root, manifest = sandbox
     logs = logs if logs is not None else []
     monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
-    monkeypatch.setattr(er, "DENOMINATOR_RELATIVE_FLOOR", 0.0)  # the fake's random head can make a template denominator tiny; the rule itself is unit-tested
+    original_validity = er.denominator_validity
+
+    def all_defined(denominators, sigma_r):  # the fake's random head can make a template denominator tiny or negative; the rule itself is unit-tested
+        verdict = original_validity(denominators, sigma_r)
+        verdict["defined"] = {template: True for template in denominators}
+        verdict["n_defined"] = len(denominators)
+        return verdict
+
+    monkeypatch.setattr(er, "denominator_validity", all_defined)
     runner = runner_module.Runner(root=root, results_path=root / "outputs/experiment-011/results.json", report_path=root / "outputs/experiment-011/report.md",
                                   model_loader=lambda spec: make_fake_model(), tokenizer_loader=lambda spec: toy_tokenizer_011(manifest),
                                   git_state=lambda: {"commit": "a" * 40, "dirty": False}, versions=lambda: {"torch": "test"}, tracked=lambda path: True, changed_paths=lambda commit: [],

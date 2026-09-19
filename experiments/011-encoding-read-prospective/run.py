@@ -250,7 +250,7 @@ class Runner:
 
     def _predictions(self, weights: pm.Weights, exploration: Mapping[str, Any], confirmation: er.Confirmation011, pool: cs.Pool008, lock_009: Mapping[str, Any]) -> dict[str, Any]:
         plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
-        read = er.read_from_lock_inputs(exploration, pool.reference_ids, plural_ids)
+        read = er.read_from_lock_inputs(exploration, pool.reference_ids, plural_ids)  # at confirm, ``exploration`` is the lock itself (locked axes and read weight)
         return er.lock_predictions(weights, read, confirmation, exploration["denominators"]["defined"], self._baseline(lock_009))
 
     def lock(self) -> int:
@@ -258,8 +258,10 @@ class Runner:
         state = self._state_for("lock", digests)
         changed = self.changed_paths(state["protocol_code_commit"])
         scientific = [path for path in (changed or []) if path.startswith(er.SCIENTIFIC_PATH_PREFIXES) and path not in er.NON_SCIENTIFIC_PATHS and not path.startswith(er.NON_SCIENTIFIC_PREFIXES)]
-        if changed is None or scientific:
-            raise er.PhaseError("scientific paths changed since explore; lock must be written at the explore protocol")
+        if changed is None:
+            raise er.PhaseError("the explore commit is not an ancestor of the current commit; lock must be written at the explore protocol")
+        if scientific:
+            raise er.PhaseError(f"scientific paths changed since explore: {scientific}; lock must be written at the explore protocol")
         weights, _ = self._weights_only()
         predictions = self._predictions(weights, state["exploration"], confirmation, pool, lock_009)
         lock = er.build_candidate_lock(state=state, digests=digests, confirmation=confirmation, predictions=predictions, protocol_code_commit=self._provenance()["protocol_code_commit"])
@@ -288,9 +290,11 @@ class Runner:
         model = self.model_loader(PYTHIA_70M)
         try:
             weights = pm.Weights.from_model(model)
-            reproduced = er.assert_lock_predictions_reproduced(lock, self._predictions(weights, state["exploration"], confirmation, pool, lock_009))  # PhaseError before anything fresh runs
+            reproduced = er.assert_lock_predictions_reproduced(lock, self._predictions(weights, lock, confirmation, pool, lock_009))  # from the locked axes; PhaseError before anything fresh runs
             state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": str(git.get("commit")), "lock_predictions_reproduced_max_difference": reproduced}
-            pm.record_execution(state, confirmation.all_prompts + tuple(confirmation.reference_prompt(frame) for frame in confirmation.frames), pool.nouns)
+            defined_frames = [frame for frame in confirmation.frames if frame.template_id in lock["defined_templates"]]
+            prompts = tuple(prompt for prompt in confirmation.all_prompts if prompt.frame.template_id in lock["defined_templates"]) + tuple(confirmation.reference_prompt(frame) for frame in defined_frames)
+            pm.record_execution(state, prompts, pool.nouns)
             er.write_results_state(self.results_path, state)
             try:
                 results = er.run_confirmation(model, pool, confirmation, lock, log=self.log)

@@ -25,7 +25,6 @@ from . import cue_suppression as cs
 from . import head_transport as ht
 from . import plural_mechanism as pm
 from . import read_assembly as ra
-from . import supervised_subspace as ss
 from .behavior import validate_json_safe
 from .candidate_screening import ScreeningManifest
 from .models import PYTHIA_70M
@@ -39,7 +38,6 @@ LOCK_RELATIVE_PATH = f"{EXPERIMENT_DIR}/preregistration-lock.json"
 PREDICTIONS_RELATIVE_PATH = f"{EXPERIMENT_DIR}/predictions.md"
 INHERITED_010_EXTRACT_RELATIVE_PATH = f"{EXPERIMENT_DIR}/inherited/experiment-010-transport-fractions.json"
 EXPERIMENT_009_LOCK_PATH = ht.LOCK_RELATIVE_PATH
-TRANSPORT_V_009_RELATIVE_PATH = "outputs/experiment-009/parameters/transport_v.pt"
 RUNTIME_SEED = 20260916
 CONTROL_SEED = 20260924
 CONFIRMATION_SCHEMA_VERSION = 1
@@ -117,9 +115,9 @@ class EncodingRead:
 
 
 def denominator_validity(denominators: Mapping[str, float], sigma_r: float) -> dict[str, Any]:
-    """A template is defined iff |denominator| ≥ 0.25 × max_T |denominator| and ≥ 0.25 σ_r."""
+    """A template is defined iff its (signed) denominator is at least 0.25 × max_T |denominator| and at least 0.25 σ_r (a negative denominator is undefined)."""
     largest = max(abs(value) for value in denominators.values())
-    defined = {template: abs(value) >= DENOMINATOR_RELATIVE_FLOOR * largest and abs(value) >= DENOMINATOR_RELATIVE_FLOOR * sigma_r for template, value in denominators.items()}
+    defined = {template: value >= DENOMINATOR_RELATIVE_FLOOR * largest and value >= DENOMINATOR_RELATIVE_FLOOR * sigma_r for template, value in denominators.items()}
     return {"denominators": dict(denominators), "sigma_r": sigma_r, "largest": largest, "defined": defined, "n_defined": sum(defined.values())}
 
 
@@ -257,6 +255,8 @@ def validate_confirmation(payload: Mapping[str, Any], manifest: ScreeningManifes
     tokens = []
     for entry in payload["tokens"]:
         pm._require_exact_keys(entry, {"word", "token_id", "category", "licensed_frames"}, "token")
+        if entry["category"] not in CANDIDATES:
+            raise ValueError(f"fresh token {entry['word']} has an unknown class {entry['category']}")
         if entry["token_id"] in exposed_ids or entry["word"] not in CANDIDATES[entry["category"]] or list(entry["licensed_frames"]) != licensed_frames(entry["word"], frames):
             raise ValueError(f"fresh token {entry['word']} violates the frozen candidate lists or the licensing policy")
         tokens.append(dict(entry))
@@ -406,6 +406,27 @@ def assert_confirmation_untouched(state: Mapping[str, Any], confirmation: Confir
 
 
 # ---------------------------------------------------------------------------
+# The inherited identity checks (Experiment 010's rules, enforced here in both phases).
+
+
+def enforce_identities(record: ra.Attribution, plural: ra.Attribution, where: str) -> dict[str, float]:
+    scale = max(abs(plural.rho_total), 1e-12)
+    errors = {"rho_identity": record.identity_error / scale, "p1_cross_check": record.p1_cross_check / scale, "neuron_sum": record.neuron_sum_error}
+    if errors["rho_identity"] > ra.IDENTITY_TOLERANCE:
+        raise pm.IncidentError(f"{where}: ρ(Δr_c) ≠ ρ(ΔE) + Σ_k ρ(Δout_k) (relative error {errors['rho_identity']:.2e})")
+    if errors["p1_cross_check"] > ra.P1_CROSS_CHECK_TOLERANCE:
+        raise pm.IncidentError(f"{where}: ρ(Δr_c) does not equal the P1 prediction (relative error {errors['p1_cross_check']:.2e})")
+    if errors["neuron_sum"] > ra.NEURON_SUM_TOLERANCE:
+        raise pm.IncidentError(f"{where}: the neuron terms do not sum to ρ(ΔE) (error {errors['neuron_sum']:.2e})")
+    return errors
+
+
+def _max_errors(accumulator: dict[str, float], errors: Mapping[str, float]) -> None:
+    for key, value in errors.items():
+        accumulator[key] = max(accumulator.get(key, 0.0), value)
+
+
+# ---------------------------------------------------------------------------
 # Exploration (exposed pool: replication, axes, g_E for the 63, tolerances).
 
 
@@ -438,20 +459,27 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
     q_by_pair: dict[str, float | None] = {}
     p1_residuals: list[float] = []
     per_token: dict[str, dict[str, Any]] = {}
+    identities: dict[str, float] = {}
     for name, token_id in pool.tokens:
-        q_frames, g_frames = {}, {}
+        q_frames, g_frames, layers = {}, {}, []
         for frame in pool.frames:
             record = records[(name, frame.frame_id)]
             plural = records[(pool.plural_cue[frame.template_id], frame.frame_id)]
+            if not record.own_reference:
+                _max_errors(identities, enforce_identities(record, plural, f"{frame.frame_id}/{name}"))
             analysis = ra.fractions(record, plural, axis_T, plural.g_E_inner)
             q_by_pair[f"{name}|{frame.frame_id}"] = None if analysis is None else analysis["q_T"]
-            if analysis is not None:
+            # F(w): the token's informative frames whose template has a defined denominator — the same set for ḡ_E, q̄_T, and the P1 residuals.
+            if analysis is not None and validity["defined"][frame.template_id]:
                 q_frames[frame.frame_id] = analysis["q_T"]
-                g_frames[frame.frame_id] = read.reads(weights, token_id, frame.template_id)["g_E"] if validity["defined"][frame.template_id] else None
+                g_frames[frame.frame_id] = read.reads(weights, token_id, frame.template_id)["g_E"]
                 p1_residuals.append(analysis["f_total"] - analysis["q_T"])
-        g_mean, q_mean = token_mean({k: v for k, v in g_frames.items() if v is not None}), token_mean(q_frames)
-        per_token[name] = {"token": name, "token_id": token_id, "category": pool.token_category[name], "source": pool.token_source[name], "n_informative": len(q_frames),
-                           "g_E_mean": g_mean, "q_T_mean": q_mean, "reads": {template: read.reads(weights, token_id, template) for template in pm.TEMPLATE_ORDER if validity["defined"][template]}}
+                layers.append(analysis["f_layers"])
+        g_mean, q_mean = token_mean(g_frames), token_mean(q_frames)
+        per_token[name] = {"token": name, "token_id": token_id, "category": pool.token_category[name], "source": pool.token_source[name], "n_frames": len(q_frames),
+                           "g_E_mean": g_mean, "q_T_mean": q_mean, "f_layers_mean": pm._mean(layers) if layers else None,
+                           "reads": {template: read.reads(weights, token_id, template) for template in pm.TEMPLATE_ORDER if validity["defined"][template]}}
+    exploration["identities"] = identities
     exploration["replication"] = {"experiment_010": check_fraction_replication(q_by_pair, inherited_010["fractions"])}
     say(f"replication against Experiment 010: max deviation {exploration['replication']['experiment_010']['max_abs_deviation']:.2e}")
     residuals = [row["g_E_mean"] - row["q_T_mean"] for row in per_token.values() if row["g_E_mean"] is not None and row["q_T_mean"] is not None]
@@ -460,6 +488,9 @@ def run_exploration(model: Any, pool: cs.Pool008, *, state: dict[str, Any], resu
     pairs = [(row["g_E_mean"], row["q_T_mean"]) for row in per_token.values() if row["g_E_mean"] is not None and row["q_T_mean"] is not None]
     exploration["tokens"] = per_token
     exploration["tolerances"] = {"tau_g": tau_g, "tau_M": tau_M, "n_tokens": len(residuals), "n_pairs": len(p1_residuals)}
+    layer_values = [row["f_layers_mean"] for row in per_token.values() if row["f_layers_mean"] is not None]
+    exploration["exposed_net_layer_range"] = {"min": min(layer_values), "max": max(layer_values)} if layer_values else None
+    exploration["sigma_T"] = axis_T.sigma
     exploration["exposed_check"] = {"g_E_vs_q_T": {"spearman": pm.spearman([g for g, _ in pairs], [q for _, q in pairs]), "mae": pm._mean([abs(g - q) for g, q in pairs]), "n": len(pairs)},
                                     "p1_vs_q_T": {"mae": pm._mean([abs(r) for r in p1_residuals]), "n": len(p1_residuals)}}
     exploration["summary"] = {"defined_templates": [t for t, ok in validity["defined"].items() if ok], "tau_g": tau_g, "tau_M": tau_M, "exposed_spearman": exploration["exposed_check"]["g_E_vs_q_T"]["spearman"],
@@ -516,7 +547,8 @@ def build_candidate_lock(*, state: Mapping[str, Any], digests: Mapping[str, str]
     lock = {"schema_version": 1, "experiment": "011", "created_at": pm.utc_now(), "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
             "manifest_sha256": digests["manifest"], "extension_sha256": digests["extension"], "confirmation_sha256": digests["confirmation_006"], "confirmation_009_sha256": digests["confirmation_009"], "confirmation_011_sha256": confirmation.content_sha256,
             "confirmation_prompt_keys": sorted(prompt.key for prompt in confirmation.all_prompts), "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision}, "seeds": {"runtime": RUNTIME_SEED, "control": CONTROL_SEED},
-            "head": ht.HEAD_KEY, "axes_vectors": exploration["axes_vectors"], "read_weight": exploration["read_weight"], "denominators": exploration["denominators"], "defined_templates": exploration["summary"]["defined_templates"],
+            "head": ht.HEAD_KEY, "axes_vectors": exploration["axes_vectors"], "sigma_T": exploration["sigma_T"], "read_weight": exploration["read_weight"], "denominators": exploration["denominators"], "defined_templates": exploration["summary"]["defined_templates"],
+            "exposed_net_layer_range": exploration.get("exposed_net_layer_range"),
             "tolerances": exploration["tolerances"], "exposed_check": exploration["exposed_check"],
             "floors": {"y1_spearman": Y1_SPEARMAN, "y2_spearman": Y2_SPEARMAN, "min_valid_frames": MIN_VALID_FRAMES, "min_valid_frames_per_token": MIN_VALID_FRAMES_PER_TOKEN, "min_scored_tokens": MIN_SCORED_TOKENS,
                        "frame_cue_effect_rate": FRAME_CUE_EFFECT_RATE, "head_stage_floor": cs.STAGE_UNINFORMATIVE_FLOOR},
@@ -554,6 +586,8 @@ def assert_lock_predictions_reproduced(lock: Mapping[str, Any], recomputed: Mapp
                 worst = max(worst, abs(value - fresh["by_template"][template][key]))
         for key, value in entry["means"].items():
             worst = max(worst, abs(value - fresh["means"][key]))
+        for template, value in (entry.get("baseline_009") or {}).items():
+            worst = max(worst, abs(value - fresh["baseline_009"][template]))
     if worst > LOCK_PREDICTION_TOLERANCE:
         raise PhaseError(f"the weights and locked axes do not reproduce the preregistered predictions (max difference {worst:.3e}); nothing was executed")
     return worst
@@ -573,12 +607,19 @@ def run_confirmation(model: Any, pool: cs.Pool008, confirmation: Confirmation011
     axes = cs.stage_axes(cache, weights, pool)
     if pm.cosine(axes["T"].direction, torch.tensor(lock["axes_vectors"]["T"], dtype=torch.float64)) < 1.0 - 1e-6 or pm.cosine(axes["R0"].direction, torch.tensor(lock["axes_vectors"]["R0"], dtype=torch.float64)) < 1.0 - 1e-6:
         raise pm.IncidentError("the stage axes differ from the locked directions")
+    if abs(axes["T"].sigma - lock["sigma_T"]) > 1e-9:
+        raise pm.IncidentError("the head-stage scale σ_T differs from the locked value")
     e_axis, axis_T = axes["R0"], axes["T"]
     frames_out: dict[str, Any] = {}
     per_token_frames: dict[str, dict[str, dict[str, Any]]] = {token["word"]: {} for token in confirmation.tokens}
+    identities: dict[str, float] = {}
     say("fresh frames: reference, plural cue (validity and normalization), cue pairs")
     for frame in confirmation.frames:
         template = frame.template_id
+        if template not in lock["defined_templates"]:
+            frames_out[frame.frame_id] = {"template_id": template, "valid": False, "template_defined": False, "note": "template excluded before the lock; nothing run"}
+            say(f"  {frame.frame_id}: template {template} undefined; skipped")
+            continue
         reference = confirmation.reference_prompt(frame)
         ref, components = ra.capture_reference(model, head, reference, nouns)
         functional = ra.read_functional(head, ref, axis_T)
@@ -587,26 +628,35 @@ def run_confirmation(model: Any, pool: cs.Pool008, confirmation: Confirmation011
         positive = sum(1 for noun in nouns if c_a[noun.lexical_key] - c_b[noun.lexical_key] > 0)
         required = pm.exact_count_floor(FRAME_CUE_EFFECT_RATE, len(nouns))
         plural = ra.measure_token_010(model, weights, head, ref, components, functional, pool.plural_cue[template], pl.cue_token_id, e_axis, axis_T, nouns)
+        _max_errors(identities, enforce_identities(plural, plural, f"{frame.frame_id}/{pool.plural_cue[template]}"))
         head_informative = abs(plural.head_change) >= cs.STAGE_UNINFORMATIVE_FLOOR * axis_T.sigma
-        defined = template in lock["defined_templates"]
-        valid = head_informative and positive >= required and defined
+        valid = head_informative and positive >= required
         frames_out[frame.frame_id] = {"template_id": template, "valid": valid, "head_informative": head_informative, "plural_head_change": plural.head_change, "cue_effect_positive": positive, "cue_effect_required": required,
-                                      "template_defined": defined, "reconstruction_error": ref.reconstruction_error, "attention_ref": functional.attention_ref, "sigma_ref": functional.sigma_ref}
+                                      "template_defined": True, "reconstruction_error": ref.reconstruction_error, "attention_ref": functional.attention_ref, "sigma_ref": functional.sigma_ref}
         if not valid:
-            say(f"  {frame.frame_id}: INVALID (head informative {head_informative}, cue effect {positive}/{required}, template defined {defined})")
+            say(f"  {frame.frame_id}: INVALID (head informative {head_informative}, cue effect {positive}/{required})")
             continue
         for token in confirmation.tokens:
             if frame.frame_id not in token["licensed_frames"]:
                 continue
             record = ra.measure_token_010(model, weights, head, ref, components, functional, token["word"], token["token_id"], e_axis, axis_T, nouns)
+            _max_errors(identities, enforce_identities(record, plural, f"{frame.frame_id}/{token['word']}"))
             analysis = ra.fractions(record, plural, axis_T, plural.g_E_inner)
-            assert analysis is not None  # the frame is valid: the plural denominator is informative
+            if analysis is None:
+                raise pm.IncidentError(f"{frame.frame_id}/{token['word']}: no fractions although the frame is valid")
             c_word = cache.c(pm.Prompt(frame, token["token_id"], token["word"]))
             analysis["dc_beh"] = pm._mean([c_word[noun.lexical_key] - ref.c_by_noun[noun.lexical_key] for noun in nouns])
             analysis["dc"] = pm._mean(list(record.shifts.values()))
-            analysis["p1_fraction"] = analysis["f_total"]  # ρ_f(Δr_c) equals the P1 projection (checked in measure_token_010)
+            analysis["p1_fraction"] = analysis["f_total"]  # ρ_f(Δr_c) equals the P1 projection (enforced above)
             per_token_frames[token["word"]][frame.frame_id] = analysis
         say(f"  {frame.frame_id}: valid; {sum(1 for token in confirmation.tokens if frame.frame_id in token['licensed_frames'])} tokens")
+    results = score_confirmation(frames_out, per_token_frames, confirmation, lock)
+    results["identities"] = identities
+    return results
+
+
+def score_confirmation(frames_out: Mapping[str, Any], per_token_frames: Mapping[str, Mapping[str, Mapping[str, Any]]], confirmation: Confirmation011, lock: Mapping[str, Any]) -> dict[str, Any]:
+    """Pure scoring: validity counts, token means over identical frame sets, Y1, Y2, descriptive items, outcome."""
     valid_frames = [frame_id for frame_id, entry in frames_out.items() if entry["valid"]]
     # Scoring: a token is scored iff it has at least MIN_VALID_FRAMES_PER_TOKEN valid licensed frames; F(w) = those frames for both means.
     tokens_out = {}
@@ -647,6 +697,10 @@ def run_confirmation(model: Any, pool: cs.Pool008, confirmation: Confirmation011
         results["descriptive"] = {"low_predicted_tokens": low, "f_perp_negative_frames": {w: sum(1 for a in per_token_frames[w].values() if a["f_perp"] < 0) for w in low},
                                   "net_layer_change_mean": pm._mean([tokens_out[w]["f_layers_mean"] for w in scored_tokens]), "gross_layer_change_mean": pm._mean([tokens_out[w]["G_mean"] for w in scored_tokens]),
                                   "exposed_gross_baseline_note": "Experiment 010: median gross layer change 0.44 over the 63 exposed tokens; no relay claim is made without this baseline"}
+        exposed_range = lock.get("exposed_net_layer_range")
+        if exposed_range:
+            inside = sum(1 for w in scored_tokens if exposed_range["min"] <= tokens_out[w]["f_layers_mean"] <= exposed_range["max"])
+            results["descriptive"]["net_layer_change_within_exposed_range"] = {"count": inside, "of": len(scored_tokens), "range": exposed_range}
     results["outcome"] = outcome(results)
     return results
 

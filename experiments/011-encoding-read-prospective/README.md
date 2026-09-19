@@ -47,7 +47,12 @@ uv run python experiments/011-encoding-read-prospective/run.py report
 - `report` renders `outputs/experiment-011/report.md`.
 
 Boundaries: no candidate is ever excluded on the basis of its own measured value; a token needs three valid licensed
-frames to be scored; at least four valid frames and sixteen scored tokens are required; incidents are recorded with
-their commit; the lock phase's only access to the model is its parameters.
+frames to be scored; at least four valid frames and sixteen scored tokens are required; Experiment 010's identity
+checks (ρ identity, P1 cross-check, neuron sum) are enforced in both phases and any failure is an incident recorded
+with its commit; the lock phase's only access to the model is its parameters; `σ_T` and the axes are locked and
+re-checked at `confirm`. Implementation note on the design's `σ_r` floor: because every exposed frame's singular cue is
+the template's reference cue and `r` is linear, `σ_r` as defined equals half the frame-weighted mean of the three
+template denominators, so the `0.25 σ_r` floor cannot bind below the `0.25 × max` floor; the rule is applied as
+written and the vacuity is noted rather than repaired.
 
 ## Status — 2026-09-19: confirmation set frozen; Tier A not yet run

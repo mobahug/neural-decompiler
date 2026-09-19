@@ -136,3 +136,77 @@ def test_committed_010_extract_matches_the_frozen_inputs(inputs):
     pool = ra.build_pool_010(manifest, extension, confirmation_006, confirmation_009)
     assert set(extract["fractions"]) == {f"{name}|{frame.frame_id}" for name, _ in pool.tokens for frame in pool.frames}
     assert sum(1 for value in extract["fractions"].values() if value is None) == 24  # the two reference cues' own-reference frames (16 + 8)
+
+
+def _frame(template, valid=True):
+    return {"template_id": template, "valid": valid}
+
+
+def _analysis(q, f_layers=0.0, G=0.3, f_E=0.5, f_perp=-0.1, p1=None):
+    return {"q_T": q, "f_total": p1 if p1 is not None else q, "p1_fraction": p1 if p1 is not None else q, "f_E": f_E, "f_perp": f_perp, "f_layers": f_layers, "G": G, "dc": -1.0, "dc_beh": -1.0}
+
+
+def _lock(tokens, tau_g=0.2, tau_M=0.15, exposed_range=None):
+    predictions = {}
+    for word, g in tokens.items():
+        predictions[word] = {"by_template": {t: {"g_E": g, "g_par": g, "g_perp": 0.0} for t in pm.TEMPLATE_ORDER}, "means": {"g_E": g, "g_par": g, "g_perp": 0.0},
+                             "baseline_009": {t: g for t in pm.TEMPLATE_ORDER}, "licensed_frames": []}
+    return {"predictions": {"tokens": predictions}, "tolerances": {"tau_g": tau_g, "tau_M": tau_M}, "defined_templates": list(pm.TEMPLATE_ORDER), "exposed_net_layer_range": exposed_range}
+
+
+class _Confirmation:
+    def __init__(self, frames, tokens):
+        self.frames = [pm.Frame(t, fid, (1, 2), () if t in pm.CUE_FINAL_TEMPLATES else (7,), {"sg": 5, "pl": 6}, "x {cue}" + ("" if t in pm.CUE_FINAL_TEMPLATES else " y")) for fid, t in frames]
+        self.tokens = [{"word": w, "category": "x", "licensed_frames": [fid for fid, _ in frames]} for w in tokens]
+
+
+def test_scoring_rules_on_synthetic_tables():
+    frames = [("c1", "cardinal"), ("c2", "cardinal"), ("q1", "quantifier"), ("q2", "quantifier"), ("a1", "coordinated-adjective"), ("a2", "coordinated-adjective")]
+    words = [f"w{i}" for i in range(18)]
+    g_values = {w: 0.05 * i for i, w in enumerate(words)}
+    confirmation = _Confirmation(frames, words)
+    frames_out = {fid: _frame(t) for fid, t in frames}
+    # Perfect agreement: both pass.
+    per_token = {w: {fid: _analysis(g_values[w]) for fid, _ in frames} for w in words}
+    results = er.score_confirmation(frames_out, per_token, confirmation, _lock(g_values, exposed_range={"min": -0.1, "max": 0.1}))
+    assert results["precondition"]["passed"] and results["Y1"]["passed"] and results["Y2"]["passed"] and results["outcome"]["label"] == "ENCODING_READ_PREDICTS_TRANSPORT | HEAD_P1_REPLICATED"
+    assert results["descriptive"]["net_layer_change_within_exposed_range"]["count"] == 18
+    # Y1 fails on Spearman only (a small rank scramble within τ_g) and on MAE only (shifted by more than τ_g).
+    scrambled = {w: {fid: _analysis(g_values[words[(i + 9) % 18]]) for fid, _ in frames} for i, w in enumerate(words)}
+    verdict = er.score_confirmation(frames_out, scrambled, confirmation, _lock(g_values, tau_g=2.0))
+    assert verdict["Y1"]["failing"] == ["spearman"]
+    shifted = {w: {fid: _analysis(g_values[w] + 0.5) for fid, _ in frames} for w in words}
+    assert er.score_confirmation(frames_out, shifted, confirmation, _lock(g_values))["Y1"]["failing"] == ["mae"]
+    # Y2 fails when the P1 fraction does not track q_T.
+    bad_p1 = {w: {fid: _analysis(g_values[w], p1=1.0 - g_values[w]) for fid, _ in frames} for w in words}
+    assert not er.score_confirmation(frames_out, bad_p1, confirmation, _lock(g_values))["Y2"]["passed"]
+    # Precondition: three valid frames → fail; fifteen scored tokens → fail; a token with two valid licensed frames is not scored.
+    three = {fid: _frame(t, valid=fid in ("c1", "q1", "a1")) for fid, t in frames}
+    partial = {w: {fid: _analysis(g_values[w]) for fid, _ in frames if fid in ("c1", "q1", "a1")} for w in words}
+    assert er.score_confirmation(three, partial, confirmation, _lock(g_values))["outcome"]["label"] == "PRECONDITION_FAILED"
+    fifteen = {w: {fid: _analysis(g_values[w]) for fid, _ in frames} for w in words[:15]} | {w: {} for w in words[15:]}
+    assert er.score_confirmation(frames_out, fifteen, confirmation, _lock(g_values))["precondition"]["scored_tokens"] == 15
+    two_frames = {w: {fid: _analysis(g_values[w]) for fid, _ in frames} for w in words[:17]} | {words[17]: {fid: _analysis(0.5) for fid, _ in frames[:2]}}
+    scored = er.score_confirmation(frames_out, two_frames, confirmation, _lock(g_values))
+    assert not scored["tokens"][words[17]]["scored"] and scored["precondition"]["scored_tokens"] == 17 and scored["precondition"]["passed"]
+    # ḡ_E and q̄_T use the same frame set: a token valid only in cardinal frames + one quantifier frame gets the frame-weighted g mean.
+    lock = _lock(g_values)
+    lock["predictions"]["tokens"][words[0]]["by_template"]["cardinal"]["g_E"] = 0.9
+    subset = {w: {fid: _analysis(g_values[w]) for fid, _ in frames} for w in words}
+    subset[words[0]] = {"c1": _analysis(0.1), "c2": _analysis(0.1), "q1": _analysis(0.1)}
+    row = er.score_confirmation(frames_out, subset, confirmation, lock)["tokens"][words[0]]
+    assert row["frames"] == ["c1", "c2", "q1"] and row["g_E_mean"] == pytest.approx((0.9 + 0.9 + 0.0) / 3)
+
+
+def test_lock_reproduction_refusal_and_enforced_identities():
+    lock = {"predictions": {"tokens": {"w": {"by_template": {"cardinal": {"g_E": 0.5, "g_par": 0.4, "g_perp": 0.1}}, "means": {"g_E": 0.5}, "baseline_009": {"cardinal": 0.3}}}}}
+    assert er.assert_lock_predictions_reproduced(lock, lock["predictions"]) == 0.0
+    perturbed = {"tokens": {"w": {"by_template": {"cardinal": {"g_E": 0.5, "g_par": 0.4, "g_perp": 0.1}}, "means": {"g_E": 0.5}, "baseline_009": {"cardinal": 0.3 + 1e-6}}}}
+    with pytest.raises(er.PhaseError, match="nothing was executed"):
+        er.assert_lock_predictions_reproduced(lock, perturbed)
+    plural = ra.Attribution("pl", 1, "f", "cardinal", 1.0, 1.0, 0.0, {}, 2.0, 0.0, 0.0, False, 2.0, {}, {}, 0.0, 4.0, torch.zeros(2, dtype=torch.float64))
+    good = ra.Attribution("w", 2, "f", "cardinal", 0.5, 0.5, 0.0, {}, 0.4, 1e-9, 1e-12, False, 0.3, {}, {}, 1e-9, 1.0, torch.zeros(2, dtype=torch.float64))
+    assert set(er.enforce_identities(good, plural, "x")) == {"rho_identity", "p1_cross_check", "neuron_sum"}
+    bad = ra.Attribution("w", 2, "f", "cardinal", 0.5, 0.5, 0.0, {}, 0.4, 1e-2, 1e-12, False, 0.3, {}, {}, 1e-9, 1.0, torch.zeros(2, dtype=torch.float64))
+    with pytest.raises(pm.IncidentError, match="ρ"):
+        er.enforce_identities(bad, plural, "x")
