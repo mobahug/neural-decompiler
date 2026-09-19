@@ -67,7 +67,7 @@ class TinyPlural:
         generator = torch.Generator().manual_seed(seed)
         self.cfg = SimpleNamespace(n_layers=n_layers, n_heads=n_heads, d_model=d_model, d_mlp=d_mlp, d_vocab=d_vocab,
                                    eps=1e-5, act_fn="gelu", normalization_type="LN", use_attn_result=False,
-                                   positional_embedding_type="rotary", parallel_attn_mlp=True, device="cpu")
+                                   positional_embedding_type="rotary", rotary_dim=0, parallel_attn_mlp=True, device="cpu")  # rotary_dim 0: the fake applies no rotation
         self.embed = SimpleNamespace(W_E=torch.randn(d_vocab, d_model, generator=generator))
         self.blocks = [_Block(d_model, n_heads, d_mlp, generator) for _ in range(n_layers)]
         self.ln_final = _LN(d_model, generator)
