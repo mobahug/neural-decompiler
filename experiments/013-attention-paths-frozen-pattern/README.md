@@ -65,7 +65,71 @@ is an incident recorded with its commit; the lock phase's only access to the mod
 prompt runs before its frame's stage-1 predictions are digested; the compensation cases are listed exhaustively by the
 frozen rule and never judged.
 
-## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+## Status — 2026-09-19: complete; outcome `RESIDUAL_PREDICTED_TOKENS | RESIDUAL_PREDICTED_FRAMES_CONDITIONAL | ATTRIBUTION_PREDICTED`
+
+The lock was installed byte-identical to the Tier A candidates and committed by hand (`c01126f`; lock content sha256
+`ae6ec5937f0b11c82cbc26ba0d9a04df2fb644b85acf5625e3682e45da578519`, predictions sha256
+`d7928546bc2e10200672090f3d6d570afedf83eed938a5776dccc7a0eadecd55`), the read-only post-lock review passed
+(hashes, scientific-path immutability since `cc14911`, `validate_lock`, frozen tolerances and floors, complete
+pointwise predictions, runtime equal to the explore record, no overlap with executed prompts), the reviewer signed
+off, and the single `confirm` ran at `c01126f` on a clean tree (results state sha256
+`648aae5d74537de1291d0d8ed7cdc285101602a11d4178e64289c81c36708efd`). Every locked prediction was reproduced from the
+weights, the Experiment 011/012 locks and the locked reference states before any fresh prompt (max difference 0.0).
+**Stage 1** ran only the six fresh frames' reference prompts and cue pairs, found all six valid (plural-cue head change
+1.24–3.12, cue effect 79/80), computed the 144 frame-conditional predictions and digested them
+(`ef30588cace646c886ae10fad8b610e20174ff4465867139350b38d6920102b5`); **stage 2** started only after re-reading that
+digest from disk and ran the 24 fresh cues in the 36 exposed frames (864 pairs) and in the six fresh frames (144
+pairs). The final report is copied verbatim to [`evidence/final-report-2026-09-19.md`](evidence/final-report-2026-09-19.md).
+Ledger after confirm: 1134 prompt keys, 80 noun keys. Experiment 013 is closed; nothing is amended or rerun.
+
+- **Identities:** the per-head OV split held in all 1008 fresh pairs (max relative error 8.4e-7); Experiment 012's
+  identities held (ρ identity 1.0e-7, P1 cross-check 4e-16, neuron sum 2e-8); every re-captured exposed reference state
+  matched its locked copy and every fresh frame's state matched its stage-1 digest.
+- **Y1 — residual prediction, strict boundary (24 new cues × 36 exposed frames, token means): PASS on all three
+  floors.** The committed `r̂` predicts the measured residual of the frozen 012 model with Spearman **0.877** (floor
+  0.80), MAE **0.021** (τ_r 0.070), **R² 0.668** (floor 0.50), bias 0.000; the residual's spread on this set is small
+  (sd 0.046). Pairs: 0.875 / R² 0.79 over 864. The committed calls: `surplus` −0.14 → **−0.15** (the largest residual
+  measured, as predicted); `thick` +0.06 → +0.07 and `quiet` +0.06 → +0.05 (the other end); the large numerals were
+  predicted to be over-shot by the 012 model and were, but by less than committed (`million` −0.12 → −0.06, `billion`
+  −0.09 → −0.04, `trillion` −0.08 → −0.06, `thousand` −0.07 → −0.03); `plenty` −0.07 → −0.06. The committed template
+  pattern held exactly: predicted per-pair means cardinal +0.04 / quantifier −0.05 / coordinated-adjective −0.04,
+  measured +0.04 / −0.05 / −0.04. Signs agreed for 19 of 24 token means (the misses are near zero: `last` −0.01 →
+  −0.07, `nobody` +0.01 → −0.02, `everyone`, `first`, `same` within ±0.03). Beside it, never judged: the 012 model
+  alone on these cues 0.957 / R² 0.883 against `c_L`, the full model 0.992 / R² 0.966; the base-point term alone
+  explains none of the residual here (R² −0.06) — the frozen-pattern attention term carries the prediction.
+- **Y2 — residual prediction, frame-conditional (24 new cues × 6 previously untested frames, predictions digested at
+  stage 1 from each frame's reference state): PASS.** Spearman **0.919**, MAE **0.022**, **R² 0.747**, bias +0.009
+  (spread sd 0.054); pairs 0.930 / R² 0.89 over 144. `thick` +0.13 → +0.12, `quiet` +0.11 → +0.09, `vast` +0.10 →
+  +0.10, `wide` +0.09 → +0.07, `surplus` −0.08 → −0.10; the numerals again over-shot in size (−0.08..−0.04 → −0.03..
+  −0.02). Template means predicted cardinal +0.14 / quantifier −0.05 / coordinated −0.01, measured +0.14 / −0.05 /
+  −0.03. The 012 model alone 0.949 / R² 0.838; the full model 0.983 / R² 0.964; base-point alone R² 0.33.
+- **Y3 — attribution (1008 pairs of both sets): PASS.** The predicted direct head part against the measured one:
+  Spearman **0.838** (floor 0.70), MAE **0.030** (τ_A 0.106), R² 0.70, spread sd 0.069 (guard 0.017, not degenerate);
+  the predicted MLP part 0.986 (floor 0.90), R² 0.97; per head 0.66–0.95; the attention-input term 0.827 / R² 0.68.
+- **Compensation cases (descriptive, all listed in the report):** 236 fresh pairs satisfy the frozen rule; the measured
+  `c_M` and `c_H` carry the predicted signs in **95%** (225). The eleven misses are all quantifier-frame pairs of
+  `thousand`, `million`, `billion`, `trillion`, `vast` and `broken` whose measured `c_H` sits at 0.00–0.02 against a
+  predicted −0.05 to −0.09 — the heads' write shrank to zero rather than flipping.
+- **Ladder (descriptive):** per pair, Y1 base-point −0.037, frozen-attention +0.020, remainder −0.000 (|.| 0.035:
+  direct pattern change 0.031, through block 2's MLP 0.029, layer-2 heads' arrival 0.005); Y2 base-point +0.011,
+  frozen-attention +0.018, remainder −0.009 (|.| 0.029). The pattern-change remainder is the one term left
+  unaccounted, and it is small.
+
+What this settles and what it does not. Stated at its safe strength: a mechanistically derived frozen-pattern attention
+computation — the frame's own base state and the sixteen heads' value paths with their reference patterns, propagated
+through block 2's MLP and onto the read direction — prospectively explains a large part of the residual the token-local
+012 model left, on 24 never-seen cues both in the 36 exposed frames (strictly prospective) and in six previously
+untested frames (conditional on their reference states), and it predicts the split between the MLP path and the heads'
+direct path at the pair level, including 95% of the preidentified compensation cases. The account of the forward pass
+from the layer-0 encoding to the head's input now reads: 012 prediction + base-point mismatch + frozen-pattern
+attention transport + its nonlinear MLP₂ consequence + direct head writes ≈ the measured layers-1–2 correction, with
+the remaining error (|.| ≈ 0.03 per pair) the attention-pattern-change term. Limits: the residual is a small quantity
+and R² was 0.67 / 0.75, not higher — the numerals' over-shoot was predicted in direction but over-estimated in size, and
+near-zero residuals had unreliable signs; the reference patterns are taken from the reference run, not explained; five
+lexical classes, three templates, this checkpoint. C002 is unchanged (out of scope here).
+
+### Tier A (2026-09-19, for the record)
+
 
 `explore` ran once on protocol/code commit `cc14911` (run `db79dab2e9f63182`, results state sha256
 `3372b084d996c727c0bd11323e58510334038dfee24e2553c16aba1612fc48bc`; A0 passed). The report is copied to
@@ -104,6 +168,3 @@ ran no prompt at all.
   rows are compensation cases by the frozen rule (predicted `ĉ_M` and `ĉ_H` of opposite sign, each above 0.05), spread
   over 22 tokens; every one will be listed with its measured signs. The Y2 table (fresh frames) does not exist yet: it
   is computed at `confirm` stage 1 from each fresh frame's reference state and digested before any fresh cue prompt.
-
-Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
-preregistration act; the reviewer's sign-off precedes `confirm`.
