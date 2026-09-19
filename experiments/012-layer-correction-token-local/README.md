@@ -59,3 +59,49 @@ Boundaries: no candidate is ever excluded on the basis of its own measured value
 at least four valid frames and sixteen scored tokens are required; Experiment 010's identity checks, the block-1
 exactness, the block-2 identity at the captured input, and the neuron-sum identities are enforced in both phases and
 any failure is an incident recorded with its commit; the lock phase's only access to the model is its parameters.
+
+## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+
+`explore` ran once on protocol/code commit `ddbbbd3` (run `cec6c3908508f723`, results state sha256
+`069a6306d1325dcd6efd7f2aeac330f26baa2c765021e65d5a4480f1252f381a`; A0 passed). The report is copied to
+[`evidence/exploration-report-2026-09-19.md`](evidence/exploration-report-2026-09-19.md) and the candidate prediction
+table to [`evidence/candidate-predictions-2026-09-19.md`](evidence/candidate-predictions-2026-09-19.md). Ledger: 90
+prompt keys (the 30 exposed frames' cue and reference prompts), 80 noun keys; no fresh prompt ran, and the lock phase
+ran no prompt at all.
+
+- Replication of Experiments 010 (1512 pairs) and 011 (142 pairs), every component: exact. The recomputed stage axes,
+  `σ_T`, read weight, weight-only denominators and `σ_r` equal the Experiment 011 lock's values. Identity checks on every
+  exposed pair: ρ identity 1.1e-7, P1 cross-check 6.6e-16, neuron sum 2e-8 (relative); block-1 exactness, the block-2
+  identity at the captured input, and both neuron-sum vector identities held everywhere (incident otherwise).
+- Denominators: `r(E(pl_T) − E(ref_T))` 1.630 / 1.496 / 1.630 and the modelled plural totals `D̂_T` 1.745 / 2.213 / 1.851
+  (cardinal / quantifier / coordinated-adjective; the plural cue's own modelled correction is 0.07 / 0.48 / 0.14) — all
+  three templates defined.
+- **Leave-one-frame-out calibration (87 tokens):** `ĉ̄` vs `c̄_L` Spearman 0.944, MAE 0.053, R² 0.773, bias +0.035
+  (against `c̄_M` alone: 0.912 / 0.063 / 0.739); **τ_c = 0.207**; 24-token subsamples of R²: 1st percentile 0.45, 5th
+  0.58, median 0.77 (frozen floor 0.50). The all-frames base gives the same figures (0.944 / 0.053 / 0.770); the frame's
+  own base 0.948 / 0.039 / 0.890. `q̂̄` vs `P̄1`: Spearman 0.982, MAE 0.035, R² 0.979; **τ_P = 0.130**. `c̄_L` spread sd
+  0.145 (mean +0.166). Pairs: 0.881 / 0.089; per template cardinal 0.78 / 0.08, quantifier 0.81 / 0.11,
+  coordinated-adjective 0.82 / 0.08; the quantifier template carries the largest correction (mean `c_L` +0.36 against
+  +0.06 and +0.08). Heads' share `mean|c_H| / mean|c_M|` 0.24. Ladder means: base-point (own − leave-one-out) −0.04,
+  attention-input +0.02 (|.| 0.05). The largest token-mean residuals are over-predictions of the small numerals
+  (`three` +0.18, `six` +0.16, `ten` +0.15); all under τ_c.
+- Reported beside (never judged): `g_E` vs `P̄1` 0.903 / 0.091 and vs `q̄_T` 0.928 / 0.065; `q̂` vs `q̄_T` 0.933 / 0.073 —
+  as in the design check, the composite does not improve on `g_E` against `q_T` and is not meant to.
+- Block-2 neuron ledger (descriptive): the mass is not concentrated (`n_80` median 502 of 2048, range 402–566; block 1
+  median 525); one neuron, 1987, carries about three times the mean absolute mass of the next (0.149 against 0.052) in
+  every template, with cosine 0.24 between its effective input direction and `d̂_E`; the top-20 sets overlap across
+  templates with Jaccard 0.54 (cardinal–coordinated), 0.29 and 0.25 (quantifier against each).
+- **Candidate lock** `outputs/experiment-012/candidate-lock.json`, content sha256
+  `830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb`; predictions artifact
+  `candidate-predictions.md`, sha256 `f32ce4da97544f395280cfccb800b90f2c1a1cf23ec524ea2eba3dc7069a811f`. Committed
+  predictions (mean `ĉ` over the six licensed frames): numerals `seventy` 0.56, `fifty` 0.54, `eighty` 0.45, `sixty`
+  0.43, `ninety` 0.38 — the only class whose `∥`/`⊥` interaction is positive; quantity `myriad` 0.59, `manifold` 0.38,
+  `sparse` 0.24, `scarce` 0.10, `least` 0.05; adjectives `wooden` 0.21, `white` 0.14, `black` 0.13, `young` 0.11,
+  `empty` 0.08; possessive/pronoun `hers` 0.23, `ours` 0.18, `theirs` 0.10, **`thy` −0.08**; determiner-like
+  `whichever` 0.19, `half` 0.14, `whatever` 0.05, `what` 0.03, **`which` −0.06**. In every token the model's response to
+  `ΔE_⊥` exceeds its response to `ΔE_∥`, and the quantifier template's predicted correction is the largest (for
+  example `half` 0.03 / 0.01 / 0.38 across the templates). The composite `q̂` places the numerals at 1.00–1.12 and
+  `hers` lowest at 0.34.
+
+Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
+preregistration act; the reviewer's sign-off precedes `confirm`.
