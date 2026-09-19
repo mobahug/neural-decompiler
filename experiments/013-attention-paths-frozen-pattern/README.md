@@ -64,3 +64,46 @@ the per-head OV identity, and the locked-state consistency of re-captured expose
 is an incident recorded with its commit; the lock phase's only access to the model is its parameters; no fresh cue
 prompt runs before its frame's stage-1 predictions are digested; the compensation cases are listed exhaustively by the
 frozen rule and never judged.
+
+## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+
+`explore` ran once on protocol/code commit `cc14911` (run `db79dab2e9f63182`, results state sha256
+`3372b084d996c727c0bd11323e58510334038dfee24e2553c16aba1612fc48bc`; A0 passed). The report is copied to
+[`evidence/exploration-report-2026-09-19.md`](evidence/exploration-report-2026-09-19.md) and the candidate prediction
+table to [`evidence/candidate-predictions-2026-09-19.md`](evidence/candidate-predictions-2026-09-19.md). Ledger: 108
+prompt keys (the 36 exposed frames' cue and reference prompts), 80 noun keys; no fresh prompt ran, and the lock phase
+ran no prompt at all.
+
+- Replication of Experiment 012's 2724 recorded pairs: exact for every field; the frozen 012 model reproduced to 0.0.
+  The recomputed axes, read weight and denominators equal the Experiment 011 lock; the per-head OV identity held in
+  all 2724 pairs (max relative error 8.7e-7); Experiment 012's identities held (ρ identity 1.1e-7, P1 cross-check
+  6.6e-16, neuron sum 2e-8).
+- **Calibration record (the tolerances themselves are frozen constants):** recomputed exposed RMSEs 0.0233 (token-mean
+  residual) and 0.0355 (pair-level `ĉ_H − c_H`) — the design values to four decimals — so `τ_r = 0.070` and
+  `τ_A = 0.106` stand. Over the 111 exposed tokens the frozen-pattern model predicts the residual of the 012 model with
+  Spearman 0.946, MAE 0.018, R² 0.870, bias +0.004 (residual spread sd 0.065; the base-point term alone R² 0.39); the
+  full model reaches Spearman 0.987, R² 0.976 against `c_L` (the 012 model: 0.924, R² 0.78; the 012 model at the
+  frame's own base: 0.949, R² 0.89). Pairs: residual 0.885 / R² 0.80; `ĉ_H` vs `c_H` 0.856 / R² 0.73 (spread sd
+  0.068, far above the 0.017 guard); `ĉ_M` vs `c_M` 0.986 / R² 0.97; the attention-input term 0.848 / R² 0.75; per head
+  0.67–0.95. Ladder means: base-point −0.041, frozen-attention +0.010, remainder −0.002 (|.| 0.036 per pair, 0.018 per
+  token: direct pattern change |.| 0.028, through block 2's MLP |.| 0.029, the layer-2 heads' arrival term |.| 0.005).
+- Compensation cases by the frozen rule: 742 exposed pairs, measured signs as predicted in 97%. `thy`, frame by frame
+  (measured `c_M`, `c_H` against predicted): cardinal (−0.16, −0.07) vs (−0.15, −0.05) and (−0.04, −0.05) vs
+  (−0.07, −0.02); quantifier (+0.34, −0.28) vs (+0.32, −0.20) and (+0.18, −0.12) vs (+0.16, −0.11); coordinated (−0.11,
+  −0.05) vs (−0.16, −0.02) and (−0.10, −0.02) vs (−0.13, −0.01) — the compensation reproduced without fitting.
+- **Candidate lock** `outputs/experiment-013/candidate-lock.json`, content sha256
+  `ae6ec5937f0b11c82cbc26ba0d9a04df2fb644b85acf5625e3682e45da578519`; predictions artifact
+  `candidate-predictions.md`, sha256 `d7928546bc2e10200672090f3d6d570afedf83eed938a5776dccc7a0eadecd55`: 864 rows
+  (24 fresh tokens × 36 exposed frames), each with `ĉ_012`, the base-point term, the frozen-attention term, `r̂`, `ĉ_M`,
+  `ĉ_H`, `ĉ_L` and the sixteen head terms. Committed token-mean residual predictions `r̂` (the 012 model's error the
+  frozen-pattern model expects): `surplus` −0.14, `million` −0.12, `billion` −0.09, `trillion` −0.08, `plenty` −0.07,
+  `thousand` −0.07 — the 012 model is predicted to over-shoot the large numerals and two quantity words; `thick` +0.06,
+  `quiet` +0.06, `whom` +0.05, `next` +0.03, `broken` +0.03 on the other side; the rest within ±0.04. Predicted
+  template means: cardinal +0.04, quantifier −0.05, coordinated-adjective −0.04. The spread of the committed `r̂` over
+  the 24 token means is 0.054, so Y1's explained-variance floor is a demanding test of a small quantity. 198 of the 864
+  rows are compensation cases by the frozen rule (predicted `ĉ_M` and `ĉ_H` of opposite sign, each above 0.05), spread
+  over 22 tokens; every one will be listed with its measured signs. The Y2 table (fresh frames) does not exist yet: it
+  is computed at `confirm` stage 1 from each fresh frame's reference state and digested before any fresh cue prompt.
+
+Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
+preregistration act; the reviewer's sign-off precedes `confirm`.
