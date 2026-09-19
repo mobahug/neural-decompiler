@@ -68,3 +68,53 @@ the basis of its own measured value; a token needs three valid frames in a set t
 identities, the neuron's activation identity against the block-2 ledger, and the locked-state consistency of
 re-captured frames are enforced and any failure is an incident recorded with its commit; no fresh cue prompt runs
 before its frame's stage-1 predictions are digested; the firing set's interpretation comes after the scoring.
+
+## Status — 2026-09-19: Tier A executed once; candidate lock and predictions written, awaiting installation and the reviewer's sign-off
+
+`explore` ran once on protocol/code commit `bcb0bfe` (run `00eef3b8bb95c8b8`, results state sha256
+`fbae608d39f21599f084b9a4180e69960f250bbf4aafae07a4af32b0bfee672c`; A0 passed). The report is copied to
+[`evidence/exploration-report-2026-09-19.md`](evidence/exploration-report-2026-09-19.md) and the candidate prediction
+table to [`evidence/candidate-predictions-2026-09-19.md`](evidence/candidate-predictions-2026-09-19.md). Ledger: 126
+prompt keys (the 42 exposed frames' cue and reference prompts), 80 noun keys; no fresh prompt ran, and the lock phase
+ran no prompt at all.
+
+- Replication of Experiment 013's 3732 recorded pairs (`c_L`, `c_M`, `c_H`, all 18 components): exact. The 36 reference
+  states of the Experiment 013 lock re-captured bitwise; Experiment 012's identities and the neuron's activation
+  identity against the block-2 ledger held in every pair.
+- **The neuron.** `cos(γ₂ ⊙ W_in[:, 1987], d̂_E) = 0.241`; its output reads +0.204 (cardinal, coordinated) / +0.222
+  (quantifier) of the plural cue's signal per unit of activation; `b_in = −0.66`. Operating points: reference
+  preactivation −1.60 to +0.49 over the 42 frames (template means cardinal +0.10, quantifier −0.85, coordinated
+  −0.17); reference activation at most 0.34 — **below the firing threshold 0.5 in every frame**.
+- **Exposed record (135 tokens, 3732 pairs; the floors are frozen constants):** the predictor — the exact LayerNorm and
+  the neuron's input weights at Experiment 013's frozen-pattern predicted state — gives `Δâ` vs `Δa` Spearman **0.985**,
+  R² **0.989**, MAE 0.049 per token (0.976 / 0.963 / 0.094 per pair; `Δp̂re` vs `Δpre` R² 0.968); **balanced firing
+  accuracy 0.989** (sensitivity 0.991, specificity 0.987; 1160 of 3732 pairs fire; majority baseline 0.689); amplitude
+  error among firing pairs 0.22 on a mean `Δa` of 1.66. The axis-only alternative: R² 0.166, balanced accuracy 0.611
+  (sensitivity 0.94, specificity 0.28 — it fires for almost everything). The Jacobian form: R² 0.913 per token,
+  balanced accuracy 0.979 (descriptive). Accounting (mean |Jacobian contribution|): `ΔE` 1.08, `MLP₁` 0.33, the layer-1
+  heads 0.41 (negative in 94% of pairs); the number-axis part 1.35, the off-axis part 1.14. Remainders: pattern change
+  |.| 0.175, LayerNorm linearization |.| 0.229 (in preactivation units, spread 1.3).
+- **Measured firing set (≥ half of frames) = predicted firing set, exactly:** the plural cues `two`, `several`; every
+  cardinal numeral from `three` upward (`three`–`ten`, `eleven`–`nineteen`, `twenty`–`ninety`, `hundred`, `thousand`,
+  `million`, `billion`, `trillion`); `dozen`, `few`, `fewer`, `many`, `multiple`, `numerous`, `countless`, `myriad`,
+  `various`. Not firing: every determiner (including `these`, `those`, `both`, `all`, `some`, `most`, `every`), every
+  possessive and adjective, and `zero`. The neuron's term for firing cues averages +0.35 of the plural signal; its share
+  of the block-2 read change among firing pairs is 1.6 — the rest of block 2's MLP pushes back.
+- **Candidate lock** `outputs/experiment-014/candidate-lock.json`, content sha256
+  `34b97174ebd68617f7a13a7d876f405761a8faaf42c6675ac8fa42de8c805d01`; predictions artifact
+  `candidate-predictions.md`, sha256 `a0b7448a4c42faee538b180794f95abf6fbf5e3049ab8358ba83875ce05b091e`: 1008 rows
+  (24 fresh tokens × 42 exposed frames), each with the operating point, `Δp̂re`, `Δâ`, the predicted firing, the
+  Jacobian form with its source and axis / off-axis parts, the axis-only prediction, and the predicted term. Committed
+  firing predictions: the neuron fires for **`dozens` (+1.49), `hundreds` (+1.19), `thousands` (+1.09)** in every
+  frame; **`infinite` +0.57 (57% of frames), `millions` +0.53 (50%), `billions` +0.44 (33%)** are the committed
+  borderline cases — the plural `millions`/`billions` predicted far weaker than the exposed `million`/`billion`; the
+  other eighteen tokens are predicted not to fire in any frame (`Δâ` −0.09 to −0.12), including `considerable`,
+  `excess`, `lesser`, `minimal`, `second`, `third`, `only`. 184 of the 1008 pairs are predicted to fire against 736 for
+  the axis-only alternative. The committed mechanism is visible in the table: for `rough`, `smooth`, `golden`,
+  `second`, `former` the number-axis part of the arriving change pushes the preactivation up by +1.2 to +1.4 and the
+  off-axis part pulls it down by −1.9 to −2.4; for `dozens` both parts are positive (+1.65, +0.67). The Y2 table (fresh
+  frames) does not exist yet: it is computed at `confirm` stage 1 from each fresh frame's reference state and digested
+  before any fresh cue prompt.
+
+Installing the two artifacts as `preregistration-lock.json` and `predictions.md` and committing them is the
+preregistration act; the reviewer's sign-off precedes `confirm`.
