@@ -2,18 +2,25 @@
 
 **Date:** 2026-09-20
 
-**Status:** Revision 1 — draft for review. No Experiment 016 directory, confirmation set, lock, or model run exists.
-Experiments 005–015 are closed and are not amended by this document; Experiment 015's Y2 failure stands as recorded.
+**Status:** Revision 2 — approved conceptually at revision 1 subject to the changes under "Revision history" (the
+three-channel model named the smallest *tested structured* description, with each channel's dimensionality recorded;
+the post-change scale `σ'` derived algebraically before any fresh cue prompt, with an explicit no-fresh-forward-pass
+invariant; a per-frame anti-collapse guard on Y2; every channel defined literally; the remainder stated as small on the
+exposed set, not as irrelevance), which this revision makes. No Experiment 016 directory, confirmation set, lock, or
+model run exists. Experiments 005–015 are closed and are not amended by this document; Experiment 015's Y2 failure
+stands as recorded.
 
 **Kind:** Prospective, zero-parameter, decomposition-completing. Experiment 015 showed that a token-local cue-change
 Q/K model at template-mean bases predicts the cue-induced attention-pattern change for unseen cues in exposed frames
 but misses its frame-conditional floors at layer 2 (aggregate entry R² 0.42; one new frame −0.27) while the exact
 recomputation from the frame's own state (Level 1) holds to 1e-5. This experiment asks *through which channels* the
 frame's cue-position state enters the reduced prediction, commits a frame-conditioned token-local model whose only
-frame inputs are three exact reference-run quantities — the frame's reference query and key at the cue position as the
-operands of the self-logit, the frame's LayerNorm scale before and after the cue change, and block 1's MLP evaluated at
-the frame's own operating point — and tests it on unseen cues and twelve unseen frames, with a rigid "scale-only"
-alternative committed for rejection and the three channels' ablations predeclared as a descriptive ladder. Nothing is
+frame inputs are three structured classes of reference-run information — the frame's reference query and key vectors
+at the cue position as the operands of the self-logit, the frame's LayerNorm scale (with the post-change scale derived
+algebraically from the predicted change), and block 1's MLP evaluated at the frame's own cue residual — and tests it on
+unseen cues and twelve unseen frames with a per-frame anti-collapse guard, with a rigid "scale-only" alternative
+committed for rejection and the three channels' ablations predeclared as a descriptive ladder. The three channels are
+not three numbers: their dimensionality is recorded below. Nothing is
 fitted; no label is attached to any head, frame, or cue before scoring.
 
 ## Purpose and question
@@ -40,7 +47,8 @@ was scored as in Experiment 015 (pooled entry R² over the eight heads' rows; th
   / 0.94 (exposed). The operating points of the 8, 32, 128
   or 512 most frame-sensitive block-1 neurons: 0.83, 0.83, 0.87, 0.92 (fresh) against 0.97 for all 2048. The frame
   dependence is distributed; no small set of heads, neurons or directions carries it.
-- **What does suffice (three exact channels).** With everything else at the template means, adding to Level 0
+- **What does suffice — the smallest tested structured description (three exact channel types).** With everything
+  else at the template means, adding to Level 0
   (1) the frame's own reference query and key of the cue position as the operands of the self-logit's bilinear form,
   (2) the frame's LayerNorm scale `σ` of the cue residual before and after the change (two scalars per layer per pair)
   in the query/key/value changes, and (3) block 1's MLP change evaluated at the frame's own cue residual, gives layer-2
@@ -50,7 +58,8 @@ was scored as in Experiment 015 (pooled entry R² over the eight heads' rows; th
   0.996 / 0.997 (the 24 015-fresh tokens in the six 015-fresh frames). What this model still discards is the frame
   deviation's *direction* in the change — the term `γ ⊙ (x_f − x̄)_c (1/σ_f' − 1/σ_f)`, the renormalization of the frame's
   context by the cue change — and that term is the whole remainder to the exact chain: 0.012 of entry R² on the exposed
-  frames, 0.033 on the fresh ones.
+  frames, 0.033 on the fresh ones. On the exposed set, then, the frame residual's direction contributes only a small
+  remaining renormalization term; whether that smallness holds on fresh frames is recorded, not assumed.
 - **The channels' weights (ablation from the full model, layer-2 entry R², six 015-fresh frames / 48 exposed frames):**
   without the reference operands 0.650 / 0.754 (−0.32 / −0.23); without the frame's operating point for block 1's MLP
   0.805 / 0.891 (−0.16 / −0.10); without the frame's scale 0.888 / 0.963 (−0.08 / −0.03). Each channel alone over Level
@@ -76,13 +85,29 @@ vector `x`: `μ(x)` the mean over the 512 coordinates, `σ(x) = √(mean((x − 
 incident-guarded checks that count toward no floor.
 
 **Level 0-F — the frame-conditioned token-local model (the hypothesis; weights, the locked axes, read and bases, the
-frame's reference run at positions ≤ p_c; no patched quantity).** Let `x_ℓ = x_ℓ(p_c)` be the frame's cue residual,
-`x̄ = x̄_ℓ^T`, and `Δ̂x_ℓ` the change arriving at the layer (`Δ̂x₁ = ΔE`; `Δ̂x₂` below). Three channels:
+frame's reference run at positions ≤ p_c; no patched quantity).** Let `x_ℓ = x_ℓ(p_c)` be the frame's reference cue
+residual before block `ℓ` (512 numbers per layer, from the reference run), `x̄ = x̄_ℓ^T` the locked template-mean base,
+and `Δ̂x_ℓ` the *predicted* change arriving at the layer (`Δ̂x₁ = ΔE`, weight-only; `Δ̂x₂` below). Three channels,
+defined literally:
 
 ```text
-(1) reference operands   q̃_ref = q̃_h(x_ℓ),  k̃_ref = k̃_h(x_ℓ)          the frame's own cue query and key (unrotated; the rotation cancels on the diagonal)
-(2) frame scale          σ_f = σ(x_ℓ),  σ_f' = σ(x_ℓ + Δ̂x_ℓ)            two scalars per layer per pair
-(3) operating point      Δ̂₁ = MLP₁(ln2₁(x₁ + ΔE)) − MLP₁(ln2₁(x₁))       block 1's MLP change at the frame's own cue residual
+Channel A — reference self-logit operands.  For each layer ℓ ∈ {1, 2} and each of its eight heads h, at the cue position p_c only:
+    q̃_ref,h = LN_ℓ(x_ℓ) W_Q^h + b_Q^h,   k̃_ref,h = LN_ℓ(x_ℓ) W_K^h + b_K^h          (64 numbers each, unrotated: the same-position rotation cancels)
+    Dimensionality: 8 heads × 2 vectors × 64 = 1024 numbers per layer, 2048 per pair; functions of x_ℓ alone (cue-independent).
+    Role: the operands of the diagonal (self) logit's bilinear form; Experiment 015 used q̃_h(x̄), k̃_h(x̄) here.
+
+Channel B — LayerNorm scale.  For each layer ℓ:
+    σ_f  = σ(x_ℓ)               = √( mean_i (x_ℓ,i − μ(x_ℓ))² + ε ),  ε = 1e-5, population variance (exactly plural_mechanism.exact_layer_norm)
+    σ_f' = σ(x_ℓ + Δ̂x_ℓ)        the scale AFTER the change, derived algebraically from the reference residual and the PREDICTED change
+    Dimensionality: 2 scalars per layer, 4 per pair; σ_f cue-independent, σ_f' cue-dependent through Δ̂x_ℓ only.
+    Role: the normalization of the change of the normalized residual; Experiment 015 used σ(x̄), σ(x̄ + Δ̂x).
+
+Channel C — block 1's MLP operating point.  The frame's reference residual x₁ (512 numbers) entering block 1's MLP:
+    pre_j       = ⟨ln2₁(x₁), W_in[:, j]⟩ + b_in[j],   j = 1..2048           the 2048 reference pre-activations (before GELU)
+    Δpre_j      = ⟨ln2₁(x₁ + ΔE) − ln2₁(x₁), W_in[:, j]⟩                    the exact LayerNorm at the frame's own state, before and after ΔE
+    Δ̂₁         = Σ_j [ GELU(pre_j + Δpre_j) − GELU(pre_j) ] W_out[j]         block 1's MLP output change at the frame's operating point
+    Dimensionality: the full 512-vector x₁ (equivalently the 2048 pre-activations plus the two LayerNorm statistics of x₁ and x₁ + ΔE);
+    not a compact object. Experiment 015 used x̄₁ here (Experiment 012's Level-0 term).
 ```
 
 and the model:
@@ -115,11 +140,15 @@ largest for the reference operands, then the operating point, then the scale (ex
 015-fresh frames); the remainder from the full model to Level 1 (the discarded renormalization term) is ≤ 0.05 of
 layer-2 entry R² (exposed 0.012 / 0.033).
 
-**Invariant (formal):** every Level 0-F prediction is a function of the token identity, the locked bases, axes and read,
-the weights, and the frame's *reference* residuals at positions `≤ p_c` — never a residual, row or value of a patched
-run. The three channels are functions of `x_ℓ(p_c)` (reference) and `Δ̂x_ℓ` (predicted). The prediction table is
-computed with every capture and intervention entry point disabled; `confirm` reproduces the locked table before any
-fresh prompt.
+**Invariant (formal): no Level 0-F input may be read from a fresh cue forward pass.** Every frame-conditioned channel
+originates from the frame's *reference* prompt (channel A from `x_ℓ`, channel B's `σ_f` from `x_ℓ`, channel C from
+`x₁`); every cue-conditioned quantity (`ΔE`, `Δ̂₁`, `Δ̂out₁`, `Δ̂x₂`, and channel B's `σ_f' = σ(x_ℓ + Δ̂x_ℓ)`) is derived
+algebraically from the weights, the locked bases and those reference quantities before the fresh cue prompt runs — in
+particular `σ_f'` is the scale of the *predicted* post-change residual, never of a captured patched residual. The
+order at `confirm` is: reference prompt → channels → predicted change → predicted `σ'` → Level 0-F table → digest →
+fresh cue prompt. The prediction table is computed with every capture and intervention entry point disabled; `confirm`
+reproduces the locked table before any fresh prompt; the difference between the predicted `σ_f'` and the scale of the
+captured patched residual is recorded descriptively (the "scale remainder") and never fed back.
 
 **Accounting (descriptive, per pair):** Experiment 015's identities and comparators (the oracle and Level-0-F
 diagonal-proportional rows, the comparator rule at margin 0.10), the ablation ladder, the discarded renormalization
@@ -205,19 +234,24 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   `ĉ̄_ΔA` versus `c̄_ΔA`: **Spearman ≥ 0.90** and **R² ≥ 0.85**; raw entries: **R² ≥ 0.85 at layer 1 and at layer 2**.
   All four → `FRAME_CHANNELS_PREDICTED_TOKENS`; otherwise `FRAME_CHANNELS_NOT_PREDICTED_TOKENS` (naming the floor).
   Exposed-pool values: 0.998 / 0.994 / 0.996 / 0.988.
-- **Y2 — Level 0-F, frame-conditional prospective, aggregate over the valid fresh frames (fresh cues × new frames;
-  numbers digested at stage 1):** the same four floors. Pass → `FRAME_CHANNELS_PREDICTED_FRAMES_CONDITIONAL`; fail →
-  the `_NOT_` label. The twelve frames are reported individually regardless of the outcome; the aggregate is the claim.
-  Exposed values on the six 015-fresh frames: 0.996 / 0.997 / 0.996 / 0.967 (per-frame minimum 0.937).
+- **Y2 — Level 0-F, frame-conditional prospective (fresh cues × new frames; numbers digested at stage 1):** the same
+  four aggregate floors **and a frame-collapse guard: every valid fresh frame's pooled layer-2 entry R² over its scored
+  pairs ≥ 0.80.** All five → `FRAME_CHANNELS_PREDICTED_FRAMES_CONDITIONAL`; otherwise `FRAME_CHANNELS_NOT_PREDICTED_FRAMES_CONDITIONAL`
+  (naming the floor, and the frames below the guard). The guard is what makes 016 answer 015: an aggregate pass with one
+  collapsed frame would reproduce the weakness this experiment exists to resolve. The twelve frames are reported
+  individually regardless of the outcome. Exposed values on the six 015-fresh frames: 0.996 / 0.997 / 0.996 / 0.967,
+  per-frame minimum 0.937 (0.948 over the 48 exposed frames); the guard is set at 0.80 rather than at the aggregate floor
+  to leave room for one difficult frame without letting a collapse through.
 - **Y3 — the scale-only alternative is rejected on the fresh data:** over the pairs of both sets, the scale-only
   model's pooled layer-2 entry R² is **below 0.85** *and* at least **0.15 below** Level 0-F's. Both → `SCALE_ONLY_REJECTED`;
   otherwise `SCALE_ONLY_NOT_REJECTED`; with fewer than two scored token means `SCALE_ONLY_NOT_EVALUABLE`. Exposed:
   0.712 against 0.988 (48 frames), 0.523 against 0.967 (six 015-fresh frames). The alternative has no free parameter;
   a `NOT_REJECTED` with a passing Y1 would mean the frame acts on the pattern change through its scale alone,
   contradicting the exposed ablations.
-- **Descriptive (no floor):** the ablation ladder against its predeclared ordering; the renormalization remainder; the
-  comparators and the comparator rule; the per-layer reads; the twelve frames individually; the decoded-`c_L` ladder;
-  which heads move for which cues in the new frames (in the network's own terms, after scoring).
+- **Descriptive (no floor):** the ablation ladder against its predeclared ordering; the renormalization remainder and
+  the scale remainder; the comparators and the comparator rule; the per-layer reads; the twelve frames individually and
+  the per-frame minimum over the exposed frames of Y1; the decoded-`c_L` ladder; which heads move for which cues in the
+  new frames (in the network's own terms, after scoring).
 - Outcome = `Y1 | Y2 | Y3`. Incidents (replication, identities, software defects) stop the phase, are recorded with
   their commit, and are never an outcome label; a confirm incident permits no re-run in this protocol version.
 
@@ -227,13 +261,15 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   cue position, and its keys, values and logit rows are the frame's. Y1 carries the strict boundary for the token
   dimension; Y2 is conditional on the observed reference state and aggregate over frames. Nothing here predicts a
   frame's attention state from its text alone.
-- Passing Y1–Y3 shows that the frame's contribution to the cue-induced attention-pattern change is carried by three
-  identifiable quantities of its cue-position state — the operands of the self-logit, the normalization scale, and
-  block 1's operating point — and not by the direction of its residual in the query/key/value change, nor by its scale
-  alone; with them the token-local change (template direction) predicts the change nearly exactly on unseen cues and
-  frames. It does not say why the frames differ in these quantities, nor anything about behaviour. The design check
-  also records that no compact descriptor tried (scalars, a shared subspace, a few heads, a few neurons) carries the
-  frame dependence; that is a description of this model, not a preregistered claim.
+- Passing Y1–Y3 shows that three structured classes of reference-state information of the frame's cue position —
+  the operands of the self-logit (2048 numbers), the normalization scale (4 numbers, two of them derived from the
+  predicted change), and block 1's operating point (the 512-vector `x₁` through 2048 pre-activations) — are sufficient
+  for the token-local change (template direction) to predict the cue-induced pattern change nearly exactly on unseen
+  cues and frames, while the frame's residual direction in the query/key/value change contributes only a small
+  renormalization remainder and its scale alone does not suffice. It is *not* the claim that three numbers explain the
+  frame. It does not say why the frames differ in these quantities, nor anything about behaviour. The design check also
+  records that no compact descriptor tried (scalars, a shared subspace, a few heads, a few neurons) carries the frame
+  dependence; that is a description of this model, not a preregistered claim.
 - Twelve new frames, five lexical classes, three templates, this checkpoint; sixteen heads.
 
 ## Minimal implementation boundary
@@ -246,8 +282,10 @@ renormalization term is tested as an identity); a committed extract of Experimen
 changes and `c_L`, `c_M`, `c_H` for replication; the confirmation builder with the frozen lists and twelve frames; a
 runner with phases `validate`, `freeze-confirmation`, `explore`, `lock`, `confirm`, `report`, `confirm` in two stages.
 Tests: the switch-off recovery of Experiment 015's Level 0 to 1e-12 on the fake; the all-channels-plus-remainder
-recovery of Level 1 to 1e-12; the invariant; the floors, Y3 and the ladder on synthetic tables; the stage barrier; phase
-isolation; the pinned-model smoke on a neutral prompt as in Experiment 015.
+recovery of Level 1 to 1e-12; the invariant, including that `σ_f'` is computed from the predicted change (a test
+replaces the patched capture with a poisoned tensor and checks the table is unchanged); the floors, Y3, the
+frame-collapse guard and the ladder on synthetic tables; the stage barrier; phase isolation; the pinned-model smoke on a
+neutral prompt as in Experiment 015.
 
 ## Approval and stopping condition
 
@@ -258,4 +296,16 @@ fresh cue prompt runs before its frame's stage-1 predictions are digested.
 
 ## Revision history
 
-- **Revision 1**: initial draft.
+- **Revision 1** (commit `b7fd7f0`): initial draft. Reviewed: approved conceptually with four changes — do not call the
+  three-channel model the "smallest frame descriptor" (it is the smallest *tested structured* description) and record
+  each channel's dimensionality; make it explicit that the post-change scale `σ'` is derived algebraically from
+  reference quantities and the predicted change, with an invariant that no Level 0-F input is read from a fresh cue
+  forward pass; add a preregistered per-frame anti-collapse guard on Y2; define the three channels literally (which
+  vectors, heads, layer, position; the LayerNorm convention; pre-activations before GELU, all 2048). Also: state the
+  remainder as small on the exposed set rather than as irrelevance; keep the other ablations descriptive.
+- **Revision 2**: all made. Channels A–C are written index by index with their dimensionality (1024 numbers per layer;
+  4 scalars per pair; the 512-vector `x₁` through 2048 pre-activations); the invariant names the order reference →
+  channels → predicted change → predicted `σ'` → table → digest → fresh cue, and the scale remainder is recorded, never
+  fed back; Y2 carries the frame-collapse guard (every valid fresh frame's layer-2 entry R² ≥ 0.80) beside the four
+  aggregate floors; the remainder wording is softened; the ablations stay descriptive. No floor of revision 1 was
+  loosened.
