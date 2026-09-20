@@ -2,9 +2,13 @@
 
 **Date:** 2026-09-20
 
-**Status:** Revision 1 — draft for review. No Experiment 017 directory, confirmation set, lock, or model run exists.
-Experiments 005–016 are closed and are not amended by this document; Experiment 016's closure stands exactly as
-recorded, and the block-2 operating-point concentration observed in the design checks is deferred to Experiment 018.
+**Status:** Revision 2 — approved conceptually at revision 1 subject to the changes under "Revision history" (the
+coordinated-frame propagation step made leak-proof, with the poisoned-capture test covering both positions; channel
+D defined literally; the three head objects `ΔA_H`, `Π`, `F` and `ΔT = F + Π` defined as explicitly as Experiment
+015's `c_ΔA`; Y3 stated as independently failable with its reading fixed in advance), which this revision makes. No
+Experiment 017 directory, confirmation set, lock, or model run exists. Experiments 005–016 are closed and are not
+amended by this document; Experiment 016's closure stands exactly as recorded, and the block-2 operating-point
+concentration observed in the design checks is deferred to Experiment 018.
 
 **Kind:** Prospective, zero-parameter, chain-closing. Experiments 010–016 decoded, layer by layer and in the network's
 own terms, how a cue word's weight-only encoding change `ΔE` becomes the transport head's *input*: block 1's MLP
@@ -92,20 +96,30 @@ the Experiment 011 locked axis of the head's output site, `σ_T = 1.014` its loc
 on the first 16 of 64 dimensions, scale `1/√64`, softmax over `k ≤` the query position, no BOS); `H = L03.H04`;
 `μ(x)`, `σ(x) = √(mean((x − μ)²) + ε)`, `x_c = x − μ(x)` as in Experiment 016.
 
-**Measured (exact; one patched forward pass per pair, as in Experiments 010–016).** From the captured patched run:
-`x₃'(p_c)`, `x₃'(p_t)` (the layer-3 residuals at the cue and transport positions), `A_H'(p_t, ·)` (the head's row at
-`p_t`, `p_t + 1` entries), and the head's output change `ΔT = ⟨T' − T, d̂_T⟩` (Experiment 010's `head_change`). Derived:
+**The three objects at the head (frozen definitions; every scalar is a projection onto the same locked direction).**
+The head `H = L03.H04` at query position `p_t` attends over `k = 0..p_t`. Its per-position value-output vector is
+`o(k) = v_H(x₃(k)) W_O^H` (512 numbers; `v_H(x) = LN₃(x) W_V^H + b_V^H`; the output bias `b_O` is shared by every
+position and cancels in every difference below). The read direction is `d̂_T`, the Experiment 011 locked unit axis of
+the head's output site (`L03.H04`'s output at `p_t`); read units are residual units along `d̂_T` (`σ_T = 1.014`).
+Measured, from one patched forward pass per pair (Experiments 010–016's E-patch) capturing `x₃'(p_c)`, `x₃'(p_t)`,
+the head's row `A_H'(p_t, ·)` and its output `T'`; the reference run supplies `x₃(k)`, `A_H(p_t, ·)`, `T`:
 
 ```text
-ΔA_H(p_t, k) = A_H'(p_t, k) − A_H(p_t, k),  k ≤ p_t                                    the head's row change (the primary object)
-o(k)  = v_H(x₃(k)) W_O^H,   o'(k) = v_H(x₃'(k)) W_O^H  for k ∈ {p_c, p_t}, o'(k) = o(k) otherwise   (positions < p_c are causally invariant)
-Π     = ⟨ Σ_k ΔA_H(p_t, k) o'(k), d̂_T ⟩                                                  the pattern-change term
-F     = ⟨ Σ_k A_H(p_t, k) [o'(k) − o(k)], d̂_T ⟩                                          the frozen-pattern part (the reference row carrying the value change)
-ΔT    = F + Π                                                                             exactly (identity I7, checked per pair)
+(1) the row change        ΔA_H(p_t, k) = A_H'(p_t, k) − A_H(p_t, k),  k = 0..p_t          (p_t + 1 numbers per pair; "where the head looks differently")
+    changed values        o'(k) = v_H(x₃'(k)) W_O^H  for k ∈ P = {p_c, p_t};   o'(k) = o(k) for k ∉ P   (positions < p_c are causally invariant; no position lies strictly between p_c and p_t)
+(2) the pattern term      Π  = ⟨ Σ_{k ≤ p_t} ΔA_H(p_t, k) · o'(k), d̂_T ⟩                   the CHANGED row carrying the CHANGED values ("the transport consequence of the changed pattern")
+(3) the value term (P2)   F  = ⟨ Σ_{k ≤ p_t} A_H(p_t, k) · [o'(k) − o(k)], d̂_T ⟩            the REFERENCE row carrying the value change (Experiments 009/011/013's frozen-pattern account)
+    the transport         ΔT = ⟨ T' − T, d̂_T ⟩ = ⟨ Σ_k A_H'(p_t, k) o'(k) − Σ_k A_H(p_t, k) o(k), d̂_T ⟩ = F + Π    exactly (identity I7, checked per pair; Experiment 010's head_change)
 ```
 
-Read units: `ΔT`, `F`, `Π` are in residual units along `d̂_T` (`σ_T = 1.014`); token means are over identical frame
-sets. Every statistic used for a floor (`R²`, Spearman) is invariant to this choice of unit.
+The split is the one in which `F` is exactly the frozen-pattern account and `Π` is exactly what that account omits;
+the alternative split (`Π` with the reference values plus a cross term) is not used. The predicted counterparts use the
+predicted row `ΔÂ_H` and the predicted values `ô(k) = (v_H(x₃(k)) + Δv̂(k)) W_O^H` — never a captured one — so
+`Π̂ = ⟨Σ_k ΔÂ_H(p_t, k) ô(k), d̂_T⟩`, `F̂ = ⟨Σ_k A_H(p_t, k) [ô(k) − o(k)], d̂_T⟩`, `ΔT̂ = F̂ + Π̂`. The three objects
+carry three separate claims: (1) did Level 0 predict where the head looks differently (the row-entry `R²`); (2) did it
+predict the transport consequence of that changed pattern (the `Π` statistics); (3) did the composed mechanism predict
+the head's final transport (the `ΔT` statistics). Token means are over identical frame sets; every statistic used for
+a floor (`R²`, Spearman) is invariant to the unit.
 
 **Level 1 — the exact chain (identity, incident-guarded, counts toward no floor).** From `x_ℓ(k)` for `ℓ ∈ {1, 2, 3}`,
 `k ≤ p_t`, and `ΔE`: `Δx₁(p_c) = ΔE`; at each layer `ℓ ∈ {1, 2}` and each position `p ∈ {p_c, p_t}` the weight-only
@@ -125,17 +139,38 @@ Upstream (positions p_c; Experiment 016's Level 0-F verbatim, then block 2 at th
     Δ̂x₁(p_c) = ΔE
     Δ̂x₂(p_c) = ΔE + Δ̂₁(p_c) + Δ̂out₁(p_c)                     Experiment 016's Level 0-F: channels A, B, C; the layer-1 rows and values it predicts
     Δ̂out₂(p_c) = Σ_{h ∈ layer 2} [ Σ_k Â_h v̂_h − Σ_k A_h v_h ] W_O^h   from Experiment 016's Level 0-F layer-2 rows and values at p_c
-    Δ̂₂(p_c)  = Σ_j [ GELU(pre_j + Δpre_j) − GELU(pre_j) ] W_out[j],  pre_j = ⟨ln2₂(x₂(p_c)), W_in[:, j]⟩ + b_in[j],
-                Δpre_j = ⟨ln2₂(x₂(p_c) + Δ̂x₂(p_c)) − ln2₂(x₂(p_c)), W_in[:, j]⟩                              CHANNEL D: block 2's MLP at the frame's operating point
+    Δ̂₂(p_c)  = D(x₂(p_c), Δ̂x₂(p_c))                                                             CHANNEL D (defined literally below)
     Δ̂x₃(p_c) = Δ̂x₂(p_c) + Δ̂out₂(p_c) + Δ̂₂(p_c)
 
-One propagation step (coordinated-adjective frames only, p_t = p_c + 1; x_ℓ(p_t) itself is unchanged at layer 1):
-    Δ̂x₂(p_t) = Δ̂out₁(p_t):  layer 1's attention at query p_t with the key and value at p_c recomputed by the weight-only program at x₁(p_c) + ΔE
-                              (exact at the frame's own state: Δx₁(p_c) = ΔE exactly), everything else the frame's reference; no MLP change at p_t
-    Δ̂x₃(p_t) = Δ̂x₂(p_t) + Δ̂out₂(p_t) + Δ̂₂(p_t):  layer 2's attention at query p_t with the key, value and query recomputed at x₂(p_c) + Δ̂x₂(p_c) and
-                              x₂(p_t) + Δ̂x₂(p_t); block 2's MLP at the frame's operating point x₂(p_t) with Δ̂x₂(p_t)
-    (There is no locked template base at p_t below layer 3; the step therefore uses the frame's own reference residuals at p_t with the
-     predicted arriving changes. Nothing at p_t is read from a fresh run.)
+Channel D — block 2's MLP operating point, D(x₂(p), Δ̂x₂(p)) for each changed position p ∈ P = {p_c, p_t} (the same form as Experiment 016's
+channel C, one block later):
+    Frame-specific input (reference run only):  the frame's reference residual x₂(p) (512 numbers) entering block 2's MLP, through the block's MLP
+        LayerNorm ln2₂ (gain γ, bias β, population variance, ε = 1e-5 — exactly plural_mechanism.exact_layer_norm) and the input weight W_in^(2) (512 × 2048), b_in^(2):
+        pre_j(p)  = ⟨ ln2₂(x₂(p)), W_in^(2)[:, j] ⟩ + b_in^(2)[j],   j = 1..2048          the 2048 reference pre-activations (before GELU) — the operating point
+    Cue-specific input (predicted only):  Δ̂x₂(p), the predicted change arriving at block 2 at position p (above; Δ̂x₂(p_t) below):
+        Δpre_j(p) = ⟨ ln2₂(x₂(p) + Δ̂x₂(p)) − ln2₂(x₂(p)), W_in^(2)[:, j] ⟩                 the exact LayerNorm at the frame's own state, before and after the PREDICTED change
+    Transformation:  the model's exact GELU (not linearised), neuron by neuron.
+    Output:          Δ̂₂(p) = Σ_j [ GELU(pre_j(p) + Δpre_j(p)) − GELU(pre_j(p)) ] · W_out^(2)[j, :]      (512 numbers) — block 2's MLP output change; b_out^(2) cancels
+    Dimensionality:  the full 512-vector x₂(p), equivalently the 2048 pre-activations plus the two LayerNorm statistics of x₂(p) and x₂(p) + Δ̂x₂(p); not a compact object.
+    Experiment 016's decoded c_L (and Experiment 012's Level 0) used x̄₂^T here.  No pre-activation, activation or output of a PATCHED run enters:
+    the operating point is the reference run's, the change is the predicted one.
+
+One propagation step (coordinated-adjective frames only, p_t = p_c + 1). What may enter from the reference run at p_t, all cue-independent: the frame's
+reference residuals x₁(p_t), x₂(p_t), x₃(p_t) and their LayerNorm statistics; the layer-1 and layer-2 reference queries at p_t and reference keys and
+values at every k ≤ p_t; block 2's reference pre-activations pre_j(p_t); the reference rows at p_t. What is predicted, algebraically, in this order:
+    Δ̂x₁(p_t) = 0                exactly: the E-patch replaces L00.MLP's output at p_c only, and layer 0's attention at p_t reads the unchanged x₀(k)
+    Δ̂x₂(p_t) = Δ̂out₁(p_t)       layer 1's attention at query p_t: the key and value at p_c recomputed by the weight-only program at x₁(p_c) + ΔE
+                                  (exact at the frame's own state, since Δx₁(p_c) = ΔE exactly); the query at p_t and every other key and value the frame's reference;
+                                  no MLP change at p_t (its input is unchanged)
+    Δ̂out₂(p_t)                   layer 2's attention at query p_t: the key and value at p_c recomputed at x₂(p_c) + Δ̂x₂(p_c) (the PREDICTED change), the query, key
+                                  and value at p_t recomputed at x₂(p_t) + Δ̂x₂(p_t) (the PREDICTED change); every other key and value the frame's reference
+    Δ̂₂(p_t)  = D(x₂(p_t), Δ̂x₂(p_t))                      channel D at the frame's operating point at p_t with the predicted change
+    Δ̂x₃(p_t) = Δ̂x₂(p_t) + Δ̂out₂(p_t) + Δ̂₂(p_t)
+    σ_f'(p_t) = σ(x₃(p_t) + Δ̂x₃(p_t))                      channel B₃ at p_t, from the predicted change
+    (There is no locked template base at p_t below layer 3, so the step keeps the frame's own reference residuals at p_t as operating points for the
+     predicted arriving changes; the reductions in coordinated frames are Δ̂x₂(p_c) — Experiment 016's Level 0-F — and the head's template bases at p_c and p_t.)
+    Forbidden at both positions: every patched-run quantity — residuals x_ℓ'(p_c), x_ℓ'(p_t) at any layer, their LayerNorm statistics, attention rows A'(p, ·)
+    at any layer, MLP pre-activations, activations or outputs of the patched run, the propagated patched state, the head's patched q̃, k̃, v or row.
 
 The head (layer 3, L03.H04 only), reduced as Experiment 016 reduced layers 1–2, at the changed positions P = {p_c, p_t}:
     x̄₃^T(p)     the layer-3 template-mean base at position p (locked in this experiment at `explore`: the mean of x₃(p) over the exposed frames of the
@@ -177,16 +212,28 @@ the pattern-change term (exposed `0.25 > 0.14`); the frozen pattern's `ΔT` shor
 coordinated pairs (exposed `0.087 > 0.018`).
 
 **Locked boundary (formal): Level 0 never receives a measured fresh `x₃`, a fresh head state, or any quantity of a
-fresh cue forward pass.** Every frame-conditioned input originates from the frame's *reference* prompt (the residuals
-`x_ℓ(k)`, `ℓ ≤ 3`, `k ≤ p_t`; the head's reference `q̃`, `k̃`, `v`, row); every cue-conditioned quantity (`ΔE`, `Δ̂₁`,
-`Δ̂out₁`, `Δ̂x₂`, `Δ̂out₂`, `Δ̂₂`, `Δ̂x₃`, every `σ'`, `Δq̃`, `Δk̃`, `Δv̂`, `ΔÂ_H`, `Π̂`, `F̂`, `ΔT̂`) is derived algebraically
-from the weights, the locked axes, read and bases and those reference quantities before the fresh cue prompt runs.
-The order at `confirm` is: reference prompt → channels → predicted upstream change → predicted `Δ̂x₃` → predicted
-layer-3 scales → Level 0 table → digest → fresh cue prompt. The prediction table is computed with every capture and
-intervention entry point disabled; `confirm` reproduces the locked table before any fresh prompt; the differences
-between the predicted and the captured `x₃` (the "`x₃` remainder", relative) and between the predicted and the
-captured layer-3 scales (the "scale remainder") are recorded descriptively and never fed back. A test replaces the
-patched capture by a poisoned tensor and checks that the table is unchanged.
+fresh cue forward pass, at either `p_c` or `p_t`.** The only cue-specific input is `ΔE`, weight-only. Every
+frame-conditioned input originates from the frame's *reference* prompt (the residuals `x_ℓ(k)`, `ℓ ≤ 3`, `k ≤ p_t`,
+their LayerNorm statistics, the reference queries, keys, values and rows at layers 1–3, block 1's and block 2's
+reference pre-activations); every cue-conditioned quantity is derived algebraically from the weights, the locked axes,
+read and bases and those reference quantities before the fresh cue prompt runs, in this order:
+
+```text
+fresh cue word  →  ΔE (weight-only)
+reference-state quantities only  +  the decoded upstream changes (Experiment 016's Level 0-F, channel D)  →  predicted Δ̂x₃(p_c)
+predicted one-step propagation (coordinated frames)                                                       →  predicted Δ̂x₃(p_t)
+predicted layer-3 scales σ_f'(p)  →  predicted Δq̃, Δk̃(p), Δv̂(p)  →  predicted ΔÂ_H(p_t, ·)  →  predicted ô(k), F̂, Π̂, ΔT̂
+Level 0 table  →  digest  →  fresh cue prompt (stage 2)
+```
+
+No fresh patched residual, attention row, LayerNorm statistic, MLP pre-activation, activation or output, head state
+or propagated state at either position enters Level 0 before scoring. The prediction table is computed with every
+capture and intervention entry point disabled; `confirm` reproduces the locked table before any fresh prompt; the
+differences between the predicted and the captured `x₃` at `p_c` and at `p_t` (the "`x₃` remainders", relative) and
+between the predicted and the captured layer-3 scales (the "scale remainders") are recorded descriptively and never
+fed back. A test replaces the patched capture at **both** positions — the residuals before blocks 1, 2 and 3 at `p_c`
+and `p_t`, the layer-1–3 rows and the head's output — by poisoned tensors and checks that every column of the Level 0
+table is unchanged.
 
 **Accounting (descriptive, per pair):** I4–I7; the exact-head rung; the ladder; the `x₃` remainder; `σ_f'/σ_f` at layer
 3; the self-weight change `ΔA_H(p_t, p_c)` predicted and measured; `F`, `Π`, `ΔT` predicted and measured; the
@@ -291,9 +338,12 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   `FROZEN_PATTERN_NOT_REJECTED`; with fewer than two scored cue-final token means `FROZEN_PATTERN_NOT_EVALUABLE`.
   Exposed cue-final: `0.913` against `1.000`. **Predeclared split:** on the coordinated pairs the frozen pattern is
   *not* expected to be rejected (exposed gap `0.018`, below the margin); the coordinated gap is reported against that
-  expectation and enters no label. A `NOT_REJECTED` with a passing Y1 would mean that on these fresh cues the head's
-  own pattern change contributes less than `0.05` of the `ΔT` variance even where the query changes — a genuine result
-  about the size of the term, recorded as such.
+  expectation and enters no label. **Y3 is evaluated independently of Y1 and Y2 and can fail while both pass**: the
+  frozen pattern could score, say, `0.96` on the fresh cue-final pairs while Level 0 scores `0.995`, and the label
+  would be `FROZEN_PATTERN_NOT_REJECTED`. The reading of that case is fixed now and is not to be revised after the
+  fact: *the head's pattern change was predicted, but the fresh set did not establish that modelling it explicitly was
+  necessary relative to the frozen-pattern alternative* — a result about the size of the term on these cues, not a
+  failure of the mechanism, and not a success of the mechanism either.
 - **Descriptive (no floor):** the ladder against its predeclared ordering; the exact-head rung; the `x₃` and scale
   remainders; the self-weight change; `F` and `Π` per template and the pattern-change term's variance share; the
   per-template frozen-pattern gap; the twelve frames individually and the per-frame minimum over the exposed frames of
@@ -318,6 +368,12 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   dependence is concentrated (Experiment 018), nor anything about behaviour. Where the head moves its weight, and
   what that does for the number signal, is described after scoring in the network's own terms; no gloss is
   preregistered.
+- Level 1 and Level 0 are kept apart throughout. Level 1 — the reference state plus exact algebra reproducing the
+  exact `x₃`, the exact head Q/K, the exact row and the exact `ΔT` — shows that the implementation matches the
+  transformer; it is an instrument check. Level 0 — `ΔE`, the previously decoded upstream model and structured
+  reference-state channels giving a predicted `x₃`, a predicted head Q/K, a predicted row and a predicted `ΔT` — is
+  the scientific result. Level 1's exactness never contributes, rhetorically or numerically, to the evidence for
+  Level 0; the report cites Level 1 only under identities.
 - Twelve new frames, five lexical classes, three templates, one head, this checkpoint.
 
 ## Minimal implementation boundary
@@ -334,7 +390,8 @@ Experiment 016's per-pair `c_ΔA`, self-weight changes and decoded `c_L` for rep
 the frozen lists and twelve frames; a runner with phases `validate`, `freeze-confirmation`, `explore`, `lock`,
 `confirm`, `report`, `confirm` in two stages. Tests: the Level 1 chain against a captured patched run on the fake
 (I4–I7 to `1e-9`); Level 0 with the exact head and all frame channels plus the renormalization terms recovers Level 1
-on the fake; the coordinated propagation step; the boundary (a poisoned patched capture leaves the table unchanged);
+on the fake; the coordinated propagation step against the Level 1 chain on the fake; the boundary (a poisoned patched
+capture at both `p_c` and `p_t` — residuals at layers 1–3, rows, head output — leaves every table column unchanged);
 the floors, Y3 with its cue-final restriction, the guard and the ladder on synthetic tables; the stage barrier; phase
 isolation; the pinned-model smoke on a neutral prompt as in Experiments 015–016.
 
@@ -347,7 +404,24 @@ no fresh cue prompt runs before its frame's stage-1 predictions are digested.
 
 ## Revision history
 
-- **Revision 1**: initial draft, after the reviewer's choice of the transport head's own pattern change as Experiment
-  017 (three levels — Level 1 identity, Level 0 compositional, the frozen pattern as the rigid alternative; the locked
-  boundary that Level 0 never receives a measured fresh `x₃` or fresh head state; the cue-final versus coordinated
-  split predeclared; the block-2 concentration kept for Experiment 018).
+- **Revision 1** (commit `ec2e09e`): initial draft, after the reviewer's choice of the transport head's own pattern
+  change as Experiment 017 (three levels — Level 1 identity, Level 0 compositional, the frozen pattern as the rigid
+  alternative; the locked boundary that Level 0 never receives a measured fresh `x₃` or fresh head state; the
+  cue-final versus coordinated split predeclared; the block-2 concentration kept for Experiment 018). Reviewed:
+  approved conceptually with four changes — make the coordinated `p_c → p_t` propagation boundary leak-proof (which
+  reference quantities at `p_t` may enter, which changes are predicted, in what order), with the poisoned-capture
+  test covering both positions; define channel D literally (input object, transformation, output, weight matrix,
+  what is frame-specific, what is cue-specific); define `ΔA_H`, `Π`, `F` (P2) and `ΔT = F + Π` as explicitly as
+  Experiment 015's `c_ΔA`, including the read direction and whether `Π` uses predicted or reference V/O quantities;
+  state that Y3 can fail independently of Y1/Y2 with its reading fixed in advance. Also: keep Level 1's exactness out
+  of the evidence for Level 0. Floors, the per-frame guard, the cue-final restriction of Y3 and the fresh set approved
+  as drafted; proceed to implementation rather than expanding the design.
+- **Revision 2**: all made. The three head objects are defined index by index with the locked read direction and the
+  changed-values convention (`Π` with `o'`, `F` the reference row on the value change, `ΔT = F + Π` exactly; the
+  predicted counterparts on predicted values only); channel D is written out (reference pre-activations through
+  `ln2₂` and `W_in^(2)`, exact GELU, `W_out^(2)`, 512 outputs; frame-specific = the reference operating point,
+  cue-specific = the predicted change); the propagation step lists the admissible reference quantities at `p_t`, the
+  predicted quantities in order, and the forbidden patched quantities at both positions; the boundary is stated as
+  the chain `ΔE → decoded upstream → Δ̂x₃(p_c) → propagation → Δ̂x₃(p_t) → head Q/K → table → digest → fresh prompt`
+  with the poisoned-capture test at both positions; Y3's independent failure mode and its fixed reading are stated;
+  Level 1 is confined to the identities. No floor, token, frame or alternative of revision 1 was changed.
