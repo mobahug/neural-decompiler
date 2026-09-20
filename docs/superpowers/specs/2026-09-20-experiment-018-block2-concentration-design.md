@@ -39,8 +39,10 @@ is a different and equally reportable fact.
 every Experiment 017 pair (7764 exposed, 1584 Y1, 288 Y2), the weights and the Experiment 011/012/017 locks. The
 Experiment 017 chain was re-implemented with channel D replaced by a masked version (`D_S` below); with the mask all
 ones it reproduces Experiment 017's Level 0 `ΔT̂` to `3e-15`. To preview prospective behaviour, the subset was ranked
-on the 6180 pairs of Experiment 016's 54 exposed frames × 183 exposed cues only (the "ranking pool") and evaluated on
-sets disjoint from it in the cue dimension, the frame dimension, or both:
+on the 6180 licensed pairs among Experiment 016's 54 exposed frames and 183 exposed cues only (the "preview ranking
+pool"; the full product would be 9882 pairs, but the pool's licensing is triangular — see "The ranking rule" below —
+and no pair was added or dropped for this check) and evaluated on sets disjoint from it in the cue dimension, the
+frame dimension, or both:
 
 - **The ranking (read criterion, frozen below).** The top neurons by mean absolute operating-point effect in read
   units are `1987, 1102, 1726, 129, 1311, 1310, 1068, 1924, 815, 1671` with shares `0.027, 0.010, 0.009, 0.006, …` of
@@ -143,10 +145,18 @@ Experiment 017's `−D` rung on coordinated pairs (there block 2 at `p_t` stayed
 identical to Experiment 017's Level 0 on every pair.
 
 **The ranking rule and the locked subset (frozen; computed once at `explore`, from the weights, the locked reference
-states and the exposed cues' `ΔE` — no measured quantity of any pair).** The ranking pool is the set of 9636 exposed pairs
-recorded by Experiment 017 (its 7764 exposed, 1584 Y1 and 288 Y2 pairs — 231 exposed cues and 78 exposed frames, not
-their full product), each pair at its changed positions `p ∈ P`. For each pair and position the predicted `Δ̂x₂(p)` is Experiment 016's Level 0-F
-(and the Experiment 017 propagation step at `p_t`), and
+states and the exposed cues' `ΔE` — no measured quantity of any pair).** The ranking population is the exposed pool's set of
+*licensed* pairs — exactly the 9636 pairs Experiment 017 recorded (its 7764 exposed, 1584 Y1 and 288 Y2 pairs), each at
+its changed positions `p ∈ P`. It is not the full product of the 231 exposed cues and 78 exposed frames (18 018): the
+inherited pool builder licenses each cue token in the frames that were exposed when the token entered the pool and in
+its own confirmation's fresh frames, never in frames introduced later, so the structure is triangular — 85
+screening-era tokens × the 30 frames of Experiments 005–011, Experiment 012's 24 tokens × its 6 fresh frames (the pairs
+its record kept), Experiments 013, 014, 015, 016 and 017's 24 tokens each × 42, 48, 54, 66 and 78 frames, and the two
+reference cues `one` and `each` only outside their own templates (10 and 20 frames). The rule was fixed by the pool
+construction before this design; no pair is admitted to or removed from the ranking population by any measured value,
+and the ranking reads none. (The design-check preview pool above is the same structure restricted to Experiment 016's
+54 frames and 183 tokens: `85 × 30 + 24 × 6 + 24 × 42 + 24 × 48 + 24 × 54 + 10 + 20 = 6180`.) For each pair and position
+the predicted `Δ̂x₂(p)` is Experiment 016's Level 0-F (and the Experiment 017 propagation step at `p_t`), and
 
 ```text
 score_j = mean over (w, f, p) in the ranking pool of  | e_j(w, f, p) | · | r( W_out^(2)[j, :] ) | / | D_T(f) |        read units; r weight-only
@@ -178,16 +188,26 @@ scored pairs and a rung `S`:
 κ_X(S) = ( R²_X(S) − R²_X(S_0) ) / ( R²_X(S_2048) − R²_X(S_0) )         R² pooled over the scored pairs of the set (entries for the row)
 ```
 
-`κ` is evaluable for `X` on a set iff the denominator — channel D's contribution to `X` there, the "gap" — is at least
-`0.05`. Design-check gaps: `c_L` `0.117–0.239`, `Π` `0.159–0.338`, `F` `0.045–0.086`, `ΔT` `0.026–0.055`, rows `0.024–0.058`;
+`R²_X` is `1 − SS_res / SS_tot` with `SS_tot` about the measured mean, pooled over the scored pairs (over the entries
+for the row), as in Experiments 012–017. `κ` is a plain ratio of two `R²` differences and is **never clipped**: a value
+below `0` (the subset is worse than the template base) or above `1` (the subset is better than the full channel) is
+reported as computed and is meaningful, and every floor and guard below compares the unclipped value. `κ` is
+*undefined* — and `X` is *not evaluable* on that set, which is a precondition failure, never a pass or a fail — iff
+the denominator, channel D's contribution to `X` there (the "gap"), is below `0.05`; this stops `κ` from becoming a
+ratio of noise where channel D happens not to matter. Design-check gaps: `c_L` `0.117–0.239`, `Π` `0.159–0.338`, `F` `0.045–0.086`, `ΔT` `0.026–0.055`, rows `0.024–0.058`;
 the floors below are placed on `c_L` and `Π`, whose gaps are large on every preview set, and `F`, `ΔT` and the rows are
 reported with their `κ` descriptively. `κ` is invariant to the unit and, unlike an absolute `R²` floor, does not reward
 a fresh set on which channel D happens to matter little.
 
 **The alternative committed beside the predictor (Y3) — the single-neuron account:** `S_1`, block 2's frame
 dependence carried by the top-ranked neuron alone (neuron 1987 by the design-check ranking, Experiment 014's neuron).
-Rigid: the same chain, the same rule, `n = 1`. Design-check `κ_{c_L}(S_1)`: `0.28` and `0.08` on the cue- and
-frame-prospective 017 sets, `0.43–0.46` on the in-sample and 016-cue sets.
+Rigid: the same chain, the same rule, `n = 1`. Its decision variable is `κ_{c_L}` alone: `c_L` is the direct block-2
+transport-read quantity — the read of the layer-1–2 net change arriving at the head, the object channel D was
+introduced to close in Experiments 016–017 and the quantity the ranking is defined in — whereas `Π` lies downstream of
+that read, through the head's query/key computation whose block-2 dependence is diffuse (above), so a single neuron's
+share of `Π` would mix the two organizations. `κ_Π(S_1)` is reported beside the decision descriptively. Design-check
+`κ_{c_L}(S_1)`: `0.28` and `0.08` on the cue- and frame-prospective 017 sets, `0.43–0.46` on the in-sample and 016-cue
+sets (`κ_Π(S_1)`: `0.07–0.37`).
 
 **The ablation ladder and controls (descriptive, predeclared orderings, no gate):** the eight rungs, the three random
 subsets and `bottom_256` on every set, for `c_L`, `F`, `Π`, `ΔT` (pairs and token means) and the row entries.
@@ -338,7 +358,8 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   sets: `κ_{c_L}` `0.77 / 0.83 / 0.86`, `κ_Π` `0.74 / 0.64 / 0.68`.
 - **Y3 — the single-neuron account is rejected:** over the scored pairs of both sets pooled, `κ_{c_L}(S_1) < 0.50` *and*
   `κ_{c_L}(S_256) − κ_{c_L}(S_1) ≥ 0.25`. Both → `SINGLE_NEURON_REJECTED`; otherwise `SINGLE_NEURON_NOT_REJECTED`; with
-  either set failing its precondition, `SINGLE_NEURON_NOT_EVALUABLE`. Preview: `κ_{c_L}(S_1)` `0.08–0.46`, gap to `S_256`
+  either set failing its precondition, `SINGLE_NEURON_NOT_EVALUABLE`. `κ_{c_L}` is the sole decision variable (the
+  direct block-2 read quantity; see "The alternative"); `κ_Π(S_1)` is reported beside it and enters no label. Preview: `κ_{c_L}(S_1)` `0.08–0.46`, gap to `S_256`
   `≥ 0.43`. Y3 is evaluated independently of Y1 and Y2: the single neuron could carry half of the gap while `S_256`
   carries it all, and the reading of that case is fixed now — *block 2's operating-point dependence of the transport
   read is carried substantially by one neuron and the concentration claim reduces toward Experiment 014's object.*
@@ -415,3 +436,7 @@ report. No token, frame, base, subset, or prediction may be changed after the lo
   subsets; the per-frame variability that rules out a per-frame floor and motivates the split and no-harm guards; the
   single neuron's `0.08–0.46`. Floors: `κ_{c_L} ≥ 0.70`, `κ_Π ≥ 0.50`, the Y2 split guard `0.60 / 0.40`, the no-harm guard
   `0.05`, Y3 `< 0.50` with a `0.25` margin, Y4 per-frame frozen `< 0.90` conditional on the reference rung `≥ 0.95`.
+  Tightened before review, at the user's request: `κ` written out as an unclipped ratio with its evaluability rule
+  and the meaning of values outside `[0, 1]`; the ranking population stated as the pool's licensed pairs with the
+  triangular licensing that makes it 9636 (and the preview pool 6180) rather than a full product, fixed before this
+  design and read from no measurement; `κ_{c_L}` justified as Y3's sole decision variable with `κ_Π(S_1)` descriptive.
