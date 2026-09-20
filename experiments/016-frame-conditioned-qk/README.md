@@ -11,7 +11,9 @@ numbers per layer), (B) the frame's LayerNorm scale before the change and, deriv
 change, after it (two scalars per layer), (C) block 1's MLP evaluated at the frame's own cue residual (the 512-vector
 through the 2048 pre-activations) — and tests the resulting Level 0-F on unseen cues and twelve unseen frames with a
 per-frame anti-collapse guard, the scale-only alternative committed for rejection, the three ablations as a
-descriptive ladder. The channel switches are one code path: all off recovers Experiment 015's Level 0, all on plus the
+descriptive ladder (with each channel alone, the oracle diagonal-proportional comparator and the norm ratios as further
+descriptive rungs). The decoded `c_L` at Level 0-F keeps block 2's MLP at the template base — channel C is block 1's
+operating point only; Level 1 alone evaluates both MLPs at the frame's own state. The channel switches are one code path: all off recovers Experiment 015's Level 0, all on plus the
 discarded renormalization term recovers Level 1 (both checked as identities on every pair). No Level 0-F input is read
 from a fresh cue forward pass.
 

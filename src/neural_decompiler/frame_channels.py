@@ -83,6 +83,8 @@ N_HEADS = atp.N_HEADS
 HEAD_KEYS = atp.HEAD_KEYS
 CHANNEL_NAMES = ("operands", "scale", "operating_point")
 ABLATIONS = ("ablate_operands", "ablate_scale", "ablate_operating_point")
+SINGLES = ("only_operands", "only_scale", "only_operating_point")  # each channel alone over Experiment 015's Level 0 (only_scale is the scale-only alternative)
+LADDER_RUNGS = (*ABLATIONS, *SINGLES, "level0_015", "level1", "diag_oracle")
 LADDER_KEYS = ("c_012", "c_013_own", "c_015_level0", "c_L_level0F", "c_L_level1")
 PREDICTION_COLUMNS = ("token", "frame_id", "template", "p_c", "rows_level0F", "self_level0F", "c_hat_1", "c_hat_2", "c_hat", "rows_scale_only", "c_scale_only", "rows_diag_L0F", "c_diag_L0F",
                       "c_ablate_operands", "c_ablate_scale", "c_ablate_operating_point", "c_level0_015", "sigma_ratio", "arrival_read", "c_L_level0F", "c_M_level0F", "c_H_level0F")
@@ -156,6 +158,7 @@ SCALE_ONLY = Channels(operands=False, scale=True, operating_point=False)
 LEVEL0_015 = Channels(operands=False, scale=False, operating_point=False)
 LEVEL1 = Channels(remainder=True)
 ABLATION_CHANNELS = {"ablate_operands": Channels(operands=False), "ablate_scale": Channels(scale=False), "ablate_operating_point": Channels(operating_point=False)}
+SINGLE_CHANNELS = {"only_operands": Channels(operands=True, scale=False, operating_point=False), "only_scale": SCALE_ONLY, "only_operating_point": Channels(operands=False, scale=False, operating_point=True)}
 
 
 def _sigma(x: torch.Tensor, eps: float) -> torch.Tensor:
@@ -215,7 +218,7 @@ class FrameChannelModel:
         out = {"rows": {1: one["row"], 2: two["row"]}, "values": {1: one["v_pc"], 2: two["v_pc"]}, "dx2": dx2, "delta_e": delta_e, "denominator": denominator,
                "sigma": {1: (one["sigma_ref"], one["sigma_after"]), 2: (two["sigma_ref"], two["sigma_after"])}}
         out["c"] = {layer: sum(self.read.inner(rows[layer].pattern_change_vectors(out["rows"][layer], out["values"][layer])[h]) for h in range(N_HEADS)) / denominator for layer in HEAD_LAYERS}
-        mlp2_base = x2.double() if (channels.operating_point or channels.remainder) else xb2
+        mlp2_base = x2.double() if channels.remainder else xb2  # channel C is block 1 only; the decoded c_L keeps block 2's MLP at the template base except for Level 1
         mlp = {1: d1, 2: self.lw.delta_out(2, mlp2_base, dx2)}
         attention = {1: out1, 2: rows[2].output_change(two["row"], two["v_pc"])}
         out["c_M"] = self.read.inner(mlp[1] + mlp[2]) / denominator
@@ -231,6 +234,7 @@ class FrameChannelModel:
         full = self.predict_channels(weights, rows, x1, x2, token_id, template, LEVEL0F)
         scale_only = self.predict_channels(weights, rows, x1, x2, token_id, template, SCALE_ONLY)
         ablations = {name: self.predict_channels(weights, rows, x1, x2, token_id, template, channels) for name, channels in ABLATION_CHANNELS.items()}
+        singles = {name: self.predict_channels(weights, rows, x1, x2, token_id, template, channels) for name, channels in SINGLE_CHANNELS.items() if name != "only_scale"}
         level0_015 = self.predict_channels(weights, rows, x1, x2, token_id, template, LEVEL0_015)
         diag = {layer: rows[layer].proportional(full["rows"][layer][:, p_c]) for layer in HEAD_LAYERS}
         c_diag = {layer: sum(self.read.inner(rows[layer].pattern_change_vectors(diag[layer], full["values"][layer])[h]) for h in range(N_HEADS)) / full["denominator"] for layer in HEAD_LAYERS}
@@ -244,7 +248,8 @@ class FrameChannelModel:
                  "c_level0_015": level0_015["c"][1] + level0_015["c"][2],
                  "sigma_ratio": {str(layer): full["sigma"][layer][1] / full["sigma"][layer][0] for layer in HEAD_LAYERS},
                  "arrival_read": full["arrival_read"], "c_L_level0F": full["c_L"], "c_M_level0F": full["c_M"], "c_H_level0F": full["c_H"]}
-        return {"rows": rows, "full": full, "scale_only": scale_only, "ablations": ablations, "level0_015": level0_015, "diag_rows": diag, "entry": entry}
+        singles["only_scale"] = scale_only
+        return {"rows": rows, "full": full, "scale_only": scale_only, "ablations": ablations, "singles": singles, "level0_015": level0_015, "diag_rows": diag, "entry": entry}
 
     def predict(self, weights: pm.Weights, x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor], token_id: int, template: str) -> dict[str, Any]:
         return self.parts(weights, atp.reference_rows(self.programs, x1_all, x2_all), x1_all, x2_all, token_id, template)["entry"]
@@ -337,7 +342,8 @@ def analyse_pair_016(record: ra.Attribution, plural: ra.Attribution, *, context:
     prediction, full = parts["entry"], parts["full"]
     measured_json = {str(layer): atp.rows_to_json(measured_rows[layer], layer) for layer in HEAD_LAYERS}
     statistics = {name: {str(layer): atp._statistics_of(measured_json, prediction[key], layer) for layer in HEAD_LAYERS} for name, key in (("level0F", "rows_level0F"), ("scale_only", "rows_scale_only"), ("diag_L0F", "rows_diag_L0F"))}
-    ladder_rows = {name: parts["ablations"][name]["rows"] for name in ABLATIONS} | {"level0_015": parts["level0_015"]["rows"], "level1": one["rows"]}
+    ladder_rows = {name: parts["ablations"][name]["rows"] for name in ABLATIONS} | {name: parts["singles"][name]["rows"] for name in SINGLES} | {"level0_015": parts["level0_015"]["rows"], "level1": one["rows"],
+                                                                                                                                                       "diag_oracle": {layer: rows[layer].proportional(one["rows"][layer][:, p_c]) for layer in HEAD_LAYERS}}
     ladder_statistics = {name: {str(layer): atp.row_statistics(entry[layer] - rows[layer].A_ref, measured_rows[layer]) for layer in HEAD_LAYERS} for name, entry in ladder_rows.items()}
     # Remainders: the scale of the captured patched residual against the predicted post-change scale (never fed back), and the renormalization term's effect (Level 1 − Level 0-F).
     scale_remainder = {str(layer): float(_sigma(x_patch[layer], fcm.programs[layer].eps)) - full["sigma"][layer][1] for layer in HEAD_LAYERS}
@@ -349,6 +355,7 @@ def analyse_pair_016(record: ra.Attribution, plural: ra.Attribution, *, context:
             "c_L": base["c_L"], "c_M": base["c_M"], "c_H": base["c_H"], "c_k": base["c_k"], "P1": base["P1"], "q_T": base["q_T"], "g_E": base["g_E"],
             "prediction": prediction, "statistics": statistics, "ladder_statistics": ladder_statistics, "ladder": ladder,
             "sigma": {str(layer): {"ref": full["sigma"][layer][0], "after_predicted": full["sigma"][layer][1], "after_measured": float(_sigma(x_patch[layer], fcm.programs[layer].eps))} for layer in HEAD_LAYERS},
+            "norm_ratio": {str(layer): float(one["dx"][layer].norm() / (x_ref[layer] - x_ref[layer].mean()).norm()) for layer in HEAD_LAYERS},
             "scale_remainder": scale_remainder, "identities": {**base["identities"], **identities}}
 
 
@@ -684,7 +691,7 @@ def _pair_statistics(analyses: Sequence[Mapping[str, Any]], predictions: Sequenc
 def _ladder_statistics(analyses: Sequence[Mapping[str, Any]], means: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """The ablation ladder in pattern space (pooled per layer) with its predeclared ordering, the remainders, and the decoded-c_L ladder."""
     out: dict[str, Any] = {"rows": {}}
-    for name in (*ABLATIONS, "level0_015", "level1"):
+    for name in LADDER_RUNGS:
         out["rows"][name] = {str(layer): atp.pooled_summary([a["ladder_statistics"][name][str(layer)] for a in analyses]) for layer in HEAD_LAYERS}
     level0F = atp.pooled_entry_r2([a["statistics"]["level0F"]["2"] for a in analyses])
     costs = {name: (level0F - out["rows"][name]["2"]["entry_r2"]) if level0F is not None and out["rows"][name]["2"]["entry_r2"] is not None else None for name in ABLATIONS}
@@ -694,6 +701,7 @@ def _ladder_statistics(analyses: Sequence[Mapping[str, Any]], means: Mapping[str
     out["renormalization_remainder_layer2"] = (out["rows"]["level1"]["2"]["entry_r2"] - level0F) if level0F is not None and out["rows"]["level1"]["2"]["entry_r2"] is not None else None
     out["scale_remainder_abs"] = {str(layer): pm._mean([abs(a["scale_remainder"][str(layer)]) for a in analyses]) for layer in HEAD_LAYERS}
     out["sigma_ratio_mean"] = {str(layer): pm._mean([a["sigma"][str(layer)]["after_predicted"] / a["sigma"][str(layer)]["ref"] for a in analyses]) for layer in HEAD_LAYERS}
+    out["norm_ratio_mean"] = {str(layer): pm._mean([a["norm_ratio"][str(layer)] for a in analyses]) for layer in HEAD_LAYERS}
     out["decoded_c_L"] = {"pairs": {key: comparison([a["ladder"][key] for a in analyses], [a["c_L"] for a in analyses]) for key in LADDER_KEYS}, "level1_error_max": max((a["ladder"]["level1_error"] for a in analyses), default=None)}
     if means:
         names = sorted(means)
@@ -752,6 +760,8 @@ def _components(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, lock_011: Ma
 
 def _check_locked_state(state_f: ap.FrameState013, previous: Mapping[str, Any], label: str) -> None:
     if "x1_all" in previous:
+        if previous.get("p_c", state_f.p_c) != state_f.p_c or len(previous["x1_all"]) != len(state_f.x1_all) or len(previous["x2_all"]) != len(state_f.x2_all):
+            raise pm.IncidentError(f"{label}: the cue position or the number of positions differs from the recorded state")
         drift = max(max(float((x.double() - torch.tensor(y, dtype=torch.float64)).abs().max()) for x, y in zip(state_f.x1_all, previous["x1_all"])), max(float((x.double() - torch.tensor(y, dtype=torch.float64)).abs().max()) for x, y in zip(state_f.x2_all, previous["x2_all"])))
     else:
         drift = max(float((state_f.x1 - torch.tensor(previous["x1"], dtype=torch.float64)).abs().max()), float((state_f.x2 - torch.tensor(previous["x2"], dtype=torch.float64)).abs().max()))
@@ -789,6 +799,8 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
         elif frame.frame_id in inherited_extract.get("stage1_state_digests", {}):
             if ap.state_digest(locked_states[frame.frame_id]) != inherited_extract["stage1_state_digests"][frame.frame_id]:
                 raise pm.IncidentError(f"{frame.frame_id}: the reference state differs from Experiment 015's digested stage-1 state")
+        else:
+            raise pm.IncidentError(f"{frame.frame_id}: no recorded Experiment 015 reference state to check against")
         names = [name for name, _ in pool.tokens if f"{name}|{frame.frame_id}" in recorded]
         if not names:
             continue
@@ -1148,6 +1160,7 @@ def render_report(state: Mapping[str, Any]) -> str:
     def ladder_lines(l: Mapping[str, Any]) -> list[str]:
         out = [f"  - ablation ladder (layer-2 entry R²): " + "; ".join(f"`{name}` {f(l['rows'][name]['2']['entry_r2'], 3)} (cost {f(l['ablation_cost_layer2'][name], 3)})" for name in ABLATIONS)
                + f"; `level0_015` {f(l['rows']['level0_015']['2']['entry_r2'], 3)}; `level1` {f(l['rows']['level1']['2']['entry_r2'], 3)}; predeclared ordering operands ≥ operating point ≥ scale holds: {l['predeclared_ordering_holds']}",
+               f"  - each channel alone over Level 0 (layer-2 entry R²): " + "; ".join(f"`{name}` {f(l['rows'][name]['2']['entry_r2'], 3)}" for name in SINGLES) + f"; oracle diagonal-proportional {f(l['rows']['diag_oracle']['2']['entry_r2'], 3)}; ‖Δ̂x‖/‖x−μ‖ {f(l['norm_ratio_mean']['1'], 2)} / {f(l['norm_ratio_mean']['2'], 2)}",
                f"  - renormalization remainder (Level 1 − Level 0-F, layer-2 entry R²) {f(l['renormalization_remainder_layer2'], 3)}; scale remainder |σ(x') − σ̂'| mean {f(l['scale_remainder_abs']['1'], 4)} / {f(l['scale_remainder_abs']['2'], 4)}; σ̂'/σ mean {f(l['sigma_ratio_mean']['1'], 3)} / {f(l['sigma_ratio_mean']['2'], 3)}",
                "  - decoded c_L: " + "; ".join(f"`{key}` pairs R² {f(l['decoded_c_L']['pairs'][key]['r2'], 3)}" + (f" / token means R² {f(l['decoded_c_L']['token_means'][key]['r2'], 3)}" if "token_means" in l["decoded_c_L"] else "") for key in LADDER_KEYS) + f"; Level 1's residual max {f(l['decoded_c_L']['level1_error_max'], 6)}"]
         return out
@@ -1222,11 +1235,12 @@ def render_report(state: Mapping[str, Any]) -> str:
         for word in sorted(confirmation["Y1"]["tokens"], key=lambda w: -(confirmation["Y1"]["tokens"][w].get("c_hat_mean") or -9)):
             a, b = confirmation["Y1"]["tokens"][word], confirmation["Y2"]["tokens"].get(word, {})
             lines.append(f"| {word} | {categories.get(word, '')} | {a.get('n_valid_frames')} | {f(a.get('c_hat_mean'), 4)} | {f(a.get('c_mean'), 4)} | {b.get('n_valid_frames')} | {f(b.get('c_hat_mean'), 4)} | {f(b.get('c_mean'), 4)} | {f(a.get('c_scale_only_mean'), 4)} | {f(a.get('c_level0_015_mean'), 4)} | {f((a.get('sigma_ratio_mean') or {}).get('2'), 3)} |")
-        lines += ["", "Measured / predicted self-attention weight change ΔA_h(p_c, p_c), token means over the Y1 frames:", "", "| token | " + " | ".join(HEAD_KEYS) + " |", "|---|" + "---|" * len(HEAD_KEYS)]
-        for word in sorted(confirmation["Y1"]["tokens"], key=lambda w: -(confirmation["Y1"]["tokens"][w].get("c_hat_mean") or -9)):
-            a = confirmation["Y1"]["tokens"][word]
-            if a.get("self_mean"):
-                lines.append(f"| {word} | " + " | ".join(f"{f(a['self_mean'][key], 2)} / {f(a['self_hat_mean'][key], 2)}" for key in HEAD_KEYS) + " |")
+        for label, key in (("Y1", "Y1"), ("Y2 (the new frames)", "Y2")):
+            lines += ["", f"Measured / predicted self-attention weight change ΔA_h(p_c, p_c), token means over the {label} frames:", "", "| token | " + " | ".join(HEAD_KEYS) + " |", "|---|" + "---|" * len(HEAD_KEYS)]
+            for word in sorted(confirmation[key]["tokens"], key=lambda w: -(confirmation[key]["tokens"][w].get("c_hat_mean") or -9)):
+                a = confirmation[key]["tokens"][word]
+                if a.get("self_mean"):
+                    lines.append(f"| {word} | " + " | ".join(f"{f(a['self_mean'][key_], 2)} / {f(a['self_hat_mean'][key_], 2)}" for key_ in HEAD_KEYS) + " |")
         lines.append("")
     lines += ["## Execution ledger", "", f"- Executed prompt keys: {len(state['executed_prompt_keys'])}", f"- Executed noun keys: {len(state['executed_noun_keys'])}", ""]
     return "\n".join(lines)

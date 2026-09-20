@@ -187,7 +187,8 @@ def test_channel_recoveries_analysis_and_invariant_on_the_fake(inputs, monkeypat
     ids = analysis["identities"]
     assert ids["I1_patched_rows"] < 1e-5 and ids["I2_chain"] < 1e-5 and ids["I3_head_split"] < 1e-5 and ids["level0_015_recovery"] < 1e-12 and ids["level1_recovery"] < 1e-12
     assert analysis["ladder_statistics"]["level1"]["2"]["ss_res"] < 1e-10 and analysis["ladder"]["level1_error"] < 1e-4 and analysis["c_level1"] == pytest.approx(analysis["c"], abs=1e-5)
-    assert set(analysis["ladder_statistics"]) == {*fch.ABLATIONS, "level0_015", "level1"} and set(analysis["statistics"]) == {"level0F", "scale_only", "diag_L0F"}
+    assert set(analysis["ladder_statistics"]) == set(fch.LADDER_RUNGS) and set(analysis["statistics"]) == {"level0F", "scale_only", "diag_L0F"} and set(analysis["norm_ratio"]) == {"1", "2"}
+    assert analysis["ladder_statistics"]["only_scale"] == {str(layer): atp._statistics_of(analysis["rows"], analysis["prediction"]["rows_scale_only"], layer) for layer in fch.HEAD_LAYERS}  # only_scale is the scale-only alternative
     assert abs(analysis["scale_remainder"]["1"]) < 1e-6  # layer 1's change is exact (ΔE), so the predicted σ' equals the measured one
     p = analysis["prediction"]
     assert set(p) == set(fch.PREDICTION_COLUMNS[3:]) and p["c_hat"] == pytest.approx(p["c_hat_1"] + p["c_hat_2"]) and p["c_L_level0F"] == pytest.approx(p["c_M_level0F"] + p["c_H_level0F"])
@@ -206,11 +207,18 @@ def test_channel_recoveries_analysis_and_invariant_on_the_fake(inputs, monkeypat
     assert len(table) == 3 and set(table[0]) == set(fch.PREDICTION_COLUMNS) and atp._max_numeric_difference(table[0], fch.prediction_row(name, frame.frame_id, template, p), "row") < 1e-12
     poisoned = dict(record.extra)
     for key in poisoned:
-        poisoned[key] = poisoned[key] + 10.0
+        poisoned[key] = poisoned[key] * 3.0 + 1.0  # a shift alone would leave the LayerNorm scale unchanged; the scaling changes the measured σ
     poisoned_record = ra.Attribution(*[getattr(record, f.name) for f in record.__dataclass_fields__.values() if f.name != "extra"], poisoned)
     with pytest.raises(pm.IncidentError):  # the identities notice the poisoned capture …
         fch.analyse_pair_016(poisoned_record, plural, context=context, state=state, rows=rows)
-    assert atp._max_numeric_difference(fcm.predict_from_state(weights, state, token_id, template), p, "again") < 1e-12  # … while the prediction never looks at it
+    with pytest.MonkeyPatch.context() as guard:  # … while the prediction never looks at it: with the identity checks relaxed, the table entry is bit-identical to the clean one
+        guard.setattr(atp, "ROW_IDENTITY_TOLERANCE", float("inf"))
+        guard.setattr(atp, "CHAIN_IDENTITY_TOLERANCE", float("inf"))
+        guard.setattr(ap, "OV_IDENTITY_TOLERANCE", float("inf"))
+        guard.setattr(lc, "LADDER_IDENTITY_TOLERANCE", float("inf"))
+        guard.setattr(lc, "NEURON_IDENTITY_TOLERANCE", float("inf"))
+        poisoned_analysis = fch.analyse_pair_016(poisoned_record, plural, context=context, state=state, rows=rows)
+    assert poisoned_analysis is not None and atp._max_numeric_difference(poisoned_analysis["prediction"], p, "poisoned") == 0.0 and poisoned_analysis["scale_remainder"]["2"] != analysis["scale_remainder"]["2"]
     means = fch.token_means_from_table(table, [name])
     assert means[name]["n_frames"] == 3 and set(means[name]["self_hat_mean"]) == set(fch.HEAD_KEYS)
     stats = fch.statistics_for([analysis], [p], [name])
@@ -236,9 +244,9 @@ def _measured(word, frame_id, template, p_c, rows, c):
     unit = {"n": 1, "sum_m": 0.0, "sum_m2": 1.0, "ss_res": 0.0, "tv_err": 0.0, "tv": 1.0}
     return {"token": word, "frame_id": frame_id, "template": template, "p_c": p_c, "rows": rows, "self": self_values, "c_1": c / 2, "c_2": c / 2, "c": c, "c_level1": c,
             "c_L": 0.1, "c_M": 0.1, "c_H": 0.0, "c_k": {k: 0.0 for k in ra.COMPONENT_ORDER}, "P1": 0.5, "q_T": 0.5, "g_E": 0.4, "prediction": {},
-            "statistics": {"level0F": {"1": unit, "2": unit}}, "ladder_statistics": {name: {"1": unit, "2": unit} for name in (*fch.ABLATIONS, "level0_015", "level1")},
+            "statistics": {"level0F": {"1": unit, "2": unit}}, "ladder_statistics": {name: {"1": unit, "2": unit} for name in fch.LADDER_RUNGS},
             "ladder": {key: 0.1 for key in fch.LADDER_KEYS} | {"level1_error": 0.0}, "sigma": {"1": {"ref": 1.0, "after_predicted": 1.1, "after_measured": 1.1}, "2": {"ref": 1.0, "after_predicted": 1.1, "after_measured": 1.1}},
-            "scale_remainder": {"1": 0.0, "2": 0.0}, "identities": {}}
+            "norm_ratio": {"1": 0.9, "2": 0.8}, "scale_remainder": {"1": 0.0, "2": 0.0}, "identities": {}}
 
 
 def _table_row(word, frame_id, template, p_c, rows, c_hat, rows_scale, c_scale, rows_diag):
