@@ -86,7 +86,9 @@ N_HEADS = ap.N_HEADS
 HEAD_KEYS = ap.HEAD_KEYS
 ROW_MODELS = ("level0", "axis", "diag_L0")  # the committed row predictions of a table entry
 RUNGS = ("level1", "diag_oracle", "query_only", "key_only", "additive", "linearised", "frozen_arrival")  # descriptive, own state, exact arriving change
-PREDICTION_COLUMNS = ("token", "frame_id", "template", "p_c", "rows_level0", "self_level0", "c_hat_1", "c_hat_2", "c_hat", "rows_axis", "c_axis", "rows_diag_L0", "c_diag_L0", "arrival_read")
+PREDICTION_COLUMNS = ("token", "frame_id", "template", "p_c", "rows_level0", "self_level0", "c_hat_1", "c_hat_2", "c_hat", "rows_axis", "c_axis", "rows_diag_L0", "c_diag_L0", "arrival_read",
+                      "c_L_level0", "c_M_level0", "c_H_level0")  # the last three: the fully decoded layer contribution at Level 0 (the re-derived Experiment 013 ladder; descriptive)
+LADDER_KEYS = ("c_012", "c_013_own", "c_L_level0", "c_L_level1")  # the ladder of decoded predictions of c_L: 012 token-local MLPs, 013 frozen-pattern at the own base, 015 Level 0, 015 Level 1 (exact)
 
 CANDIDATES: dict[str, tuple[str, ...]] = {
     "determiner-like": ("fourth", "fifth", "particular", "previous", "final", "initial", "upper", "respective", "individual"),
@@ -364,6 +366,12 @@ class TokenLocalModel:
         out["diag_rows"] = diag
         out["c_diag"] = {layer: self.read_of(rows[layer].pattern_change_vectors(diag[layer], out["values"][layer]), denominator) for layer in HEAD_LAYERS}
         out["arrival_read"] = self.read.inner(dx2) / denominator
+        # The fully decoded layer contribution at Level 0 (the re-derived Experiment 013 ladder): both MLP terms at the bases, both attention output changes from the Level-0 rows and values.
+        mlp = {1: self.lw.delta_out(1, xb1, delta_e), 2: self.lw.delta_out(2, xb2, dx2)}
+        attention = {1: rows[1].output_change(A1, v1), 2: rows[2].output_change(A2, v2)}
+        out["c_M"] = self.read.inner(mlp[1] + mlp[2]) / denominator
+        out["c_H"] = self.read.inner(attention[1] + attention[2]) / denominator
+        out["c_L"] = out["c_M"] + out["c_H"]
         return out
 
     def level_one(self, weights: pm.Weights, rows: Mapping[int, ReferenceRow], x1: torch.Tensor, x2: torch.Tensor, token_id: int, template: str) -> dict[str, Any]:
@@ -379,6 +387,11 @@ class TokenLocalModel:
         A2 = rows[2].row(q2, k2)
         out = {"rows": {1: A1, 2: A2}, "values": {1: v1, 2: v2}, "normed": {1: n1, 2: n2}, "dx": {1: delta_e, 2: dx2}, "delta_e": delta_e, "denominator": denominator}
         out["c"] = {layer: self.read_of(rows[layer].pattern_change_vectors(out["rows"][layer], out["values"][layer]), denominator) for layer in HEAD_LAYERS}
+        mlp = {1: self.lw.delta_out(1, x1, delta_e), 2: self.lw.delta_out(2, x2, dx2)}
+        attention = {1: rows[1].output_change(A1, v1), 2: rows[2].output_change(A2, v2)}
+        out["c_M"] = self.read.inner(mlp[1] + mlp[2]) / denominator
+        out["c_H"] = self.read.inner(attention[1] + attention[2]) / denominator
+        out["c_L"] = out["c_M"] + out["c_H"]
         return out
 
     def axis_only(self, rows: Mapping[int, ReferenceRow], x_ref: Mapping[int, torch.Tensor], dx_exact: Mapping[int, torch.Tensor], denominator: float) -> dict[str, Any]:
@@ -393,20 +406,24 @@ class TokenLocalModel:
             out["c"][layer] = self.read_of(rows[layer].pattern_change_vectors(out["rows"][layer], v), denominator)
         return out
 
-    def predict(self, weights: pm.Weights, x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor], token_id: int, template: str) -> dict[str, Any]:
-        """A table entry: the Level-0 rows and reads, the axis-only rows and read, the Level-0 diagonal-proportional rows and read."""
-        rows = reference_rows(self.programs, x1_all, x2_all)
+    def parts(self, weights: pm.Weights, rows: Mapping[int, ReferenceRow], x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor], token_id: int, template: str) -> dict[str, Any]:
+        """Level 0, Level 1 and the axis-only alternative on one frame's reference rows, plus the table entry built from them."""
         p_c = rows[1].p_c
         zero = self.level_zero(weights, rows, token_id, template)
         one = self.level_one(weights, rows, x1_all[p_c], x2_all[p_c], token_id, template)
         axis = self.axis_only(rows, {1: x1_all[p_c].double(), 2: x2_all[p_c].double()}, one["dx"], zero["denominator"])
-        return {"p_c": p_c,
-                "rows_level0": {str(layer): rows_to_json(zero["rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS},
-                "self_level0": {ap.head_key(layer, h): float(zero["rows"][layer][h, p_c] - rows[layer].A_ref[h, p_c]) for layer in HEAD_LAYERS for h in range(N_HEADS)},
-                "c_hat_1": zero["c"][1], "c_hat_2": zero["c"][2], "c_hat": zero["c"][1] + zero["c"][2],
-                "rows_axis": {str(layer): rows_to_json(axis["rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS}, "c_axis": axis["c"][1] + axis["c"][2],
-                "rows_diag_L0": {str(layer): rows_to_json(zero["diag_rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS}, "c_diag_L0": zero["c_diag"][1] + zero["c_diag"][2],
-                "arrival_read": zero["arrival_read"]}
+        entry = {"p_c": p_c,
+                 "rows_level0": {str(layer): rows_to_json(zero["rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS},
+                 "self_level0": {ap.head_key(layer, h): float(zero["rows"][layer][h, p_c] - rows[layer].A_ref[h, p_c]) for layer in HEAD_LAYERS for h in range(N_HEADS)},
+                 "c_hat_1": zero["c"][1], "c_hat_2": zero["c"][2], "c_hat": zero["c"][1] + zero["c"][2],
+                 "rows_axis": {str(layer): rows_to_json(axis["rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS}, "c_axis": axis["c"][1] + axis["c"][2],
+                 "rows_diag_L0": {str(layer): rows_to_json(zero["diag_rows"][layer] - rows[layer].A_ref, layer) for layer in HEAD_LAYERS}, "c_diag_L0": zero["c_diag"][1] + zero["c_diag"][2],
+                 "arrival_read": zero["arrival_read"], "c_L_level0": zero["c_L"], "c_M_level0": zero["c_M"], "c_H_level0": zero["c_H"]}
+        return {"rows": rows, "zero": zero, "one": one, "axis": axis, "entry": entry}
+
+    def predict(self, weights: pm.Weights, x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor], token_id: int, template: str) -> dict[str, Any]:
+        """A table entry: the Level-0 rows and reads, the axis-only rows and read, the Level-0 diagonal-proportional rows and read, the decoded layer contribution."""
+        return self.parts(weights, reference_rows(self.programs, x1_all, x2_all), x1_all, x2_all, token_id, template)["entry"]
 
     def predict_from_state(self, weights: pm.Weights, state: ap.FrameState013, token_id: int, template: str) -> dict[str, Any]:
         return self.predict(weights, state.x1_all, state.x2_all, token_id, template)
@@ -510,19 +527,18 @@ def analyse_pair_015(record: ra.Attribution, plural: ra.Attribution, *, context:
     measured_c = {layer: sum(tlm.read.inner(split[key]["pattern_change"]) for key in HEAD_KEYS if ap.layer_of(key) == layer) / denominator for layer in HEAD_LAYERS}
     A_ref = {1: state.A1[:, : p_c + 1].double(), 2: state.A2[:, : p_c + 1].double()}
     measured_rows = {layer: A_patch[layer] - A_ref[layer] for layer in HEAD_LAYERS}  # the captured patched row minus the captured reference row: a measurement, nothing recomputed
-    # Level 1 and I2: the exact chain against the captured residual before block 2.
-    one = tlm.level_one(weights, rows, state.x1, state.x2, record.token_id, template)
+    # Level 1 and I2: the exact chain against the captured residual before block 2; Level 0 and the alternative as the table would hold them.
+    parts = tlm.parts(weights, rows, state.x1_all, state.x2_all, record.token_id, template)
+    one, zero, prediction = parts["one"], parts["zero"], parts["entry"]
     identities["I2_chain"] = lc.relative_vector_error(one["dx"][2], x_patch[2] - x_ref[2], x_ref[2])
     if identities["I2_chain"] > CHAIN_IDENTITY_TOLERANCE:
         raise pm.IncidentError(f"{frame.frame_id}/{record.token}: the exact chain does not reproduce the captured residual before block 2 (relative error {identities['I2_chain']:.2e})")
     identities["I1_level1_rows"] = max(float((one["rows"][layer] - A_patch[layer]).abs().max()) for layer in HEAD_LAYERS)
-    # Level 0, the alternative and the comparator, as the table would hold them.
-    prediction = tlm.predict_from_state(weights, state, record.token_id, template)
     measured_json = {str(layer): rows_to_json(measured_rows[layer], layer) for layer in HEAD_LAYERS}
     statistics: dict[str, dict[str, dict[str, float]]] = {}
     for name, key in (("level0", "rows_level0"), ("axis", "rows_axis"), ("diag_L0", "rows_diag_L0")):
         statistics[name] = {str(layer): _statistics_of(measured_json, prediction[key], layer) for layer in HEAD_LAYERS}
-    # Rungs at the frame's own state with the exact arriving change (descriptive).
+    # Rungs at the frame's own state with the exact arriving change (descriptive); the oracle comparator's read uses the Level-0 values (V/O part (b)), as the spec scores both comparators.
     rung_rows: dict[str, dict[int, torch.Tensor]] = {"level1": one["rows"], "diag_oracle": {layer: rows[layer].proportional(one["rows"][layer][:, p_c]) for layer in HEAD_LAYERS}}
     query_only, key_only, additive, linearised = {}, {}, {}, {}
     for layer in HEAD_LAYERS:
@@ -535,14 +551,19 @@ def analyse_pair_015(record: ra.Attribution, plural: ra.Attribution, *, context:
     arrival_013 = nf.arriving_change(context.fpm, weights, state.x1, {key: state.pattern_weight(key) for key in HEAD_KEYS}, record.token_id, template)["total"]
     rung_rows["frozen_arrival"] = {1: one["rows"][1], 2: rows[2].row_from_state(tlm.programs[2].normalize(x_ref[2] + arrival_013))}
     rung_statistics = {name: {str(layer): row_statistics(entry[layer] - rows[layer].A_ref, measured_rows[layer]) for layer in HEAD_LAYERS} for name, entry in rung_rows.items()}
-    rung_reads = {name: {str(layer): tlm.read_of(rows[layer].pattern_change_vectors(entry[layer], one["values"][layer]), denominator) for layer in HEAD_LAYERS} for name, entry in rung_rows.items()}
+    rung_values = {name: (zero["values"] if name == "diag_oracle" else one["values"]) for name in rung_rows}
+    rung_reads = {name: {str(layer): tlm.read_of(rows[layer].pattern_change_vectors(entry[layer], rung_values[name][layer]), denominator) for layer in HEAD_LAYERS} for name, entry in rung_rows.items()}
     diagonal = {str(layer): {name: value.tolist() for name, value in rows[layer].diagonal_terms(one["normed"][layer]).items()} for layer in HEAD_LAYERS}
     norm_ratio = {str(layer): float(one["dx"][layer].norm() / (x_ref[layer] - x_ref[layer].mean()).norm()) for layer in HEAD_LAYERS}
+    # The re-derived Experiment 013 ladder: the decoded predictions of c_L from Experiment 012 (token-local MLPs at the bases), Experiment 013 (frozen patterns at the own base), Level 0 and Level 1.
+    thirteen = context.fpm.predict_from_state(weights, state, record.token_id, template)
+    ladder = {"c_012": thirteen["c_012"], "c_013_own": thirteen["c_L_hat"], "c_L_level0": zero["c_L"], "c_M_level0": zero["c_M"], "c_H_level0": zero["c_H"], "c_L_level1": one["c_L"], "c_M_level1": one["c_M"], "c_H_level1": one["c_H"],
+              "level1_error": abs(one["c_L"] - base["c_L"])}
     return {"token": record.token, "token_id": record.token_id, "frame_id": frame.frame_id, "template": template, "p_c": p_c,
             "rows": measured_json, "self": {key: split[key]["delta_A_pc"] for key in HEAD_KEYS},
             "c_1": measured_c[1], "c_2": measured_c[2], "c": measured_c[1] + measured_c[2], "c_level1": one["c"][1] + one["c"][2],
             "c_L": base["c_L"], "c_M": base["c_M"], "c_H": base["c_H"], "c_k": base["c_k"], "P1": base["P1"], "q_T": base["q_T"], "g_E": base["g_E"],
-            "prediction": prediction, "statistics": statistics, "rung_statistics": rung_statistics, "rung_reads": rung_reads,
+            "prediction": prediction, "statistics": statistics, "rung_statistics": rung_statistics, "rung_reads": rung_reads, "ladder": ladder,
             "diagonal_terms": diagonal, "norm_ratio": norm_ratio, "identities": {**base["identities"], **identities}}
 
 
@@ -900,6 +921,9 @@ def _token_means(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Ma
             "c_mean": mean(a["c"] for a in analyses), "c_1_mean": mean(a["c_1"] for a in analyses), "c_2_mean": mean(a["c_2"] for a in analyses),
             "c_hat_mean": mean(p["c_hat"] for p in predictions), "c_hat_1_mean": mean(p["c_hat_1"] for p in predictions), "c_hat_2_mean": mean(p["c_hat_2"] for p in predictions),
             "c_axis_mean": mean(p["c_axis"] for p in predictions), "c_diag_L0_mean": mean(p["c_diag_L0"] for p in predictions), "arrival_read_mean": mean(p["arrival_read"] for p in predictions),
+            "c_L_mean": mean(a["c_L"] for a in analyses), "c_M_mean": mean(a["c_M"] for a in analyses), "c_H_mean": mean(a["c_H"] for a in analyses),
+            "ladder_mean": {key: mean(a["ladder"][key] for a in analyses) for key in (*LADDER_KEYS, "c_M_level0", "c_H_level0", "c_M_level1", "c_H_level1")},
+            "rung_read_mean": {name: mean(a["rung_reads"][name]["1"] + a["rung_reads"][name]["2"] for a in analyses) for name in RUNGS},
             "self_mean": {key: mean(a["self"][key] for a in analyses) for key in HEAD_KEYS}, "self_hat_mean": {key: mean(p["self_level0"][key] for p in predictions) for key in HEAD_KEYS}}
 
 
@@ -942,6 +966,18 @@ def _rung_statistics(analyses: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def _ladder_statistics(analyses: Sequence[Mapping[str, Any]], means: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+    """The re-derived Experiment 013 ladder: each decoded prediction of c_L against the measured c_L, per pair and (when token means are given) per token; Level 1's residual is a check."""
+    out: dict[str, Any] = {"pairs": {key: comparison([a["ladder"][key] for a in analyses], [a["c_L"] for a in analyses]) for key in LADDER_KEYS},
+                           "pairs_M_level0": comparison([a["ladder"]["c_M_level0"] for a in analyses], [a["c_M"] for a in analyses]), "pairs_H_level0": comparison([a["ladder"]["c_H_level0"] for a in analyses], [a["c_H"] for a in analyses]),
+                           "level1_error_max": max((a["ladder"]["level1_error"] for a in analyses), default=None)}
+    if means:
+        names = sorted(means)
+        out["token_means"] = {key: comparison([means[n]["ladder_mean"][key] for n in names], [means[n]["c_L_mean"] for n in names]) for key in LADDER_KEYS}
+        out["token_means_rung_reads"] = {name: comparison([means[n]["rung_read_mean"][name] for n in names], [means[n]["c_mean"] for n in names]) for name in RUNGS}
+    return out
+
+
 def statistics_for(pairs: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]], tokens: Sequence[str]) -> dict[str, Any]:
     """Token-mean and pair-level statistics of Level 0, the alternative and the comparators, plus the rungs (the exposed record)."""
     by_token = {name: [(a, p) for a, p in zip(pairs, predictions) if a["token"] == name] for name in tokens}
@@ -951,7 +987,7 @@ def statistics_for(pairs: Sequence[Mapping[str, Any]], predictions: Sequence[Map
     return {"n_tokens": len(names), "n_pairs": len(pairs),
             "token_means": {"c_hat_vs_c": comparison(m("c_hat_mean"), m("c_mean")), "c_axis_vs_c": comparison(m("c_axis_mean"), m("c_mean")), "c_diag_L0_vs_c": comparison(m("c_diag_L0_mean"), m("c_mean")),
                             "c_hat_1_vs_c_1": comparison(m("c_hat_1_mean"), m("c_1_mean")), "c_hat_2_vs_c_2": comparison(m("c_hat_2_mean"), m("c_2_mean")), "c_spread": ap.spread(m("c_mean"))},
-            "pairs": _pair_statistics(pairs, predictions), "rungs": _rung_statistics(pairs), "token_means_table": means}
+            "pairs": _pair_statistics(pairs, predictions), "rungs": _rung_statistics(pairs), "ladder": _ladder_statistics(pairs, means), "token_means_table": means}
 
 
 def _per_frame(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1303,7 +1339,9 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
         if len(keys) >= min_frames:
             scored_pairs.extend(zip(analyses, predictions))
     scored = [word for word, entry in tokens_out.items() if entry["scored"]]
-    result: dict[str, Any] = {"tokens": tokens_out, "scored_tokens": scored, "n_pairs": len(scored_pairs)}
+    every_pair = [(pairs[key], table[key]) for key in sorted(pairs) if key in table]
+    result: dict[str, Any] = {"tokens": tokens_out, "scored_tokens": scored, "n_pairs": len(scored_pairs),
+                              "per_frame": _per_frame([a for a, _ in every_pair], [p for _, p in every_pair])}  # every measured pair of the set, reported regardless of the outcome
     if len(scored) >= 2:
         analyses = [a for a, _ in scored_pairs]
         predictions = [p for _, p in scored_pairs]
@@ -1314,7 +1352,7 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
                                          ("entry_r2_layer1", entry_1 is not None and entry_1 >= Y_ENTRY_R2), ("entry_r2_layer2", entry_2 is not None and entry_2 >= Y_ENTRY_R2)) if not ok]
         result["test"] = {**c, "entry_r2_layer1": entry_1, "entry_r2_layer2": entry_2, "passed": not failing, "failing": failing, "floors": {"spearman": Y_SPEARMAN, "r2": Y_R2, "entry_r2": Y_ENTRY_R2}}
         result["axis"] = {"token_means": comparison([tokens_out[w]["c_axis_mean"] for w in scored], [tokens_out[w]["c_mean"] for w in scored]), "entries": pair_stats["axis"]}
-        result["descriptive"] = {"pairs": pair_stats, "rungs": _rung_statistics(analyses), "per_frame": _per_frame(analyses, predictions),
+        result["descriptive"] = {"pairs": pair_stats, "rungs": _rung_statistics(analyses), "ladder": _ladder_statistics(analyses, {w: tokens_out[w] for w in scored}),
                                  "token_means_c_1": comparison([tokens_out[w]["c_hat_1_mean"] for w in scored], [tokens_out[w]["c_1_mean"] for w in scored]),
                                  "token_means_c_2": comparison([tokens_out[w]["c_hat_2_mean"] for w in scored], [tokens_out[w]["c_2_mean"] for w in scored]),
                                  "token_means_diag_L0": comparison([tokens_out[w]["c_diag_L0_mean"] for w in scored], [tokens_out[w]["c_mean"] for w in scored]),
@@ -1389,6 +1427,11 @@ def render_report(state: Mapping[str, Any]) -> str:
     def pooled_line(p: Mapping[str, Any]) -> str:
         return f"layer 1 entry R² {f(p['1']['entry_r2'], 3)} (TV ratio {f(p['1']['tv_ratio'], 3)}), layer 2 entry R² {f(p['2']['entry_r2'], 3)} (TV ratio {f(p['2']['tv_ratio'], 3)}), both {f(p['both']['entry_r2'], 3)}"
 
+    def ladder_line(l: Mapping[str, Any]) -> str:
+        tm = l.get("token_means", {})
+        parts = [f"`{key}` pairs R² {f(l['pairs'][key]['r2'], 3)}" + (f" / token means R² {f(tm[key]['r2'], 3)}" if key in tm else "") for key in LADDER_KEYS]
+        return "Ladder of decoded c_L: " + "; ".join(parts) + f"; Level-0 c_M R² {f(l['pairs_M_level0']['r2'], 3)}, c_H R² {f(l['pairs_H_level0']['r2'], 3)}; Level 1's residual max {f(l['level1_error_max'], 6)}"
+
     def rungs_lines(r: Mapping[str, Any]) -> list[str]:
         out = [f"  - rung `{name}`: layer 1 entry R² {f(r[name]['1']['entry_r2'], 3)} (TV {f(r[name]['1']['tv_ratio'], 3)}), layer 2 {f(r[name]['2']['entry_r2'], 3)} (TV {f(r[name]['2']['tv_ratio'], 3)}); read vs c_ΔA {cmp_line(r[name]['read_vs_c'])}" for name in RUNGS]
         d = r["diagonal_terms_rms"]
@@ -1406,6 +1449,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- Level 0 entries ({x['n_pairs']} pairs): {pooled_line(x['pairs']['level0'])}; self weights pooled {cmp_line(x['pairs']['self_level0']['pooled'])}; pairs ĉ_ΔA vs c_ΔA {cmp_line(x['pairs']['c_hat_vs_c'])}",
                   f"- Axis-only: token means {cmp_line(x['token_means']['c_axis_vs_c'])}; entries {pooled_line(x['pairs']['axis'])}",
                   f"- Diagonal-proportional (Level-0 self weight): token means {cmp_line(x['token_means']['c_diag_L0_vs_c'])}; entries {pooled_line(x['pairs']['diag_L0'])}; margin of Level 0 over it {', '.join(f'layer {k} {f(v, 3)}' for k, v in x['pairs']['comparator_margin'].items())} → interaction beyond the self logit: {x['pairs']['interaction_beyond_self_logit']}",
+                  f"- {ladder_line(x['ladder'])}",
                   "- Rungs (own state, exact arriving change; descriptive):"] + rungs_lines(x["rungs"]) + [""]
     if state.get("lock"):
         lines += ["## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}`; predictions sha256 `{state['lock']['predictions_sha256']}`", ""]
@@ -1431,12 +1475,16 @@ def render_report(state: Mapping[str, Any]) -> str:
                 lines.append(f"  - Level 0 entries: {pooled_line(d['pairs']['level0'])}; self weights pooled {cmp_line(d['pairs']['self_level0']['pooled'])}; pairs ĉ_ΔA vs c_ΔA {cmp_line(d['pairs']['c_hat_vs_c'])}; per layer token means {cmp_line(d['token_means_c_1'])} | {cmp_line(d['token_means_c_2'])}; c_ΔA spread sd {f(d['c_spread'], 4)}")
                 lines.append(f"  - axis-only on this set: token means {cmp_line(y['axis']['token_means'])}; entries {pooled_line(y['axis']['entries'])}")
                 lines.append(f"  - diagonal-proportional (Level-0 self weight) on this set: token means {cmp_line(d['token_means_diag_L0'])}; entries {pooled_line(d['pairs']['diag_L0'])}; margin {', '.join(f'layer {k} {f(v, 3)}' for k, v in d['pairs']['comparator_margin'].items())}")
+                lines.append(f"  - {ladder_line(d['ladder'])}")
                 lines += rungs_lines(d["rungs"])
-                if key == "Y2":
-                    for frame_id, entry in d["per_frame"].items():
-                        lines.append(f"  - frame {frame_id}: {entry['n_pairs']} pairs; Level 0 entry R² layer 1 {f(entry['level0_layer1']['entry_r2'], 3)} (TV {f(entry['level0_layer1']['tv_ratio'], 3)}), layer 2 {f(entry['level0_layer2']['entry_r2'], 3)} (TV {f(entry['level0_layer2']['tv_ratio'], 3)}); ĉ_ΔA vs c_ΔA {cmp_line(entry['c_hat_vs_c'])}; axis-only entry R² {f(entry['axis_layer1']['entry_r2'], 3)} / {f(entry['axis_layer2']['entry_r2'], 3)}")
             else:
                 lines.append(f"- {label}: not evaluable ({len(y['scored_tokens'])} scored tokens; {'precondition ok' if pre['passed'] else 'PRECONDITION FAILED'})")
+            if key == "Y2":
+                for frame_id, entry in y.get("per_frame", {}).items():
+                    lines.append(f"  - frame {frame_id}: {entry['n_pairs']} pairs; Level 0 entry R² layer 1 {f(entry['level0_layer1']['entry_r2'], 3)} (TV {f(entry['level0_layer1']['tv_ratio'], 3)}), layer 2 {f(entry['level0_layer2']['entry_r2'], 3)} (TV {f(entry['level0_layer2']['tv_ratio'], 3)}); ĉ_ΔA vs c_ΔA {cmp_line(entry['c_hat_vs_c'])}; axis-only entry R² {f(entry['axis_layer1']['entry_r2'], 3)} / {f(entry['axis_layer2']['entry_r2'], 3)}")
+                for frame_id, entry in confirmation["frames"].items():
+                    if entry.get("template_defined") and not entry.get("valid"):
+                        lines.append(f"  - frame {frame_id}: invalid at stage 1 (no fresh cue prompt run)")
         y3 = confirmation["Y3"]
         if y3.get("evaluable"):
             lines.append(f"- Y3 (axis-only alternative over both sets, {y3['n_token_means']} token means / {y3['n_pairs']} pairs): token means {cmp_line(y3)} (rejected iff R² < {Y3_R2_MAX}); pooled entry R² {f(y3['entry_r2'], 3)} (rejected iff < {Y3_ENTRY_R2_MAX}) → {'REJECTED' if y3['rejected'] else 'NOT REJECTED'}; Level 0 on the same data: token means {cmp_line(y3['level0_on_same_data']['token_means'])}, entries {pooled_line(y3['level0_on_same_data']['entries'])}")

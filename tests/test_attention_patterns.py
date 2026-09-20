@@ -253,9 +253,12 @@ def test_program_identities_models_and_invariant_on_the_fake(inputs, monkeypatch
     for layer in atp.HEAD_LAYERS:
         measured = atp.rows_from_json(analysis["rows"][str(layer)], layer)
         assert measured.sum(-1) == pytest.approx(torch.zeros(8), abs=1e-6)
-        assert measured[:, frame.p_c].tolist() == pytest.approx([analysis["self"][ap.head_key(layer, h)] for h in range(8)], abs=1e-12)
+        assert measured[:, frame.p_c].tolist() == pytest.approx([analysis["self"][ap.head_key(layer, h)] for h in range(8)], abs=1e-6)  # the same captured differences, float32 vs float64 subtraction
     p = analysis["prediction"]
     assert set(p) == set(atp.PREDICTION_COLUMNS[3:]) and p["c_hat"] == pytest.approx(p["c_hat_1"] + p["c_hat_2"]) and p["p_c"] == frame.p_c
+    ladder = analysis["ladder"]
+    assert ladder["c_L_level1"] == pytest.approx(analysis["c_L"], abs=1e-4) and ladder["level1_error"] < 1e-4 and ladder["c_M_level1"] == pytest.approx(analysis["c_M"], abs=1e-4) and ladder["c_H_level1"] == pytest.approx(analysis["c_H"], abs=1e-4)  # Level 1 accounts for all of c_L
+    assert p["c_L_level0"] == pytest.approx(p["c_M_level0"] + p["c_H_level0"]) and ladder["c_L_level0"] == p["c_L_level0"] and ladder["c_013_own"] == pytest.approx(fpm.predict_from_state(weights, state, token_id, template)["c_L_hat"])
     for layer in atp.HEAD_LAYERS:
         for key in ("rows_level0", "rows_axis", "rows_diag_L0"):
             predicted = atp.rows_from_json(p[key][str(layer)], layer)
@@ -287,7 +290,7 @@ def test_program_identities_models_and_invariant_on_the_fake(inputs, monkeypatch
     assert means[name]["n_frames"] == 3 and set(means[name]["self_hat_mean"]) == set(atp.HEAD_KEYS)
     # Statistics over a small exposed set run end to end; the stored form drops the predicted rows and keeps the statistics.
     stats = atp.statistics_for([analysis], [p], [name])
-    assert stats["n_pairs"] == 1 and stats["pairs"]["level0"]["1"]["n_entries"] == 8 * (frame.p_c + 1) and set(stats["rungs"]) >= set(atp.RUNGS)
+    assert stats["n_pairs"] == 1 and stats["pairs"]["level0"]["1"]["n_entries"] == 8 * (frame.p_c + 1) and set(stats["rungs"]) >= set(atp.RUNGS) and set(stats["ladder"]["pairs"]) == set(atp.LADDER_KEYS)
     compact = atp.compact_analysis(analysis)
     assert set(compact["prediction"]) == set(atp.PREDICTION_COLUMNS[3:]) - {"rows_level0", "rows_axis", "rows_diag_L0"} and compact["statistics"] == analysis["statistics"] and compact["rows"] == analysis["rows"]
 
@@ -297,6 +300,7 @@ def _measured(word, frame_id, template, p_c, rows, c, self_values):
             "c_L": 0.1, "c_M": 0.1, "c_H": 0.0, "c_k": {k: 0.0 for k in ra.COMPONENT_ORDER}, "P1": 0.5, "q_T": 0.5, "g_E": 0.4, "prediction": {}, "statistics": {},
             "rung_statistics": {name: {"1": {"n": 1, "sum_m": 0.0, "sum_m2": 1.0, "ss_res": 0.0, "tv_err": 0.0, "tv": 1.0}, "2": {"n": 1, "sum_m": 0.0, "sum_m2": 1.0, "ss_res": 0.0, "tv_err": 0.0, "tv": 1.0}} for name in atp.RUNGS},
             "rung_reads": {name: {"1": c / 2, "2": c / 2} for name in atp.RUNGS}, "diagonal_terms": {"1": {"dq_k": [1.0], "q_dk": [0.5], "dq_dk": [0.2]}, "2": {"dq_k": [1.0], "q_dk": [0.5], "dq_dk": [0.2]}},
+            "ladder": {"c_012": 0.1, "c_013_own": 0.1, "c_L_level0": 0.1, "c_M_level0": 0.1, "c_H_level0": 0.0, "c_L_level1": 0.1, "c_M_level1": 0.1, "c_H_level1": 0.0, "level1_error": 0.0},
             "norm_ratio": {"1": 0.9, "2": 0.8}, "identities": {}}
 
 
@@ -312,7 +316,8 @@ def _rows(seed, p_c, scale=1.0):
 
 def _table_row(word, frame_id, template, p_c, rows, c_hat, rows_axis, c_axis, rows_diag, c_diag):
     self_values = {ap.head_key(layer, h): rows[str(layer)][ap.head_key(layer, h)][p_c] for layer in atp.HEAD_LAYERS for h in range(8)}
-    prediction = {"p_c": p_c, "rows_level0": rows, "self_level0": self_values, "c_hat_1": c_hat / 2, "c_hat_2": c_hat / 2, "c_hat": c_hat, "rows_axis": rows_axis, "c_axis": c_axis, "rows_diag_L0": rows_diag, "c_diag_L0": c_diag, "arrival_read": 0.3}
+    prediction = {"p_c": p_c, "rows_level0": rows, "self_level0": self_values, "c_hat_1": c_hat / 2, "c_hat_2": c_hat / 2, "c_hat": c_hat, "rows_axis": rows_axis, "c_axis": c_axis, "rows_diag_L0": rows_diag, "c_diag_L0": c_diag, "arrival_read": 0.3,
+                  "c_L_level0": 0.1, "c_M_level0": 0.1, "c_H_level0": 0.0}
     return atp.prediction_row(word, frame_id, template, prediction)
 
 
@@ -354,7 +359,7 @@ def test_scoring_floors_axis_rejection_and_comparator_rule_on_synthetic_tables()
     assert results["Y3"]["evaluable"] and results["Y3"]["rejected"] and results["Y3"]["entry_r2"] == pytest.approx(0.0, abs=1e-9) and results["Y3"]["r2"] < 0
     assert results["comparator"]["interaction_beyond_self_logit"] and results["comparator"]["margin"]["1"] == pytest.approx(1.0) and results["comparator"]["n_pairs"] == 18 * 12
     assert results["outcome"]["label"] == "PATTERN_CHANGE_PREDICTED_TOKENS | PATTERN_CHANGE_PREDICTED_FRAMES_CONDITIONAL | AXIS_ONLY_REJECTED"
-    assert len(results["Y2"]["descriptive"]["per_frame"]) == 6 and results["Y2"]["descriptive"]["per_frame"]["c1"]["level0_layer1"]["entry_r2"] == pytest.approx(1.0)
+    assert len(results["Y2"]["per_frame"]) == 6 and results["Y2"]["per_frame"]["c1"]["level0_layer1"]["entry_r2"] == pytest.approx(1.0) and set(results["Y1"]["descriptive"]["ladder"]["token_means"]) == set(atp.LADDER_KEYS)
     # The comparator equal to Level 0: no margin → the narrower wording.
     lock_d, stage1_d = tables(perfect, lambda w: c_values[w], nothing, lambda w: 0.0, perfect)
     assert not atp.score_confirmation(stage1_d, measured(exposed), measured(fresh), confirmation, lock_d)["comparator"]["interaction_beyond_self_logit"]
@@ -413,3 +418,30 @@ def test_render_predictions_lists_the_token_means_and_self_weights():
             "tokens": [{"word": "w", "category": "adjective"}], "predictions": {"rows": [row], "token_means": atp.token_means_from_table([row], ["w"])}}
     text = atp.render_predictions(lock)
     assert "preregistered predictions" in text and "| w | adjective | 1 | **0.0200**" in text and "L02.H07" in text and "rotary_dim 16" in text
+
+
+@pytest.mark.pythia_smoke
+def test_program_reproduces_the_pinned_model_rows_on_a_neutral_prompt():
+    """I1 on the pinned Pythia-70M with the rotary path the fake cannot exercise (cfg.rotary_dim is None on the bridge; the HuggingFace rope parameters give 16 of 64)."""
+    import os
+
+    from neural_decompiler.models import PYTHIA_70M, load_model
+
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    model = load_model(PYTHIA_70M)
+    programs = atp.programs_from_model(model)
+    assert programs[1].rotary_dim == 16 and programs[1].d_head == 64 and programs[1].rotary_base == 10000.0 and programs[2].n_heads == 8
+    ids = tuple(int(i) for i in model.to_tokens("The quick brown fox jumps over", prepend_bos=False, truncate=False)[0])  # a neutral prompt, no experiment frame or cue
+    p_c = len(ids) - 1
+    frame = pm.Frame("cardinal", "smoke-1", ids[:-1], (), {"sg": ids[-1], "pl": ids[-1]}, "smoke {cue}", origin="extension")  # the template label only shapes the Frame object; the text is not an experiment frame
+    prompt = pm.Prompt(frame, ids[-1], "smoke")
+    sites = [(f"RESID_PRE.L{layer}", k) for layer in atp.HEAD_LAYERS for k in range(p_c + 1)] + [(f"ATTN_PATTERN.L{layer}", p_c) for layer in atp.HEAD_LAYERS]
+    run = pm.capture_prompt(model, prompt, sites)
+    for layer in atp.HEAD_LAYERS:
+        residuals = [run.vector((f"RESID_PRE.L{layer}", k)).double() for k in range(p_c + 1)]
+        captured = run.vector((f"ATTN_PATTERN.L{layer}", p_c))[:, : p_c + 1].double()
+        row = atp.ReferenceRow(programs[layer], residuals)
+        assert float((row.A_ref - captured).abs().max()) < atp.ROW_IDENTITY_TOLERANCE
+        unrotated = atp.ReferenceRow(dataclasses.replace(programs[layer], rotary_dim=0), residuals)
+        assert float((unrotated.A_ref - captured).abs().max()) > 0.01  # the rotation is not optional: without it the rows are wrong

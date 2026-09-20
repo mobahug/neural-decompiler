@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import pathlib
 import json
 import shutil
 import sys
@@ -194,17 +193,16 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     parts = results["outcome"]["label"].split(" | ")
     assert parts[0] in atp.OUTCOME_Y1 and parts[1] in atp.OUTCOME_Y2 and parts[2] in atp.OUTCOME_Y3
     assert len(results["Y1"]["scored_tokens"]) == 24 and all(entry["n_valid_frames"] == 48 for entry in results["Y1"]["tokens"].values())
-    assert results["comparator"]["interaction_beyond_self_logit"] in (True, False)
-    if "descriptive" in results["Y2"]:
-        assert set(results["Y2"]["descriptive"]["per_frame"]) <= set(results["valid_frames"])
+    assert results["comparator"]["interaction_beyond_self_logit"] in (True, False) and set(results["Y2"]["per_frame"]) <= set(results["valid_frames"])
+    assert "ladder" in results["Y1"]["descriptive"] and results["Y1"]["descriptive"]["ladder"]["level1_error_max"] < 1e-3
     assert all(value < 1e-4 for value in results["identities"].values())
     assert {prompt.key for prompt in confirmation.exposed_frame_prompts} <= set(state["executed_prompt_keys"])
     with pytest.raises(atp.PhaseError):
         runner.confirm()
     assert runner.report() == 0
     report = runner.report_path.read_text()
-    pathlib.Path("/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/89e955b7-ffde-4cb5-95e1-ad98e243522d/scratchpad/fake_report_015.md").write_text(report)
-    assert "## Tier A" in report and "stage 1" in report and "stage 2" in report and "Comparator rule" in report
+    assert "## Tier A" in report and "stage 1" in report and "stage 2" in report and "Comparator rule" in report and "Ladder of decoded c_L" in report
+    assert "invalid at stage 1" in report or "- frame " in report  # the six fresh frames are reported individually regardless of the outcome
 
 
 def test_incidents_are_recorded_and_block_reruns(sandbox, monkeypatch):
