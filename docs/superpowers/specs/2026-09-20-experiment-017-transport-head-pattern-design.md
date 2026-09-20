@@ -389,8 +389,10 @@ are tested as identities; the layer-3 template bases computed and locked at `exp
 Experiment 016's per-pair `c_ΔA`, self-weight changes and decoded `c_L` for replication; the confirmation builder with
 the frozen lists and twelve frames; a runner with phases `validate`, `freeze-confirmation`, `explore`, `lock`,
 `confirm`, `report`, `confirm` in two stages. Tests: the Level 1 chain against a captured patched run on the fake
-(I4–I7 to `1e-9`); Level 0 with the exact head and all frame channels plus the renormalization terms recovers Level 1
-on the fake; the coordinated propagation step against the Level 1 chain on the fake; the boundary (a poisoned patched
+(I4–I7 within the fake's float32 capture noise, `1e-5`–`1e-4`); the switch model's Level 1 recovers the independent
+exact chain to `1e-9`; the reduced head at a base equal to the frame's own `x₃` recovers the exact head program to
+`1e-12` on a synthetic program with rotary rotation and Q/K/V biases, at `p_t = p_c` and `p_t = p_c + 1`; `F` and `Π`
+separated on synthetic rows and values; the coordinated propagation step against the Level 1 chain on the fake; the boundary (a poisoned patched
 capture at both `p_c` and `p_t` — residuals at layers 1–3, rows, head output — leaves every table column unchanged);
 the floors, Y3 with its cue-final restriction, the guard and the ladder on synthetic tables; the stage barrier; phase
 isolation; the pinned-model smoke on a neutral prompt as in Experiments 015–016.
@@ -424,4 +426,8 @@ no fresh cue prompt runs before its frame's stage-1 predictions are digested.
   predicted quantities in order, and the forbidden patched quantities at both positions; the boundary is stated as
   the chain `ΔE → decoded upstream → Δ̂x₃(p_c) → propagation → Δ̂x₃(p_t) → head Q/K → table → digest → fresh prompt`
   with the poisoned-capture test at both positions; Y3's independent failure mode and its fixed reading are stated;
-  Level 1 is confined to the identities. No floor, token, frame or alternative of revision 1 was changed.
+  Level 1 is confined to the identities. No floor, token, frame or alternative of revision 1 was changed. After the
+  implementation review (commit `b137820` reviewed), the test list above was corrected to what the fake can assert
+  (float32 capture noise for I4–I7; the recovery and the synthetic-program identities at `1e-9`/`1e-12`); the
+  descriptive accounting gained the per-template split; the `−D` ablation is recorded as moving block 2's operating
+  point at `p_c` only (there is no locked base at `p_t`). Nothing scientific changed.

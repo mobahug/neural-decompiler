@@ -190,8 +190,8 @@ def test_exact_chain_variants_identities_and_boundary_on_the_fake(inputs, monkey
         assert analysis is not None and analysis["cue_final"] == (state.p_t == state.p_c) and analysis["p_t"] == state.p_t
         ids = analysis["identities"]
         # I4–I7: the exact chain reproduces the captured layer-3 residuals at both positions, the head's patched row and the measured ΔT; ΔT = F + Π from the captures.
-        assert ids["I4_x3"] < 1e-5 and ids["I5_head_row"] < 1e-5 and ids["I6_dT"] < 1e-4 and ids["I7_split"] < 1e-5 and ids["level1_recovery"] < 1e-9
-        assert ids["I1_patched_rows"] < 1e-5 and ids["I2_chain"] < 1e-5 and ids["level1_recovery"] < 1e-9
+        assert ids["I4_x3"] < 1e-5 and ids["I5_head_row"] < 1e-5 and ids["I6_dT"] < 1e-4 and ids["I7_split"] < 1e-5 and ids["head_level1_recovery"] < 1e-9
+        assert ids["I1_patched_rows"] < 1e-5 and ids["I2_chain"] < 1e-5 and ids["level1_recovery"] < 1e-9  # Experiment 016's recovery keeps its own key
         assert analysis["statistics"]["level1"]["ss_res"] < 1e-9 and analysis["rungs"]["level1"]["dT"] == pytest.approx(analysis["dT"], abs=1e-4) and analysis["rungs"]["level1"]["Pi"] == pytest.approx(analysis["Pi"], abs=1e-4)
         assert analysis["F"] + analysis["Pi"] == pytest.approx(analysis["dT"], abs=1e-5)
         p = analysis["prediction"]
@@ -221,13 +221,20 @@ def test_exact_chain_variants_identities_and_boundary_on_the_fake(inputs, monkey
         assert len(table) == len(small.frames) and set(mine) == set(hp.PREDICTION_COLUMNS) and atp._max_numeric_difference(mine, hp.prediction_row(name, frame.frame_id, template, p), "row") < 1e-12
         poisoned = {key: value * 3.0 + 1.0 for key, value in record.extra.items()}  # the residuals at p_c and p_t of every layer, the rows and the head sites: scaled and shifted
         fields = {f.name: getattr(record, f.name) for f in record.__dataclass_fields__.values()}
-        fields.update({"extra": poisoned, "head_change": record.head_change * 3.0 + 1.0})
+        for key, value in list(fields.items()):  # every numeric patched-run quantity of the record, not only the captures
+            if isinstance(value, float):
+                fields[key] = value * 3.0 + 1.0
+            elif isinstance(value, dict) and value and all(isinstance(v, float) for v in value.values()):
+                fields[key] = {k: v * 3.0 + 1.0 for k, v in value.items()}
+            elif isinstance(value, torch.Tensor):
+                fields[key] = value * 3.0 + 1.0
+        fields["extra"] = poisoned
         poisoned_record = ra.Attribution(**fields)
         with pytest.raises(pm.IncidentError):  # the identities notice the poisoned capture …
             hp.analyse_pair_017(poisoned_record, plural, context=context, state=state)
         with pytest.MonkeyPatch.context() as guard:  # … while the prediction never looks at it: with the identity checks relaxed, the table entry is bit-identical to the clean one
             for module, names in ((hp, ("X3_IDENTITY_TOLERANCE", "ROW_IDENTITY_TOLERANCE", "DT_IDENTITY_TOLERANCE", "SPLIT_IDENTITY_TOLERANCE")), (atp, ("ROW_IDENTITY_TOLERANCE", "CHAIN_IDENTITY_TOLERANCE")),
-                                  (ap, ("OV_IDENTITY_TOLERANCE",)), (lc, ("LADDER_IDENTITY_TOLERANCE", "NEURON_IDENTITY_TOLERANCE"))):
+                                  (ap, ("OV_IDENTITY_TOLERANCE",)), (lc, ("LADDER_IDENTITY_TOLERANCE", "NEURON_IDENTITY_TOLERANCE")), (ra, ("IDENTITY_TOLERANCE", "P1_CROSS_CHECK_TOLERANCE", "NEURON_SUM_TOLERANCE"))):
                 for attr in names:
                     guard.setattr(module, attr, float("inf"))
             poisoned_analysis = hp.analyse_pair_017(poisoned_record, plural, context=context, state=state)
@@ -374,3 +381,55 @@ def test_lock_reproduction_refusal_and_predictions_rendering():
                  "tokens": [{"word": "w", "category": "adjective"}], "predictions": {"rows": [row], "token_means": hp.token_means_from_table([row], ["w"])}}
     text = hp.render_predictions(full_lock)
     assert "preregistered predictions" in text and "| w | adjective | 1 | **0.2500**" in text and "frame guard" in text and "cue-final" in text and "L03.H04" in text
+
+
+def _synthetic_program(seed: int, *, d_model: int = 12, n_heads: int = 6, d_head: int = 8, rotary_dim: int = 4) -> atp.LayerProgram:
+    generator = torch.Generator().manual_seed(seed)
+    r = lambda *shape: torch.randn(*shape, generator=generator, dtype=torch.float64)  # noqa: E731
+    return atp.LayerProgram(3, 1.0 + 0.1 * r(d_model), 0.1 * r(d_model), 1e-5, 0.3 * r(n_heads, d_model, d_head), 0.1 * r(n_heads, d_head), 0.3 * r(n_heads, d_model, d_head), 0.1 * r(n_heads, d_head),
+                            0.3 * r(n_heads, d_model, d_head), 0.1 * r(n_heads, d_head), 0.3 * r(n_heads, d_head, d_model), rotary_dim, 10000.0)
+
+
+@pytest.mark.parametrize("p_c,p_t", [(4, 4), (4, 5)])
+def test_reduced_head_at_the_frames_own_base_recovers_the_exact_head_with_rotation_and_biases(p_c, p_t):
+    """With rotary rotation and Q/K/V biases (which the fake lacks): the reduced form at a base equal to the frame's own x₃ is the exact head program, at p_t = p_c and one position later."""
+    program = _synthetic_program(11)
+    generator = torch.Generator().manual_seed(5)
+    x3_all = [torch.randn(12, generator=generator, dtype=torch.float64) * 2.0 for _ in range(p_t + 1)]
+    dx3 = {pos: torch.randn(12, generator=generator, dtype=torch.float64) for pos in sorted({p_c, p_t})}
+    d_T = torch.randn(12, generator=generator, dtype=torch.float64)
+    d_T = d_T / d_T.norm()
+    bases = {"cardinal": {"p_c": x3_all[p_c], "p_t": x3_all[p_t] if p_t != p_c else None}}
+    model = hp.HeadChainModel(None, program, bases, d_T)
+    rr3 = atp.ReferenceRow(program, x3_all)
+    exact = model.head(rr3, x3_all, dx3, p_c, p_t, "cardinal", hp.EXACT_HEAD)
+    reduced = model.head(rr3, x3_all, dx3, p_c, p_t, "cardinal", hp.LEVEL0)
+    template_only = model.head(rr3, x3_all, dx3, p_c, p_t, "cardinal", hp.TEMPLATE_HEAD)
+    for other in (reduced, template_only):
+        assert other["rows"] == pytest.approx(exact["rows"], abs=1e-12) and other["F"] == pytest.approx(exact["F"], abs=1e-12) and other["Pi"] == pytest.approx(exact["Pi"], abs=1e-12) and other["dT"] == pytest.approx(exact["dT"], abs=1e-12)
+    assert exact["rows"].shape == (6, p_t + 1) and exact["row"].shape == (p_t + 1,) and float(exact["row"].abs().max()) > 1e-3
+    # A different base (a non-uniform perturbation: a uniform shift is removed by the LayerNorm centering) makes the reduction a real reduction, and the reduced rows still sum to one.
+    bump = torch.randn(12, generator=generator, dtype=torch.float64)
+    shifted = hp.HeadChainModel(None, program, {"cardinal": {"p_c": x3_all[p_c] + bump, "p_t": (x3_all[p_t] + bump) if p_t != p_c else None}}, d_T)
+    other = shifted.head(rr3, x3_all, dx3, p_c, p_t, "cardinal", hp.LEVEL0)
+    assert other["rows"] != pytest.approx(exact["rows"], abs=1e-9) and other["rows"].sum(-1) == pytest.approx(torch.ones(6), abs=1e-12)
+
+
+def test_head_terms_separate_the_value_term_from_the_pattern_term():
+    """F is the reference row carrying the value change (zero when only the pattern moves); Π is the changed row carrying the changed values (zero when only the values move); ΔT = F + Π."""
+    program = _synthetic_program(3)
+    generator = torch.Generator().manual_seed(9)
+    x3_all = [torch.randn(12, generator=generator, dtype=torch.float64) for _ in range(5)]
+    rr3 = atp.ReferenceRow(program, x3_all)
+    d_T = torch.randn(12, generator=generator, dtype=torch.float64)
+    changed_values = rr3.values.clone()
+    changed_values[:, 4] = program.v(program.normalize(x3_all[4] + torch.randn(12, generator=generator, dtype=torch.float64)))
+    moved_rows = torch.softmax(rr3.scores_ref + torch.randn(6, 5, generator=generator, dtype=torch.float64), dim=-1)
+    value_only = hp.head_terms(program, rr3, rr3.A_ref, changed_values, d_T)
+    pattern_only = hp.head_terms(program, rr3, moved_rows, rr3.values, d_T)
+    both = hp.head_terms(program, rr3, moved_rows, changed_values, d_T)
+    assert value_only["Pi"] == 0.0 and value_only["F"] == pytest.approx(value_only["dT"]) and abs(value_only["dT"]) > 1e-6
+    assert pattern_only["F"] == 0.0 and pattern_only["Pi"] == pytest.approx(pattern_only["dT"]) and abs(pattern_only["dT"]) > 1e-6
+    assert both["F"] + both["Pi"] == pytest.approx(both["dT"], abs=1e-12) and both["F"] == pytest.approx(value_only["F"]) and both["Pi"] != pytest.approx(pattern_only["Pi"])  # Π carries the changed values
+    with_captured_reference = hp.head_terms(program, rr3, moved_rows, changed_values, d_T, row_ref=rr3.A_ref[hp.HEAD_INDEX] + 1e-3)
+    assert with_captured_reference["F"] != pytest.approx(both["F"], abs=1e-9)  # the supplied reference row is the one used

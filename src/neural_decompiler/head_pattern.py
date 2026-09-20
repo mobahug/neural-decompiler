@@ -258,24 +258,27 @@ def exact_chain(programs: Mapping[int, atp.LayerProgram], lw: lc.LayerWeights, x
     return {"dx": dx, "dx3": dx[HEAD_LAYER], "rr3": rr3, "rows3": rows, "values3": values}
 
 
-def head_terms(program: atp.LayerProgram, rr3: atp.ReferenceRow, rows_new: torch.Tensor, values_new: torch.Tensor, d_T: torch.Tensor) -> dict[str, Any]:
-    """The head's three objects from a row and values at p_t: the row change, F (the reference row carrying the value change), Π (the changed row carrying the changed values), ΔT = F + Π."""
+def head_terms(program: atp.LayerProgram, rr3: atp.ReferenceRow, rows_new: torch.Tensor, values_new: torch.Tensor, d_T: torch.Tensor, row_ref: torch.Tensor | None = None) -> dict[str, Any]:
+    """The head's three objects from a row and values at p_t: the row change, F (the reference row carrying the value change), Π (the changed row carrying the changed values), ΔT = F + Π.
+
+    ``row_ref`` is the head's reference row (the program's recomputation from the reference residuals unless the captured one is supplied)."""
     o_ref = program.output(rr3.values)[HEAD_INDEX]
     o_new = program.output(values_new)[HEAD_INDEX]
-    A_ref, A_new = rr3.A_ref[HEAD_INDEX], rows_new[HEAD_INDEX]
+    A_ref = rr3.A_ref[HEAD_INDEX] if row_ref is None else row_ref.double()
+    A_new = rows_new[HEAD_INDEX]
     F = float((A_ref @ (o_new - o_ref)) @ d_T)
     Pi = float(((A_new - A_ref) @ o_new) @ d_T)
     return {"row": A_new - A_ref, "F": F, "Pi": Pi, "dT": float(((A_new @ o_new) - (A_ref @ o_ref)) @ d_T)}
 
 
-def measured_terms(program: atp.LayerProgram, rr3: atp.ReferenceRow, A3_patch: torch.Tensor, x3_patch: Mapping[int, torch.Tensor], d_T: torch.Tensor) -> dict[str, Any]:
-    """F, Π and the row change from the captured patched row and residuals (the values at the changed positions recomputed by the head's value program)."""
+def measured_terms(program: atp.LayerProgram, rr3: atp.ReferenceRow, A3_ref: torch.Tensor, A3_patch: torch.Tensor, x3_patch: Mapping[int, torch.Tensor], d_T: torch.Tensor) -> dict[str, Any]:
+    """F, Π and the row change from the captured reference and patched rows and the captured patched residuals (the values at the changed positions recomputed by the head's value program)."""
     values = rr3.values.clone()
     for pos, x in x3_patch.items():
         values[:, pos] = program.v(program.normalize(x.double()))
     rows = rr3.A_ref.clone()
     rows[HEAD_INDEX] = A3_patch.double()
-    return head_terms(program, rr3, rows, values, d_T)
+    return head_terms(program, rr3, rows, values, d_T, row_ref=A3_ref)
 
 
 # ---------------------------------------------------------------------------
@@ -357,6 +360,7 @@ class HeadChainModel:
             x2_pt = x2_all[p_t].double()
             normed2 = {p_c: program2.normalize(x2 + dx2_pc), p_t: program2.normalize(x2_pt + dx2_pt)}
             rows2, values2 = _row_and_values(program2, rr2, normed2[p_t], normed2)
+            # Channel D at p_t is always the frame's operating point: there is no locked template base at p_t, so the −D ablation moves block 2's operating point at p_c only.
             dx3[p_t] = dx2_pt + (_attention_output(program2, rows2, values2) - rr2.output_ref) + self.fcm.lw.delta_out(2, x2_pt, dx2_pt)
             dx2[p_t] = dx2_pt
         return {"dx3": dx3, "dx2": dx2, "delta_e": delta_e, "denominator": up["denominator"], "c_L_016": up["c_L"],
@@ -449,8 +453,7 @@ class HeadChainModel:
 def model_from_locks(lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lw: lc.LayerWeights, programs: Mapping[int, atp.LayerProgram], reference_ids: Mapping[str, int], plural_ids: Mapping[str, int],
                      bases_3: Mapping[str, Mapping[str, torch.Tensor | None]]) -> HeadChainModel:
     fcm = fch.model_from_locks(lock_011, lock_012, lw, {layer: programs[layer] for layer in UPSTREAM_LAYERS}, reference_ids, plural_ids)
-    d_T = torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)
-    return HeadChainModel(fcm, programs[HEAD_LAYER], bases_3, d_T / d_T.norm())
+    return HeadChainModel(fcm, programs[HEAD_LAYER], bases_3, torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64))  # the locked axis as the measurement projects on it (no renormalization)
 
 
 def prediction_row(word: str, frame_id: str, template: str, prediction: Mapping[str, Any]) -> dict[str, Any]:
@@ -497,15 +500,15 @@ def analyse_pair_017(record: ra.Attribution, plural: ra.Attribution, *, context:
     identities["I6_dT"] = abs(level1["dT"] - record.head_change)
     if identities["I6_dT"] > DT_IDENTITY_TOLERANCE:
         raise pm.IncidentError(f"{where}: the exact chain does not reproduce the measured head change ({level1['dT']:.5f} against {record.head_change:.5f})")
-    measured = measured_terms(model.program3, rr3, A3_patch, x3_patch, model.d_T)
+    measured = measured_terms(model.program3, rr3, state.A3, A3_patch, x3_patch, model.d_T)
     identities["I7_split"] = abs(measured["F"] + measured["Pi"] - record.head_change)
     if identities["I7_split"] > SPLIT_IDENTITY_TOLERANCE:
         raise pm.IncidentError(f"{where}: ΔT ≠ F + Π from the captured quantities (difference {identities['I7_split']:.2e})")
     parts = model.parts(weights, state.x1_all, state.x2_all, state.x3_all, p_c, p_t, record.token_id, template, variants=VARIANTS)
     one = parts["variants"]["level1"]
-    identities["level1_recovery"] = max(float((one["head"]["rows"] - exact["rows3"]).abs().max()), max(float((one["upstream"]["dx3"][pos] - exact["dx3"][pos]).abs().max()) for pos in positions))
-    if identities["level1_recovery"] > RECOVERY_TOLERANCE:
-        raise pm.IncidentError(f"{where}: the switch model's Level 1 does not recover the exact chain ({identities['level1_recovery']:.2e})")
+    identities["head_level1_recovery"] = max(float((one["head"]["rows"] - exact["rows3"]).abs().max()), max(float((one["upstream"]["dx3"][pos] - exact["dx3"][pos]).abs().max()) for pos in positions))
+    if identities["head_level1_recovery"] > RECOVERY_TOLERANCE:
+        raise pm.IncidentError(f"{where}: the switch model's Level 1 does not recover the exact chain ({identities['head_level1_recovery']:.2e})")
     prediction = parts["entry"]
     measured_row = measured["row"]
     rungs = {name: {"row": parts["variants"][name]["head"]["row"].tolist(), "F": parts["variants"][name]["head"]["F"], "Pi": parts["variants"][name]["head"]["Pi"], "dT": parts["variants"][name]["head"]["dT"]} for name in (*RUNGS, "level1")}
@@ -899,9 +902,9 @@ def _ladder_statistics(analyses: Sequence[Mapping[str, Any]], predictions: Seque
     return out
 
 
-def _split(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]], cue_final: bool) -> dict[str, Any]:
-    """The frozen pattern against Level 0 on the cue-final or the coordinated pairs (the predeclared split)."""
-    chosen = [(a, p) for a, p in zip(analyses, predictions) if a["cue_final"] == cue_final]
+def _split(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]], cue_final: bool | None = None, template: str | None = None) -> dict[str, Any]:
+    """The frozen pattern against Level 0 on the cue-final or the coordinated pairs (the predeclared split), or on one template (descriptive)."""
+    chosen = [(a, p) for a, p in zip(analyses, predictions) if (cue_final is None or a["cue_final"] == cue_final) and (template is None or a["template"] == template)]
     if not chosen:
         return {"n_pairs": 0}
     stats = _pair_statistics([a for a, _ in chosen], [p for _, p in chosen])
@@ -918,7 +921,13 @@ def statistics_for(pairs: Sequence[Mapping[str, Any]], predictions: Sequence[Map
                    "dT_frozen_vs_dT": comparison(m("dT_frozen_mean"), m("dT_mean")), **{f"dT_{name}_vs_dT": comparison(m(f"dT_{name}_mean"), m("dT_mean")) for name in RUNGS},
                    **{f"Pi_{name}_vs_Pi": comparison(m(f"Pi_{name}_mean"), m("Pi_mean")) for name in RUNGS}, "dT_spread": ap.spread(m("dT_mean")), "Pi_spread": ap.spread(m("Pi_mean"))}
     return {"n_tokens": len(names), "n_pairs": len(pairs), "token_means": token_means, "pairs": _pair_statistics(pairs, predictions), "ladder": _ladder_statistics(pairs, predictions, means),
-            "per_frame": _per_frame(pairs, predictions), "split": {"cue_final": _split(pairs, predictions, True), "coordinated": _split(pairs, predictions, False)}, "token_means_table": means}
+            "per_frame": _per_frame(pairs, predictions), "split": _splits(pairs, predictions), "token_means_table": means}
+
+
+def _splits(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """The predeclared cue-final / coordinated split and, descriptively, every template on its own."""
+    return {"cue_final": _split(analyses, predictions, cue_final=True), "coordinated": _split(analyses, predictions, cue_final=False),
+            "per_template": {template: _split(analyses, predictions, template=template) for template in pm.TEMPLATE_ORDER}}
 
 
 def _per_frame(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1307,7 +1316,7 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
         result["descriptive"] = {"pairs": pair_stats, "ladder": _ladder_statistics(analyses, predictions, {w: tokens_out[w] for w in scored}),
                                  "token_means_F": comparison([tokens_out[w]["F_hat_mean"] for w in scored], [tokens_out[w]["F_mean"] for w in scored]),
                                  "token_means_rungs": {name: {"dT": comparison([tokens_out[w][f"dT_{name}_mean"] for w in scored], [tokens_out[w]["dT_mean"] for w in scored]), "Pi": comparison([tokens_out[w][f"Pi_{name}_mean"] for w in scored], [tokens_out[w]["Pi_mean"] for w in scored])} for name in RUNGS},
-                                 "split": {"cue_final": _split(analyses, predictions, True), "coordinated": _split(analyses, predictions, False)},
+                                 "split": _splits(analyses, predictions),
                                  "dT_spread": ap.spread([tokens_out[w]["dT_mean"] for w in scored]), "Pi_spread": ap.spread([tokens_out[w]["Pi_mean"] for w in scored])}
     return result
 
@@ -1328,13 +1337,13 @@ def score_confirmation(stage1: Mapping[str, Any], pairs_exposed: Mapping[str, Ma
         for w in y["scored_tokens"]:
             pair_items.extend((pairs[k], table[k]) for k in sorted(key for key in pairs if key.split("|")[0] == w and key in table))
     analyses, predictions = [a for a, _ in pair_items], [p for _, p in pair_items]
-    cue_final = _split(analyses, predictions, True)
-    coordinated = _split(analyses, predictions, False)
+    cue_final = _split(analyses, predictions, cue_final=True)
+    coordinated = _split(analyses, predictions, cue_final=False)
     evaluable = cue_final.get("n_tokens", 0) >= 2 and cue_final.get("frozen_dT_r2") is not None and cue_final.get("level0_dT_r2") is not None
     rejected = bool(evaluable and cue_final["frozen_dT_r2"] < Y3_R2_MAX and cue_final["gap"] >= Y3_MARGIN)
     results["Y3"] = {"evaluable": evaluable, "rejected": rejected, "cue_final": cue_final, "floors": {"r2_max": Y3_R2_MAX, "margin": Y3_MARGIN},
                      "coordinated_split": {**coordinated, "expected_not_rejected": True, "would_be_rejected": bool(coordinated.get("frozen_dT_r2") is not None and coordinated.get("gap") is not None and coordinated["frozen_dT_r2"] < Y3_R2_MAX and coordinated["gap"] >= Y3_MARGIN)},
-                     "n_pairs": len(pair_items)}
+                     "per_template": {template: _split(analyses, predictions, template=template) for template in pm.TEMPLATE_ORDER}, "n_pairs": len(pair_items)}
     if len(pair_items) >= 2:
         results["ladder_both_sets"] = _ladder_statistics(analyses, predictions)
     results["outcome"] = outcome(results)
@@ -1377,7 +1386,7 @@ def render_report(state: Mapping[str, Any]) -> str:
         return f"{s['n_pairs']} pairs, {s.get('n_tokens')} tokens: Level 0 ΔT R² {f(s['level0_dT_r2'], 3)}, frozen pattern {f(s['frozen_dT_r2'], 3)}, gap {f(s['gap'], 3)}; Π variance share {f(s['Pi_variance_share'], 3)}; row entry R² {f(s['row_entry_r2'], 3)}; Π R² {f(s['Pi_r2'], 3)}"
 
     def ladder_lines(l: Mapping[str, Any]) -> list[str]:
-        return [f"  - ladder (rows / ΔT / Π R²): " + "; ".join(f"`{name}` {f(l['rows'][name], 3)} / {f(l['dT'][name], 3)} / {f(l['Pi'][name], 3)}" for name in ALL_RUNGS) + f"; `frozen` — / {f(l['dT']['frozen'], 3)} / ≡ 0",
+        return [f"  - ladder (rows / ΔT / Π R²): " + "; ".join(f"`{name}`{' (identity)' if name == 'level1' else ''} {f(l['rows'][name], 3)} / {f(l['dT'][name], 3)} / {f(l['Pi'][name], 3)}" for name in ALL_RUNGS) + f"; `frozen` — / {f(l['dT']['frozen'], 3)} / ≡ 0 (`no_D` moves block 2's operating point at p_c only)",
                 f"  - ablation costs rows: " + ", ".join(f"`{n}` {f(l['ablation_cost_rows'][n], 3)}" for n in ABLATIONS) + f" (template head ≥ −D holds: {l['predeclared_ordering_rows_holds']}); Π: " + ", ".join(f"`{n}` {f(l['ablation_cost_Pi'][n], 3)}" for n in ABLATIONS)
                 + f" (holds: {l['predeclared_ordering_Pi_holds']}); frozen gap {f(l['frozen_gap'], 3)}; Π variance share {f(l['Pi_variance_share'], 3)}",
                 f"  - x₃ remainder (relative) mean {f(l['x3_remainder']['mean'], 4)} max {f(l['x3_remainder']['max'], 4)}; scale remainder |σ(x₃') − σ̂'| mean {f(l['scale_remainder_abs_mean'], 4)}; σ̂'/σ mean {f(l['sigma_ratio_3_mean'], 3)}",
@@ -1399,6 +1408,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"- ΔT: token means {cmp_line(x['token_means']['dT_hat_vs_dT'])}; pairs {cmp_line(x['pairs']['dT_hat_vs_dT'])}; F̂ vs F pairs {cmp_line(x['pairs']['F_hat_vs_F'])}; ΔT spread sd {f(x['token_means']['dT_spread'], 4)}",
                   f"- Frozen pattern: pairs {cmp_line(x['pairs']['dT_frozen_vs_dT'])}; token means {cmp_line(x['token_means']['dT_frozen_vs_dT'])}",
                   f"- Split — cue-final: {split_line(x['split']['cue_final'])}", f"- Split — coordinated: {split_line(x['split']['coordinated'])}"]
+        lines += [f"- Template {template}: {split_line(entry)}" for template, entry in x["split"]["per_template"].items()]
         lines += ladder_lines(x["ladder"]) + [""]
     if state.get("lock"):
         lines += ["## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}`; predictions sha256 `{state['lock']['predictions_sha256']}`", ""]
@@ -1426,6 +1436,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                              f"ΔT pairs {cmp_line(t['dT_pairs'])}; ΔT token means {cmp_line(t['dT_token_means'])}{guard_text} → {'pass' if t['passed'] else 'FAIL'} {t['failing'] or ''}")
                 lines.append(f"  - frozen pattern on this set: pairs {cmp_line(y['frozen']['pairs'])}; token means {cmp_line(y['frozen']['token_means'])}; gap to Level 0 {f(y['frozen']['gap'], 3)}; F̂ vs F token means {cmp_line(d['token_means_F'])}")
                 lines.append(f"  - split — cue-final: {split_line(d['split']['cue_final'])}; coordinated: {split_line(d['split']['coordinated'])}")
+                lines += [f"  - template {template}: {split_line(entry)}" for template, entry in d["split"]["per_template"].items()]
                 lines += ladder_lines(d["ladder"])
             else:
                 lines.append(f"- {label}: not evaluable ({len(y['scored_tokens'])} scored tokens; {'precondition ok' if pre['passed'] else 'PRECONDITION FAILED'})")
@@ -1442,6 +1453,7 @@ def render_report(state: Mapping[str, Any]) -> str:
             lines.append(f"- Y3 (frozen pattern on the cue-final pairs of both sets, {c['n_pairs']} pairs, {c['n_tokens']} tokens): ΔT R² {f(c['frozen_dT_r2'], 3)} (rejected iff < {Y3_R2_MAX}) against Level 0 {f(c['level0_dT_r2'], 3)}, gap {f(c['gap'], 3)} (rejected iff ≥ {Y3_MARGIN}) → {'REJECTED' if y3['rejected'] else 'NOT REJECTED'}; Π variance share {f(c['Pi_variance_share'], 3)}")
             k = y3["coordinated_split"]
             lines.append(f"- Coordinated split (descriptive; predeclared: not rejected there): {split_line(k)}; would the criterion reject: {k['would_be_rejected']}")
+            lines += [f"- Template {template} over both sets (descriptive): {split_line(entry)}" for template, entry in y3["per_template"].items()]
         else:
             lines.append(f"- Y3: not evaluable ({y3.get('cue_final', {}).get('n_tokens', 0)} cue-final token means)")
         if "ladder_both_sets" in confirmation:

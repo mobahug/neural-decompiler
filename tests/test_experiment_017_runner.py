@@ -172,7 +172,9 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert all(len(s["x3_all"]) == s["p_t"] + 1 == len(s["x1_all"]) for s in exploration["locked_states"].values()) and any(s["p_t"] == s["p_c"] + 1 for s in exploration["locked_states"].values())
     assert set(exploration["bases_3"]) == set(pm.TEMPLATE_ORDER) and exploration["bases_3"]["coordinated-adjective"]["p_t"] is not None and exploration["bases_3"]["cardinal"]["p_t"] is None and exploration["bases_3"]["cardinal"]["n_frames"] == 22
     assert exploration["program"]["3"]["rotary_dim"] == 0 and set(exploration["program"]) == {"1", "2", "3"} and exploration["exposed_check"]["n_tokens"] == 207 and "frozen_cue_final" in exploration["summary"]
-    assert all(value < 1e-4 for key, value in exploration["identities"].items()) and exploration["identities"]["level1_recovery"] < 1e-9 and {"I4_x3", "I5_head_row", "I6_dT", "I7_split", "I5_reference_head_row"} <= set(exploration["identities"])
+    assert all(value < 1e-4 for key, value in exploration["identities"].items()) and exploration["identities"]["head_level1_recovery"] < 1e-9 and exploration["identities"]["level1_recovery"] < 1e-9
+    assert {"I4_x3", "I5_head_row", "I6_dT", "I7_split", "I5_reference_head_row", "head_level1_recovery"} <= set(exploration["identities"])
+    assert set(exploration["exposed_check"]["split"]["per_template"]) == set(pm.TEMPLATE_ORDER) and exploration["exposed_check"]["split"]["per_template"]["cardinal"]["n_pairs"] > 0
     assert not {prompt.key for prompt in confirmation.all_prompts} & set(state["executed_prompt_keys"])
     with pytest.raises(hp.PhaseError):
         runner.explore()
@@ -222,7 +224,7 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
         runner.confirm()
     assert runner.report() == 0
     report = runner.report_path.read_text()
-    assert "## Tier A" in report and "stage 1" in report and "stage 2" in report and "ladder (rows / ΔT / Π R²)" in report and "decoded c_L" in report and "Split — cue-final" in report and "Coordinated split" in report
+    assert "## Tier A" in report and "stage 1" in report and "stage 2" in report and "ladder (rows / ΔT / Π R²)" in report and "decoded c_L" in report and "Split — cue-final" in report and "Coordinated split" in report and "Template quantifier" in report
     assert "invalid at stage 1" in report or "- frame " in report  # the twelve fresh frames are reported individually regardless of the outcome
 
 
