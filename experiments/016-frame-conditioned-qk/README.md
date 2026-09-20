@@ -24,8 +24,14 @@ from a fresh cue forward pass.
   within `1e-6`), carrying also the digests of the six 015-fresh frames' stage-1 reference states; the Experiment 011
   lock's axes and read weight, the Experiment 012 lock's bases and the Experiment 015 lock's reference states (checked
   against the re-captured ones), used verbatim.
-- `confirmation-v1.json` — frozen by tokenizer rules before any Experiment 016 model output: 24 fresh cue tokens by
-  lexical class, **with no expectation attached**; twelve fresh frames (four per template); two prompt lists: the fresh
+- `confirmation-v1.json` — frozen on 2026-09-20 by tokenizer rules before any Experiment 016 model output, content
+  sha256 `e5a3a4eb392e459117ebd7dfd132fffb66f02bbd0cd75b479f5ba1afd83e3855`: 24 fresh cue tokens by lexical class,
+  **with no expectation attached** — `initial upper respective individual specific` (determiner-like), `twentieth
+  quarter twin dual` (ordinal-or-numeral), `unlimited countable total insufficient extensive` (quantity), `oneself
+  myself yourselves whoever` (possessive-or-pronoun), `bright orange pink brown grey heavy` (adjective); twelve fresh
+  frames, four per template (`The garden yields`, `The factory assembles`, `The kitchen serves`, `The workshop builds`;
+  `The essay explores`, `The teacher explains`, `The guide recommends`, `The seminar addresses`; `Liam and Ava stored …
+  cold`, `Zoe and Theo shipped … fresh`, `Nina and Arjun mixed … thick`, `Elif and Marco tied … tight`); two prompt lists: the fresh
   tokens in the 54 exposed frames (1296, Y1) and in the 12 fresh frames (288, Y2). Executed only by `confirm`.
 
 ## Commands
