@@ -1,8 +1,11 @@
-# Experiment 019: Frame-Conditioned Routing of Channel D — Is the Frame-Specific Membership of Block 2's Recovery Subset Predicted from the Frame's Reference State Before Any Fresh Cue Is Run, and by the Frame's Operating Point Alone? — A Prospective Routing Test with a Nested Ladder of Selectors
+# Experiment 019: Frame-Conditioned Routing of Channel D — Is the Frame-Specific Membership of Block 2's Recovery Subset Predicted from the Frame's Reference State Before Any Fresh Cue Is Run, and by the Frame's Operating Point Through a Frozen Drive Profile? — A Prospective Routing Test with a Nested Ladder of Selectors
 
 **Date:** 2026-09-21
 
-**Status:** Revision 1 — for review. No Experiment 019 directory, confirmation set, lock, or model run exists.
+**Status:** Revision 2 — approved in direction at revision 1 subject to the five changes under "Revision history"
+(the routing-headroom evaluability rule; Y3's per-set floors and denominator condition; the Y3 label renamed to what
+`G` uses; Y4's new-frame condition; the two-stage confirmation procedure written out as a frozen protocol), which
+this revision makes. No Experiment 019 directory, confirmation set, lock, or model run exists.
 Experiments 005–018 are closed and are not amended by this document; Experiment 018's closure stands exactly as
 recorded (`CHANNEL_D_CONCENTRATED_TOKENS | CHANNEL_D_NOT_CONCENTRATED_FRAMES_CONDITIONAL | SINGLE_NEURON_REJECTED |
 PATTERN_TERM_NOT_ESTABLISHED_WITHIN_FRAMES`, never rerun). The one Experiment 018 frame where the globally locked
@@ -22,7 +25,8 @@ subset of matched size, selected from the frame's reference state **before any f
 observed block-2 neuron effect of that frame**, recovers substantially more of channel D than the best global subset of
 the same size; whether the selection can be written as a compact operating-point rule; whether a template-level
 selection would do as well; and how far the prospective selection sits from a same-rule ceiling that is allowed to see
-the fresh cues' measured responses (the oracle, descriptive only). Nothing is fitted: every selector is a frozen rule
+the fresh cues' measured responses (the oracle: a ceiling for description and, through the routing headroom, the
+certificate that decides whether a negative result counts as evidence — never a selector). Nothing is fitted: every selector is a frozen rule
 applied to locked reference states, the weights and the exposed cues' weight-only encoding changes; every subset is
 an explicit index list committed before the fresh prompts it is scored on.
 
@@ -34,18 +38,22 @@ below:
 1. **Fixed population with frame-dependent amplitudes.** The same neurons carry channel D everywhere; the frame only
    rescales their contributions. Then no frame-specific choice of `k` neurons — not even one that knows the fresh
    cues' measured responses — recovers materially more than the best global `k` (no *routing headroom*), and every
-   prospective selector's gain over the global subset is nil.
+   prospective selector's gain over the global subset is nil. On such a set the routing question is not evaluable:
+   a selector's failure there is no evidence against routing, only compatibility with this account.
 2. **Predictable frame-conditioned routing.** Which neurons carry the computation varies by frame, and the variation
    is determined by the frame's reference state: a selector computed from that state alone — never from a fresh cue's
    forward pass in the frame — picks a `k`-subset that recovers substantially more than the global one, for unseen
    cues and unseen frames. Two levels of this account are separated: the *full evaluation* (Level 0-E: block 2's
    predicted response to the exposed calibration cues at the frame's state, the object Experiment 018 recorded
-   descriptively as each frame's "own ranking") and the *operating-point rule* (Level 0-G: the frame's reference
-   pre-activations alone, with a locked per-template drive profile — a rule that evaluates no cue in the target
-   frame and asks only where the frame has moved each neuron on its GELU relative to the template base).
+   descriptively as each frame's "own ranking") and the *operating-point-plus-drive rule* (Level 0-G: the frame's
+   reference pre-activations *plus* a frozen per-template drive profile — three quantiles per neuron of the drive
+   the cue population delivers at the template base — pushed through the exact GELU: a rule that evaluates no cue in
+   the target frame and asks only where the frame has moved each neuron on its GELU relative to the template base,
+   for the drives the cue population typically supplies; not the pre-activations alone).
 3. **Template-family subcircuits.** The redistribution is between templates, not between frames: a per-template
    ranking recovers as much as any frame-specific one.
-4. **Redistribution not predicted by the tested rules.** Headroom exists (the oracle beats the global subset) but the
+4. **Redistribution not predicted by the tested rules.** Headroom exists (the same-rule oracle beats the global
+   subset by at least 0.05) but the
    prospective selectors do not close it: the routing depends on the fresh cues' own interaction with the frame, or on
    something the reference state does not carry through the tested rules.
 
@@ -117,7 +125,8 @@ tokens (its stage-1 ranking); the frozen rule below uses the template's 254 expo
 > same rule (Y1 on unseen cues in the exposed frames; Y2 on unseen cues in eighteen unseen frames)? Is the compact
 > operating-point rule sufficient for that gain relative to the full evaluation (Y3)? Is a template-level selection
 > insufficient (Y4)? Does the predicted subset name the neurons that the fresh cues' measured responses rank highest
-> (Y5)? And, descriptively, how much room did a fresh-cue-informed oracle of the same rule have?
+> (Y5)? And did a fresh-cue-informed oracle of the same rule have room to do better — the headroom, which decides
+> whether a negative answer on a set counts as evidence against routing or as no room to route?
 
 ## The quantities under test (frozen definitions)
 
@@ -176,8 +185,11 @@ S'_1, E_1(f) the global top neuron and the frame's top neuron                   
 
 `E` is the strongest prospective selector the reference state affords: it evaluates block 2's decoded response to
 every calibration cue in the target frame, but to no fresh cue. `G` is the compact mechanism claim: the frame routes by
-its operating point — which neurons it has moved across the GELU relative to the template base — with the cue
-population's drive on each neuron represented by three locked numbers per template. `T` and `S'` are the two
+its operating point *plus a frozen drive prior* — which neurons it has moved across the GELU relative to the
+template base, for the drives the cue population typically delivers, represented by three locked numbers per
+neuron and template. It is not the reference pre-activations alone: without the drive profile the operating point
+does not rank the neurons (the first-order slope rule, the closest thing to "operating point alone", fails in the
+design checks), and the Y3 label below names both ingredients. `T` and `S'` are the two
 frame-blind comparators; `E ⊃ G ⊃ T ⊃ S'` in the frame-specific information they use, and the ladder is scored with
 one rule so that the comparisons isolate the information, not the rule.
 
@@ -205,11 +217,16 @@ pairs and a rung `S` (a fixed list, or a frame-and-position-specific selector ap
 ```text
 κ_X(S)  = ( R²_X(S) − R²_X(S_0) ) / ( R²_X(S_2048) − R²_X(S_0) )      pooled R² over the scored pairs; unclipped; undefined below a 0.05 gap (Experiment 018, verbatim)
 Δκ_k(X) = κ_{c_L}(X_k) − κ_{c_L}(S'_k)                                the routing gain of selector X at size k over the matched global subset
-ρ_k     = Δκ_k(G) / Δκ_k(E)                                            the share of the full evaluation's gain that the operating-point rule carries
+ρ_k     = Δκ_k(G) / Δκ_k(E)                                            the share of the full evaluation's gain that the operating-point-plus-drive rule carries; per set (Y1, Y2) and pooled; unclipped;
+                                                                       interpreted only where Δκ_k(E) ≥ 0.05 on the same pairs (the denominator condition)
+H_k     = κ_{c_L}(O_k) − κ_{c_L}(S'_k)                                 the routing headroom: what the same rule recovers beyond the global subset when it may see the fresh cues' measured
+                                                                       responses (a stage-2 quantity; governs only the classification of a negative routing result)
 ```
 
 `κ` is Experiment 018's statistic with its evaluability rule; `Δκ` is a difference of two closure fractions on the
-same pairs and has the same unit (a share of channel D's contribution to the read). The decision object is `c_L`; `F`,
+same pairs and has the same unit (a share of channel D's contribution to the read); `ρ` is a ratio of two such gains
+and is read only where its denominator is at least the routing floor; `H` is the oracle's gain and enters no floor of
+any prospective selector. The decision object is `c_L`; `F`,
 `Π`, `ΔT` and the row entries are reported for every selector with their `κ` descriptively, with Experiment 018's
 predeclared orderings carried (`κ_{c_L} ≥ κ_Π`; the row diffuse).
 
@@ -335,13 +352,64 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   `E_1(f)`, `S_2048`, at every `k`) — `ĉ_L`, `F̂`, `Π̂`, `ΔT̂`, the row — and the token means; the frozen floors; the
   exposed statistics; `predictions.md`. The lock records every list and table explicitly and `validate_lock`
   reproduces them from the locked states by the frozen rules.
-- **Tier C (`confirm`, once), two stages with the digested table as the barrier (Experiments 013–018's procedure):**
-  *stage 1* — the eighteen fresh frames' reference runs (exposed tokens only), I1 and the reference half of I5,
-  validity (plural-cue head change `≥ 0.25 σ_T`, cue-pair check), each valid frame's `E_k(f, p)` and `G_k(f, p)` and
-  their overlaps with `S'_k`, `T_k` and each other, the frame-conditional prediction table for every rung, serialized
-  and digested; *stage 2*, only after the digest is re-read from disk — every fresh cue's E-patch in every frame of both
-  sets with the layer-3 residuals, the head's row and the block-2 input at both changed positions captured; I1–I10;
-  the measured `c_L`, `ΔA_H`, `F`, `Π`, `ΔT` and `e_j^meas`; the oracle lists; scoring against the two tables.
+- **Tier C (`confirm`, once), two stages with the digested stage-1 record as the barrier:** written out in full in
+  the next section.
+
+## The two-stage confirmation procedure (frozen)
+
+Everything that can be fixed before a fresh frame's reference prompt runs is fixed before it, and everything that can
+be fixed before a fresh cue prompt runs is fixed, serialized and digested before it. Concretely:
+
+**Frozen before `explore` (the confirmation file `confirmation-v1.json`, tokenizer-only, committed):** the exact 24
+fresh cue tokens (word, token id, class); the exact 18 fresh frames (template, literal text, prefix and suffix token
+ids, `p_c`, `p_t`, the template's original singular and plural cue prompts in the frame); the complete prompt-key
+manifest — every fresh cue's prompt in every one of the 90 exposed frames (2160 keys) and every one of the 18 fresh
+frames (432 keys), the 18 reference prompts and the 36 cue prompts of the fresh frames — so that `confirm` refuses if
+any key was ever executed earlier and can run no prompt outside the manifest; the licensing policy (every fresh cue in
+every fresh and exposed frame); the validity rules (a frame is valid iff its plural-cue head change is at least
+`0.25 σ_T` and its cue-pair check passes; a token is scored in a set iff it has at least three valid frames there; the
+minimum counts of scored tokens and valid frames per set); the file's content digest, bound into the lock and the
+results state.
+
+**Frozen at `lock` (before `confirm`; installed and committed by hand as `preregistration-lock.json` and
+`predictions.md`):** the 90 locked reference states; `S'_k`, `T_k(τ, p)`, the drive-quantile tables of `G`, `E_k(f, p)`
+and `G_k(f, p)` for every exposed frame and position, `S'_1`, `E_1(f)`, the random controls and the inherited `S_k`,
+all as explicit index lists; every floor, margin, guard and evaluability threshold of this design as named constants
+(the interpretation table is this document's, committed before the lock); the seeds; the complete prediction table
+for the fresh cues in the exposed frames for every rung. `validate_lock` reproduces every list and table from the
+locked states by the frozen rules before any fresh prompt.
+
+**Stage 1 (the 18 fresh frames; reference and cue-pair prompts only):** for each frame, in the frozen order, one
+reference run (the template's original cue prompt; exposed tokens only) capturing the residuals before blocks 1–3 at
+every position `≤ p_t`, the layer-1–2 rows at `p_c` and the head's row at `p_t`; I1 and the reference half of I5; the
+validity checks (the frame's singular and plural cue prompts and the plural cue's E-patch, exposed tokens only);
+then, from the locked state of that run alone, `E_k(f, p)` (the template's 254 exposed cues' *predicted* effects at
+the frame's state — never a measured effect of any cue in the frame) and `G_k(f, p)` (the frame's reference
+pre-activations against the locked base and drive tables), while `T_k(τ, p)` and `S'_k` are read from the lock; the
+overlaps among the four lists; the frame-conditional prediction table for every rung and every fresh cue. The lists,
+the states and the table are serialized together, digested, written to the results state, and the stage ends. **No
+fresh cue prompt runs during stage 1; no block-2 effect of any fresh cue in any frame — and therefore no oracle —
+exists on disk or in memory before the digest is written.** The ledger after stage 1 contains only reference and
+cue-pair keys, and a test asserts it.
+
+**The barrier:** stage 2 begins by re-reading the stage-1 record from disk and verifying its digest; a missing or
+mismatched digest refuses every fresh cue prompt (Experiments 013–018's barrier, verbatim).
+
+**Stage 2 (the fresh cue prompts):** every fresh cue's E-patch in every frame of both sets, in the frozen order, with
+the layer-3 residuals, the head's row and the block-2 input at both changed positions captured; I1–I10; the measured
+`c_L`, `ΔA_H`, `F`, `Π`, `ΔT` and, from the captured block-2 input, `e_j^meas`; every locked and stage-1 prediction
+recomputed and checked against its table row before scoring; then, and only then, the oracle lists `O_k(f, p)` from
+the scored fresh cues' measured effects, used for `H_64`, as Y5's target and as the descriptive ceiling. The oracle is
+never written into any selector, table or list: one test poisons the stage-2 captures and checks that every
+prediction column and every locked or stage-1 list is unchanged; another checks that the oracle rung differs from the
+prospective rungs only in the mask it names, never in the upstream parts it is applied to.
+
+```text
+confirmation file (cues, frames, prompt keys, validity)  →  explore (exposed pool only)  →  lock (lists, tables, floors, predictions)  →  user's lock commit  →  reviewer's sign-off
+stage 1, per fresh frame:  reference run  →  E_k(f, p), G_k(f, p) from the locked state  →  table(f)  →  [serialize, digest, write]
+barrier:                   re-read from disk, verify digest
+stage 2:                   fresh cue prompts (both sets)  →  measured objects, e_j^meas  →  O_k(f, p)  →  H_64, Y5 target  →  scoring
+```
 
 ## Floors and outcome (frozen)
 
@@ -361,41 +429,71 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   committed before `confirm`):** `Δκ_64(E) ≥ 0.05` on the pooled scored pairs, **and** the frame-count guard —
   `E_64(f)` reaches a higher `c_L R²` than `S'_64` over the scored pairs of the frame in *more than half* of the valid
   frames — **and** the split guard — `Δκ_64(E) ≥ 0.02` on the cue-final split and on the coordinated split. All three
-  → `ROUTING_PREDICTED_TOKENS`; otherwise `ROUTING_NOT_PREDICTED_TOKENS` (naming the floor or guard). Preview on
-  Experiment 018's Y1: `+0.092`, 52 of 78 frames, splits `+0.072 / +0.166`; jackknife minimum `0.085`.
+  → `ROUTING_PREDICTED_TOKENS`. Otherwise the routing headroom classifies the failure: `H_64 ≥ 0.05` on the set →
+  `ROUTING_NOT_PREDICTED_TOKENS` (naming the floor or guard); `H_64 < 0.05` → `ROUTING_NOT_EVALUABLE_TOKENS` (naming
+  the headroom: a same-rule selection that knows the fresh cues' measured responses recovers less than 0.05 beyond
+  the global subset, so there was no frame-specific redistribution for a prospective selector to find on this set —
+  the fixed-population account is compatible with the set, and the failure is no evidence against routing). A
+  positive label needs no headroom certificate: the oracle is the same ranking rule informed by the fresh cues, not
+  the `R²`-optimal subset, so a prospective selector may exceed it (it does on Experiment 018's new frames); `H_64` is
+  reported on every set regardless. Preview on Experiment 018's Y1: `+0.092`, 52 of 78 frames, splits `+0.072 /
+  +0.166`; jackknife minimum `0.085`; `H_64` `+0.104`.
 - **Y2 — routing predicted, frame-conditional prospective (24 fresh cues × 18 new frames; numbers digested at stage
   1):** the same three conditions on the valid fresh frames. All → `ROUTING_PREDICTED_FRAMES_CONDITIONAL`; otherwise
-  `ROUTING_NOT_PREDICTED_FRAMES_CONDITIONAL` (naming the floor or guard). Preview on Experiment 018's twelve new
-  frames: `+0.154`, 8 of 12 frames, splits `+0.125 / +0.273`; jackknife minimum `0.128`. The eighteen frames are
-  reported individually regardless of the outcome.
-- **Y3 — the operating-point rule is sufficient (pooled over the scored pairs of both sets, pair-weighted, per-set
-  descriptives as in Experiment 018's Y3):** evaluable iff the pooled `Δκ_64(E) ≥ 0.05`; then `ρ_64 ≥ 0.60` →
-  `OPERATING_POINT_RULE_SUFFICIENT`; `ρ_64 < 0.60` → `OPERATING_POINT_RULE_INSUFFICIENT`; not evaluable →
-  `OPERATING_POINT_RULE_NOT_EVALUABLE`. Preview: `ρ_64` 0.81 pooled (0.75 on Y1, 1.01 on Y2); at `k = 16` only 0.41,
-  which is why the label is fixed at the decision size and the other sizes are descriptive. The reading of
-  `INSUFFICIENT` is fixed now: *the routing is predictable from the frame's reference state but not from block 2's
-  operating point alone — the frame's reshaping of the arriving change (its layer-1–2 reference state through
-  Experiment 016's channels and the LayerNorm at its state) selects neurons that the operating point does not.* The
-  reading of `SUFFICIENT`: *the frame routes block 2 through its operating point; which neurons carry channel D is set
-  by where the frame's reference state places them on the GELU relative to the template base, with the cue
-  population's drive on each neuron a fixed per-template profile.*
-- **Y4 — the template-family account (pooled over both sets as Y3):** `κ_{c_L}(E_64) − κ_{c_L}(T_64) ≥ 0.05` →
-  `TEMPLATE_FAMILY_INSUFFICIENT` (frame-specific selection recovers at least 0.05 beyond the template's own ranking);
-  else if `Δκ_64(T) ≥ 0.05` → `TEMPLATE_FAMILY_SUFFICIENT` (the template ranking carries the routing and the frame adds
-  less than 0.05); otherwise `TEMPLATE_FAMILY_NOT_DISTINGUISHED` (neither the template nor the frame recovers 0.05
-  over the global subset — the case that accompanies a negative Y1/Y2). Preview: `E − T` `+0.071` pooled (`+0.064 /
-  +0.112`); `T − S'` `+0.030`.
-- **Y5 — membership predicted (secondary; mean over the valid frames of both sets, frame-weighted, at `p_c`):** the
-  mean of `|E_64(f, p_c) ∩ O_64(f, p_c)| / 64` is at least `0.60` **and** exceeds the mean of `|S'_64 ∩ O_64(f, p_c)| / 64`
-  by at least `0.20` → `MEMBERSHIP_PREDICTED`; otherwise `MEMBERSHIP_NOT_PREDICTED`. The oracle is the *target* of this
+  `ROUTING_NOT_PREDICTED_FRAMES_CONDITIONAL` (naming the floor or guard) if `H_64 ≥ 0.05` on the fresh-frame set, and
+  `ROUTING_NOT_EVALUABLE_FRAMES_CONDITIONAL` (naming the headroom) if `H_64 < 0.05`, with the same readings as Y1.
+  Preview on Experiment 018's twelve new frames: `+0.154`, 8 of 12 frames, splits `+0.125 / +0.273`; jackknife
+  minimum `0.128`; `H_64` `+0.142`. The eighteen frames are reported individually regardless of the outcome.
+- **Y3 — the operating-point-plus-drive rule is sufficient (`G` against `E` at `k = 64`; per set and pooled):**
+  `ρ_64` is computed on Y1's scored pairs, on Y2's, and on both pooled (pair-weighted). **Evaluability — the
+  denominator condition:** `Δκ_64(E) ≥ 0.05` on Y1, on Y2 and pooled; the ratio is not read where the full
+  evaluation's own gain is below the routing floor. This is a condition on the denominator, not the routing label: a
+  set where `E`'s pooled gain reaches 0.05 but a guard fails still supports the ratio; a set whose routing label is
+  `NOT_EVALUABLE` by the headroom may still support it if `E`'s gain reached 0.05 there. Any denominator below 0.05 → `OPERATING_POINT_PLUS_DRIVE_RULE_NOT_EVALUABLE` (naming the set). Then pooled
+  `ρ_64 ≥ 0.60` **and** `ρ_64(Y1) ≥ 0.50` **and** `ρ_64(Y2) ≥ 0.50` → `OPERATING_POINT_PLUS_DRIVE_RULE_SUFFICIENT`;
+  otherwise `OPERATING_POINT_PLUS_DRIVE_RULE_INSUFFICIENT` (naming the value that failed). The per-set floors stop
+  the label from passing on the 90 exposed frames alone — Y1 carries about five times Y2's pairs — so `SUFFICIENT`
+  states that the compact rule carries the majority of the full evaluation's gain on unseen cues *and* on unseen
+  frames. `ρ` is unclipped: a value above 1 (the compact rule beats the full evaluation) is reported as computed.
+  Preview: 0.81 pooled, 0.75 on Y1, 1.01 on Y2; at `k = 16` only 0.41 / 0.20 / 0.85, which is why the label is fixed at
+  the decision size and the other sizes are descriptive. The label names both ingredients of `G`: the reference
+  pre-activations alone were not tested as a rule, and the first-order slope rule — the closest thing to "operating
+  point alone" — fails in the design checks. The reading of `INSUFFICIENT` is fixed now: *the routing is predictable
+  from the frame's reference state, but not from block 2's operating point with a frozen drive profile — the frame's
+  reshaping of the arriving change (its layer-1–2 reference state through Experiment 016's channels and the
+  LayerNorm at its state) selects neurons that the operating point and the typical drives do not.* The reading of
+  `SUFFICIENT`: *given a fixed per-template profile of the drives the cue population supplies, where the frame's
+  reference state places each neuron on the GELU relative to the template base determines most of which neurons
+  carry channel D — on unseen cues and on unseen frames.*
+- **Y4 — the template-family account (`T` against `E` and `S'` at `k = 64`; on Y2 and pooled):** let
+  `A = κ_{c_L}(E_64) − κ_{c_L}(T_64)` (what the frame adds beyond its template) and `B = Δκ_64(T)` (what the template
+  adds beyond the global subset), each computed on Y2's scored pairs and on both sets pooled, with Y1's values reported
+  beside them. Evaluable iff both sets meet their preconditions; otherwise `TEMPLATE_FAMILY_NOT_EVALUABLE`. `A ≥ 0.05`
+  pooled **and** on Y2 → `TEMPLATE_FAMILY_INSUFFICIENT` (frame-specific selection recovers at least 0.05 beyond the
+  template's own ranking, on the new frames as well as overall); else `B ≥ 0.05` pooled **and** on Y2 with `A < 0.05`
+  pooled **and** on Y2 → `TEMPLATE_FAMILY_SUFFICIENT` (the template ranking carries the routing and the frame adds less
+  than 0.05, on the new frames as well as overall); otherwise `TEMPLATE_FAMILY_NOT_DISTINGUISHED`, naming the reason —
+  neither margin reached on both (the case that accompanies a negative Y1/Y2), or the pooled and the Y2 values on
+  different sides of a margin (a set-dependent template effect, recorded as a descriptive fact and not offered as a
+  general routing explanation). Preview: `A` `+0.071` pooled, `+0.064` on Y1, `+0.112` on Y2; `B` `+0.030 / +0.028 /
+  +0.042`.
+- **Y5 — membership predicted (secondary; per set, frame-weighted over the set's valid frames, at `p_c`):** on each
+  set, the mean of `|E_64(f, p_c) ∩ O_64(f, p_c)| / 64` is at least `0.60` **and** exceeds the mean of `|S'_64 ∩
+  O_64(f, p_c)| / 64` by at least `0.20`; both sets → `MEMBERSHIP_PREDICTED`; otherwise `MEMBERSHIP_NOT_PREDICTED`
+  (naming the set); a set failing its precondition → `MEMBERSHIP_NOT_EVALUABLE`. The per-set form applies the same
+  protection against the exposed frames' weight as Y3 and Y4. The oracle is the *target* of this
   prediction (the neurons the fresh cues' measured responses rank highest), not a selector. Preview against the
   predicted-effect oracle: 0.87 / 0.81 against 0.42 / 0.40; `G`'s 0.72 / 0.71 and `T`'s 0.49 / 0.46 are reported beside it.
-- **The headroom reading (preregistered, descriptive, no label; it qualifies a negative Y1 or Y2):** `H_64 =
-  κ_{c_L}(O_64) − κ_{c_L}(S'_64)` per set (preview `+0.104 / +0.142`). If a routing label is negative and `H_64 < 0.05`
-  on that set, the fixed reading is *no routing headroom at size 64 on this set: the population is fixed to within
-  0.05 and the frame acts on amplitudes* (account 1); if negative and `H_64 ≥ 0.05`, *redistribution present, not
-  predicted by the tested rules* (account 4). A positive routing label rejects account 1 at size 64 by itself, since a
-  frame-specific choice of 64 neurons, made blind to the fresh cues, recovers at least 0.05 more than the best global 64.
+- **The routing headroom (formal; a stage-2 quantity that governs only the classification of a negative Y1 or
+  Y2 and its reading):** `H_64 = κ_{c_L}(O_64) − κ_{c_L}(S'_64)` per set (preview `+0.104 / +0.142`), on the same
+  scored pairs as the set's `κ`. Below `0.05`, the set had no frame-specific redistribution of at least the routing
+  floor for any selector of this rule to recover, and a negative routing result there is classified
+  `NOT_EVALUABLE`, with the fixed reading *no routing headroom at size 64 on this set: the population is fixed to
+  within 0.05 and the frame acts on amplitudes* (account 1 compatible). At or above `0.05`, a negative result is
+  `NOT_PREDICTED`, with the reading *redistribution present, not predicted by the tested rules* (account 4). The
+  oracle remains post-confirmation and enters no selector, table or list; `H_64` is reported on every set whatever the
+  label, and a positive routing label rejects account 1 at size 64 by itself, since a frame-specific choice of 64
+  neurons made blind to the fresh cues recovered at least 0.05 more than the best global 64.
 - **Descriptive (no floor), reported against the predeclared expectations:** (i) `Δκ_256(E) ≥ 0.03` and `Δκ_16(E) ≥
   0.03` on each set (preview `+0.074 / +0.081` and `+0.069 / +0.174`); (ii) `Δκ_64(E)` against the inherited `S_64(018)`
   at least as large as against `S'_64` (preview `+0.100 / +0.181`); (iii) the random controls' `κ_{c_L}` below `0.50` at
@@ -415,12 +513,15 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
 
 | Y1 / Y2 | Y3 | Y4 | reading |
 |---|---|---|---|
-| both positive | sufficient | insufficient | **Account 2, compact form.** The frame's operating point routes channel D: a frame's participating neurons are named from its reference pre-activations and a locked per-template drive profile, blind to the fresh cues, in exposed and new frames; the template ranking does not suffice. The decoded program gains a routing rule: `reference state → operating point → which of the 2048 neurons carry the correction → the transport read`. |
-| both positive | insufficient | insufficient | **Account 2, full form.** Routing is predictable from the reference state but needs the frame-conditioned arriving change of calibration cues (Experiment 016's channels at the frame's state); the operating point alone under-selects. The routing rule is real but lives partly upstream of block 2's input. |
-| both positive | either | sufficient | **Account 3 with a residue.** The template ranking carries the routing (≥ 0.05 over global) and the frame adds less than 0.05 — but Y1/Y2 positive means the frame-specific selection still cleared 0.05 over the global subset, so the reading is *template-level routing with a frame-level residue below the resolution of this design*; the per-template subcircuits become the object of the next experiment. |
-| one positive, one negative | — | — | The dimension that failed is named. Y1 negative with Y2 positive: routing transfers to new frames but not to the new lexical classes in exposed frames — a cue × frame interaction the calibration cues do not carry (account 4 in the cue dimension). Y2 negative with Y1 positive: the selection generalizes to unseen cues in frames whose states contributed to the calibration but not to unseen frames — the reading is *frame-conditional routing not established*, and the headroom reading says whether new frames had room (account 4) or not (account 1). |
-| both negative, `H_64 < 0.05` | not evaluable | not distinguished | **Account 1 at size 64.** A fresh-cue-informed choice of 64 neurons does no better than the global 64: the population is fixed to within 0.05 of `κ` and the frame modulates amplitudes. Experiment 018's descriptive observation reduces to amplitude variation inside a fixed set. |
-| both negative, `H_64 ≥ 0.05` | not evaluable | not distinguished | **Account 4.** The oracle shows that a different 64 neurons would recover ≥ 0.05 more, and neither the frame's reference state (through the full evaluation or the operating point) nor the template predicts which: the redistribution depends on the fresh cues' own responses in the frame. The chain's decoded upstream state does not carry the routing through the tested rules. |
+| both positive | sufficient | insufficient | **Account 2, compact form.** The frame's operating point, with a frozen per-template drive profile, routes channel D: a frame's participating neurons are named from its reference pre-activations and the locked drive tables, blind to the fresh cues, in exposed and new frames; the template ranking does not suffice. The decoded program gains a routing rule: `reference state → operating point (+ the cue population's typical drives) → which of the 2048 neurons carry the correction → the transport read`. |
+| both positive | insufficient | insufficient | **Account 2, full form.** Routing is predictable from the reference state but needs the frame-conditioned arriving change of calibration cues (Experiment 016's channels at the frame's state); the operating point with typical drives under-selects. The routing rule is real but lives partly upstream of block 2's input. |
+| both positive | either | sufficient | **Account 3 with a residue.** The template ranking carries the routing (≥ 0.05 over global, on the new frames too) and the frame adds less than 0.05 — but Y1/Y2 positive means the frame-specific selection still cleared 0.05 over the global subset, so the reading is *template-level routing with a frame-level residue below the resolution of this design*; the per-template subcircuits become the object of the next experiment. |
+| both positive | either | not distinguished (set-dependent) | Routing predicted; whether the template accounts for it differs between the exposed and the new frames — recorded, not generalized. |
+| one positive, one `NOT_PREDICTED` | — | — | The dimension that failed is named. Y1 negative with Y2 positive: routing transfers to new frames but not to the new lexical classes in exposed frames — a cue × frame interaction the calibration cues do not carry (account 4 in the cue dimension). Y2 negative with Y1 positive: the selection generalizes to unseen cues in frames whose states contributed to the calibration but not to unseen frames — *frame-conditional routing not established*, with headroom present on the new frames (account 4 in the frame dimension). |
+| one positive, one `NOT_EVALUABLE` | — | — | Routing established in the dimension that had headroom; the other set offered no frame-specific redistribution of at least 0.05 for any selector of this rule to find, so it neither supports nor contradicts routing (account 1 compatible there, not a failure). |
+| both `NOT_EVALUABLE` | not evaluable | not distinguished | **Account 1 at size 64.** A fresh-cue-informed choice of 64 neurons does no better than the global 64 on either set: the population is fixed to within 0.05 of `κ` and the frame modulates amplitudes. Experiment 018's descriptive observation reduces to amplitude variation inside a fixed set. |
+| both `NOT_PREDICTED` | not evaluable | not distinguished | **Account 4.** The oracle shows that a different 64 neurons would recover ≥ 0.05 more on both sets, and neither the frame's reference state (through the full evaluation or the operating point with typical drives) nor the template predicts which: the redistribution depends on the fresh cues' own responses in the frame. The chain's decoded upstream state does not carry the routing through the tested rules. |
+| one `NOT_PREDICTED`, one `NOT_EVALUABLE` | not evaluable | not distinguished | Account 4 in the dimension with headroom; account 1 compatible in the other; no general routing statement. |
 
 Y5 is read alongside: `MEMBERSHIP_PREDICTED` with a positive Y1/Y2 says the predicted subset names the right neurons,
 not merely a subset with the right aggregate; `MEMBERSHIP_NOT_PREDICTED` with a positive Y1/Y2 says the recovery is
@@ -439,10 +540,11 @@ that the routing statement is about recovery, not about the identity of the top-
   subset, nor anything about behaviour.
 - `Δκ` is a difference of closure fractions on pooled `R²`; a frame with a very large gap weighs more in the pooled
   value, which is why the frame-count and split guards exist and why the per-frame distribution is always reported.
-- Y3 and Y4 are pair-weighted over the union of the two sets (Y1 contributes up to 2160 pairs, Y2 at most 432); their
-  per-set values are reported so that a rule working in one dimension only is visible and cannot be read as the label.
-- The oracle is in-sample on the pairs it is scored on and is a same-rule ceiling; the headroom reading is
-  descriptive and never a label.
+- Y3, Y4 and Y5 carry per-set conditions beside the pooled ones (Y1 contributes up to 2160 pairs and 90 frames, Y2 at
+  most 432 pairs and 18 frames), so that no label of a general routing explanation can arise from the exposed frames
+  alone; the per-set values are always reported.
+- The oracle is in-sample on the pairs it is scored on and is a same-rule ceiling; it enters no selector, and the
+  headroom it defines classifies only a *negative* routing result (evidence against routing, or no room to route).
 - Eighteen new frames, five lexical classes (one of them exhausted by this experiment), three templates, one head, one
   block, this checkpoint.
 
@@ -464,17 +566,22 @@ equals its `S_0`; the read identity I10; `E_256` at a cue-final frame equals Exp
 scores (I9); every selector invariant to poisoned measured quantities and to a poisoned confirmation set; the oracle
 computed only from stage-2 captures and every prediction column invariant to poisoned captures; each random control
 holds `k` unique indices reproduced from the seed in the frozen order, overlaps recorded, no redraw; the drive
-quantiles reproduced from the locked records; `Δκ`, `ρ`, the frame-count guard (a tie is not a win), the split guard,
-Y3's evaluability, Y4's three-way logic, Y5, the headroom reading and the preconditions on synthetic tables (a
-non-evaluable gap, a split below the gap, exactly half the frames winning, `ρ` at exactly `0.60`, `κ` outside `[0, 1]`
-unclipped); the stage barrier; phase isolation; the pinned-model smoke as in Experiments 015–018.
+quantiles reproduced from the locked records; `Δκ`, `ρ` per set and pooled, the frame-count guard (a tie is not a win), the split guard,
+Y3's denominator condition and per-set floors, Y4's three-way logic with the Y2 condition and the set-dependent
+case, Y5 per set, the headroom classification and the preconditions on synthetic tables (a non-evaluable gap, a
+split below the gap, exactly half the frames winning, `ρ` at exactly `0.60` pooled and `0.50` on a set, a negative `E`
+with `H_64` just below and just above `0.05`, a positive `E` with `H_64` below `0.05` that stays positive, `κ`
+outside `[0, 1]` unclipped); the ledger after stage 1 holding only reference and cue-pair keys; the stage barrier; phase isolation; the pinned-model smoke as in Experiments 015–018.
 
 ## Approval and stopping condition
 
 Design first. Order after approval: plan → code and tests → tokenizer-only confirmation freeze and commit →
 implementation review → `explore` once → `lock` → the user's lock commit → the reviewer's sign-off → `confirm` once →
-report. No token, frame, base, table, list, or prediction may be changed after the lock; no fresh prompt runs before
-`confirm`, and no fresh cue prompt runs before its frame's stage-1 lists and predictions are digested.
+report. Before stage 1 the following are frozen and committed: the 24 cues, the 18 frames, the validity and exclusion
+rules, the prompt-key manifest, every threshold, the seeds, the subset-construction rules with their locked tables and
+lists, and this document's interpretation table. No token, frame, base, table, list, or prediction may be changed
+after the lock; no fresh prompt runs before `confirm`, and no fresh cue prompt runs before its frame's stage-1 lists
+and predictions are digested and re-read from disk.
 
 ## Revision history
 
@@ -490,3 +597,16 @@ report. No token, frame, base, table, list, or prediction may be changed after t
   `k = 64`); the membership overlaps (0.87 / 0.81 against 0.42 / 0.40); the frame-top neurons. Floors: `Δκ_64(E) ≥ 0.05`
   with the frame-count (more than half) and split (`≥ 0.02`) guards; `ρ_64 ≥ 0.60`; Y4's `0.05` margins; Y5's `0.60`
   and `0.20`; the headroom reading at `0.05`; eighteen new frames; the extended candidate lists with the same quotas.
+- **Revision 2**: the reviewer's five changes, textually; the selector ladder, the decision size, the floors of Y1/Y2
+  and the confirmation set are unchanged. (1) The routing headroom `H_64` is now formal: a negative Y1 or Y2 is
+  `ROUTING_NOT_EVALUABLE_*` when `H_64 < 0.05` on that set (no frame-specific redistribution to recover; the
+  fixed-population account compatible) and `ROUTING_NOT_PREDICTED_*` only when `H_64 ≥ 0.05`; the oracle stays
+  post-confirmation and outside every selector. (2) Y3 requires pooled `ρ_64 ≥ 0.60` *and* `ρ_64 ≥ 0.50` on Y1 *and*
+  on Y2, with the denominator condition `Δκ_64(E) ≥ 0.05` on each of the three, so that the compact rule cannot pass
+  on the 90 exposed frames alone. (3) The Y3 label is `OPERATING_POINT_PLUS_DRIVE_RULE_*`, and `G` is described
+  everywhere as the reference pre-activations plus the frozen per-template three-quantile drive profile through the
+  exact GELU, never as the operating point alone. (4) Y4's margins must hold on Y2 as well as pooled, with a
+  set-dependent outcome named `NOT_DISTINGUISHED`; Y5 likewise per set. (5) The two-stage confirmation procedure is
+  written out as a frozen protocol — what is frozen before `explore`, at `lock`, what stage 1 may run and derive, the
+  digest barrier, what stage 2 runs and when the oracle comes into existence — with the tests that enforce it. The
+  outcome table carries the new labels.
