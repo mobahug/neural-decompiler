@@ -249,8 +249,10 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert set(results["Y2"]["per_frame"]) <= set(results["valid_frames"]) and results["Y3"]["n_pairs"] == results["Y3"]["n_pairs_Y1"] + results["Y3"]["n_pairs_Y2"] and "per_set" in results["Y3"]
     assert set(results["Y4"]["cue_final"]) <= {f"{t}-018-{i}" for t in pm.CUE_FINAL_TEMPLATES for i in (1, 2, 3, 4)} and "reading" in results["Y3"]
     y1 = results["Y1"]
-    assert "statistics" in y1 and y1["statistics"]["kappa"]["c_L"]["S2048"] == pytest.approx(1.0) and y1["precondition"]["reference"]["c_L"] is not None and set(y1["precondition"]["checks"]) >= {"reference_c_L", "gap_c_L", "gap_Pi"}
-    assert "split_gap_cue_final" in results["Y2"]["precondition"]["checks"] and "split_guard" in results["Y2"]["test"] and "no_harm_guard" in results["Y2"]["test"]
+    k = y1["statistics"]["kappa"]["c_L"]  # on the fake channel D may matter little: κ is then undefined (never scored), otherwise the reference rung closes exactly 1
+    assert "statistics" in y1 and (k["S2048"] is None or k["S2048"] == pytest.approx(1.0)) and y1["precondition"]["reference"]["c_L"] is not None and set(y1["precondition"]["checks"]) >= {"reference_c_L", "gap_c_L", "gap_Pi"}
+    assert set(results["firing"]) == {"Y1", "Y2"} and all(len(v["mean_effect"]) == 256 for v in results["firing"]["Y1"].values()) and "firing" in exploration and set(exploration["firing"]) == set(pm.TEMPLATE_ORDER)
+    assert "split_gap_cue_final" in results["Y2"]["precondition"]["checks"] and "no_harm_evaluable" in results["Y2"]["precondition"]["checks"] and "split_guard" in results["Y2"]["test"] and "no_harm_guard" in results["Y2"]["test"]
     assert all(value < 1e-3 for value in results["identities"].values())
     assert {prompt.key for prompt in confirmation.exposed_frame_prompts} <= set(state["executed_prompt_keys"])
     with pytest.raises(bc.PhaseError):

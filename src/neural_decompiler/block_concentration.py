@@ -489,6 +489,43 @@ class RankingAccumulator:
         return self.total / self.count
 
 
+FIRING_THRESHOLD = 1e-3  # descriptive: a record "fires" neuron j when its read-unit operating-point effect |e_j|·|r(W_out[j])|/|D_T| exceeds this
+FIRING_TOP = 16
+
+
+class FiringAccumulator:
+    """Descriptive accounting per template: each neuron's mean read-unit operating-point effect and the fraction of records in which it fires (no floor reads this)."""
+
+    def __init__(self, read_out: torch.Tensor) -> None:
+        self.read_out = read_out.abs()
+        self.total: dict[str, torch.Tensor] = {}
+        self.fired: dict[str, torch.Tensor] = {}
+        self.count: dict[str, int] = {}
+
+    def add(self, template: str, up: UpstreamParts) -> None:
+        if template not in self.total:
+            self.total[template] = torch.zeros_like(self.read_out)
+            self.fired[template] = torch.zeros_like(self.read_out)
+            self.count[template] = 0
+        for position in up.parts:
+            effect = up.effects(position).abs() * self.read_out / abs(up.denominator)
+            self.total[template] += effect
+            self.fired[template] += (effect > FIRING_THRESHOLD).to(effect.dtype)
+            self.count[template] += 1
+
+    def summary(self, subset: Sequence[int]) -> dict[str, Any]:
+        """For the neurons of ``subset``: per template the mean effect and firing fraction of each, and the top neurons by mean effect."""
+        out = {}
+        indices = [int(i) for i in subset]
+        for template in sorted(self.total):
+            n = max(self.count[template], 1)
+            mean, fraction = self.total[template] / n, self.fired[template] / n
+            ranked = sorted(indices, key=lambda j: (-float(mean[j]), j))
+            out[template] = {"n_records": self.count[template], "mean_effect": {str(j): float(mean[j]) for j in indices}, "firing_fraction": {str(j): float(fraction[j]) for j in indices},
+                             "n_firing_in_half": int(sum(1 for j in indices if float(fraction[j]) >= 0.5)), "top": [{"neuron": j, "mean_effect": float(mean[j]), "firing_fraction": float(fraction[j])} for j in ranked[:FIRING_TOP]]}
+        return out
+
+
 def order_of(scores: torch.Tensor) -> list[int]:
     """Neurons by descending score; ties broken by the lower index."""
     values = scores.tolist()
@@ -660,7 +697,7 @@ def stage_digest(rows: Sequence[Mapping[str, Any]], states: Mapping[str, Any], f
 
 
 def assert_stage_one_digest(stage1: Mapping[str, Any]) -> None:
-    if not stage1 or stage1.get("digest") != stage_digest(stage1["rows"], stage1["states"], stage1.get("frame_subsets", {})):
+    if not stage1 or "frame_subsets" not in stage1 or stage1.get("digest") != stage_digest(stage1["rows"], stage1["states"], stage1["frame_subsets"]):
         raise PhaseError("stage 1's prediction table is missing or its digest does not verify; no fresh cue prompt may run")
 
 
@@ -845,8 +882,9 @@ def frame_ranking(masked: MaskedChainModel, weights: pm.Weights, read_out: torch
     return accumulator.scores()
 
 
-def pooled_ranking(masked: MaskedChainModel, weights: pm.Weights, read_out: torch.Tensor, locked_states: Mapping[str, Mapping[str, Any]], ranking: Sequence[tuple[str, str, str, int]]) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    """The pooled scores over the ranking pool and, from the same records, every exposed frame's own scores."""
+def pooled_ranking(masked: MaskedChainModel, weights: pm.Weights, read_out: torch.Tensor, locked_states: Mapping[str, Mapping[str, Any]], ranking: Sequence[tuple[str, str, str, int]],
+                   firing: FiringAccumulator | None = None) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    """The pooled scores over the ranking pool and, from the same records, every exposed frame's own scores (and, when given, the per-template firing accounting)."""
     accumulator = RankingAccumulator(read_out)
     per_frame: dict[str, RankingAccumulator] = {}
     rows_cache: dict[str, tuple[Any, list[torch.Tensor], list[torch.Tensor]]] = {}
@@ -861,7 +899,23 @@ def pooled_ranking(masked: MaskedChainModel, weights: pm.Weights, read_out: torc
         up = masked.upstream_parts(weights, rows16, x1_all, x2_all, int(locked["p_c"]), int(locked["p_t"]), token_id, template)
         accumulator.add(up)
         per_frame[frame_id].add(up)
+        if firing is not None:
+            firing.add(template, up)
     return accumulator.scores(), {frame_id: acc.scores() for frame_id, acc in per_frame.items()}
+
+
+def firing_record(masked: MaskedChainModel, weights: pm.Weights, read_out: torch.Tensor, states: Mapping[str, Mapping[str, Any]], pairs: Sequence[tuple[str, str, int]], subset: Sequence[int]) -> dict[str, Any]:
+    """The per-template firing accounting of ``subset`` over (frame_id, template, token_id) pairs from locked states and ΔE alone (descriptive; used for the fresh sets at stage 2)."""
+    firing = FiringAccumulator(read_out)
+    rows_cache: dict[str, Any] = {}
+    for frame_id, template, token_id in pairs:
+        locked = states[frame_id]
+        if frame_id not in rows_cache:
+            x1_all, x2_all = hp._tensors(locked["x1_all"]), hp._tensors(locked["x2_all"])
+            rows_cache[frame_id] = (atp.reference_rows(masked.hcm.fcm.programs, x1_all[: int(locked["p_c"]) + 1], x2_all[: int(locked["p_c"]) + 1]), x1_all, x2_all)
+        rows16, x1_all, x2_all = rows_cache[frame_id]
+        firing.add(template, masked.upstream_parts(weights, rows16, x1_all, x2_all, int(locked["p_c"]), int(locked["p_t"]), token_id, template))
+    return firing.summary(subset)
 
 
 def _check_previous_state(state_f: hp.FrameState017, lock_017: Mapping[str, Any], inherited_extract: Mapping[str, Any]) -> None:
@@ -923,8 +977,10 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     say(f"the ranking over the {len(ranking)} licensed exposed pairs (predicted changes only)")
     unmasked = MaskedChainModel(hcm, base2_pt, {name: torch.ones(N_NEURONS, dtype=torch.float64) for name in RUNGS})
     read_out = parts["read_out"]
-    scores, frame_scores = pooled_ranking(unmasked, weights, read_out, exploration["locked_states"], ranking)
+    firing = FiringAccumulator(read_out)
+    scores, frame_scores = pooled_ranking(unmasked, weights, read_out, exploration["locked_states"], ranking, firing)
     subsets = subsets_from_scores(scores)
+    exploration["firing"] = firing.summary(subsets[HYPOTHESIS])
     exploration["scores"] = scores.tolist()
     exploration["subsets"] = subsets
     exploration["overlaps"] = subset_overlaps(subsets)
@@ -964,7 +1020,7 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     stats = statistics_for(analyses, [a["prediction"] for a in analyses], [name for name, _ in pool.tokens])
     exploration["pairs"] = {key: compact_analysis(value) for key, value in pairs.items()}
     exploration["exposed_check"] = stats
-    exploration["neurons"] = {"hypothesis": list(subsets[HYPOTHESIS]), "single": list(subsets[SINGLE]), "overlaps": exploration["overlaps"]}
+    exploration["neurons"] = {"hypothesis": list(subsets[HYPOTHESIS]), "single": list(subsets[SINGLE]), "overlaps": exploration["overlaps"], "firing_top": {t: v["top"][:8] for t, v in exploration["firing"].items()}}
     k = stats["pairs"]["kappa"]
     exploration["summary"] = {"defined_templates": exploration["defined_templates"], "kappa_c_L": k["c_L"][HYPOTHESIS], "kappa_Pi": k["Pi"][HYPOTHESIS], "kappa_rows": k["rows"][HYPOTHESIS], "kappa_c_L_single": k["c_L"][SINGLE],
                               "reference_c_L_r2": stats["pairs"]["rungs"][REFERENCE]["c_L"]["r2"], "reference_rows_r2": stats["pairs"]["rungs"][REFERENCE]["rows"]["entry_r2"], "gaps": stats["pairs"]["gaps"],
@@ -1201,7 +1257,17 @@ def stage_two(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
             er._max_errors(identities, analysis["identities"])
             pairs_fresh[f"{token['word']}|{frame.frame_id}"] = analysis
         say(f"  {frame.frame_id} (fresh): {len(confirmation.tokens)} tokens")
+    for label, pairs, table in (("locked", pairs_exposed, _rows_by_pair(lock["predictions"]["rows"])), ("stage 1", pairs_fresh, _rows_by_pair(stage1["rows"]))):
+        for key, analysis in pairs.items():
+            if key not in table:
+                raise pm.IncidentError(f"{key}: no {label} table row for a measured pair")
+            worst = max(atp._max_numeric_difference(analysis["prediction"][column], table[key][column], f"{key}/{column}") for column in PREDICTION_COLUMNS[3:])
+            if worst > LOCK_PREDICTION_TOLERANCE:
+                raise pm.IncidentError(f"{key}: the prediction recomputed at stage 2 differs from the {label} table row by {worst:.2e}")
     results = score_confirmation(stage1, pairs_exposed, pairs_fresh, confirmation, lock)
+    fresh_pairs = [(frame.frame_id, frame.template_id, token["token_id"]) for frame in confirmation.frames if frame.frame_id in stage1["states"] for token in confirmation.tokens]
+    exposed_pairs = [(frame.frame_id, frame.template_id, token["token_id"]) for frame in pool.frames if frame.template_id in lock["defined_templates"] for token in confirmation.tokens]
+    results["firing"] = {"Y1": firing_record(masked, weights, parts["read_out"], lock["locked_states"], exposed_pairs, lock["subsets"][HYPOTHESIS]), "Y2": firing_record(masked, weights, parts["read_out"], stage1["states"], fresh_pairs, lock["subsets"][HYPOTHESIS])}
     results["per_frame_exposed"] = {key: compact_analysis(value) for key, value in pairs_exposed.items()}
     results["per_frame_fresh"] = {key: compact_analysis(value) for key, value in pairs_fresh.items()}
     er._max_errors(identities, stage1.get("identities", {}))
@@ -1240,6 +1306,8 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
     if fresh:
         for name in ("cue_final", "coordinated"):
             pre_checks[f"split_gap_{name}"] = bool(split[name].get("n_pairs") and split[name]["evaluable_c_L"])
+        undefined = [frame_id for frame_id, entry in result["per_frame_scored"].items() if entry["no_harm_difference"] is None]
+        pre_checks["no_harm_evaluable"] = not undefined
     precondition = {"reference": reference, "gaps": {obj: stats["gaps"][obj] for obj in (*OBJECTS, "rows")}, "checks": pre_checks, "failing": [name for name, ok in pre_checks.items() if not ok]}
     k = stats["kappa"]
     checks = [("kappa_c_L", k["c_L"][HYPOTHESIS] is not None and k["c_L"][HYPOTHESIS] >= KAPPA_CL_FLOOR), ("kappa_Pi", k["Pi"][HYPOTHESIS] is not None and k["Pi"][HYPOTHESIS] >= KAPPA_PI_FLOOR)]
@@ -1249,7 +1317,7 @@ def _score_set(pairs: Mapping[str, Mapping[str, Any]], table: Mapping[str, Mappi
         test["split_guard"] = guard
         checks += [(f"split_guard_{name}", entry["passed"]) for name, entry in guard.items()]
         scored_frames = result["per_frame_scored"]
-        below = {frame_id: entry["no_harm_difference"] for frame_id, entry in scored_frames.items() if entry["no_harm_difference"] is None or entry["no_harm_difference"] < -NO_HARM_MARGIN}
+        below = {frame_id: entry["no_harm_difference"] for frame_id, entry in scored_frames.items() if entry["no_harm_difference"] is not None and entry["no_harm_difference"] < -NO_HARM_MARGIN}
         test["no_harm_guard"] = {"margin": NO_HARM_MARGIN, "per_frame": {frame_id: entry["no_harm_difference"] for frame_id, entry in scored_frames.items()}, "frames_below": below, "passed": not below}
         checks.append(("no_harm_guard", not below))
     failing = [name for name, ok in checks if not ok]
@@ -1384,6 +1452,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                   f"per-frame top-256 overlap with S_256 min/median/max {min(v[HYPOTHESIS] for v in exploration['frame_overlaps'].values())}/{sorted(v[HYPOTHESIS] for v in exploration['frame_overlaps'].values())[len(exploration['frame_overlaps']) // 2]}/{max(v[HYPOTHESIS] for v in exploration['frame_overlaps'].values())}",
                   f"- Block-2 base at p_t over {exploration['base2_pt']['n_frames']} coordinated frames; program: {', '.join(f'layer {k}: d_head {v['d_head']}, rotary_dim {v['rotary_dim']}, base {v['rotary_base']:g}' for k, v in exploration['program'].items())}"]
         lines += ladder_lines(x["pairs"], "pooled") + orderings_lines(x["orderings"])
+        lines += [f"- S_256 firing per template (descriptive; effect above {FIRING_THRESHOLD} in read units): " + "; ".join(f"{t}: {v['n_firing_in_half']} of 256 fire in at least half of {v['n_records']} records, top {[(e['neuron'], round(e['mean_effect'], 4)) for e in v['top'][:5]]}" for t, v in exploration.get("firing", {}).items())]
         lines += [f"- Split — cue-final: {split_line(x['split']['cue_final'])}", f"- Split — coordinated: {split_line(x['split']['coordinated'])}"]
         lines += [f"- Template {template}: {split_line(entry)}" for template, entry in x["split"]["per_template"].items()]
         lines += [""]
@@ -1420,9 +1489,9 @@ def render_report(state: Mapping[str, Any]) -> str:
                 lines.append(f"  - split — cue-final: {split_line(y['split']['cue_final'])}; coordinated: {split_line(y['split']['coordinated'])}")
                 lines += [f"  - template {template}: {split_line(entry)}" for template, entry in y["split"]["per_template"].items()]
             else:
-                lines.append(f"- {label}: not evaluable ({len(y['scored_tokens'])} scored tokens; {'precondition ok' if pre['passed'] else 'PRECONDITION FAILED'})")
+                lines.append(f"- {label}: not evaluable ({len(y['scored_tokens'])} scored tokens; {'precondition ok' if pre['passed'] else 'PRECONDITION FAILED ' + str(pre['failing'])})")
             if key == "Y2":
-                lines += frame_lines(y.get("per_frame", {}))
+                lines += frame_lines(y.get("per_frame_scored") or y.get("per_frame", {}))
                 for frame_id, entry in confirmation["frames"].items():
                     if entry.get("template_defined") and not entry.get("valid"):
                         lines.append(f"  - frame {frame_id}: invalid at stage 1 (no fresh cue prompt run)")
@@ -1435,6 +1504,8 @@ def render_report(state: Mapping[str, Any]) -> str:
         lines += [f"  - {frame_id} (coordinated, descriptive): reference ΔT R² {f(r['reference_dT_r2'], 3)}, frozen {f(r['frozen_dT_r2'], 3)}" for frame_id, r in y4["coordinated"].items()]
         if confirmation.get("ladder_both_sets"):
             lines += ladder_lines(confirmation["ladder_both_sets"], "both sets pooled")
+        for set_name, firing in (confirmation.get("firing") or {}).items():
+            lines.append(f"- S_256 firing on {set_name} (descriptive): " + "; ".join(f"{t}: {v['n_firing_in_half']} of 256 fire in at least half of {v['n_records']} records, top {[(e['neuron'], round(e['mean_effect'], 4)) for e in v['top'][:5]]}" for t, v in firing.items()))
         lines += ["", f"| token | class | Y1 frames | Y1 ĉ_L S_256 | Y1 ĉ_L S_2048 | Y1 c_L | Y1 ΔT̂ S_256 | Y1 ΔT | Y2 frames | Y2 ĉ_L S_256 | Y2 ĉ_L S_2048 | Y2 c_L | Y2 ΔT̂ S_256 | Y2 ΔT |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         categories = {token["word"]: token["category"] for token in confirmation.get("tokens_meta", [])}
         for word in sorted(confirmation["Y1"]["tokens"], key=lambda w: -(confirmation["Y1"]["tokens"][w].get(f"dT_{REFERENCE}_mean") or -9)):

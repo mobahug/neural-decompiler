@@ -277,6 +277,16 @@ def test_masked_chain_reproduces_017_ranking_independence_and_boundary_on_the_fa
     frame_id = small.frames[0].frame_id
     own = bc.frame_ranking(unmasked, weights, read_out, locked[frame_id], small.frames[0].template_id, [(n, t) for n, f, _, t in ranking if f == frame_id])
     assert torch.allclose(own, frame_scores[frame_id])
+    # The ranking population is the record's KEYS: scrambling every recorded value, or handing over a poisoned confirmation set, changes nothing.
+    entries = {f"{name}|{fid}": {"F": 1e9, "Pi": -1e9, "dT": 0.0, "c_L": 1e9, "row": [1e9], "row_level0": [1e9], "F_hat": 1e9, "Pi_hat": 1e9, "dT_hat": 1e9, "c_L_level0D": 1e9} for name, fid, _, _ in ranking}
+    pool_pairs = bc.ranking_pool(entries, pool)
+    assert [(w, f) for w, f, _, _ in pool_pairs] == sorted((w, f) for w, f, _, _ in ranking) and set(bc.tokens_by_template(pool_pairs)) <= set(pm.TEMPLATE_ORDER)
+    scrambled, _ = bc.pooled_ranking(unmasked, weights, read_out, locked, pool_pairs)
+    firing = bc.FiringAccumulator(read_out)
+    with_firing, _ = bc.pooled_ranking(unmasked, weights, read_out, locked, pool_pairs, firing)
+    assert torch.equal(scrambled, with_firing) and bc.subsets_from_scores(scrambled) == bc.subsets_from_scores(bc.pooled_ranking(unmasked, weights, read_out, locked, sorted(ranking, key=lambda r: (r[0], r[1])))[0])
+    summary = firing.summary(bc.subsets_from_scores(scores)["S256"])
+    assert set(summary) <= set(pm.TEMPLATE_ORDER) and all(len(v["mean_effect"]) == 256 and 0 <= v["n_firing_in_half"] <= 256 and len(v["top"]) == bc.FIRING_TOP for v in summary.values())
     subsets = bc.subsets_from_scores(scores)
     masked = bc.MaskedChainModel(hcm, base2_pt, bc.masks_from_subsets(subsets, bc.N_NEURONS))
     context = bc.AnalysisContext(masked, hp_context, weights, axes["T"])
@@ -436,6 +446,13 @@ def test_scoring_floors_guards_preconditions_y3_and_y4_on_synthetic_tables():
     confirmation, lock, stage1, pairs_exposed, pairs_fresh = _synthetic(frame_alpha={(fid, "S256"): 0.2 for fid in coordinated_fresh} | {(fid, "S256"): 0.8 for fid in cue_final_fresh})
     verdict = bc.score_confirmation(stage1, pairs_exposed, pairs_fresh, confirmation, lock)
     assert verdict["Y1"]["test"]["passed"] and verdict["Y2"]["test"]["kappa_c_L"] >= bc.KAPPA_CL_FLOOR and verdict["Y2"]["test"]["failing"] == ["split_guard_coordinated"] and verdict["Y2"]["test"]["split_guard"]["coordinated"]["kappa_c_L"] == pytest.approx(K(0.2), abs=1e-9) and verdict["outcome"]["Y2"] == "CHANNEL_D_NOT_CONCENTRATED_FRAMES_CONDITIONAL"
+    # No-harm guard needs a defined per-frame R²: a frame with no measured c_L spread is a precondition failure, never a guard failure.
+    confirmation, lock, stage1, pairs_exposed, pairs_fresh = _synthetic()
+    for key, entry in pairs_fresh.items():
+        if key.endswith("|n2"):
+            entry["c_L"] = 0.25
+    verdict = bc.score_confirmation(stage1, pairs_exposed, pairs_fresh, confirmation, lock)
+    assert "no_harm_evaluable" in verdict["precondition_Y2"]["failing"] and verdict["outcome"]["Y2"] == "PRECONDITION_FAILED_FRAMES" and "n2" not in verdict["Y2"]["test"]["no_harm_guard"]["frames_below"]
     # No-harm guard: one fresh frame where S_256 is worse than the template base by more than the margin.
     confirmation, lock, stage1, pairs_exposed, pairs_fresh = _synthetic(frame_alpha={("n5", "S256"): -0.5})
     verdict = bc.score_confirmation(stage1, pairs_exposed, pairs_fresh, confirmation, lock)
