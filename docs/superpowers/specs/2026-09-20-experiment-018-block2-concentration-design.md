@@ -2,7 +2,10 @@
 
 **Date:** 2026-09-20
 
-**Status:** Revision 1 — draft for review. No Experiment 018 directory, confirmation set, lock, or model run exists.
+**Status:** Revision 2 — approved at revision 1 subject to the three changes under "Revision history" (the Y2 split
+guards' own evaluability; the pooled Y3 statistic's reading and per-set descriptives; the controls' overlap contract
+and the runner phase list), which this revision makes. No Experiment 018 directory, confirmation set, lock, or model
+run exists.
 Experiments 005–017 are closed and are not amended by this document; Experiment 017's closure stands exactly as
 recorded (`HEAD_PATTERN_PREDICTED_TOKENS | HEAD_PATTERN_PREDICTED_FRAMES_CONDITIONAL | FROZEN_PATTERN_NOT_REJECTED`,
 never rerun), and its Y3 reading is not revisited here. The secondary outcome below (Y4) is a *new* preregistered
@@ -166,8 +169,10 @@ S_n     = the n neurons with the largest score_j (ties broken by the lower index
 The **hypothesis subset is `S_256`**; the ladder records `S_0, S_1, S_4, S_16, S_64, S_256, S_1024, S_2048`. `S_1` is the
 single top-ranked neuron (1987 on the design-check pool; the rule, not the index, is frozen). The specificity controls
 are three subsets of 256 neurons drawn without replacement from `0..2047` by `random.Random(20260924)` (the control
-seed) in sequence, and the 256 lowest-scored neurons (`bottom_256`). Every subset and control is written into the lock
-as an explicit index list; the lock records `score_j` for all 2048 neurons.
+seed) in sequence (`sample(range(2048), 256)` three times from one generator), and the 256 lowest-scored neurons
+(`bottom_256`). Overlap between a random control and `S_256`, or among the controls, is expected (about 32 neurons
+between two independent 256-subsets) and is recorded; no control is redrawn to force disjointness. Every subset and
+control is written into the lock as an explicit index list; the lock records `score_j` for all 2048 neurons.
 
 **Level 1 — the exact chain (identity, incident-guarded, counts toward no floor).** Experiment 017's I1–I7 verbatim on
 every exposed and fresh pair; plus **I8**: `S_2048` reproduces Experiment 017's recorded Level 0 predictions (`ΔT̂`,
@@ -340,8 +345,12 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
 - **Precondition (outcome-independent, per set):** the reference rung `S_2048` must reach `c_L` pairs `R² ≥ 0.98`,
   row entry `R² ≥ 0.95` and `ΔT` pairs `R² ≥ 0.95` on the set (Experiment 017's chain must hold on the new pairs before a
   compaction of it is interpreted; exposed `0.999–1.000 / 0.995–0.998 / 0.9994–0.9996`), and the `c_L` and `Π` gaps
-  (`R²(S_2048) − R²(S_0)`) must be at least `0.05`. Otherwise `PRECONDITION_FAILED_TOKENS` / `PRECONDITION_FAILED_FRAMES`
-  (naming the condition); no concentration label is issued for that set.
+  (`R²(S_2048) − R²(S_0)`) must be at least `0.05` on the pooled scored pairs of the set; **for Y2, in addition, each
+  split used as a decision guard — the valid cue-final fresh frames pooled and the valid coordinated fresh frames
+  pooled — must itself have a `c_L` gap of at least `0.05`** (preview: cue-final `0.095–0.301`, coordinated `0.274–0.302`).
+  Otherwise `PRECONDITION_FAILED_TOKENS` / `PRECONDITION_FAILED_FRAMES` (naming the condition and, for a split, the
+  split); no concentration label is issued for that set, and a split whose gap is below `0.05` is never scored as a
+  pass or a fail.
 - **Aggregation, fixed:** `κ` on `R²` pooled over the scored pairs of the set (one value per object per set); token
   means over identical frame sets reported descriptively.
 - **Y1 — `S_256`, strict prospective (fresh cues × exposed frames; numbers committed before `confirm`):** `κ_{c_L}(S_256)
@@ -350,7 +359,8 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
 - **Y2 — `S_256`, frame-conditional prospective (fresh cues × new frames; numbers digested at stage 1):** the same two
   floors on the pooled fresh-frame pairs, **and a split guard** — `κ_{c_L}(S_256) ≥ 0.60` over the valid cue-final fresh
   frames pooled and `≥ 0.40` over the valid coordinated fresh frames pooled (neither template split may carry the
-  pooled value alone; preview `0.86–0.87` and `0.62–0.77`) — **and a no-harm guard** — in every valid fresh frame,
+  pooled value alone; preview `0.86–0.87` and `0.62–0.77`; each split's own `c_L` gap `≥ 0.05` is part of the
+  precondition above) — **and a no-harm guard** — in every valid fresh frame,
   `R²_{c_L}(S_256) ≥ R²_{c_L}(S_0) − 0.05` over its scored pairs (the locked subset never makes a frame worse than the
   template base; preview minimum difference `+0.001` over 24 frames). All → `CHANNEL_D_CONCENTRATED_FRAMES_CONDITIONAL`;
   otherwise `CHANNEL_D_NOT_CONCENTRATED_FRAMES_CONDITIONAL` (naming the floor or guard and the frames). The twelve
@@ -359,7 +369,13 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
 - **Y3 — the single-neuron account is rejected:** over the scored pairs of both sets pooled, `κ_{c_L}(S_1) < 0.50` *and*
   `κ_{c_L}(S_256) − κ_{c_L}(S_1) ≥ 0.25`. Both → `SINGLE_NEURON_REJECTED`; otherwise `SINGLE_NEURON_NOT_REJECTED`; with
   either set failing its precondition, `SINGLE_NEURON_NOT_EVALUABLE`. `κ_{c_L}` is the sole decision variable (the
-  direct block-2 read quantity; see "The alternative"); `κ_Π(S_1)` is reported beside it and enters no label. Preview: `κ_{c_L}(S_1)` `0.08–0.46`, gap to `S_256`
+  direct block-2 read quantity; see "The alternative"); `κ_Π(S_1)` is reported beside it and enters no label. **The
+  pooled statistic is pair-weighted**: Y1 contributes up to 1872 pairs and Y2 at most 288, so `SINGLE_NEURON_REJECTED`
+  means rejection on the pair-weighted combined prospective distribution — dominated by the cue-new, exposed-frame
+  pairs — and *not* rejection separately in each generalization dimension. `κ_{c_L}(S_1)` and the gap
+  `κ_{c_L}(S_256) − κ_{c_L}(S_1)` are reported for Y1 and for Y2 individually, descriptively (preview: `0.28 / 0.57` on the
+  cue-prospective 017 set, `0.08 / 0.69` on the frame-prospective one), so that a single neuron failing on one set and
+  working unusually well on the other is visible and cannot be read as the pooled label. Preview: `κ_{c_L}(S_1)` `0.08–0.46`, gap to `S_256`
   `≥ 0.43`. Y3 is evaluated independently of Y1 and Y2: the single neuron could carry half of the gap while `S_256`
   carries it all, and the reading of that case is fixed now — *block 2's operating-point dependence of the transport
   read is carried substantially by one neuron and the concentration claim reduces toward Experiment 014's object.*
@@ -394,6 +410,8 @@ The floors are frozen in this design; no exposed statistic sets a threshold.
   (Experiment 016's channels stay as they are), nor that 256 is the smallest such set (the ladder is descriptive), nor
   anything about behaviour. `κ` measures the share of channel D's contribution, not the absolute fidelity of the
   reduced chain, which is reported beside it.
+- Y3's label is a statement about the pair-weighted union of the two fresh sets, not about each generalization
+  dimension; the per-set values beside it are the only basis for a statement about new frames alone.
 - Y4 is a variance-share statement about the fresh cue sample within frames, conditional on the reference rung; it
   is not a mechanism claim in either direction.
 - Level 1 and Level 0-S are kept apart throughout; I8 (the reference rung reproducing Experiment 017) is an
@@ -410,10 +428,11 @@ own/template hidden deltas), `attention_patterns.py`, `attention_paths.py`, `rea
 locked states, the weights and the exposed `ΔE`; the `p_t` base computed and locked at `explore`; a committed extract
 of Experiment 017's per-pair `F`, `Π`, `ΔT`, `c_L`, row and Level 0 predictions (9636 pairs) for replication; the
 confirmation builder with the frozen lists and twelve frames; a runner with phases `validate`, `freeze-confirmation`,
-`explore`, `lock`, `confirm`, `report`, `confirm` in two stages. Tests: the masked channel with the all-ones mask equals
+`explore`, `lock`, `confirm` (in two stages), `report`. Tests: the masked channel with the all-ones mask equals
 `head_pattern`'s Level 0 to `1e-12` on the fake; with the zero mask at `p_c` equals its `−D` rung on cue-final pairs; the
 ranking is invariant to poisoned measured quantities and to a poisoned confirmation set; the subset lists are
-explicit, disjoint from the controls as drawn, and reproduced from the lock; `κ`, the preconditions, the guards, Y3
+explicit and reproduced from the lock; each control holds 256 unique indices, is reproduced exactly from the seed,
+and its overlaps with `S_256` and with the other controls are recorded (no redraw); `κ`, the preconditions, the guards, Y3
 and Y4 on synthetic tables (including a non-evaluable gap, a frame below the reference-rung condition, a frame at
 exactly `0.90`); the stage barrier; phase isolation; the poisoned-capture test at both positions for every rung; the
 pinned-model smoke as in Experiments 015–017.
@@ -440,3 +459,15 @@ report. No token, frame, base, subset, or prediction may be changed after the lo
   and the meaning of values outside `[0, 1]`; the ranking population stated as the pool's licensed pairs with the
   triangular licensing that makes it 9636 (and the preview pool 6180) rather than a full product, fixed before this
   design and read from no measurement; `κ_{c_L}` justified as Y3's sole decision variable with `κ_Π(S_1)` descriptive.
+  Reviewed: **approve after minor revision 2** — no design-check rerun, threshold tuning or forward pass; three
+  preregistration details: (1) each Y2 split used as a decision guard must itself have a `c_L` gap `≥ 0.05`, else
+  `PRECONDITION_FAILED_FRAMES` rather than pass/fail; (2) the pooled Y3 statistic is pair-weighted toward Y1, so
+  `SINGLE_NEURON_REJECTED` is to be read on the combined prospective distribution, with `κ_{c_L}(S_1)` and the
+  `S_256 − S_1` gap reported per set descriptively; (3) random 256-subsets are not disjoint from `S_256` or each other
+  — record overlaps, do not redraw — and the runner phase list has no duplicated `confirm`. The inherited Y4
+  calibration values were verified against the Experiment 017 record.
+- **Revision 2**: the three changes made, textually only; `S_256`, the κ floors, the ranking rule, the Y1–Y4 structure,
+  the fresh-set size and the confirmation protocol are unchanged. The Y2 precondition now names the split gaps
+  (preview cue-final `0.095–0.301`, coordinated `0.274–0.302`); Y3 carries its pair-weighted reading and per-set
+  descriptives (preview `0.28 / 0.57` and `0.08 / 0.69`); the controls' overlap is recorded, never redrawn; the phases
+  are `validate → freeze-confirmation → explore → lock → confirm (two stages) → report`.
