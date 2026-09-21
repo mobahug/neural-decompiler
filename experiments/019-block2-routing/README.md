@@ -76,7 +76,35 @@ uv run python experiments/019-block2-routing/run.py report
   condition and per-set floors, Y4 on Y2 and pooled, Y5 per set).
 - `report`: renders `outputs/experiment-019/report.md`.
 
-## Status — implementation; no scientific phase has run
+## Status — 2026-09-21: Tier A complete (explore ran once at `2dbfdd1`, run `aa8f8607ca8c4cb5`); candidate lock written; awaiting the lock commit and the reviewer's sign-off
 
-Nothing outside the exposed pool is executed before `confirm`; `explore` runs once, `lock` writes the candidate
-artifacts, and `confirm` runs once after the user's lock commit and the reviewer's sign-off.
+Tier A (`explore`) ran once at `2dbfdd1` on the 11 796 licensed pairs (255 tokens, 90 frames; 14:50–16:09 UTC, CPU,
+4 threads): every exposed frame's state matched the Experiment 018 lock or its stage-1 digest; the Experiment 018
+extract replicated (deviation 0.0); the identities held (I4 8.5e-6, I5 1.2e-5, I6 3.3e-5, I7 8.6e-7, I8 1.5e-14,
+I10 5.6e-16; I9 — Experiment 018's own per-frame ranking recomputed from the locked states — reproduced all 90
+recorded lists exactly); the selectors were computed and digested (`62108946c0061d7e…`) from the locked states, the
+weights and the exposed cues' `ΔE` before any pair was measured: `S'_1 = {1987}`, `S'_64` at `p_c` starting
+`111, 129, 173, 228, 287, …` (59 of 64 shared with the inherited 018 `S_64`), the frame's top neuron by `E` being
+1987 in 58 of the 90 frames, 1726 in 15, 1102 in 10 (mostly quantifier frames), 1311 in 3.
+
+Exposed record (cue-in-sample; the floors are frozen constants), `κ_{c_L}` at `k = 64`: `S'` 0.754, `T` 0.777,
+`E` **0.838**, `G` 0.822, inherited `L` 0.748, ranking oracle `O` 0.838, witness `O*` 0.946; gains over `S'_64`:
+`T` +0.022, `E` +0.084, `G` +0.068, `O*` +0.191 (the ranking proxy +0.083); `ρ_64` 0.814; `E_64` above `S'_64` in 66
+of 90 frames (`G` in 64), below it by more than 0.05 `R²` in one frame; jackknife of `E`'s gain 0.078–0.090; splits
+cue-final `E` +0.070 / `G` +0.063 / `T` +0.034, coordinated +0.146 / +0.091 / −0.033; per template `E` cardinal
++0.084, quantifier +0.066, coordinated +0.146 and `G` +0.011 / +0.075 / +0.091 (smallest in cardinal, as
+predeclared). At `k = 16`: `S'` 0.702, `E` 0.749, `G` 0.710, `O*` 0.903; at `k = 256`: 0.875, 0.948, 0.939, 0.963
+(`ρ` 0.874). Random 64-subsets 0.384 / −0.007 / −0.015 (every prospective selector above the best by ≥ 0.30);
+`κ_{c_L} ≥ κ_Π` and the row diffuse (`κ_row(E_64)` 0.28) as in Experiment 018. Membership against the measured-effect
+ranking's top-64 at `p_c`: `E` 0.925 (Spearman of the score vectors 0.996), `G` 0.738 (0.947), `T` 0.487, `S'` 0.420.
+The chain's per-neuron effects against the measured ones: `R²` mean 0.9996, minimum 0.987 over the 11 796 pairs.
+
+The candidate lock (`outputs/experiment-019/candidate-lock.json`, content sha256
+`6c0cb1849955e60bd84be34f89239221e42ce1ddb8cdb5cb00a14c18e6e48165`; predictions sha256
+`1781102d748f5ab44ec0cf180917f2daca68da6589adeb3c9f7d18c2ebe15b9f`) carries the 90 locked states, every selector's
+scores and lists, the drive-quantile tables, the controls and the inherited lists, the frozen floors and the complete
+2160-row prediction table (24 fresh tokens × 90 exposed frames × every prospective rung). A read-only post-lock check
+reproduced the selectors and the whole table from the weights and the locked states with zero difference, with every
+capture entry point disabled; the ledger holds the 90 reference prompts and the 180 manifest cue prompts only — no
+fresh prompt has run. Installing the two candidates as `preregistration-lock.json` and `predictions.md` and committing
+them is the preregistration act; `confirm` runs once after that commit and the reviewer's sign-off.
