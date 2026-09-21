@@ -572,13 +572,12 @@ def frame_lists(scores_by_position: Mapping[str, torch.Tensor]) -> dict[str, dic
 
 
 def selectors_from_states(chain: RoutingChain, weights: pm.Weights, read_out: torch.Tensor, locked_states: Mapping[str, Mapping[str, Any]], frames: Sequence[pm.Frame], tokens_by_template: Mapping[str, Sequence[tuple[str, int]]],
-                          licensed_keys: set[str], inherited_subsets: Mapping[str, Sequence[int]], *, replication: Mapping[str, Any] | None = None, log: Any = None) -> dict[str, Any]:
+                          licensed_keys: set[str], inherited_subsets: Mapping[str, Sequence[int]], *, log: Any = None) -> dict[str, Any]:
     """Every prospective selector from the locked reference states, the weights and the exposed cues' ΔE alone.
 
     ``S'`` (global) and ``T`` (template) are means of the read-unit effect over the licensed records at each position type; the drive quantiles of ``G`` are taken over the same
     records' base drives; ``E`` evaluates every exposed cue of the template at every frame's state; ``G`` reads the frame's reference pre-activations against the template base.
-    With ``replication`` (the Experiment 018 pool's token ids per template and its licensed keys, and the frame ids it locked), the E rule is also accumulated with Experiment 018's
-    own inputs and pooled over positions, for I9. No measured quantity of any pair enters, and no fresh token: the function receives exposed token ids only.
+    No measured quantity of any pair enters (the licensed population is a set of KEYS), and no fresh token: the function receives exposed token ids only.
     """
     say = log or (lambda message: None)
     read_out_abs = read_out.abs()
@@ -587,7 +586,6 @@ def selectors_from_states(chain: RoutingChain, weights: pm.Weights, read_out: to
     template_acc: dict[str, dict[str, _MeanAccumulator]] = {}
     drives: dict[str, dict[str, list[torch.Tensor]]] = {}
     e_scores: dict[str, dict[str, torch.Tensor]] = {}
-    e_018: dict[str, torch.Tensor] = {}
     pre_frames: dict[str, dict[str, torch.Tensor]] = {}
     denominators: dict[str, float] = {}
     n_records = {"licensed": 0, "evaluated": 0}
@@ -599,8 +597,6 @@ def selectors_from_states(chain: RoutingChain, weights: pm.Weights, read_out: to
         positions = sorted({p_c, p_t})
         pre_frames[frame.frame_id] = {str(pos): lw.pre_activations(BLOCK, x2_all[pos].double()) for pos in positions}
         acc_e = {str(pos): _MeanAccumulator() for pos in positions}
-        acc_018 = bc.RankingAccumulator(read_out) if replication is not None and frame.frame_id in replication["frame_ids"] else None
-        tokens_018 = set(replication["token_ids_by_template"][template]) if replication is not None else set()
         for word, token_id in tokens_by_template[template]:
             up, _ = chain.upstream_parts(weights, x1_all, x2_all, p_c, p_t, token_id, template)
             denominators.setdefault(template, float(up.denominator))
@@ -614,14 +610,10 @@ def selectors_from_states(chain: RoutingChain, weights: pm.Weights, read_out: to
                     pt = position_type(pos, p_c)
                     global_acc[pt].add(effect)
                     template_acc.setdefault(template, {}).setdefault(pt, _MeanAccumulator()).add(effect)
-                    drives.setdefault(template, {}).setdefault(pt, []).append(base_drive(lw, template_base(chain, template, pos, p_c), up.arriving[pos]).to(torch.float32))
+                    drives.setdefault(template, {}).setdefault(pt, []).append(base_drive(lw, template_base(chain, template, pos, p_c), up.arriving[pos]))
             if licensed:
                 n_records["licensed"] += 1
-            if acc_018 is not None and token_id in tokens_018 and (frame.frame_id in replication["stage1_frame_ids"] or key in replication["licensed_keys"]):
-                acc_018.add(up)
         e_scores[frame.frame_id] = {pos: acc.mean() for pos, acc in acc_e.items()}
-        if acc_018 is not None:
-            e_018[frame.frame_id] = acc_018.scores()
         say(f"  {frame.frame_id}: {len(tokens_by_template[template])} exposed cues evaluated at the frame's state")
     quantiles: dict[str, dict[str, dict[str, list[float]]]] = {}
     for template, by_type in drives.items():
@@ -651,10 +643,23 @@ def selectors_from_states(chain: RoutingChain, weights: pm.Weights, read_out: to
     scores = {"Sp": {pt: s.tolist() for pt, s in sp_scores.items()}, "T": {template: {pt: s.tolist() for pt, s in by_type.items()} for template, by_type in t_scores.items()},
               "E": {frame_id: {pos: s.tolist() for pos, s in by_frame.items()} for frame_id, by_frame in e_scores.items()}, "G": {frame_id: {pos: s.tolist() for pos, s in by_frame.items()} for frame_id, by_frame in g_scores_by_frame.items()}}
     out = {"lists": lists, "scores": scores, "drive_quantiles": quantiles, "denominators": denominators, "n_records": n_records, "sizes": list(SIZES), "quantile_levels": list(DRIVE_QUANTILES)}
-    if replication is not None:
-        out["e_018_lists"] = {frame_id: bc.frame_subset(s) for frame_id, s in e_018.items()}
     out["digest"] = selectors_digest(out)
     return out
+
+
+def i9_replication_lists(chain: RoutingChain, weights: pm.Weights, read_out: torch.Tensor, locked_states: Mapping[str, Mapping[str, Any]], pool: cs.Pool008, inherited_extract: Mapping[str, Any]) -> dict[str, list[int]]:
+    """I9: Experiment 018's own per-frame ranking (its ``pooled_ranking`` over its licensed explore records in its record order, positions pooled; its ``frame_ranking`` over its 230
+    template tokens for the twelve stage-1 frames) recomputed from the locked states — to be compared with the lists it recorded. A replication of 018's selector with 018's inputs and code."""
+    unmasked = bc.MaskedChainModel(chain.hcm, chain.masked.base2_pt, {name: torch.ones(N_NEURONS, dtype=torch.float64) for name in bc.RUNGS})
+    explore_entries = {key: value for key, value in inherited_extract["entries"].items() if value["set"] == "explore"}
+    ranking = bc.ranking_pool(explore_entries, pool)
+    _, frame_scores = bc.pooled_ranking(unmasked, weights, read_out, locked_states, ranking)
+    lists = {frame_id: bc.frame_subset(scores) for frame_id, scores in frame_scores.items()}
+    by_template = bc.tokens_by_template(ranking)
+    templates = {frame.frame_id: frame.template_id for frame in pool.frames}
+    for frame_id in sorted(inherited_extract["stage1_state_digests"]):
+        lists[frame_id] = bc.frame_subset(bc.frame_ranking(unmasked, weights, read_out, locked_states[frame_id], templates[frame_id], by_template[templates[frame_id]]))
+    return lists
 
 
 def selectors_digest(selectors: Mapping[str, Any]) -> str:
@@ -781,10 +786,12 @@ class AnalysisContext:
     read_out: torch.Tensor
 
 
-def check_i8(entry: Mapping[str, Any], prediction_017: Mapping[str, Any], where: str) -> float:
-    """I8: the reference rung equals Experiment 017's Level 0 (row, F̂, Π̂, ΔT̂, decoded c_L)."""
+def check_i8(entry: Mapping[str, Any], prediction_017: Mapping[str, Any], cue_final: bool, where: str) -> float:
+    """I8 (Experiment 018, verbatim): the reference rung equals Experiment 017's Level 0 (row, F̂, Π̂, ΔT̂, decoded c_L) and, on cue-final pairs, S_0 equals its −D rung."""
     worst = max(abs(entry[f"F_{REFERENCE}"] - prediction_017["F_hat"]), abs(entry[f"Pi_{REFERENCE}"] - prediction_017["Pi_hat"]), abs(entry[f"dT_{REFERENCE}"] - prediction_017["dT_hat"]),
                 abs(entry[f"c_L_{REFERENCE}"] - prediction_017["c_L_level0D"]), max(abs(a - b) for a, b in zip(entry[f"row_{REFERENCE}"], prediction_017["row_level0"])))
+    if cue_final:
+        worst = max(worst, abs(entry[f"Pi_{TEMPLATE_BASE}"] - prediction_017["Pi_no_D"]), abs(entry[f"dT_{TEMPLATE_BASE}"] - prediction_017["dT_no_D"]), max(abs(a - b) for a, b in zip(entry[f"row_{TEMPLATE_BASE}"], prediction_017["row_no_D"])))
     if worst > I8_TOLERANCE:
         raise pm.IncidentError(f"{where}: the masked chain does not reproduce Experiment 017's Level 0 (I8 {worst:.2e})")
     return worst
@@ -813,7 +820,7 @@ def analyse_pair_019(record: ra.Attribution, plural: ra.Attribution, *, context:
     where = f"{state.frame.frame_id}/{record.token}"
     entry, up, rr3 = chain.predict_from_state(weights, state, record.token_id, template, rung_masks)
     identities = dict(base["identities"])
-    identities["I8_reference_rung"] = check_i8(entry, base["prediction"], where)
+    identities["I8_reference_rung"] = check_i8(entry, base["prediction"], base["cue_final"], where)
     identities["I10_read_identity"] = check_i10(entry, up, context.read_out, rung_masks, p_c, where)
     measured_row = torch.tensor(base["row"], dtype=torch.float64)
     statistics = {name: atp.row_statistics(torch.tensor(entry[f"row_{name}"], dtype=torch.float64), measured_row) for name in rung_masks}
@@ -831,7 +838,8 @@ def analyse_pair_019(record: ra.Attribution, plural: ra.Attribution, *, context:
 
 
 def compact_analysis(analysis: Mapping[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in analysis.items() if key != "analysis_017"}
+    """What the results state stores per pair: everything but the Experiment 017 sub-analysis and the per-rung row statistics (recomputed from the rows at scoring)."""
+    return {key: value for key, value in analysis.items() if key not in ("analysis_017", "statistics")}
 
 
 def extract_entry_from_analysis(analysis: Mapping[str, Any]) -> dict[str, Any]:
@@ -861,8 +869,9 @@ def oracle_rungs_for_frame(chain: RoutingChain, weights: pm.Weights, state: hp.F
 
 
 def oracles_for_set(pairs: Mapping[str, Mapping[str, Any]], effects: Mapping[str, Mapping[int, torch.Tensor]], contributions: Mapping[str, torch.Tensor], scored_tokens: Sequence[str], read_out_abs: torch.Tensor,
-                    denominators: Mapping[str, float]) -> tuple[dict[str, dict[str, dict[str, list[int]]]], dict[str, dict[str, list[int]]]]:
-    """From the stage-2 measurements of one set: per frame the ranking-oracle lists at each position over its scored pairs; per pair the witness lists fitted to the frame's OTHER scored pairs."""
+                    denominators: Mapping[str, float], *, with_scores: bool = False) -> tuple[dict[str, dict[str, dict[str, list[int]]]], dict[str, dict[str, list[int]]]] | tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """From the stage-2 measurements of one set: per frame the ranking-oracle lists at each position over its scored pairs; per pair the witness lists fitted to the frame's OTHER scored pairs
+    (and, with ``with_scores``, the ranking oracle's score vectors per frame and position, for the descriptive rank correlations)."""
     scored = set(scored_tokens)
     by_frame: dict[str, list[str]] = {}
     for key in sorted(pairs):
@@ -870,12 +879,15 @@ def oracles_for_set(pairs: Mapping[str, Mapping[str, Any]], effects: Mapping[str
         if word in scored:
             by_frame.setdefault(frame_id, []).append(key)
     oracle_lists: dict[str, dict[str, dict[str, list[int]]]] = {}
+    oracle_scores: dict[str, dict[str, list[float]]] = {}
     witness_lists: dict[str, dict[str, list[int]]] = {}
     for frame_id, keys in by_frame.items():
         template = pairs[keys[0]]["template"]
         p_c = int(pairs[keys[0]]["p_c"])
         positions = sorted({p_c, int(pairs[keys[0]]["p_t"])})
-        oracle_lists[frame_id] = {str(pos): {str(k): top_k(ranking_oracle([effects[key][pos] for key in keys], read_out_abs, denominators[template]), k) for k in SIZES} for pos in positions}
+        scores = {pos: ranking_oracle([effects[key][pos] for key in keys], read_out_abs, denominators[template]) for pos in positions}
+        oracle_lists[frame_id] = {str(pos): {str(k): top_k(scores[pos], k) for k in SIZES} for pos in positions}
+        oracle_scores[frame_id] = {str(pos): scores[pos].tolist() for pos in positions}
         for key in keys:
             others = [other for other in keys if other != key]
             if not others:
@@ -883,7 +895,15 @@ def oracles_for_set(pairs: Mapping[str, Mapping[str, Any]], effects: Mapping[str
             train_u = torch.stack([contributions[other] for other in others])
             train_y = torch.tensor([pairs[other]["c_L"] - pairs[other]["prediction"][f"c_L_{TEMPLATE_BASE}"] for other in others], dtype=torch.float64)
             witness_lists[key] = {str(k): greedy_witness(train_u, train_y, k) for k in SIZES}
+    if with_scores:
+        return oracle_lists, witness_lists, oracle_scores
     return oracle_lists, witness_lists
+
+
+def witness_overlaps(witness: Mapping[str, list[int]], own: Mapping[str, Any], lists: Mapping[str, Any], template: str, p_c: int, k: int = DECISION_SIZE) -> dict[str, float]:
+    """Descriptive (x): the share of a pair's witness top-k at p_c that E_k, G_k and S'_k name."""
+    target = witness[str(k)]
+    return {"E": overlap(own["E"][str(p_c)][str(k)], target) / k, "G": overlap(own["G"][str(p_c)][str(k)], target) / k, "Sp": overlap(lists["Sp"]["p_c"][str(k)], target) / k}
 
 
 # ---------------------------------------------------------------------------
@@ -1092,9 +1112,9 @@ def overlap(a: Sequence[int], b: Sequence[int]) -> int:
 
 
 def membership(frame_lists_by_frame: Mapping[str, Mapping[str, Any]], global_lists: Mapping[str, Any], template_lists: Mapping[str, Any], oracle_lists: Mapping[str, Mapping[str, Any]], frame_templates: Mapping[str, str],
-               frame_pc: Mapping[str, int], k: int = DECISION_SIZE) -> dict[str, Any]:
-    """Y5's statistic: over the frames with an oracle list, the mean fraction of the oracle's top-k at p_c that E_k (and S'_k, G_k, T_k) names."""
-    rows = {}
+               frame_pc: Mapping[str, int], k: int = DECISION_SIZE, *, frame_scores_by_frame: Mapping[str, Mapping[str, Any]] | None = None, oracle_scores: Mapping[str, Mapping[str, Sequence[float]]] | None = None) -> dict[str, Any]:
+    """Y5's statistic: over the frames with an oracle list, the mean fraction of the oracle's top-k at p_c that E_k (and S'_k, G_k, T_k) names; with the score vectors, the Spearman rank correlation of E's and G's scores with the oracle's over the 2048 neurons (descriptive)."""
+    rows, spearman = {}, {}
     for frame_id, oracle in oracle_lists.items():
         p_c = str(frame_pc[frame_id])
         if p_c not in oracle:
@@ -1103,9 +1123,15 @@ def membership(frame_lists_by_frame: Mapping[str, Mapping[str, Any]], global_lis
         own = frame_lists_by_frame[frame_id]
         rows[frame_id] = {"E": overlap(own["E"][p_c][str(k)], target) / k, "G": overlap(own["G"][p_c][str(k)], target) / k, "Sp": overlap(global_lists["Sp"]["p_c"][str(k)], target) / k,
                           "T": overlap(template_lists[frame_templates[frame_id]]["p_c"][str(k)], target) / k}
+        if frame_scores_by_frame is not None and oracle_scores is not None and frame_id in frame_scores_by_frame and frame_id in oracle_scores and p_c in oracle_scores[frame_id]:
+            target_scores = list(oracle_scores[frame_id][p_c])
+            spearman[frame_id] = {name: pm.spearman(list(frame_scores_by_frame[frame_id][name][p_c]), target_scores) for name in ("E", "G")}
     if not rows:
         return {"n_frames": 0, "mean": {}, "per_frame": {}}
-    return {"n_frames": len(rows), "mean": {name: _mean([row[name] for row in rows.values()]) for name in ("E", "G", "Sp", "T")}, "per_frame": rows}
+    out = {"n_frames": len(rows), "mean": {name: _mean([row[name] for row in rows.values()]) for name in ("E", "G", "Sp", "T")}, "per_frame": rows}
+    if spearman:
+        out["spearman"] = {"mean": {name: _mean([row[name] for row in spearman.values()]) for name in ("E", "G")}, "per_frame": spearman}
+    return out
 
 
 def token_means(analyses: Sequence[Mapping[str, Any]], predictions: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1192,7 +1218,7 @@ def rule_test(sets: Mapping[str, Mapping[str, Any]], pooled: Mapping[str, Any]) 
     return {"label": OUTCOME_Y3[0] if not failed else OUTCOME_Y3[1], "evaluable": True, "failed": failed, "denominators": values, "rho": rhos, "floors": {"pooled": RHO_POOLED_FLOOR, "set": RHO_SET_FLOOR, "denominator": RHO_DENOMINATOR_MIN}}
 
 
-def template_test(sets: Mapping[str, Mapping[str, Any]], pooled: Mapping[str, Any], new_frames_set: str, evaluable: bool) -> dict[str, Any]:
+def template_test(sets: Mapping[str, Mapping[str, Any]], pooled: Mapping[str, Any] | None, new_frames_set: str, evaluable: bool) -> dict[str, Any]:
     """Y4: A = κ(E_64) − κ(T_64), B = Δκ_64(T), on the new-frame set and pooled; three-way plus the set-dependent case."""
     k = str(DECISION_SIZE)
 
@@ -1202,8 +1228,8 @@ def template_test(sets: Mapping[str, Mapping[str, Any]], pooled: Mapping[str, An
         return ((e - t) if e is not None and t is not None else None, s["gains"][k].get(DECISION["template"]))
 
     values = {name: dict(zip(("A", "B"), ab(s))) for name, s in sets.items()}
-    values["pooled"] = dict(zip(("A", "B"), ab(pooled)))
-    if not evaluable:
+    values["pooled"] = dict(zip(("A", "B"), ab(pooled))) if pooled is not None else None
+    if not evaluable or pooled is None:
         return {"label": OUTCOME_Y4[3], "values": values}
     ins = {name: values[name]["A"] is not None and values[name]["A"] >= TEMPLATE_MARGIN for name in (new_frames_set, "pooled")}
     suf = {name: values[name]["B"] is not None and values[name]["B"] >= TEMPLATE_MARGIN and values[name]["A"] is not None and values[name]["A"] < TEMPLATE_MARGIN for name in (new_frames_set, "pooled")}
@@ -1281,7 +1307,7 @@ def scored_population(pairs: Mapping[str, Mapping[str, Any]], words: Sequence[st
 
 
 def score_set(pairs: Mapping[str, Mapping[str, Any]], words: Sequence[str], *, outcomes: Sequence[str], lists: Mapping[str, Any], frame_lists_by_frame: Mapping[str, Mapping[str, Any]], oracle_lists: Mapping[str, Mapping[str, Any]],
-              frame_templates: Mapping[str, str], frame_pc: Mapping[str, int]) -> dict[str, Any]:
+              frame_templates: Mapping[str, str], frame_pc: Mapping[str, int], frame_scores_by_frame: Mapping[str, Mapping[str, Any]] | None = None, oracle_scores: Mapping[str, Any] | None = None) -> dict[str, Any]:
     tokens_out, scored, scored_pairs = scored_population(pairs, words)
     result: dict[str, Any] = {"tokens": tokens_out, "scored_tokens": scored, "n_pairs": len(scored_pairs), "n_frames": len({a["frame_id"] for a, _ in scored_pairs})}
     if len(scored) < 2:
@@ -1293,7 +1319,11 @@ def score_set(pairs: Mapping[str, Mapping[str, Any]], words: Sequence[str], *, o
     stats = set_statistics(analyses, predictions)
     result["statistics"] = stats
     result["precondition"] = precondition(stats, len(scored))
-    result["membership"] = membership(frame_lists_by_frame, lists, lists["T"], {fid: oracle_lists[fid] for fid in oracle_lists if fid in stats["per_frame"]}, frame_templates, frame_pc)
+    result["membership"] = membership(frame_lists_by_frame, lists, lists["T"], {fid: oracle_lists[fid] for fid in oracle_lists if fid in stats["per_frame"]}, frame_templates, frame_pc, frame_scores_by_frame=frame_scores_by_frame, oracle_scores=oracle_scores)
+    fidelity = [a["effect_fidelity"][str(a["p_c"])] for a in analyses if a.get("effect_fidelity")]
+    result["effect_fidelity"] = {"n": len(fidelity), "mean": _mean(fidelity) if fidelity else None, "min": min(fidelity) if fidelity else None}
+    overlaps = [a["witness_overlap"] for a in analyses if a.get("witness_overlap")]
+    result["witness_overlap_mean"] = {name: _mean([o[name] for o in overlaps]) for name in ("E", "G", "Sp")} if overlaps else None
     if result["precondition"]["ok"]:
         result["test"] = routing_test(stats, outcomes)
     else:
@@ -1302,7 +1332,7 @@ def score_set(pairs: Mapping[str, Mapping[str, Any]], words: Sequence[str], *, o
 
 
 def score_confirmation(stage1: Mapping[str, Any], pairs_exposed: Mapping[str, Mapping[str, Any]], pairs_fresh: Mapping[str, Mapping[str, Any]], confirmation: Confirmation019, lock: Mapping[str, Any],
-                       oracle_lists: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, Any]:
+                       oracle_lists: Mapping[str, Mapping[str, Mapping[str, Any]]], oracle_scores: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """Y1 on the exposed frames, Y2 on the valid fresh frames, the pooled population for Y3/Y4, Y5 per set, the descriptive expectations and the outcome."""
     words = [token["word"] for token in confirmation.tokens]
     lists = lock["selectors"]["lists"]
@@ -1310,8 +1340,14 @@ def score_confirmation(stage1: Mapping[str, Any], pairs_exposed: Mapping[str, Ma
     frame_pc = {**{fid: int(st["p_c"]) for fid, st in lock["frame_meta"].items()}, **{fid: int(entry["p_c"]) for fid, entry in stage1["frames"].items() if "p_c" in entry}}
     exposed_frame_lists = {fid: {"E": lists["E"][fid], "G": lists["G"][fid], "E1": lists["E1"][fid]} for fid in lists["E"]}
     fresh_frame_lists = {fid: {"E": sel["E"], "G": sel["G"], "E1": sel["E1"]} for fid, sel in stage1["frame_selectors"].items()}
-    y1 = score_set(pairs_exposed, words, outcomes=OUTCOME_Y1, lists=lists, frame_lists_by_frame=exposed_frame_lists, oracle_lists=oracle_lists.get("Y1", {}), frame_templates=frame_templates, frame_pc=frame_pc)
-    y2 = score_set(pairs_fresh, words, outcomes=OUTCOME_Y2, lists=lists, frame_lists_by_frame=fresh_frame_lists, oracle_lists=oracle_lists.get("Y2", {}), frame_templates=frame_templates, frame_pc=frame_pc)
+    score_tables = lock["selectors"].get("scores") or {}
+    exposed_scores = {fid: {"E": score_tables["E"][fid], "G": score_tables["G"][fid]} for fid in score_tables.get("E", {})}
+    fresh_scores = {fid: {"E": sel["scores"]["E"], "G": sel["scores"]["G"]} for fid, sel in stage1["frame_selectors"].items() if "scores" in sel}
+    oracle_scores = oracle_scores or {}
+    y1 = score_set(pairs_exposed, words, outcomes=OUTCOME_Y1, lists=lists, frame_lists_by_frame=exposed_frame_lists, oracle_lists=oracle_lists.get("Y1", {}), frame_templates=frame_templates, frame_pc=frame_pc,
+                   frame_scores_by_frame=exposed_scores, oracle_scores=oracle_scores.get("Y1"))
+    y2 = score_set(pairs_fresh, words, outcomes=OUTCOME_Y2, lists=lists, frame_lists_by_frame=fresh_frame_lists, oracle_lists=oracle_lists.get("Y2", {}), frame_templates=frame_templates, frame_pc=frame_pc,
+                   frame_scores_by_frame=fresh_scores, oracle_scores=oracle_scores.get("Y2"))
     valid_frames = {fid: entry for fid, entry in stage1["frames"].items() if entry.get("valid")}
     n_cue_final = sum(1 for e in valid_frames.values() if e.get("cue_final"))
     n_coordinated = sum(1 for e in valid_frames.values() if not e.get("cue_final"))
@@ -1331,7 +1367,7 @@ def score_confirmation(stage1: Mapping[str, Any], pairs_exposed: Mapping[str, Ma
         y4 = template_test(sets, pooled_stats, "Y2", True)
     else:
         y3 = {"label": OUTCOME_Y3[2], "evaluable": False, "not_evaluable": [name for name, y in (("Y1", y1), ("Y2", y2)) if not y["precondition"].get("ok")]}
-        y4 = template_test({name: s for name, s in sets.items() if s}, pooled_stats or next(s for s in sets.values() if s), "Y2", False) if any(sets.values()) else {"label": OUTCOME_Y4[3], "values": {}}
+        y4 = template_test({name: s for name, s in sets.items() if s}, None, "Y2", False)
     y5 = membership_test({"Y1": y1.get("membership"), "Y2": y2.get("membership")}, {"Y1": bool(y1["precondition"].get("ok")), "Y2": bool(y2["precondition"].get("ok"))})
     described = {name: s for name, s in sets.items() if s}
     if pooled_stats is not None:
@@ -1459,19 +1495,20 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     tokens_by_template = bc.tokens_by_template(licensed)
     if any(token_id in confirmation_token_ids for tokens in tokens_by_template.values() for _, token_id in tokens):
         raise PhaseError("a confirmation token is in the exposed pool")
-    replication = {"frame_ids": {frame.frame_id for frame in pool.frames}, "stage1_frame_ids": set(inherited_extract["stage1_state_digests"]),
-                   "token_ids_by_template": {template: {token_id for word, token_id in tokens if pool.token_source.get(word) != "confirmation-018"} for template, tokens in tokens_by_template.items()},
-                   "licensed_keys": {key for key, entry in inherited_extract["entries"].items() if entry["set"] == "explore"}}
+    if {k: [int(i) for i in v] for k, v in inherited_extract["frame_subsets_explore"].items()} != {k: [int(i) for i in v] for k, v in lock_018["frame_subsets"].items()}:
+        raise pm.IncidentError("the inherited extract's per-frame lists differ from the Experiment 018 lock's")
     say(f"the selectors over the {len(licensed)} licensed pairs and the templates' exposed cues at every frame (predicted changes only)")
-    selectors = selectors_from_states(chain, weights, read_out, exploration["locked_states"], pool.frames, tokens_by_template, licensed_keys, lock_018["subsets"], replication=replication, log=say)
-    e_018 = selectors.pop("e_018_lists")
+    selectors = selectors_from_states(chain, weights, read_out, exploration["locked_states"], pool.frames, tokens_by_template, licensed_keys, lock_018["subsets"], log=say)
+    say("I9: Experiment 018's per-frame ranking with its own inputs and code, against its recorded lists")
+    e_018 = i9_replication_lists(chain, weights, read_out, exploration["locked_states"], pool, inherited_extract)
     recorded = {**inherited_extract["frame_subsets_explore"], **inherited_extract["frame_subsets_stage1"]}
     mismatched = [frame_id for frame_id, mine in e_018.items() if [int(i) for i in mine] != [int(i) for i in recorded[frame_id]]]
-    if mismatched:
-        raise pm.IncidentError(f"I9: the E rule with Experiment 018's inputs does not reproduce its recorded per-frame lists in {len(mismatched)} frames (e.g. {mismatched[:3]})")
+    if mismatched or set(e_018) != set(recorded):
+        raise pm.IncidentError(f"I9: Experiment 018's ranking recomputed from the locked states does not reproduce its recorded per-frame lists in {len(mismatched)} frames (e.g. {mismatched[:3]})")
     identities["I9_frame_lists"] = 0.0
     exploration["selectors"] = selectors
     exploration["i9_replication"] = {"passed": True, "n_frames": len(e_018)}
+    exploration["selector_overlaps"] = {frame.frame_id: selector_overlaps(selectors["lists"], {"E": selectors["lists"]["E"][frame.frame_id], "G": selectors["lists"]["G"][frame.frame_id]}, frame.template_id, states[frame.frame_id].p_c) for frame in pool.frames}
     exploration["licensed_pool"] = {"n_pairs": len(licensed), "tokens_by_template": {t: len(v) for t, v in tokens_by_template.items()}}
     say(f"selectors locked (digest {selectors['digest'][:16]}…): Sp1 {selectors['lists']['Sp1']}, Sp64 first eight {selectors['lists']['Sp']['p_c']['64'][:8]}; I9 held on {len(e_018)} frames")
     context = parts["context_019"]
@@ -1505,17 +1542,24 @@ def run_exploration(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, *, lock_
     exploration["replication"] = {"experiment_018": check_extract_replication(measured_extract, recorded_entries)}
     say(f"replication against Experiment 018: max deviation {exploration['replication']['experiment_018']['max_abs_deviation']:.2e}")
     say("the exposed oracles (cue-in-sample ranking; leave-one-cue-out witness) and their rungs")
-    oracle_lists, witness_lists = oracles_for_set(pairs, effects, contributions, [name for name, _ in pool.tokens], read_out.abs(), denominators)
+    oracle_lists, witness_lists, oracle_scores = oracles_for_set(pairs, effects, contributions, [name for name, _ in pool.tokens], read_out.abs(), denominators, with_scores=True)
     for key, analysis in pairs.items():
         frame_id = analysis["frame_id"]
         analysis["oracle"] = oracle_rungs_for_frame(chain, weights, states[frame_id], analysis["token_id"], analysis["template"], oracle_lists[frame_id], witness_lists[key])
+        analysis["witness_overlap"] = witness_overlaps(witness_lists[key], {"E": selectors["lists"]["E"][frame_id], "G": selectors["lists"]["G"][frame_id]}, selectors["lists"], analysis["template"], int(analysis["p_c"]))
     exploration["identities"] = identities
     analyses = list(pairs.values())
     predictions = [merged_prediction(a) for a in analyses]
     stats = set_statistics(analyses, predictions)
     frame_lists_by_frame = {fid: {"E": selectors["lists"]["E"][fid], "G": selectors["lists"]["G"][fid], "E1": selectors["lists"]["E1"][fid]} for fid in selectors["lists"]["E"]}
-    exploration["exposed_check"] = {"n_pairs": len(analyses), "statistics": stats, "membership": membership(frame_lists_by_frame, selectors["lists"], selectors["lists"]["T"], oracle_lists, {f: m["template"] for f, m in exploration["frame_meta"].items()}, {f: m["p_c"] for f, m in exploration["frame_meta"].items()}),
-                                   "descriptive": descriptive_expectations({"exposed": stats}), "oracle_lists": oracle_lists}
+    frame_scores_by_frame = {fid: {"E": selectors["scores"]["E"][fid], "G": selectors["scores"]["G"][fid]} for fid in selectors["scores"]["E"]}
+    fidelity = [a["effect_fidelity"][str(a["p_c"])] for a in analyses]
+    exploration["exposed_check"] = {"n_pairs": len(analyses), "statistics": stats,
+                                   "membership": membership(frame_lists_by_frame, selectors["lists"], selectors["lists"]["T"], oracle_lists, {f: m["template"] for f, m in exploration["frame_meta"].items()}, {f: m["p_c"] for f, m in exploration["frame_meta"].items()},
+                                                            frame_scores_by_frame=frame_scores_by_frame, oracle_scores=oracle_scores),
+                                   "descriptive": descriptive_expectations({"exposed": stats}), "oracle_lists": oracle_lists,
+                                   "effect_fidelity": {"n": len(fidelity), "mean": _mean(fidelity), "min": min(fidelity)},
+                                   "witness_overlap_mean": {name: _mean([a["witness_overlap"][name] for a in analyses]) for name in ("E", "G", "Sp")}}
     exploration["pairs"] = {key: compact_analysis(value) for key, value in pairs.items()}
     k = str(DECISION_SIZE)
     kap = stats["pairs"]["kappa"]["c_L"]
@@ -1798,22 +1842,26 @@ def stage_two(model: Any, pool: cs.Pool008, pool_010: cs.Pool008, confirmation: 
     # Only now, with every measurement of both sets in hand: the ranking oracle per frame and the leave-one-cue-out witness per pair, then their rungs.
     words = [token["word"] for token in confirmation.tokens]
     oracle_lists: dict[str, Any] = {}
+    oracle_scores: dict[str, Any] = {}
     witness_lists: dict[str, Any] = {}
     for name in ("Y1", "Y2"):
         _, scored, _ = scored_population(pairs[name], words)
         if not pairs[name]:
-            oracle_lists[name], witness_lists[name] = {}, {}
+            oracle_lists[name], witness_lists[name], oracle_scores[name] = {}, {}, {}
             continue
-        oracle_lists[name], witness_lists[name] = oracles_for_set(pairs[name], effects[name], contributions[name], scored, read_out.abs(), denominators)
+        oracle_lists[name], witness_lists[name], oracle_scores[name] = oracles_for_set(pairs[name], effects[name], contributions[name], scored, read_out.abs(), denominators, with_scores=True)
         for key, analysis in pairs[name].items():
             if key not in witness_lists[name]:
                 continue  # an unscored token: no oracle rung (its pair enters no statistic)
             frame_id = analysis["frame_id"]
             analysis["oracle"] = oracle_rungs_for_frame(chain, weights, states[frame_id], analysis["token_id"], analysis["template"], oracle_lists[name][frame_id], witness_lists[name][key])
             analysis["witness_lists"] = witness_lists[name][key]
+            own = {"E": lists["E"][frame_id], "G": lists["G"][frame_id]} if frame_id in lists["E"] else {"E": stage1["frame_selectors"][frame_id]["E"], "G": stage1["frame_selectors"][frame_id]["G"]}
+            analysis["witness_overlap"] = witness_overlaps(witness_lists[name][key], own, lists, analysis["template"], int(analysis["p_c"]))
         say(f"  {name}: oracle lists for {len(oracle_lists[name])} frames; witness lists for {len(witness_lists[name])} pairs")
-    results = score_confirmation(stage1, pairs["Y1"], pairs["Y2"], confirmation, lock, oracle_lists)
+    results = score_confirmation(stage1, pairs["Y1"], pairs["Y2"], confirmation, lock, oracle_lists, oracle_scores)
     results["oracle_lists"] = oracle_lists
+    results["oracle_scores"] = oracle_scores
     results["per_frame_exposed"] = {key: compact_analysis(value) for key, value in pairs["Y1"].items()}
     results["per_frame_fresh"] = {key: compact_analysis(value) for key, value in pairs["Y2"].items()}
     er._max_errors(identities, stage1.get("identities", {}))
@@ -1906,7 +1954,7 @@ def render_report(state: Mapping[str, Any]) -> str:
                 lines.append(f"  - membership at k=64 over {y['membership']['n_frames']} frames: E {f(m['E'], 3)}, G {f(m['G'], 3)}, T {f(m['T'], 3)}, S' {f(m['Sp'], 3)}")
         y3, y4, y5 = confirmation["Y3"], confirmation["Y4"], confirmation["Y5"]
         lines.append(f"- Y3 (the operating-point-plus-drive rule against the full evaluation; ρ_64 per set and pooled): **{y3['label']}**; ρ {({n: f(v, 3) for n, v in y3.get('rho', {}).items()})}; denominators Δκ_64(E) {({n: f(v, 3) for n, v in y3.get('denominators', {}).items()})}" + (f"; not evaluable on {y3['not_evaluable']}" if y3.get("not_evaluable") else ""))
-        lines.append(f"- Y4 (the template-family account; A = κ(E_64) − κ(T_64), B = Δκ_64(T), on Y2 and pooled): **{y4['label']}**" + (f" — {y4['reason']}" if y4.get("reason") else "") + f"; values {({n: {kk: f(vv, 3) for kk, vv in v.items()} for n, v in y4.get('values', {}).items()})}")
+        lines.append(f"- Y4 (the template-family account; A = κ(E_64) − κ(T_64), B = Δκ_64(T), on Y2 and pooled): **{y4['label']}**" + (f" — {y4['reason']}" if y4.get("reason") else "") + f"; values {({n: ({kk: f(vv, 3) for kk, vv in v.items()} if v else None) for n, v in y4.get('values', {}).items()})}")
         lines.append(f"- Y5 (membership per set: mean |E_64 ∩ O_64| / 64 ≥ {MEMBERSHIP_FLOOR} and ≥ S' + {MEMBERSHIP_MARGIN}): **{y5['label']}**; " + "; ".join(f"{n}: E {f(v.get('E'), 3)}, S' {f(v.get('Sp'), 3)}, G {f(v.get('G'), 3)}, T {f(v.get('T'), 3)}" if v.get("evaluable") else f"{n}: not evaluable" for n, v in y5["per_set"].items()))
         if confirmation.get("pooled"):
             pooled = confirmation["pooled"]

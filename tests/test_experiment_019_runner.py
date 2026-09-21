@@ -236,8 +236,10 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert all(value < 1e-3 for key, value in exploration["identities"].items()) and exploration["identities"]["I8_reference_rung"] < 1e-9 and exploration["identities"]["I10_read_identity"] < 1e-9 and exploration["identities"]["I9_frame_lists"] == 0.0
     x = exploration["exposed_check"]["statistics"]["pairs"]
     assert set(x["rungs"]) == set(br.ALL_RUNGS) and (x["kappa"]["c_L"]["S2048"] is None or x["kappa"]["c_L"]["S2048"] == pytest.approx(1.0)) and "Os64" in x["kappa"]["c_L"]  # on the fake channel D may matter little: κ is then undefined
-    assert set(exploration["exposed_check"]["oracle_lists"]) == set(exploration["locked_states"]) and "witness_lists" not in next(iter(exploration["pairs"].values())) and "oracle" in next(iter(exploration["pairs"].values()))
-    assert "kappa_witness" in exploration["summary"] and set(exploration["exposed_check"]["membership"]["mean"]) == {"E", "G", "Sp", "T"}
+    first_pair = next(iter(exploration["pairs"].values()))
+    assert set(exploration["exposed_check"]["oracle_lists"]) == set(exploration["locked_states"]) and "witness_lists" not in first_pair and "oracle" in first_pair and "witness_overlap" in first_pair and "statistics" not in first_pair
+    assert "kappa_witness" in exploration["summary"] and set(exploration["exposed_check"]["membership"]["mean"]) == {"E", "G", "Sp", "T"} and set(exploration["exposed_check"]["membership"]["spearman"]["mean"]) == {"E", "G"}
+    assert exploration["exposed_check"]["effect_fidelity"]["n"] == len(exploration["pairs"]) and set(exploration["exposed_check"]["witness_overlap_mean"]) == {"E", "G", "Sp"} and set(exploration["selector_overlaps"]) == set(exploration["locked_states"])
     assert not {prompt.key for prompt in confirmation.all_prompts} & set(state["executed_prompt_keys"])
     with pytest.raises(br.PhaseError):
         runner.explore()
@@ -320,7 +322,8 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert parts[0] in br.OUTCOME_Y1 and parts[1] in br.OUTCOME_Y2 and parts[2] in br.OUTCOME_Y3 and parts[3] in br.OUTCOME_Y4 and parts[4] in br.OUTCOME_Y5
     y1 = results["Y1"]
     assert len(y1["scored_tokens"]) == 10 and all(entry["n_valid_frames"] == 90 and entry["n_cue_final"] == 60 for entry in y1["tokens"].values()) and set(results["oracle_lists"]) == {"Y1", "Y2"}
-    assert set(results["oracle_lists"]["Y1"]) == {frame.frame_id for frame in pool.frames} and all("witness_lists" in a and "oracle" in a for a in results["per_frame_exposed"].values())
+    assert set(results["oracle_lists"]["Y1"]) == {frame.frame_id for frame in pool.frames} and all("witness_lists" in a and "oracle" in a and "witness_overlap" in a for a in results["per_frame_exposed"].values()) and set(results["oracle_scores"]) == {"Y1", "Y2"}
+    assert y1["effect_fidelity"]["n"] == y1["n_pairs"] and set(y1["witness_overlap_mean"]) == {"E", "G", "Sp"} and (y1.get("membership", {}).get("spearman") is None or set(y1["membership"]["spearman"]["mean"]) == {"E", "G"})
     assert all(len(a["witness_lists"]["64"]) == 64 for a in results["per_frame_exposed"].values())
     if "statistics" in y1:
         k = y1["statistics"]["pairs"]["kappa"]["c_L"]

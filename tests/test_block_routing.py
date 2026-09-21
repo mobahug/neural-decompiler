@@ -399,13 +399,17 @@ def test_chain_selectors_oracles_and_the_boundary_on_the_fake(inputs, monkeypatc
     assert selectors["digest"] == br.selectors_digest(selectors) and br.selectors_digest(bad) != selectors["digest"]
     again = br.selectors_from_states(chain, weights, read_out, locked, frames, tokens_by_template, licensed, inherited)
     assert again["digest"] == selectors["digest"]
-    # I9 on a cue-final frame: the E rule with Experiment 018's accumulator (positions pooled) is Experiment 018's frame ranking.
+    # The licensed population is a set of KEYS: scrambling every recorded value of the extract changes nothing (the function never sees values).
+    poisoned_entries = {key: {"set": "explore", "F": 1e9, "Pi": -1e9, "dT": 0.0, "c_L": 1e9, "row": [1e9], "c_L_S0": 1e9, "c_L_S256": 1e9, "c_L_S2048": 1e9} for key in licensed}
+    poisoned = br.selectors_from_states(chain, weights, read_out, locked, frames, tokens_by_template, set(poisoned_entries), inherited)
+    assert poisoned["digest"] == selectors["digest"]
+    # I9 on a cue-final frame: Experiment 018's own per-frame ranking (its code, its record order) recomputed from the locked states equals its frame ranking, and the E rule's top-256 at p_c is the same list.
     frame = frames[0]
-    replication = {"frame_ids": {f.frame_id for f in frames}, "stage1_frame_ids": set(), "token_ids_by_template": {t: {token_id for _, token_id in v} for t, v in tokens_by_template.items()}, "licensed_keys": licensed}
-    with_rep = br.selectors_from_states(chain, weights, read_out, locked, frames, tokens_by_template, licensed, inherited, replication=replication)
+    extract_like = {"entries": {f"{n}|{f.frame_id}": {"set": "explore"} for f in frames for n, _ in tokens_by_template[f.template_id]}, "stage1_state_digests": {}}
+    i9 = br.i9_replication_lists(chain, weights, read_out, locked, small, extract_like)
     unmasked = bc.MaskedChainModel(hcm, base2_pt, {name: torch.ones(bc.N_NEURONS, dtype=torch.float64) for name in bc.RUNGS})
     own_018 = bc.frame_ranking(unmasked, weights, read_out, locked[frame.frame_id], frame.template_id, tokens_by_template[frame.template_id])
-    assert with_rep["e_018_lists"][frame.frame_id] == bc.frame_subset(own_018) and with_rep["lists"]["E"][frame.frame_id][str(frame.p_c)]["256"] == bc.frame_subset(own_018)
+    assert set(i9) == {f.frame_id for f in frames} and i9[frame.frame_id] == bc.frame_subset(own_018) and lists["E"][frame.frame_id][str(frame.p_c)]["256"] == bc.frame_subset(own_018)
     # A fresh token is refused by the frame selector; the per-frame selector of a locked state equals the pooled computation's lists.
     with pytest.raises(br.PhaseError, match="fresh token"):
         br.frame_selectors_from_state(chain, weights, read_out, locked[frame.frame_id], frame.template_id, tokens_by_template[frame.template_id], selectors["drive_quantiles"], selectors["denominators"][frame.template_id], {tokens_by_template[frame.template_id][0][1]})
@@ -464,8 +468,11 @@ def test_chain_selectors_oracles_and_the_boundary_on_the_fake(inputs, monkeypatc
             res = br.analyse_pair_019(rec, plural, context=context, state=state, rung_masks=masks)
             key = f"{other_name}|{frame.frame_id}"
             pairs[key], effects[key], contributions[key] = res["analysis"], res["effects"], res["u"]
-        oracle_lists, witness_lists = br.oracles_for_set(pairs, effects, contributions, [n for n, _ in tokens_by_template[template][:4]], read_out.abs(), selectors["denominators"])
-        assert set(oracle_lists) == {frame.frame_id} and set(oracle_lists[frame.frame_id]) == {str(pos) for pos in state.positions} and set(witness_lists) == set(pairs)
+        oracle_lists, witness_lists, oracle_scores = br.oracles_for_set(pairs, effects, contributions, [n for n, _ in tokens_by_template[template][:4]], read_out.abs(), selectors["denominators"], with_scores=True)
+        assert set(oracle_lists) == {frame.frame_id} and set(oracle_lists[frame.frame_id]) == {str(pos) for pos in state.positions} and set(witness_lists) == set(pairs) and len(oracle_scores[frame.frame_id][str(state.p_c)]) == br.N_NEURONS
+        assert (oracle_lists, witness_lists) == br.oracles_for_set(pairs, effects, contributions, [n for n, _ in tokens_by_template[template][:4]], read_out.abs(), selectors["denominators"])
+        wo = br.witness_overlaps(witness_lists[next(iter(pairs))], {"E": lists["E"][frame.frame_id], "G": lists["G"][frame.frame_id]}, lists, template, state.p_c)
+        assert set(wo) == {"E", "G", "Sp"} and all(0.0 <= v <= 1.0 for v in wo.values())
         key = next(iter(pairs))
         assert all(len(witness_lists[key][str(k)]) == k for k in br.SIZES)
         # The held-out pair's own contribution vector AND its own measured read cannot change its witness mask.
