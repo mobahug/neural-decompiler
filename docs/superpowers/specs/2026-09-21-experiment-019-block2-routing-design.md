@@ -190,7 +190,7 @@ G_k(f, p)   operating-point:   top-k of  (1/3) Σ_{q ∈ {0.1, 0.5, 0.9}} | Δ_G
             (the frame enters only through its 2048 reference pre-activations pre_j(f, p); the drive profile is a locked table of 3 × 2048 numbers per template and position type)
 O_k(f, p)   ranking oracle:    top-k of  mean over the SCORED FRESH CUES in f of |e_j^meas(w, f, p)| |r_j| / |D_T|        (measured effects, below; stage 2 only; descriptive and Y5's target; certifies nothing)
 O*_k(f, −w) greedy oracle:     forward selection of k neurons minimizing the frame's residual read error over its OTHER scored fresh cues (measured c_L targets;
-            the chain's contributions u_j), evaluated on the held-out cue w; lower-index tie break; p_c only; stage 2 only     (the headroom certificate H*_k; below)
+            the chain's contributions u_j), evaluated on the held-out cue w; lower-index tie break; p_c only; stage 2 only     (the cross-validated headroom witness H*_k; below)
 S_k(018)    inherited:         the Experiment 018 lock's S_k lists, digest-checked                                          (named control; both positions)
 R1–R3(k)    random:            three k-subsets from random.Random(20260924): for k in (16, 64, 256), sample(range(2048), k) three times, one generator, in that order; overlaps recorded, never redrawn
 S_0, S_2048  the template-base rung and the reference rung (Experiment 017's Level 0)                                      (κ's endpoints)
@@ -225,7 +225,8 @@ and in the design checks the full evaluation exceeds it on the new frames; it th
 absence of headroom. Descriptively, the neuron-level fidelity of the chain is recorded per pair as the `R²` of `e_j`
 against `e_j^meas` over the 2048 neurons (an accounting, no floor).
 
-**The greedy empirical oracle `O*_k(f, −w)` (frozen algorithm; stage 2 only; `p_c`; the headroom certificate).** The
+**The greedy empirical oracle `O*_k(f, −w)` (frozen algorithm; stage 2 only; `p_c`; the cross-validated headroom
+witness).** The
 scored objective is `κ_{c_L}`, i.e. the pooled `R²` of the masked chain's read `ĉ_L(S)` against the measured `c_L`;
 by the read identity `ĉ_L(S) = ĉ_L(S_0) + Σ_{j ∈ S} u_j`, a frame's contribution to that objective is its residual
 sum of squares `Σ_w (c_L^meas(w, f) − ĉ_L(S_0)(w, f) − Σ_{j ∈ S} u_j(w, f, p_c))²`, which a subset can be fitted to
@@ -447,7 +448,7 @@ the layer-3 residuals, the head's row and the block-2 input at both changed posi
 recomputed and checked against its table row before scoring; then, and only then, once every measurement of the set
 exists, the ranking-oracle lists `O_k(f, p)` from the scored fresh cues' measured effects (Y5's target; the
 descriptive proxy `H_64`) and the greedy-oracle lists `O*_k(f, −w)` from the frame's other scored cues' measured
-reads (the certificate `H*_64`). Neither oracle is written into any selector, table or list: one test poisons the
+reads (the headroom witness `H*_64`). Neither oracle is written into any selector, table or list: one test poisons the
 stage-2 captures and checks that every prediction column and every locked or stage-1 list is unchanged; another
 checks that each oracle rung differs from the prospective rungs only in the mask it names, never in the upstream
 parts it is applied to; a third checks that a pair's greedy mask is invariant to that pair's own measured read.
@@ -483,7 +484,7 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   greedy frame-specific 64-subset fitted to the frame's other measured reads recovers less than 0.05 beyond the
   global subset on held-out cues, so no frame-specific redistribution of at least the routing floor was found on
   this set by the strongest search this design freezes — the fixed-population account is compatible with the set,
-  and the failure is no evidence against routing). A positive label needs no headroom certificate; `H*_64` and the
+  and the failure is no evidence against routing). A positive label needs no headroom witness; `H*_64` and the
   proxy `H_64` are reported on every set regardless. Preview on Experiment 018's Y1: `+0.092`, 52 of 78 frames, splits
   `+0.072 / +0.166`; jackknife minimum `0.085`; `H*_64` `+0.192` (`H_64` `+0.104`).
 - **Y2 — routing predicted, frame-conditional prospective (24 fresh cues × 18 new frames; numbers digested at stage
@@ -537,12 +538,15 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   each pair predicted with its own leave-one-cue-out greedy mask (preview `+0.192 / +0.202`). Below `0.05` — and with
   `E`'s own gain also below `0.05` — no frame-specific 64-subset that the strongest frozen search could fit to the
   frame's other measured reads recovers the routing floor on held-out cues, and a negative routing result there is
-  classified `NOT_EVALUABLE`, with the fixed reading *no routing headroom at size 64 on this set: the population is
-  fixed to within 0.05 on held-out cues and the frame acts on amplitudes* (account 1 compatible). At or above `0.05`,
-  a negative result is `NOT_PREDICTED`, with the reading *redistribution present and recoverable from the frame's own
-  measured responses, not predicted by the tested rules* (account 4). The greedy oracle is a held-out empirical
-  ceiling, not a global optimum: `H*_64 < 0.05` says that this search found no room, which is the strongest statement
-  the design can make without exhausting the subsets. The ranking oracle's `H_64` is reported beside it as a proxy and
+  classified `NOT_EVALUABLE`, with the fixed reading *the preregistered witness did not establish selectable
+  frame-specific headroom of at least 0.05 at size 64 on this set, so the failure cannot be told apart from a
+  nearly fixed population whose frame dependence is amplitude* (account 1 compatible; not a proof that no other
+  selection could find headroom). At or above `0.05`, a negative result is `NOT_PREDICTED`, with the reading
+  *transferable frame-specific headroom established by the witness, not predicted by the tested rules* (account 4).
+  The greedy oracle is a cross-validated empirical witness, not a global optimum or an upper bound: a high `H*_64`
+  establishes that transferable selectable headroom exists under the frozen witness; a low `H*_64` means this
+  witness did not establish enough headroom for the fixed-population-versus-unpredicted distinction, and is never
+  stated as proof that no possible frame-specific headroom exists. The ranking oracle's `H_64` is reported beside it as a proxy and
   certifies nothing. Both oracles remain post-confirmation and enter no selector, table or list; a positive routing
   label rejects account 1 at size 64 by itself, since a frame-specific choice of 64 neurons made blind to the fresh
   cues recovered at least 0.05 more than the best global 64. Descriptively, `E`'s share of the greedy headroom,
@@ -559,7 +563,7 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   frames; (ix) the neuron-level fidelity `R²(e_j, e_j^meas)` per pair (preview unavailable; expected high where the
   reference rung holds); (x) `O*_k` at `k = 16` and `256` and the overlap of `E_64` and `G_64` with `O*_64` (preview
   0.20 / 0.21 and 0.23 / 0.24 — the greedy fit names different neurons than the ranking does, which is why its `κ`
-  and not its membership is the certificate); the in-sample greedy is not computed.
+  and not its membership is the witness); the in-sample greedy is not computed.
 - Outcome = `Y1 | Y2 | Y3 | Y4 | Y5`. Incidents (replication, identities I1–I10, software defects) stop the phase, are
   recorded with their commit, and are never an outcome label; a confirm incident permits no re-run in this protocol
   version.
@@ -574,7 +578,7 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
 | both positive | either | not distinguished (set-dependent) | Routing predicted; whether the template accounts for it differs between the exposed and the new frames — recorded, not generalized. |
 | one positive, one `NOT_PREDICTED` | — | — | The dimension that failed is named. Y1 negative with Y2 positive: routing transfers to new frames but not to the new lexical classes in exposed frames — a cue × frame interaction the calibration cues do not carry (account 4 in the cue dimension). Y2 negative with Y1 positive: the selection generalizes to unseen cues in frames whose states contributed to the calibration but not to unseen frames — *frame-conditional routing not established*, with headroom present on the new frames (account 4 in the frame dimension). |
 | one positive, one `NOT_EVALUABLE` | — | — | Routing established in the dimension that had headroom; on the other set no greedy frame-specific 64-subset fitted to the frame's other measured reads recovered 0.05 on held-out cues, so it neither supports nor contradicts routing (account 1 compatible there, not a failure). |
-| both `NOT_EVALUABLE` | not evaluable | not distinguished | **Account 1 at size 64.** A greedy choice of 64 neurons fitted to the frame's other measured reads does no better than the global 64 on held-out cues on either set: the population is fixed to within 0.05 of `κ` and the frame modulates amplitudes. Experiment 018's descriptive observation reduces to amplitude variation inside a fixed set. |
+| both `NOT_EVALUABLE` | not evaluable | not distinguished | **Account 1 compatible at size 64.** On neither set did the witness — a greedy choice of 64 neurons fitted to the frame's other measured reads — recover 0.05 more than the global 64 on held-out cues; the experiment did not establish enough selectable frame-specific structure to separate a failed rule from a nearly fixed population, and the population may be fixed to within that resolution with the frame's dependence in amplitudes. Experiment 018's descriptive observation is then compatible with amplitude variation inside a fixed set; it is not shown that no other selection could find headroom. |
 | both `NOT_PREDICTED` | not evaluable | not distinguished | **Account 4.** The greedy oracle shows that a different 64 neurons, chosen from the frame's other measured responses, recover ≥ 0.05 more on held-out cues on both sets, and neither the frame's reference state (through the full evaluation or the operating point with typical drives) nor the template predicts which: the redistribution depends on the fresh cues' own responses in the frame. The chain's decoded upstream state does not carry the routing through the tested rules. |
 | one `NOT_PREDICTED`, one `NOT_EVALUABLE` | not evaluable | not distinguished | Account 4 in the dimension with headroom; account 1 compatible in the other; no general routing statement. |
 
@@ -599,8 +603,9 @@ that the routing statement is about recovery, not about the identity of the top-
   most 432 pairs and 18 frames), so that no label of a general routing explanation can arise from the exposed frames
   alone; the per-set values are always reported.
 - The ranking oracle is in-sample on the pairs it is scored on and certifies nothing; the greedy oracle is a
-  held-out empirical ceiling (a greedy search, not a global optimum) whose headroom classifies only a *negative*
-  routing result (evidence against routing, or no room found to route). Neither enters a selector.
+  cross-validated empirical headroom witness (a greedy search, not a global optimum or an upper bound) whose
+  headroom classifies only a *negative* routing result (evidence against routing, or headroom not established by
+  this witness). Neither enters a selector.
 - Eighteen new frames, five lexical classes (one of them exhausted by this experiment), three templates, one head, one
   block, this checkpoint.
 
@@ -682,3 +687,8 @@ and predictions are digested and re-read from disk.
   in every frame at `k = 64`, and over-fits at `k = 256`; the full evaluation closes 0.48 / 0.76 of it, reported
   descriptively. The stage-1 protocol now states that zero of the 432 fresh-cue × fresh-frame target pairs (and none
   of the 2160 exposed-frame pairs) run before the barrier. Selectors, floors, sets and every other label unchanged.
+- **Revision 3, wording (after approval; textual only, no threshold, label, set or rule changed):** `O*_64` is
+  described as a *cross-validated empirical headroom witness*, never as a global oracle, ceiling, certificate or upper
+  bound; the fixed reading of `ROUTING_NOT_EVALUABLE_*` says that the witness did not establish selectable headroom of
+  at least 0.05 on the set (the fixed-population account compatible), and never that no routing headroom exists. The
+  approved design is commit `b130b50` with this wording applied.
