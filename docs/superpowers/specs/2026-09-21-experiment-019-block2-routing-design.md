@@ -2,10 +2,12 @@
 
 **Date:** 2026-09-21
 
-**Status:** Revision 2 — approved in direction at revision 1 subject to the five changes under "Revision history"
-(the routing-headroom evaluability rule; Y3's per-set floors and denominator condition; the Y3 label renamed to what
-`G` uses; Y4's new-frame condition; the two-stage confirmation procedure written out as a frozen protocol), which
-this revision makes. No Experiment 019 directory, confirmation set, lock, or model run exists.
+**Status:** Revision 3 — revision 2 approved except for one point, which this revision makes: the headroom that
+classifies a negative routing result is now measured by a leave-one-cue-out greedy empirical oracle that maximizes
+the scored `κ_{c_L}` objective itself (`O*_64`, `H*_64`), not by the measured-effect ranking (`O_64`, which cannot
+certify absence of headroom because it can be beaten); the stage-1 protocol states explicitly that none of the 432
+target pairs is executed before the barrier. Nothing else changes. No Experiment 019 directory, confirmation set,
+lock, or model run exists.
 Experiments 005–018 are closed and are not amended by this document; Experiment 018's closure stands exactly as
 recorded (`CHANNEL_D_CONCENTRATED_TOKENS | CHANNEL_D_NOT_CONCENTRATED_FRAMES_CONDITIONAL | SINGLE_NEURON_REJECTED |
 PATTERN_TERM_NOT_ESTABLISHED_WITHIN_FRAMES`, never rerun). The one Experiment 018 frame where the globally locked
@@ -25,8 +27,9 @@ subset of matched size, selected from the frame's reference state **before any f
 observed block-2 neuron effect of that frame**, recovers substantially more of channel D than the best global subset of
 the same size; whether the selection can be written as a compact operating-point rule; whether a template-level
 selection would do as well; and how far the prospective selection sits from a same-rule ceiling that is allowed to see
-the fresh cues' measured responses (the oracle: a ceiling for description and, through the routing headroom, the
-certificate that decides whether a negative result counts as evidence — never a selector). Nothing is fitted: every selector is a frozen rule
+the fresh cues' measured responses (two post-confirmation oracles, never selectors: a same-rule ranking on measured
+effects, for description and as the target of the membership question, and a leave-one-cue-out greedy fit of the
+scored objective whose headroom decides whether a negative result counts as evidence). Nothing is fitted: every selector is a frozen rule
 applied to locked reference states, the weights and the exposed cues' weight-only encoding changes; every subset is
 an explicit index list committed before the fresh prompts it is scored on.
 
@@ -68,26 +71,35 @@ the masked hidden deltas; the identity reproduced the recorded `ĉ_L(S_256)` of 
 selector below was evaluated on the three sets Experiment 018 left — its exposed pool (9636 pairs, cue-in-sample),
 its Y1 (24 fresh cues × 78 exposed frames, 1872 pairs) and its Y2 (24 fresh cues × 12 new frames, 288 pairs) — at
 `k ∈ {16, 64, 256}`, on the decoded read `c_L` (the direct block-2 transport-read quantity, Experiment 018's decision
-variable). The oracle of the checks is the *predicted* per-neuron effect of the scored cues themselves (the
+variable). The ranking oracle of the checks is the *predicted* per-neuron effect of the scored cues themselves (the
 measured one, defined below, needs the captured block-2 input of the fresh runs, which the 018 record does not hold;
 the reference rung's `c_L R²` of 0.999 makes the two nearly identical in aggregate but not necessarily neuron by
 neuron, and the membership floor below allows for that). In the checks the full evaluation of an exposed frame used
 the frame's licensed records (Experiment 018's per-frame ranking) and that of a new frame the template's 230 exposed
 tokens (its stage-1 ranking); the frozen rule below uses the template's 254 exposed tokens at every frame.
 
-- **The routing headroom exists at every size and is largest in new frames.** The same-rule oracle (`O_k`: the
-  frame's top-`k` by the fresh cues' own effects) exceeds the matched global subset (`S'_k`, below) by `κ_{c_L}`
-  `+0.08 / +0.10 / +0.08` (Y1, `k` = 16 / 64 / 256) and `+0.17 / +0.14 / +0.10` (Y2). Account 1 leaves no such room.
-- **The full evaluation closes essentially all of it.** `E_k(f)` — each frame ranked on the exposed cues' predicted
+- **The routing headroom exists at every size and is largest in new frames.** The same-rule ranking oracle (`O_k`:
+  the frame's top-`k` by the fresh cues' own effects) exceeds the matched global subset (`S'_k`, below) by `κ_{c_L}`
+  `+0.08 / +0.10 / +0.08` (Y1, `k` = 16 / 64 / 256) and `+0.17 / +0.14 / +0.10` (Y2). The greedy empirical oracle
+  (`O*_k`, below: for each scored pair, a forward selection fitted to the frame's *other* fresh cues' measured reads
+  and evaluated on the held-out cue) shows about twice that room at the decision size — `+0.19 / +0.20` at `k = 64`
+  (`κ` 0.916 / 0.908 against the global 0.724 / 0.706), `+0.23 / +0.27` at `k = 16`, and `+0.06 / +0.05` at `k = 256`,
+  where 256 greedy steps fitted to 23 targets over-fit and fall below the ranking. Account 1 leaves no such room.
+  The *in-sample* greedy (fitted to all 24 scored cues of the frame) reaches `κ` 0.997 / 0.998 at `k = 64` and
+  0.94 / 0.93 at `k = 16` and shares only 0.20 of its 64 with the full evaluation's: sixty-four free choices among 2048
+  contribution vectors fit 24 targets almost exactly, so an in-sample optimizer of the scored objective is
+  degenerate as a headroom measure and is not used; only the held-out form is.
+- **The full evaluation closes all of the ranking oracle's room and about half to three quarters of the greedy
+  oracle's.** `E_k(f)` — each frame ranked on the exposed cues' predicted
   effects at its own reference state, Experiment 018's per-frame ranking taken per changed position — reaches
   `κ_{c_L}` 0.729 / **0.816** / 0.938 on Y1 against `S'_k` 0.660 / 0.724 / 0.864 (gains `+0.07 / +0.09 / +0.07`; the
   oracle 0.740 / 0.828 / 0.947), and 0.767 / **0.859** / 0.944 on Y2 against 0.593 / 0.706 / 0.863 (gains `+0.17 /
-  +0.15 / +0.08`; the oracle 0.767 / 0.848 / 0.959 — at `k = 64` the prospective selector matches the fresh-cue-informed
-  ceiling). At `k = 64` it improves on the global subset in 52 of 78 exposed frames and 8 of 12 new frames, its pooled
+  +0.15 / +0.08`; the ranking oracle 0.767 / 0.848 / 0.959 — at `k = 64` the prospective selector matches the
+  fresh-cue-informed ranking and closes 0.48 (Y1) and 0.76 (Y2) of the greedy oracle's headroom). At `k = 64` it improves on the global subset in 52 of 78 exposed frames and 8 of 12 new frames, its pooled
   gain survives the removal of any one frame (jackknife minimum 0.085 on Y1, 0.128 on Y2), and it is positive in
   both template families and in every template (Y1: cardinal `+0.04`, quantifier `+0.08`, coordinated `+0.17`; Y2:
-  `+0.09 / +0.13 / +0.27`). Its top-64 shares on average 0.87 (Y1) and 0.81 (Y2) of the oracle's top-64, against 0.42 /
-  0.40 for the global subset; its scores rank the 2048 neurons against the oracle's with Spearman 0.99 / 0.97.
+  `+0.09 / +0.13 / +0.27`). Its top-64 shares on average 0.87 (Y1) and 0.81 (Y2) of the ranking oracle's top-64, against 0.42 /
+  0.40 for the global subset; its scores rank the 2048 neurons against the ranking oracle's with Spearman 0.99 / 0.97.
 - **The operating-point rule closes most of what the full evaluation closes — with the right drive profile.** Five
   compact rules were tried, all with the frame's reference pre-activations as their only frame-specific input. The
   first-order rule (the change of GELU slope between the frame's state and the base, times a mean drive) is *worse*
@@ -100,7 +112,7 @@ tokens (its stage-1 ranking); the frozen rule below uses the template's 254 expo
   global subset is 0.75 (Y1), 1.01 (Y2), 0.81 on the two sets pooled at `k = 64`; 0.89 / 1.00 / 0.91 at `k = 256`; only
   0.20 / 0.85 / 0.41 at `k = 16`, where the smallest subsets are the most sensitive to the exact drives. Its one weak
   template is cardinal on the exposed frames (`−0.04` against the global subset at `k = 64` on Y1; `+0.05` on the new
-  cardinal frames). Its top-64 shares 0.72 / 0.71 of the oracle's; Spearman 0.92 / 0.93.
+  cardinal frames). Its top-64 shares 0.72 / 0.71 of the ranking oracle's; Spearman 0.92 / 0.93.
 - **The template average is not enough.** The per-template ranking `T_k` gains `+0.03 / +0.04` over the global subset at
   `k = 64` (Y1 / Y2) and the full evaluation exceeds it by `+0.064 / +0.112` (pooled `+0.071`); at `k = 16` the template
   ranking is *below* the global one (`−0.03`). Account 3 is expected to fail, but the margin is set so that it can win.
@@ -176,7 +188,9 @@ E_k(f, p)   full evaluation:   top-k of  mean over every exposed cue licensed in
 G_k(f, p)   operating-point:   top-k of  (1/3) Σ_{q ∈ {0.1, 0.5, 0.9}} | Δ_GELU(pre_j(f, p); d_j^q(τ, p)) − Δ_GELU(pre_j^T(p); d_j^q(τ, p)) | · |r_j| / |D_T(τ)|
             with Δ_GELU(a; d) = GELU(a + d) − GELU(a) and d_j^q(τ, p) the q-quantile, over the calibration records of template τ at position type p, of the base drive Δpre_j^T
             (the frame enters only through its 2048 reference pre-activations pre_j(f, p); the drive profile is a locked table of 3 × 2048 numbers per template and position type)
-O_k(f, p)   oracle (ceiling):  top-k of  mean over the SCORED FRESH CUES in f of |e_j^meas(w, f, p)| |r_j| / |D_T|        (measured effects, below; computed at stage 2 only; descriptive, enters no prediction)
+O_k(f, p)   ranking oracle:    top-k of  mean over the SCORED FRESH CUES in f of |e_j^meas(w, f, p)| |r_j| / |D_T|        (measured effects, below; stage 2 only; descriptive and Y5's target; certifies nothing)
+O*_k(f, −w) greedy oracle:     forward selection of k neurons minimizing the frame's residual read error over its OTHER scored fresh cues (measured c_L targets;
+            the chain's contributions u_j), evaluated on the held-out cue w; lower-index tie break; p_c only; stage 2 only     (the headroom certificate H*_k; below)
 S_k(018)    inherited:         the Experiment 018 lock's S_k lists, digest-checked                                          (named control; both positions)
 R1–R3(k)    random:            three k-subsets from random.Random(20260924): for k in (16, 64, 256), sample(range(2048), k) three times, one generator, in that order; overlaps recorded, never redrawn
 S_0, S_2048  the template-base rung and the reference rung (Experiment 017's Level 0)                                      (κ's endpoints)
@@ -204,12 +218,40 @@ e_j^meas    = own_j^meas − tmpl_j^meas
 ```
 
 — an exact function of the captured residual and the weights, i.e. the neurons' observed responses in that fresh run.
-The oracle ranks each frame by the mean `|e_j^meas| |r_j| / |D_T|` over the frame's scored fresh cues; it is
-in-sample on the pairs it is scored on and is therefore a *ceiling of the same ranking rule*, reported and never
-labelled. It is not the `R²`-optimal `k`-subset (contributions of opposite sign can cancel), and in the design checks
-the full evaluation occasionally exceeds it; that is why the routing floors are stated against the global subset, not
-as a fraction of the oracle's gain. Descriptively, the neuron-level fidelity of the chain is recorded per pair as the
-`R²` of `e_j` against `e_j^meas` over the 2048 neurons (an accounting, no floor).
+The **ranking oracle** `O_k(f, p)` ranks each frame by the mean `|e_j^meas| |r_j| / |D_T|` over the frame's scored
+fresh cues; it is in-sample on the pairs it is scored on and is a *ceiling of the same ranking rule*, reported, never
+labelled, and the target of Y5. It is not the `R²`-optimal `k`-subset (contributions of opposite sign can cancel),
+and in the design checks the full evaluation exceeds it on the new frames; it therefore certifies nothing about the
+absence of headroom. Descriptively, the neuron-level fidelity of the chain is recorded per pair as the `R²` of `e_j`
+against `e_j^meas` over the 2048 neurons (an accounting, no floor).
+
+**The greedy empirical oracle `O*_k(f, −w)` (frozen algorithm; stage 2 only; `p_c`; the headroom certificate).** The
+scored objective is `κ_{c_L}`, i.e. the pooled `R²` of the masked chain's read `ĉ_L(S)` against the measured `c_L`;
+by the read identity `ĉ_L(S) = ĉ_L(S_0) + Σ_{j ∈ S} u_j`, a frame's contribution to that objective is its residual
+sum of squares `Σ_w (c_L^meas(w, f) − ĉ_L(S_0)(w, f) − Σ_{j ∈ S} u_j(w, f, p_c))²`, which a subset can be fitted to
+directly, without any model prompt. An in-sample fit is degenerate (design checks: 64 neurons chosen from 2048
+against 24 targets reach `κ` 0.997), so the oracle is fitted *leave-one-cue-out*: for each scored pair `(w, f)`, with
+`W` the frame's other scored fresh cues,
+
+```text
+r ← ( c_L^meas(w', f) − ĉ_L(S_0)(w', f) )_{w' ∈ W}        the residual read of the template-base rung over the other cues (measured targets)
+S ← ∅;  repeat k times:  j* = argmin_{j ∉ S} ‖ r − u_j ‖²   with u_j = ( u_j(w', f, p_c) )_{w' ∈ W}  the chain's contribution vectors
+                         (equivalently argmax 2⟨r, u_j⟩ − ‖u_j‖²; ties by the lower index; no early stop);  S ← S ∪ {j*};  r ← r − u_j*
+O*_k(f, −w) = S;   the pair's oracle prediction is the masked chain's ĉ_L (and F̂, Π̂, ΔT̂, row) with mask S at p_c (and O_k(f, p_t) at p_t)
+```
+
+Every choice is fixed: the objective (the frame's residual sum of squares of the scored read — exactly its share of
+the pooled `κ`, whose total sum of squares is fixed), the basis (the chain's predicted contributions `u_j`, the same
+quantities every rung is scored with, so that `κ(O*)` is measured in the very statistic every rung is measured in;
+the measured `c_L` targets are what make it post-confirmation, and the neuron-level fidelity above records how
+closely those contributions are the measured ones), the selection set (the frame's other scored fresh cues —
+never the held-out cue, so its `κ` is an out-of-sample estimate of what a frame-specific `k`-subset chosen from the
+frame's own measured responses recovers on a cue it has not seen), the tie rule and the size. It is a *greedy*
+empirical oracle, not a global optimum, and is named so; it is computed only after every stage-2 measurement of the
+set exists, enters no selector, table or list, and is applied to the same predicted upstream parts as every other
+rung. Design-check values (the frozen definition exactly — the checks hold the measured `c_L` and the chain's
+contributions): `κ_{c_L}(O*_64)` 0.916 on Experiment 018's Y1 and 0.908 on its Y2 (against the global 0.724 / 0.706, the full evaluation 0.816 / 0.859 and the ranking
+oracle 0.828 / 0.848); it exceeds the full evaluation in every one of the 90 frames at `k = 64`.
 
 **The closure fraction and the routing gain (the statistics of the claims).** For an object `X`, a set of scored
 pairs and a rung `S` (a fixed list, or a frame-and-position-specific selector applied pair by pair):
@@ -219,14 +261,15 @@ pairs and a rung `S` (a fixed list, or a frame-and-position-specific selector ap
 Δκ_k(X) = κ_{c_L}(X_k) − κ_{c_L}(S'_k)                                the routing gain of selector X at size k over the matched global subset
 ρ_k     = Δκ_k(G) / Δκ_k(E)                                            the share of the full evaluation's gain that the operating-point-plus-drive rule carries; per set (Y1, Y2) and pooled; unclipped;
                                                                        interpreted only where Δκ_k(E) ≥ 0.05 on the same pairs (the denominator condition)
-H_k     = κ_{c_L}(O_k) − κ_{c_L}(S'_k)                                 the routing headroom: what the same rule recovers beyond the global subset when it may see the fresh cues' measured
-                                                                       responses (a stage-2 quantity; governs only the classification of a negative routing result)
+H*_k    = κ_{c_L}(O*_k) − κ_{c_L}(S'_k)                                the routing headroom: what a greedy frame-specific k-subset fitted to the frame's other measured reads recovers beyond the
+                                                                       global subset on held-out cues (a stage-2 quantity; governs only the classification of a negative routing result)
+H_k     = κ_{c_L}(O_k) − κ_{c_L}(S'_k)                                 the ranking oracle's headroom proxy (descriptive; certifies nothing)
 ```
 
 `κ` is Experiment 018's statistic with its evaluability rule; `Δκ` is a difference of two closure fractions on the
 same pairs and has the same unit (a share of channel D's contribution to the read); `ρ` is a ratio of two such gains
-and is read only where its denominator is at least the routing floor; `H` is the oracle's gain and enters no floor of
-any prospective selector. The decision object is `c_L`; `F`,
+and is read only where its denominator is at least the routing floor; `H*` is the greedy oracle's held-out gain and enters no floor
+of any prospective selector; `H` is a descriptive proxy. The decision object is `c_L`; `F`,
 `Π`, `ΔT` and the row entries are reported for every selector with their `κ` descriptively, with Experiment 018's
 predeclared orderings carried (`κ_{c_L} ≥ κ_Π`; the row diffuse).
 
@@ -241,8 +284,8 @@ inputs, not evidence for the 019 selector, whose cue set is the enlarged one; an
 
 **Level 0-S (the masked chain with per-position masks; the hypotheses and controls).** Experiment 018's Level 0-S with
 the mask table extended to frame-and-position-specific lists. Every rung receives `ΔE`, the weights, the locked axes,
-read and bases, the locked score tables and lists, and the frame's reference run only. The oracle's masks are built at
-stage 2 from the measured effects and are applied to the *same* predicted upstream parts (so that the oracle differs
+read and bases, the locked score tables and lists, and the frame's reference run only. The oracles' masks are built at
+stage 2 from the measured quantities and are applied to the *same* predicted upstream parts (so that an oracle differs
 from the prospective selectors only in which neurons it names, never in what it predicts for them).
 
 **Locked boundary (formal).** Experiment 018's boundary verbatim, and in addition: `S'_k`, `T_k`, the drive-quantile
@@ -251,8 +294,8 @@ locked reference states of the ninety exposed frames and the exposed cues' `ΔE`
 quantity of the exposed pairs and checks that no score, table or list changes; a second test replaces the
 confirmation set's tokens and frames by poisoned ones and checks the same. For a fresh frame, `E_k(f, p)` and
 `G_k(f, p)` are computed at stage 1 from its reference run (the exposed cues' predicted effects at its state; its
-pre-activations) and digested with the prediction table before any fresh cue prompt runs in it. The oracle is computed
-only at stage 2, only from stage-2 captures, and enters no prediction row: a test checks that every prediction column
+pre-activations) and digested with the prediction table before any fresh cue prompt runs in it. The oracles are computed
+only at stage 2, only from stage-2 measurements, and enter no prediction row: a test checks that every prediction column
 is unchanged when the stage-2 captures are poisoned. Order:
 
 ```text
@@ -387,10 +430,13 @@ then, from the locked state of that run alone, `E_k(f, p)` (the template's 254 e
 the frame's state — never a measured effect of any cue in the frame) and `G_k(f, p)` (the frame's reference
 pre-activations against the locked base and drive tables), while `T_k(τ, p)` and `S'_k` are read from the lock; the
 overlaps among the four lists; the frame-conditional prediction table for every rung and every fresh cue. The lists,
-the states and the table are serialized together, digested, written to the results state, and the stage ends. **No
-fresh cue prompt runs during stage 1; no block-2 effect of any fresh cue in any frame — and therefore no oracle —
-exists on disk or in memory before the digest is written.** The ledger after stage 1 contains only reference and
-cue-pair keys, and a test asserts it.
+the states and the table are serialized together, digested, written to the results state, and the stage ends. **Stage 1 executes
+zero of the 24 fresh-cue × 18 fresh-frame target pairs; those 432 target pairs (and the 2160 fresh-cue × exposed-frame
+pairs) are first executed only after all `E`/`G`/`T`/`S'` selectors for the new frames have been serialized, digested
+and re-read at the stage barrier. No fresh cue prompt runs during stage 1; no block-2 effect of any fresh cue in any
+frame — and therefore no oracle of either kind — exists on disk or in memory before the digest is written.** The
+ledger after stage 1 contains only reference and cue-pair keys (the template's own singular and plural cue prompts
+in each fresh frame, exposed tokens), and a test asserts it.
 
 **The barrier:** stage 2 begins by re-reading the stage-1 record from disk and verifying its digest; a missing or
 mismatched digest refuses every fresh cue prompt (Experiments 013–018's barrier, verbatim).
@@ -398,17 +444,19 @@ mismatched digest refuses every fresh cue prompt (Experiments 013–018's barrie
 **Stage 2 (the fresh cue prompts):** every fresh cue's E-patch in every frame of both sets, in the frozen order, with
 the layer-3 residuals, the head's row and the block-2 input at both changed positions captured; I1–I10; the measured
 `c_L`, `ΔA_H`, `F`, `Π`, `ΔT` and, from the captured block-2 input, `e_j^meas`; every locked and stage-1 prediction
-recomputed and checked against its table row before scoring; then, and only then, the oracle lists `O_k(f, p)` from
-the scored fresh cues' measured effects, used for `H_64`, as Y5's target and as the descriptive ceiling. The oracle is
-never written into any selector, table or list: one test poisons the stage-2 captures and checks that every
-prediction column and every locked or stage-1 list is unchanged; another checks that the oracle rung differs from the
-prospective rungs only in the mask it names, never in the upstream parts it is applied to.
+recomputed and checked against its table row before scoring; then, and only then, once every measurement of the set
+exists, the ranking-oracle lists `O_k(f, p)` from the scored fresh cues' measured effects (Y5's target; the
+descriptive proxy `H_64`) and the greedy-oracle lists `O*_k(f, −w)` from the frame's other scored cues' measured
+reads (the certificate `H*_64`). Neither oracle is written into any selector, table or list: one test poisons the
+stage-2 captures and checks that every prediction column and every locked or stage-1 list is unchanged; another
+checks that each oracle rung differs from the prospective rungs only in the mask it names, never in the upstream
+parts it is applied to; a third checks that a pair's greedy mask is invariant to that pair's own measured read.
 
 ```text
 confirmation file (cues, frames, prompt keys, validity)  →  explore (exposed pool only)  →  lock (lists, tables, floors, predictions)  →  user's lock commit  →  reviewer's sign-off
 stage 1, per fresh frame:  reference run  →  E_k(f, p), G_k(f, p) from the locked state  →  table(f)  →  [serialize, digest, write]
 barrier:                   re-read from disk, verify digest
-stage 2:                   fresh cue prompts (both sets)  →  measured objects, e_j^meas  →  O_k(f, p)  →  H_64, Y5 target  →  scoring
+stage 2:                   fresh cue prompts (both sets)  →  measured objects, e_j^meas  →  O_k(f, p), O*_k(f, −w)  →  H*_64 (H_64), Y5 target  →  scoring
 ```
 
 ## Floors and outcome (frozen)
@@ -429,21 +477,21 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   committed before `confirm`):** `Δκ_64(E) ≥ 0.05` on the pooled scored pairs, **and** the frame-count guard —
   `E_64(f)` reaches a higher `c_L R²` than `S'_64` over the scored pairs of the frame in *more than half* of the valid
   frames — **and** the split guard — `Δκ_64(E) ≥ 0.02` on the cue-final split and on the coordinated split. All three
-  → `ROUTING_PREDICTED_TOKENS`. Otherwise the routing headroom classifies the failure: `H_64 ≥ 0.05` on the set →
-  `ROUTING_NOT_PREDICTED_TOKENS` (naming the floor or guard); `H_64 < 0.05` → `ROUTING_NOT_EVALUABLE_TOKENS` (naming
-  the headroom: a same-rule selection that knows the fresh cues' measured responses recovers less than 0.05 beyond
-  the global subset, so there was no frame-specific redistribution for a prospective selector to find on this set —
-  the fixed-population account is compatible with the set, and the failure is no evidence against routing). A
-  positive label needs no headroom certificate: the oracle is the same ranking rule informed by the fresh cues, not
-  the `R²`-optimal subset, so a prospective selector may exceed it (it does on Experiment 018's new frames); `H_64` is
-  reported on every set regardless. Preview on Experiment 018's Y1: `+0.092`, 52 of 78 frames, splits `+0.072 /
-  +0.166`; jackknife minimum `0.085`; `H_64` `+0.104`.
+  → `ROUTING_PREDICTED_TOKENS`. Otherwise the routing headroom classifies the failure: `H*_64 ≥ 0.05` on the set, *or*
+  `Δκ_64(E) ≥ 0.05` with a guard failed (headroom demonstrated by `E` itself) → `ROUTING_NOT_PREDICTED_TOKENS` (naming
+  the floor or guard); `H*_64 < 0.05` and `Δκ_64(E) < 0.05` → `ROUTING_NOT_EVALUABLE_TOKENS` (naming the headroom: a
+  greedy frame-specific 64-subset fitted to the frame's other measured reads recovers less than 0.05 beyond the
+  global subset on held-out cues, so no frame-specific redistribution of at least the routing floor was found on
+  this set by the strongest search this design freezes — the fixed-population account is compatible with the set,
+  and the failure is no evidence against routing). A positive label needs no headroom certificate; `H*_64` and the
+  proxy `H_64` are reported on every set regardless. Preview on Experiment 018's Y1: `+0.092`, 52 of 78 frames, splits
+  `+0.072 / +0.166`; jackknife minimum `0.085`; `H*_64` `+0.192` (`H_64` `+0.104`).
 - **Y2 — routing predicted, frame-conditional prospective (24 fresh cues × 18 new frames; numbers digested at stage
   1):** the same three conditions on the valid fresh frames. All → `ROUTING_PREDICTED_FRAMES_CONDITIONAL`; otherwise
-  `ROUTING_NOT_PREDICTED_FRAMES_CONDITIONAL` (naming the floor or guard) if `H_64 ≥ 0.05` on the fresh-frame set, and
-  `ROUTING_NOT_EVALUABLE_FRAMES_CONDITIONAL` (naming the headroom) if `H_64 < 0.05`, with the same readings as Y1.
-  Preview on Experiment 018's twelve new frames: `+0.154`, 8 of 12 frames, splits `+0.125 / +0.273`; jackknife
-  minimum `0.128`; `H_64` `+0.142`. The eighteen frames are reported individually regardless of the outcome.
+  `ROUTING_NOT_PREDICTED_FRAMES_CONDITIONAL` (naming the floor or guard) if `H*_64 ≥ 0.05` on the fresh-frame set or
+  `E`'s own gain reached 0.05 there, and `ROUTING_NOT_EVALUABLE_FRAMES_CONDITIONAL` (naming the headroom) if `H*_64 <
+  0.05` and `Δκ_64(E) < 0.05`, with the same readings as Y1. Preview on Experiment 018's twelve new frames: `+0.154`, 8
+  of 12 frames, splits `+0.125 / +0.273`; jackknife minimum `0.128`; `H*_64` `+0.202` (`H_64` `+0.142`). The eighteen frames are reported individually regardless of the outcome.
 - **Y3 — the operating-point-plus-drive rule is sufficient (`G` against `E` at `k = 64`; per set and pooled):**
   `ρ_64` is computed on Y1's scored pairs, on Y2's, and on both pooled (pair-weighted). **Evaluability — the
   denominator condition:** `Δκ_64(E) ≥ 0.05` on Y1, on Y2 and pooled; the ratio is not read where the full
@@ -481,19 +529,24 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   set, the mean of `|E_64(f, p_c) ∩ O_64(f, p_c)| / 64` is at least `0.60` **and** exceeds the mean of `|S'_64 ∩
   O_64(f, p_c)| / 64` by at least `0.20`; both sets → `MEMBERSHIP_PREDICTED`; otherwise `MEMBERSHIP_NOT_PREDICTED`
   (naming the set); a set failing its precondition → `MEMBERSHIP_NOT_EVALUABLE`. The per-set form applies the same
-  protection against the exposed frames' weight as Y3 and Y4. The oracle is the *target* of this
+  protection against the exposed frames' weight as Y3 and Y4. The ranking oracle is the *target* of this
   prediction (the neurons the fresh cues' measured responses rank highest), not a selector. Preview against the
   predicted-effect oracle: 0.87 / 0.81 against 0.42 / 0.40; `G`'s 0.72 / 0.71 and `T`'s 0.49 / 0.46 are reported beside it.
 - **The routing headroom (formal; a stage-2 quantity that governs only the classification of a negative Y1 or
-  Y2 and its reading):** `H_64 = κ_{c_L}(O_64) − κ_{c_L}(S'_64)` per set (preview `+0.104 / +0.142`), on the same
-  scored pairs as the set's `κ`. Below `0.05`, the set had no frame-specific redistribution of at least the routing
-  floor for any selector of this rule to recover, and a negative routing result there is classified
-  `NOT_EVALUABLE`, with the fixed reading *no routing headroom at size 64 on this set: the population is fixed to
-  within 0.05 and the frame acts on amplitudes* (account 1 compatible). At or above `0.05`, a negative result is
-  `NOT_PREDICTED`, with the reading *redistribution present, not predicted by the tested rules* (account 4). The
-  oracle remains post-confirmation and enters no selector, table or list; `H_64` is reported on every set whatever the
-  label, and a positive routing label rejects account 1 at size 64 by itself, since a frame-specific choice of 64
-  neurons made blind to the fresh cues recovered at least 0.05 more than the best global 64.
+  Y2 and its reading):** `H*_64 = κ_{c_L}(O*_64) − κ_{c_L}(S'_64)` per set, on the same scored pairs as the set's `κ`,
+  each pair predicted with its own leave-one-cue-out greedy mask (preview `+0.192 / +0.202`). Below `0.05` — and with
+  `E`'s own gain also below `0.05` — no frame-specific 64-subset that the strongest frozen search could fit to the
+  frame's other measured reads recovers the routing floor on held-out cues, and a negative routing result there is
+  classified `NOT_EVALUABLE`, with the fixed reading *no routing headroom at size 64 on this set: the population is
+  fixed to within 0.05 on held-out cues and the frame acts on amplitudes* (account 1 compatible). At or above `0.05`,
+  a negative result is `NOT_PREDICTED`, with the reading *redistribution present and recoverable from the frame's own
+  measured responses, not predicted by the tested rules* (account 4). The greedy oracle is a held-out empirical
+  ceiling, not a global optimum: `H*_64 < 0.05` says that this search found no room, which is the strongest statement
+  the design can make without exhausting the subsets. The ranking oracle's `H_64` is reported beside it as a proxy and
+  certifies nothing. Both oracles remain post-confirmation and enter no selector, table or list; a positive routing
+  label rejects account 1 at size 64 by itself, since a frame-specific choice of 64 neurons made blind to the fresh
+  cues recovered at least 0.05 more than the best global 64. Descriptively, `E`'s share of the greedy headroom,
+  `Δκ_64(E) / H*_64`, is reported per set (preview 0.48 / 0.76).
 - **Descriptive (no floor), reported against the predeclared expectations:** (i) `Δκ_256(E) ≥ 0.03` and `Δκ_16(E) ≥
   0.03` on each set (preview `+0.074 / +0.081` and `+0.069 / +0.174`); (ii) `Δκ_64(E)` against the inherited `S_64(018)`
   at least as large as against `S'_64` (preview `+0.100 / +0.181`); (iii) the random controls' `κ_{c_L}` below `0.50` at
@@ -504,7 +557,9 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
   every selector, the number of frames where a selector loses more than `0.05 R²` to `S'_64`, and the jackknife of the
   pooled gain; (viii) `κ_F`, `κ_ΔT` and the head-row `κ` per selector, and the `p_t` lists' overlaps for the coordinated
   frames; (ix) the neuron-level fidelity `R²(e_j, e_j^meas)` per pair (preview unavailable; expected high where the
-  reference rung holds).
+  reference rung holds); (x) `O*_k` at `k = 16` and `256` and the overlap of `E_64` and `G_64` with `O*_64` (preview
+  0.20 / 0.21 and 0.23 / 0.24 — the greedy fit names different neurons than the ranking does, which is why its `κ`
+  and not its membership is the certificate); the in-sample greedy is not computed.
 - Outcome = `Y1 | Y2 | Y3 | Y4 | Y5`. Incidents (replication, identities I1–I10, software defects) stop the phase, are
   recorded with their commit, and are never an outcome label; a confirm incident permits no re-run in this protocol
   version.
@@ -518,9 +573,9 @@ stage 2:                   fresh cue prompts (both sets)  →  measured objects,
 | both positive | either | sufficient | **Account 3 with a residue.** The template ranking carries the routing (≥ 0.05 over global, on the new frames too) and the frame adds less than 0.05 — but Y1/Y2 positive means the frame-specific selection still cleared 0.05 over the global subset, so the reading is *template-level routing with a frame-level residue below the resolution of this design*; the per-template subcircuits become the object of the next experiment. |
 | both positive | either | not distinguished (set-dependent) | Routing predicted; whether the template accounts for it differs between the exposed and the new frames — recorded, not generalized. |
 | one positive, one `NOT_PREDICTED` | — | — | The dimension that failed is named. Y1 negative with Y2 positive: routing transfers to new frames but not to the new lexical classes in exposed frames — a cue × frame interaction the calibration cues do not carry (account 4 in the cue dimension). Y2 negative with Y1 positive: the selection generalizes to unseen cues in frames whose states contributed to the calibration but not to unseen frames — *frame-conditional routing not established*, with headroom present on the new frames (account 4 in the frame dimension). |
-| one positive, one `NOT_EVALUABLE` | — | — | Routing established in the dimension that had headroom; the other set offered no frame-specific redistribution of at least 0.05 for any selector of this rule to find, so it neither supports nor contradicts routing (account 1 compatible there, not a failure). |
-| both `NOT_EVALUABLE` | not evaluable | not distinguished | **Account 1 at size 64.** A fresh-cue-informed choice of 64 neurons does no better than the global 64 on either set: the population is fixed to within 0.05 of `κ` and the frame modulates amplitudes. Experiment 018's descriptive observation reduces to amplitude variation inside a fixed set. |
-| both `NOT_PREDICTED` | not evaluable | not distinguished | **Account 4.** The oracle shows that a different 64 neurons would recover ≥ 0.05 more on both sets, and neither the frame's reference state (through the full evaluation or the operating point with typical drives) nor the template predicts which: the redistribution depends on the fresh cues' own responses in the frame. The chain's decoded upstream state does not carry the routing through the tested rules. |
+| one positive, one `NOT_EVALUABLE` | — | — | Routing established in the dimension that had headroom; on the other set no greedy frame-specific 64-subset fitted to the frame's other measured reads recovered 0.05 on held-out cues, so it neither supports nor contradicts routing (account 1 compatible there, not a failure). |
+| both `NOT_EVALUABLE` | not evaluable | not distinguished | **Account 1 at size 64.** A greedy choice of 64 neurons fitted to the frame's other measured reads does no better than the global 64 on held-out cues on either set: the population is fixed to within 0.05 of `κ` and the frame modulates amplitudes. Experiment 018's descriptive observation reduces to amplitude variation inside a fixed set. |
+| both `NOT_PREDICTED` | not evaluable | not distinguished | **Account 4.** The greedy oracle shows that a different 64 neurons, chosen from the frame's other measured responses, recover ≥ 0.05 more on held-out cues on both sets, and neither the frame's reference state (through the full evaluation or the operating point with typical drives) nor the template predicts which: the redistribution depends on the fresh cues' own responses in the frame. The chain's decoded upstream state does not carry the routing through the tested rules. |
 | one `NOT_PREDICTED`, one `NOT_EVALUABLE` | not evaluable | not distinguished | Account 4 in the dimension with headroom; account 1 compatible in the other; no general routing statement. |
 
 Y5 is read alongside: `MEMBERSHIP_PREDICTED` with a positive Y1/Y2 says the predicted subset names the right neurons,
@@ -536,15 +591,16 @@ that the routing statement is about recovery, not about the identity of the top-
   from its text, and nothing selects neurons from a fresh cue's forward pass.
 - The claim is about the transport read (`c_L`) at `p_c`, at size 64, relative to the matched global rule; the other
   sizes, the head objects and the `p_t` position are described, not claimed. It is not the claim that 64 neurons
-  suffice (the absolute `κ` of every selector is reported beside its gain), nor that the oracle is the best possible
+  suffice (the absolute `κ` of every selector is reported beside its gain), nor that either oracle is the best possible
   subset, nor anything about behaviour.
 - `Δκ` is a difference of closure fractions on pooled `R²`; a frame with a very large gap weighs more in the pooled
   value, which is why the frame-count and split guards exist and why the per-frame distribution is always reported.
 - Y3, Y4 and Y5 carry per-set conditions beside the pooled ones (Y1 contributes up to 2160 pairs and 90 frames, Y2 at
   most 432 pairs and 18 frames), so that no label of a general routing explanation can arise from the exposed frames
   alone; the per-set values are always reported.
-- The oracle is in-sample on the pairs it is scored on and is a same-rule ceiling; it enters no selector, and the
-  headroom it defines classifies only a *negative* routing result (evidence against routing, or no room to route).
+- The ranking oracle is in-sample on the pairs it is scored on and certifies nothing; the greedy oracle is a
+  held-out empirical ceiling (a greedy search, not a global optimum) whose headroom classifies only a *negative*
+  routing result (evidence against routing, or no room found to route). Neither enters a selector.
 - Eighteen new frames, five lexical classes (one of them exhausted by this experiment), three templates, one head, one
   block, this checkpoint.
 
@@ -557,7 +613,8 @@ preconditions, the confirmation-builder helpers, the results-state and lock mach
 `hidden`), `attention_patterns.py`, `attention_paths.py`, `read_assembly.py`, `neuron_feature.py`,
 `plural_mechanism.py`; the selectors (`S'_k`, `T_k`, the drive-quantile tables, `E_k(f, p)`, `G_k(f, p)`, the random
 controls, `S'_1`, `E_1(f)`) as pure functions of the locked states, the weights and the exposed `ΔE`; the measured
-per-neuron effect and the oracle as pure functions of the captured block-2 input; a committed extract of Experiment
+per-neuron effect and the ranking oracle as pure functions of the captured block-2 input; the greedy oracle as a pure
+function of the frame's other scored pairs' measured reads and the chain's contributions; a committed extract of Experiment
 018's per-pair `F`, `Π`, `ΔT`, `c_L`, row and `S_0` / `S_256` / `S_2048` predictions (11 796 pairs) with the twelve stage-1
 state digests and per-frame lists; the confirmation builder with the extended lists and eighteen frames; a runner
 with phases `validate`, `freeze-confirmation`, `explore`, `lock`, `confirm` (two stages), `report`. Tests: the
@@ -570,8 +627,10 @@ quantiles reproduced from the locked records; `Δκ`, `ρ` per set and pooled, t
 Y3's denominator condition and per-set floors, Y4's three-way logic with the Y2 condition and the set-dependent
 case, Y5 per set, the headroom classification and the preconditions on synthetic tables (a non-evaluable gap, a
 split below the gap, exactly half the frames winning, `ρ` at exactly `0.60` pooled and `0.50` on a set, a negative `E`
-with `H_64` just below and just above `0.05`, a positive `E` with `H_64` below `0.05` that stays positive, `κ`
-outside `[0, 1]` unclipped); the ledger after stage 1 holding only reference and cue-pair keys; the stage barrier; phase isolation; the pinned-model smoke as in Experiments 015–018.
+with `H*_64` just below and just above `0.05`, a guard failure with `E`'s gain at `0.05` and `H*_64` below `0.05`
+classified `NOT_PREDICTED`, a positive `E` with `H*_64` below `0.05` that stays positive, `κ` outside `[0, 1]`
+unclipped); the greedy oracle's determinism, tie rule, size, leave-one-cue-out masks (a pair's mask invariant to its
+own measured read; a synthetic frame where greedy recovers a planted subset exactly) and its restriction to `p_c`; the ledger after stage 1 holding only reference and cue-pair keys; the stage barrier; phase isolation; the pinned-model smoke as in Experiments 015–018.
 
 ## Approval and stopping condition
 
@@ -610,3 +669,16 @@ and predictions are digested and re-read from disk.
   written out as a frozen protocol — what is frozen before `explore`, at `lock`, what stage 1 may run and derive, the
   digest barrier, what stage 2 runs and when the oracle comes into existence — with the tests that enforce it. The
   outcome table carries the new labels.
+- **Revision 3**: the reviewer's one remaining point, minimally. The measured-effect ranking oracle `O_64` cannot
+  certify absence of headroom (it can be beaten, and the full evaluation beat it on the new-frame preview), so the
+  certificate is now the leave-one-cue-out greedy empirical oracle `O*_64`: for each scored pair, a forward selection
+  of 64 neurons fitted to the frame's other scored cues' measured reads under the scored `κ_{c_L}` objective (the
+  frame's residual sum of squares of the masked read, on the chain's contribution basis), evaluated on the held-out
+  cue, deterministic with a lower-index tie rule, computed at stage 2 only. `H*_64 = κ(O*_64) − κ(S'_64)` replaces
+  `H_64` in the classification of a negative Y1/Y2 (`NOT_EVALUABLE` iff `H*_64 < 0.05` and `E`'s own gain is below
+  0.05; `NOT_PREDICTED` otherwise); `H_64` stays as a descriptive proxy and `O_64` as Y5's target. Design checks:
+  an in-sample greedy is degenerate (`κ` 0.997 at `k = 64` against 24 targets) and is not used; the held-out greedy
+  reaches `κ` 0.916 / 0.908 (headroom `+0.19 / +0.20`, about twice the ranking oracle's), exceeds the full evaluation
+  in every frame at `k = 64`, and over-fits at `k = 256`; the full evaluation closes 0.48 / 0.76 of it, reported
+  descriptively. The stage-1 protocol now states that zero of the 432 fresh-cue × fresh-frame target pairs (and none
+  of the 2160 exposed-frame pairs) run before the barrier. Selectors, floors, sets and every other label unchanged.
