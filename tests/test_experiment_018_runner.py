@@ -252,7 +252,10 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     k = y1["statistics"]["kappa"]["c_L"]  # on the fake channel D may matter little: κ is then undefined (never scored), otherwise the reference rung closes exactly 1
     assert "statistics" in y1 and (k["S2048"] is None or k["S2048"] == pytest.approx(1.0)) and y1["precondition"]["reference"]["c_L"] is not None and set(y1["precondition"]["checks"]) >= {"reference_c_L", "gap_c_L", "gap_Pi"}
     assert set(results["firing"]) == {"Y1", "Y2"} and all(len(v["mean_effect"]) == 256 for v in results["firing"]["Y1"].values()) and "firing" in exploration and set(exploration["firing"]) == set(pm.TEMPLATE_ORDER)
-    assert "split_gap_cue_final" in results["Y2"]["precondition"]["checks"] and "no_harm_evaluable" in results["Y2"]["precondition"]["checks"] and "split_guard" in results["Y2"]["test"] and "no_harm_guard" in results["Y2"]["test"]
+    if "precondition" in results["Y2"]:  # the fake's fresh frames are valid only when its cue effect clears the rate; with fewer than two scored tokens Y2 is PRECONDITION_FAILED_FRAMES and carries no test
+        assert "split_gap_cue_final" in results["Y2"]["precondition"]["checks"] and "no_harm_evaluable" in results["Y2"]["precondition"]["checks"] and "split_guard" in results["Y2"]["test"] and "no_harm_guard" in results["Y2"]["test"]
+    else:
+        assert results["outcome"]["Y2"] == "PRECONDITION_FAILED_FRAMES" and not results["precondition_Y2"]["passed"]
     assert all(value < 1e-3 for value in results["identities"].values())
     assert {prompt.key for prompt in confirmation.exposed_frame_prompts} <= set(state["executed_prompt_keys"])
     with pytest.raises(bc.PhaseError):
