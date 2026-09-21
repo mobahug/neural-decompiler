@@ -352,6 +352,7 @@ class UpstreamParts:
     delta_e: torch.Tensor
     denominator: float
     c_L_level0F: float  # Experiment 016's decoded c_L (block 2 at the template base, no channel D)
+    arriving: Mapping[int, torch.Tensor] | None = None  # position -> the predicted arriving change Δ̂x₂(p) (Experiment 019 reads the base drives from it)
 
     def effects(self, position: int) -> torch.Tensor:
         """The operating-point effect e_j = own_j − tmpl_j of every neuron at a changed position."""
@@ -383,6 +384,7 @@ class MaskedChainModel:
         out2_pc = rows16[2].output_change(up["rows"][2], up["values"][2])
         xb2 = fcm.bases_012[template][1].double()
         parts = {p_c: (dx2_pc + out2_pc, lw.hidden(BLOCK, x2 + dx2_pc) - lw.hidden(BLOCK, x2), lw.hidden(BLOCK, xb2 + dx2_pc) - lw.hidden(BLOCK, xb2))}
+        arriving = {p_c: dx2_pc}
         if p_t != p_c:
             # Experiment 017's propagation step, verbatim: layer 1 at query p_t with the key and value at p_c at x₁(p_c) + ΔE; layer 2 at query p_t with p_c at x₂(p_c) + Δ̂x₂(p_c) and p_t at x₂(p_t) + Δ̂x₂(p_t).
             program1, program2 = fcm.programs[1], fcm.programs[2]
@@ -398,7 +400,8 @@ class MaskedChainModel:
                 raise pm.IncidentError(f"no locked block-2 base at p_t for template {template}")
             xb2_pt = self.base2_pt.double()
             parts[p_t] = (dx2_pt + out2_pt, lw.hidden(BLOCK, x2_pt + dx2_pt) - lw.hidden(BLOCK, x2_pt), lw.hidden(BLOCK, xb2_pt + dx2_pt) - lw.hidden(BLOCK, xb2_pt))
-        return UpstreamParts(parts, delta_e, float(up["denominator"]), float(up["c_L"]))
+            arriving[p_t] = dx2_pt
+        return UpstreamParts(parts, delta_e, float(up["denominator"]), float(up["c_L"]), arriving)
 
     def dx3(self, up: UpstreamParts, mask: torch.Tensor) -> dict[int, torch.Tensor]:
         W_out = self.lw.W_out[BLOCK]

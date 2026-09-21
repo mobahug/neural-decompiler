@@ -148,9 +148,13 @@ class LayerWeights:
                    {l: grab(b.mlp.W_in) for l, b in blocks.items()}, {l: grab(b.mlp.b_in) for l, b in blocks.items()},
                    {l: grab(b.mlp.W_out) for l, b in blocks.items()}, {l: grab(b.mlp.b_out) for l, b in blocks.items()})
 
-    def hidden(self, layer: int, x: torch.Tensor) -> torch.Tensor:
+    def pre_activations(self, layer: int, x: torch.Tensor) -> torch.Tensor:
+        """The MLP pre-activations ⟨ln2(x), W_in[:, j]⟩ + b_in[j] (before the GELU)."""
         normed = pm.exact_layer_norm(x.double(), self.ln_w[layer], self.ln_b[layer], self.eps)
-        return torch.nn.functional.gelu(normed @ self.W_in[layer] + self.b_in[layer])
+        return normed @ self.W_in[layer] + self.b_in[layer]
+
+    def hidden(self, layer: int, x: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.gelu(self.pre_activations(layer, x))
 
     def out(self, layer: int, x: torch.Tensor) -> torch.Tensor:
         return self.hidden(layer, x) @ self.W_out[layer] + self.b_out[layer]
