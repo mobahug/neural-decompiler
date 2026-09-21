@@ -66,4 +66,17 @@ uv run python experiments/018-block2-concentration/run.py report
 
 ## Status
 
-Implementation in progress; no scientific phase has run.
+**Tier A (`explore`) ran once at commit `9b629bf` (2026-09-21, run `86ccb888f52600ef`)**; the candidate lock is written
+(`outputs/experiment-018/candidate-lock.json`, content sha256
+`fdfae9106898f51528fc6c1a3e235bd9be7f37f3ccb00628ccf7522e308fae46`; `candidate-predictions.md` sha256
+`aac1b7c92a12a2af57cfa273e6bc8f8abb7a0fe26d2f5af47356bff1890d329d`). No fresh prompt has run. Exposed record (calibration
+only): replication of Experiment 017 exact (max deviation `0.0` over 9636 pairs); I8 `1.5e-14`; the ranking's top
+neurons `1987, 1102, 1726, 129, 1311, 1310, 1068, 1924, 1671, 815` (`S_1 = {1987}`); random controls overlap `S_256` by
+34 / 28 / 37 neurons (recorded, as expected ≈ 32); pooled `κ_{c_L}(S_256)` **0.88**, `κ_Π` **0.67**, `κ_F` 0.88,
+`κ_row` 0.22 (diffuse, as predeclared), `κ_{c_L}(S_1)` 0.41; random controls 0.20–0.46, `bottom_256` 0.00; cue-final
+split `κ_{c_L}` 0.90, coordinated 0.79 (cardinal 0.83, quantifier 0.92); reference rung `c_L` R² 1.000, rows 0.996;
+gaps `c_L` 0.163, `Π` 0.184 (`ΔT` 0.041, below the evaluability gap — descriptive only, as designed); per-frame top-256
+overlap with `S_256` 121–163 (median 138); of the 256, 71 (cardinal) / 93 (quantifier) / 15 (coordinated) fire in at
+least half of the template's records, neuron 1987 first everywhere. Next: the candidate lock and predictions are
+installed as `preregistration-lock.json` and `predictions.md` by hand and committed; the read-only post-lock check;
+the reviewer's sign-off; a single `confirm` straight through both stages. Never rerun `explore`.
