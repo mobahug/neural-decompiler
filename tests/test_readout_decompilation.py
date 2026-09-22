@@ -345,7 +345,7 @@ def test_pool_020_is_experiment_019s_pool_plus_its_confirmed_tokens_and_frames(i
     assert sum(1 for noun in pool.nouns if noun.single_token) == 79 and [n.lexical_key for n in pool.nouns if not n.single_token] == ["peach"]
     assert sum(1 for frame in pool.frames if pool.frame_origin[frame.frame_id] == "confirmation-019") == 18
     assert {token["word"] for token in c019.tokens} <= {name for name, _ in pool.tokens}
-    weights_like = type("W", (), {"W_U": torch.zeros(4, 60000)})()
+    weights_like = type("W", (), {"W_U": torch.zeros(4, 60000), "b_U": torch.zeros(60000)})()
     nouns = rd.NounSet.build(weights_like, pool.nouns, [])
     assert len(nouns.exposed_scorable) == 79 and nouns.non_scorable == ("peach",)
 

@@ -211,21 +211,24 @@ class NounSet:
     exposed_scorable: tuple[int, ...]  # indices into ``nouns``
     fresh: tuple[int, ...]
     dw: torch.Tensor  # [n, d_model], float64; zero rows for non-scorable nouns
+    db: torch.Tensor  # [n], the unembedding bias difference; zero for non-scorable nouns
     non_scorable: tuple[str, ...]
 
     @classmethod
     def build(cls, weights: pm.Weights, exposed: Sequence[pm.Noun], fresh: Sequence[pm.Noun]) -> "NounSet":
         nouns = tuple(exposed) + tuple(fresh)
-        W_U = weights.W_U.double()
-        rows, exposed_idx, fresh_idx, dropped = [], [], [], []
+        W_U, b_U = weights.W_U.double(), weights.b_U.double()
+        rows, biases, exposed_idx, fresh_idx, dropped = [], [], [], [], []
         for index, noun in enumerate(nouns):
             if noun.single_token:
                 rows.append(W_U[:, noun.sg_ids[0]] - W_U[:, noun.pl_ids[0]])
+                biases.append(float(b_U[noun.sg_ids[0]] - b_U[noun.pl_ids[0]]))
                 (exposed_idx if index < len(exposed) else fresh_idx).append(index)
             else:
                 rows.append(torch.zeros(W_U.shape[0], dtype=torch.float64))
+                biases.append(0.0)
                 dropped.append(noun.lexical_key)
-        return cls(nouns, tuple(exposed_idx), tuple(fresh_idx), torch.stack(rows), tuple(dropped))
+        return cls(nouns, tuple(exposed_idx), tuple(fresh_idx), torch.stack(rows), torch.tensor(biases, dtype=torch.float64), tuple(dropped))
 
     @property
     def keys(self) -> tuple[str, ...]:
@@ -256,6 +259,13 @@ class NounSet:
         """The frozen readout: ``Δc(n) = ⟨ΔLN_final, Δw(n)⟩`` for every noun."""
         return self.dw @ delta_ln.double()
 
+    def contrast_from_residual(self, program: "ReadoutProgram", residual: torch.Tensor) -> torch.Tensor:
+        """``c(n) = ⟨LN_final(h6), Δw(n)⟩ + (b_sg − b_pl)(n)``: the contrast as a pure function of the final residual
+        and the weights. The softmax normalizer cancels in the difference of two log-probabilities, so this needs no
+        prompt — which is how a *fresh* noun's reference contrast in an *exposed* frame exists at confirm without any
+        exposed reference prompt being re-executed and without explore ever computing a fresh-noun quantity."""
+        return self.dw @ program.ln_final(residual) + self.db
+
 
 # ---------------------------------------------------------------------------
 # The frame's reference state: everything the readout program needs, all from the reference prompt.
@@ -282,18 +292,19 @@ class FrameState020:
     rows4: torch.Tensor  # [heads, keys] reference attention row at query p_t
     rows5: torch.Tensor
     c_ref: torch.Tensor  # the reference contrasts of the noun set
+    frame_ref: pm.Frame | None = None  # set when the state is rebuilt from the lock, where no captured run exists
 
     @property
     def frame(self) -> pm.Frame:
-        return self.state_017.frame
+        return self.frame_ref if self.frame_ref is not None else self.state_017.frame
 
     @property
     def p_c(self) -> int:
-        return self.state_017.p_c
+        return self.frame_ref.p_c if self.frame_ref is not None else self.state_017.p_c
 
     @property
     def p_t(self) -> int:
-        return self.state_017.p_t
+        return self.frame_ref.p_t if self.frame_ref is not None else self.state_017.p_t
 
     @property
     def x3_all(self) -> Sequence[torch.Tensor]:
@@ -301,21 +312,47 @@ class FrameState020:
 
 
 def capture_frame_020(model: Any, head: ht.HeadWeights, reference: pm.Prompt, nouns: NounSet, axis_T: pm.SiteAxis) -> FrameState020:
-    """One reference run per frame: the Experiment 017 capture and the readout path's reference quantities."""
+    """**One** reference forward per frame: the Experiment 017 state and the readout path's reference quantities.
+
+    Experiment 017's own ``capture_frame_017`` would run the same prompt a second time, so its body is repeated here
+    over the union of the two site sets (its checks included) and the single captured run serves both states. One
+    S1-REF execution per fresh frame is a protocol property, not an optimization: a test counts the executions.
+    """
     frame = reference.frame
-    n_layers = int(model.cfg.n_layers)
-    state_017 = hp.capture_frame_017(model, head, reference, [n for n in nouns.nouns if n.single_token], axis_T)
-    run = pm.capture_prompt(model, reference, reference_sites_020(frame, n_layers))
-    n_heads = int(model.cfg.n_heads)
-    return FrameState020(
-        state_017,
-        tuple(run.vector((f"RESID_PRE.L4", k)).double() for k in range(frame.p_t + 1)),
-        tuple(run.vector((f"RESID_PRE.L5", k)).double() for k in range(frame.p_t + 1)),
-        run.vector((f"RESID_POST.L{n_layers - 1}", frame.p_t)).double(),
-        run.slice((f"ATTN_PATTERN.L4", frame.p_t)).double().reshape(n_heads, -1)[:, : frame.p_t + 1],
-        run.slice((f"ATTN_PATTERN.L5", frame.p_t)).double().reshape(n_heads, -1)[:, : frame.p_t + 1],
-        nouns.contrasts(run.logits),
-    )
+    n_layers, n_heads = int(model.cfg.n_layers), int(model.cfg.n_heads)
+    extra = list(hp.reference_sites_017(frame)) + list(reference_sites_020(frame, n_layers))
+    ref, components = ra.capture_reference(model, head, reference, [noun for noun in nouns.nouns if noun.single_token], extra_sites=extra)
+    x1_all = [components.pop(pm.site_label(("RESID_PRE.L1", k))).double() for k in range(frame.p_t + 1)]
+    x2_all = [components.pop(pm.site_label(("RESID_PRE.L2", k))).double() for k in range(frame.p_t + 1)]
+    A1 = components.pop(pm.site_label(("ATTN_PATTERN.L1", frame.p_c)))
+    A2 = components.pop(pm.site_label(("ATTN_PATTERN.L2", frame.p_c)))
+    x4_all = tuple(components.pop(pm.site_label(("RESID_PRE.L4", k))).double() for k in range(frame.p_t + 1))
+    x5_all = tuple(components.pop(pm.site_label(("RESID_PRE.L5", k))).double() for k in range(frame.p_t + 1))
+    h6 = components.pop(pm.site_label((f"RESID_POST.L{n_layers - 1}", frame.p_t))).double()
+    rows4 = components.pop(pm.site_label(("ATTN_PATTERN.L4", frame.p_t))).double().reshape(n_heads, -1)[:, : frame.p_t + 1]
+    rows5 = components.pop(pm.site_label(("ATTN_PATTERN.L5", frame.p_t))).double().reshape(n_heads, -1)[:, : frame.p_t + 1]
+    if len(ref.residuals) != frame.p_t + 1 or ref.attention.shape[0] <= frame.p_t:
+        raise pm.IncidentError(f"{frame.frame_id}: the reference capture does not cover every position up to p_t")
+    if not torch.equal(x1_all[frame.p_c], ref.vectors["R0"].double()):
+        raise pm.IncidentError(f"{frame.frame_id}: the captured residual before block 1 disagrees with the R0 stage vector of the same run")
+    if A1.shape[0] != ap.N_HEADS or A1.shape[1] <= frame.p_c or A2.shape[0] != ap.N_HEADS:
+        raise pm.IncidentError(f"{frame.frame_id}: unexpected attention pattern shape {tuple(A1.shape)} / {tuple(A2.shape)}")
+    state_013 = ap.FrameState013(ref, components, ra.read_functional(head, ref, axis_T), x1_all[frame.p_c], x2_all[frame.p_c], x1_all[: frame.p_c + 1], x2_all[: frame.p_c + 1], A1, A2)
+    state_017 = hp.FrameState017(state_013, x1_all, x2_all, [x.double() for x in ref.residuals], ref.attention.double()[: frame.p_t + 1])
+    c_ref = torch.tensor([float(ref.c_by_noun.get(noun.lexical_key, 0.0)) for noun in nouns.nouns], dtype=torch.float64)
+    return FrameState020(state_017, x4_all, x5_all, h6, rows4, rows5, c_ref)
+
+
+def assert_explore_nouns(nouns: NounSet, confirmation: Confirmation020) -> None:
+    """Noun freshness at computation time: the explore path may build no quantity of a fresh noun, so the noun set it
+    measures with carries neither a fresh key nor a fresh token id. Serialization checks come later and separately."""
+    if nouns.fresh:
+        raise PhaseError("the exploration noun set contains fresh nouns; explore scores the exposed scorable nouns only")
+    fresh_keys = {noun.lexical_key for noun in confirmation.nouns}
+    fresh_ids = {token for noun in confirmation.nouns for token in (*noun.sg_ids, *noun.pl_ids)}
+    for index, noun in enumerate(nouns.nouns):
+        if noun.lexical_key in fresh_keys or set(noun.sg_ids) & fresh_ids or set(noun.pl_ids) & fresh_ids:
+            raise PhaseError(f"the exploration noun set reaches the fresh noun {noun.lexical_key} (index {index})")
 
 
 # ---------------------------------------------------------------------------
@@ -975,3 +1012,552 @@ def assert_fresh_nouns_absent(record: Mapping[str, Any], confirmation: Confirmat
         for token_id in (*noun.sg_ids, *noun.pl_ids):
             if f":{token_id}," in text or f":{token_id}}}" in text or f"[{token_id}," in text or f" {token_id}," in text:
                 raise PhaseError(f"the exploration record carries a token id of the fresh noun {noun.lexical_key}")
+
+
+# ---------------------------------------------------------------------------
+# Measurement of one pair and the predictions of one pair.
+
+EXPLORE_TOKEN_LIMIT: int | None = None  # the exposed cues measured per frame at explore; None is every one of them
+
+
+def measured_sites_020(frame: pm.Frame, n_layers: int) -> tuple[pm.Site, ...]:
+    """What a cue prompt is captured for: the measured layer-3 input change and the measured final residual."""
+    positions = sorted({frame.p_c, frame.p_t})
+    return tuple([(f"RESID_PRE.L{HEAD_LAYER}", position) for position in positions] + [(f"RESID_POST.L{n_layers - 1}", frame.p_t)])
+
+
+@dataclass(frozen=True)
+class PairMeasurement:
+    """One cue prompt's measured quantities, all at the frame's own positions."""
+
+    word: str
+    token_id: int
+    frame_id: str
+    template: str
+    dc: torch.Tensor  # measured contrast change per noun
+    dx3: dict[int, torch.Tensor]  # measured layer-3 input change at the changed positions
+    dh6: torch.Tensor  # measured final residual change at p_t
+
+
+def measure_pair(model: Any, state: FrameState020, nouns: NounSet, word: str, token_id: int, *, c_ref: torch.Tensor | None = None) -> PairMeasurement:
+    """One cue prompt. ``c_ref`` defaults to the captured reference contrasts; at confirm it is the residual-derived
+    one, so that a fresh noun's reference contrast never required an exposed reference prompt."""
+    frame = state.frame
+    run = pm.capture_prompt(model, pm.Prompt(frame, token_id, word), measured_sites_020(frame, int(model.cfg.n_layers)))
+    positions = sorted({state.p_c, state.p_t})
+    reference = state.c_ref if c_ref is None else c_ref
+    return PairMeasurement(word, token_id, frame.frame_id, frame.template_id,
+                           nouns.contrasts(run.logits) - reference,
+                           {position: run.vector((f"RESID_PRE.L{HEAD_LAYER}", position)).double() - state.x3_all[position].double() for position in positions},
+                           run.vector((f"RESID_POST.L{int(model.cfg.n_layers) - 1}", frame.p_t)).double() - state.h6)
+
+
+def predict_pair(program: ReadoutProgram, chain: hp.HeadChainModel, weights: pm.Weights, state: FrameState020, rows16: Mapping[int, atp.ReferenceRow], nouns: NounSet, token_id: int,
+                 *, template_bases: Mapping[str, Mapping[int, torch.Tensor]] | None = None, dT_direction: torch.Tensor | None = None) -> dict[str, Any]:
+    """The Level 0 prediction of one pair and the nested comparators, from the reference state and the token id only."""
+    dx3 = predicted_dx3(chain, weights, state, rows16, token_id, state.frame.template_id)
+    level0 = program.blocks_3_to_5(state, dx3)
+    out = {"dx3": dx3, "dh6": level0["dh6"], "dc": program.contrast(state, level0["dh6"], nouns), "parts": level0["parts"]}
+    out["dc_no_l5_heads"] = program.contrast(state, program.blocks_3_to_5(state, dx3, l5_heads=False)["dh6"], nouns)
+    if template_bases is not None:
+        bases = template_bases[state.frame.template_id]
+        out["dc_template_base"] = program.contrast(state, program.blocks_3_to_5(state, dx3, mlps_at_base=bases)["dh6"], nouns)
+    if dT_direction is not None:
+        out["dT"] = float(level0["parts"]["block3_attention"].double() @ dT_direction.double())
+    return out
+
+
+def ceiling_prediction(program: ReadoutProgram, state: FrameState020, nouns: NounSet, dx3_measured: Mapping[int, torch.Tensor]) -> torch.Tensor:
+    """The same downstream program fed the *measured* layer-3 input change: the downstream ceiling, never a floor."""
+    return program.contrast(state, program.blocks_3_to_5(state, dict(dx3_measured))["dh6"], nouns)
+
+
+# ---------------------------------------------------------------------------
+# Exploration (once, exposed pool only).
+
+
+def template_bases_020(states: Mapping[str, FrameState020], frames: Sequence[pm.Frame]) -> dict[str, dict[int, torch.Tensor]]:
+    """The template-mean reference inputs of blocks 4 and 5 at p_t: the operating-point comparator's bases."""
+    bases: dict[str, dict[int, torch.Tensor]] = {}
+    for template in pm.TEMPLATE_ORDER:
+        members = [states[frame.frame_id] for frame in frames if frame.template_id == template]
+        if not members:
+            continue
+        bases[template] = {4: torch.stack([state.x4_all[state.p_t] for state in members]).mean(dim=0),
+                           5: torch.stack([state.x5_all[state.p_t] for state in members]).mean(dim=0)}
+    return bases
+
+
+def rank1_noun_factor(table: ScoringTable) -> dict[str, Any]:
+    """The descriptive comparator's frozen objects: the exposed table's rank-1 noun vector and the direction d_noun
+    that reproduces it from the weight-only Δw. Fitted once at explore, written into the lock, never refitted."""
+    measured = table.measured.double()
+    _, singular, right = torch.linalg.svd(measured, full_matrices=False)
+    share = float((singular[0] ** 2) / (singular ** 2).sum())
+    return {"noun_vector": right[0].tolist(), "rank1_share": share}
+
+
+def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any], confirmation: Confirmation020,
+                    state: dict[str, Any], results_path: Path | None, log: Any = None) -> dict[str, Any]:
+    """Tier A: the exposed pool only. Every noun here is an exposed scorable one; no fresh-noun quantity is built."""
+    say = log or (lambda message: None)
+    weights = pm.Weights.from_model(model)
+    head = ht.HeadWeights.from_model(model)
+    lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
+    programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
+    chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
+    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
+                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
+    nouns = NounSet.build(weights, pool.nouns, [])
+    assert_explore_nouns(nouns, confirmation)
+    exploration = state["exploration"]
+    exploration["noun_population"] = {"exposed": len(pool.nouns), "exposed_scorable": len(nouns.exposed_scorable), "non_scorable": list(nouns.non_scorable)}
+    say(f"exposed nouns: {len(nouns.exposed_scorable)} scorable of {len(pool.nouns)} (non-scorable {list(nouns.non_scorable)})")
+
+    states: dict[str, FrameState020] = {}
+    rows16: dict[str, dict[int, atp.ReferenceRow]] = {}
+    for frame in pool.frames:
+        states[frame.frame_id] = capture_frame_020(model, head, pool.reference_prompt(frame), nouns, axis_T)
+        rows16[frame.frame_id] = atp.reference_rows(programs, states[frame.frame_id].state_017.x1_all, states[frame.frame_id].state_017.x2_all)
+    say(f"reference states: {len(states)} frames, one forward each")
+    bases = template_bases_020(states, pool.frames)
+    dT_direction = axis_T.direction.double()
+
+    identities: dict[str, float] = {}
+    cues, frame_ids, templates, measured_rows, level0_rows, ceiling_rows, no_l5_rows, base_rows, dT_values = [], [], [], [], [], [], [], [], []
+    scorable = list(nouns.exposed_scorable)
+    for frame in pool.frames:
+        frame_state = states[frame.frame_id]
+        reference_id = pool.reference_ids[frame.template_id]
+        tokens = [(word, token_id) for word, token_id in pool.tokens if token_id != reference_id]
+        if EXPLORE_TOKEN_LIMIT is not None:
+            tokens = tokens[:EXPLORE_TOKEN_LIMIT]
+        for word, token_id in tokens:
+            measurement = measure_pair(model, frame_state, nouns, word, token_id)
+            prediction = predict_pair(program, chain, weights, frame_state, rows16[frame.frame_id], nouns, token_id, template_bases=bases, dT_direction=dT_direction)
+            identities["readout"] = max(identities.get("readout", 0.0), abs_max(program, nouns, frame_state, measurement))
+            identities["level1"] = max(identities.get("level1", 0.0), level1_error(program.level1(frame_state, measurement.dx3), measurement.dh6))
+            identities["inherited_017"] = max(identities.get("inherited_017", 0.0), inherited_reproduction(chain, weights, frame_state, rows16[frame.frame_id], token_id, prediction["dx3"]))
+            cues.append(word); frame_ids.append(frame.frame_id); templates.append(frame.template_id)
+            measured_rows.append(measurement.dc[scorable]); level0_rows.append(prediction["dc"][scorable])
+            ceiling_rows.append(ceiling_prediction(program, frame_state, nouns, measurement.dx3)[scorable])
+            no_l5_rows.append(prediction["dc_no_l5_heads"][scorable]); base_rows.append(prediction["dc_template_base"][scorable])
+            dT_values.append(prediction["dT"])
+        pm.record_execution(state, tuple(pm.Prompt(frame, token_id, word) for word, token_id in tokens) + (pool.reference_prompt(frame),), pool.nouns)
+        if results_path is not None and len(cues) % 2000 < len(tokens):
+            write_results_state(results_path, state)
+        say(f"  {frame.frame_id}: {len(tokens)} exposed cues measured and predicted")
+    enforce("readout identity", identities["readout"], READOUT_IDENTITY_TOLERANCE)
+    enforce("Level 1 exact chain", identities["level1"], LEVEL1_TOLERANCE)
+    enforce("inherited Experiment 017 reproduction", identities["inherited_017"], INHERITED_017_TOLERANCE)
+
+    noun_keys = tuple(nouns.nouns[index].lexical_key for index in scorable)
+    table = ScoringTable(tuple(cues), tuple(frame_ids), tuple(templates), torch.stack(measured_rows), torch.stack(level0_rows), noun_keys)
+    exploration["statistics"] = pair_statistics(table)
+    exploration["nouns"] = noun_statistics(table)
+    exploration["comparators"] = {
+        "ceiling_measured_dx3": pair_statistics(ScoringTable(table.cues, table.frames, table.templates, table.measured, torch.stack(ceiling_rows), noun_keys))["flattened_r2"],
+        "no_l5_heads": pair_statistics(ScoringTable(table.cues, table.frames, table.templates, table.measured, torch.stack(no_l5_rows), noun_keys))["flattened_r2"],
+        "template_base_mlps": pair_statistics(ScoringTable(table.cues, table.frames, table.templates, table.measured, torch.stack(base_rows), noun_keys))["flattened_r2"],
+        "dT_only": dT_only_fit(torch.tensor(dT_values, dtype=torch.float64), table),
+        "standing": dict(COMPARATOR_STANDING),
+    }
+    exploration["rank1"] = rank1_noun_factor(table)
+    exploration["identities"] = {name: float(value) for name, value in identities.items()}
+    exploration["locked_states"] = {frame_id: locked_state(state_020) for frame_id, state_020 in states.items()}
+    exploration["template_bases"] = {template: {str(layer): vector.tolist() for layer, vector in entry.items()} for template, entry in bases.items()}
+    exploration["n_pairs"] = len(cues)
+    assert_fresh_nouns_absent(exploration, confirmation)
+    say(f"exposed record: {len(cues)} pairs × {len(noun_keys)} nouns; flattened R² {exploration['statistics']['flattened_r2']:.4f}; ceiling {exploration['comparators']['ceiling_measured_dx3']:.4f}")
+    return exploration
+
+
+def abs_max(program: ReadoutProgram, nouns: NounSet, state: FrameState020, measurement: PairMeasurement) -> float:
+    """The readout identity of one pair: the measured contrast change against the read of the measured ΔLN_final."""
+    predicted = nouns.read(program.ln_final(state.h6 + measurement.dh6) - program.ln_final(state.h6))
+    index = list(nouns.exposed_scorable) + list(nouns.fresh)
+    return float((predicted[index] - measurement.dc[index]).abs().max())
+
+
+def inherited_reproduction(chain: hp.HeadChainModel, weights: pm.Weights, state: FrameState020, rows16: Mapping[int, atp.ReferenceRow], token_id: int, dx3: Mapping[int, torch.Tensor]) -> float:
+    """Experiment 017's chain recomputed: this runner must not perturb the inherited prediction."""
+    again = predicted_dx3(chain, weights, state, rows16, token_id, state.frame.template_id)
+    return max(float((again[position] - dx3[position]).abs().max()) for position in dx3)
+
+
+def dT_only_fit(dT: torch.Tensor, table: ScoringTable) -> dict[str, Any]:
+    """The exposed-disfavoured baseline: one fitted noun vector on the head's own output change."""
+    measured = table.measured.double()
+    denominator = float((dT * dT).sum())
+    if denominator <= 0.0:
+        return {"r2": None, "noun_vector": None}
+    noun_vector = (dT.unsqueeze(1) * measured).sum(dim=0) / denominator
+    return {"r2": _r2(measured, dT.unsqueeze(1) * noun_vector), "noun_vector": noun_vector.tolist()}
+
+
+def locked_state(state: FrameState020) -> dict[str, Any]:
+    """What the lock stores per exposed frame: every reference quantity the readout program needs."""
+    return {"p_c": state.p_c, "p_t": state.p_t,
+            "x3_all": [x.tolist() for x in state.x3_all], "x4_all": [x.tolist() for x in state.x4_all], "x5_all": [x.tolist() for x in state.x5_all],
+            "h6": state.h6.tolist(), "rows4": state.rows4.tolist(), "rows5": state.rows5.tolist(), "c_ref": state.c_ref.tolist(),
+            "x1_all": [x.tolist() for x in state.state_017.x1_all], "x2_all": [x.tolist() for x in state.state_017.x2_all]}
+
+
+def state_digest(entry: Mapping[str, Any]) -> str:
+    return pm.sha256_text(pm.canonical_json(entry))
+
+
+# ---------------------------------------------------------------------------
+# The lock: the Y1 prediction table, written with no forward pass.
+
+PREDICTION_COLUMNS = ("token", "frame_id", "template", "dc", "dc_no_l5_heads", "dc_template_base", "dT")
+
+
+def state_from_locked(entry: Mapping[str, Any], frame: pm.Frame) -> FrameState020:
+    """The reference state as the lock stores it: no capture is involved, so the frame is supplied explicitly."""
+    tensor = lambda values: torch.tensor(values, dtype=torch.float64)  # noqa: E731
+    x1_all = [tensor(x) for x in entry["x1_all"]]
+    x2_all = [tensor(x) for x in entry["x2_all"]]
+    x3_all = [tensor(x) for x in entry["x3_all"]]
+    state_017 = hp.FrameState017(_LockedState013(entry["p_c"], entry["p_t"]), x1_all, x2_all, x3_all, torch.zeros(len(x3_all), dtype=torch.float64))
+    return FrameState020(state_017, tuple(tensor(x) for x in entry["x4_all"]), tuple(tensor(x) for x in entry["x5_all"]), tensor(entry["h6"]),
+                         tensor(entry["rows4"]), tensor(entry["rows5"]), tensor(entry["c_ref"]), frame)
+
+
+@dataclass(frozen=True)
+class _LockedState013:
+    """The positions the locked state carries; the readout program needs nothing else of Experiment 013's state."""
+
+    p_c: int
+    p_t: int
+
+
+def prediction_rows(program: ReadoutProgram, chain: hp.HeadChainModel, weights: pm.Weights, states: Mapping[str, FrameState020], rows16: Mapping[str, Mapping[int, atp.ReferenceRow]],
+                    nouns: NounSet, frames: Sequence[pm.Frame], tokens: Sequence[Mapping[str, Any]], bases: Mapping[str, Mapping[int, torch.Tensor]], dT_direction: torch.Tensor,
+                    *, population: str = "exposed_scorable") -> list[dict[str, Any]]:
+    """One row per (token, frame): the predicted contrast change per noun of the named population, and the comparators."""
+    index = list(nouns.population(population))
+    rows: list[dict[str, Any]] = []
+    for frame in frames:
+        state = states[frame.frame_id]
+        for token in tokens:
+            prediction = predict_pair(program, chain, weights, state, rows16[frame.frame_id], nouns, int(token["token_id"]), template_bases=bases, dT_direction=dT_direction)
+            rows.append({"token": token["word"], "frame_id": frame.frame_id, "template": frame.template_id,
+                         "dc": [float(value) for value in prediction["dc"][index]],
+                         "dc_no_l5_heads": [float(value) for value in prediction["dc_no_l5_heads"][index]],
+                         "dc_template_base": [float(value) for value in prediction["dc_template_base"][index]],
+                         "dT": float(prediction["dT"])})
+    return rows
+
+
+def frozen_floors() -> dict[str, Any]:
+    return {"Y1": {"token_mean_r2": Y1_TOKEN_MEAN_R2, "pair_mean_r2": Y1_PAIR_MEAN_R2, "cue_mae": Y1_CUE_MAE, "cue_mae_share": Y1_CUE_MAE_SHARE, "pooled_mae": Y1_POOLED_MAE},
+            "Y2": {"frame_mean_r2": Y2_FRAME_MEAN_R2, "frame_r2": Y2_FRAME_R2, "frame_share": Y2_FRAME_SHARE, "split_r2": Y2_SPLIT_R2},
+            "Y3": {"median_r2": Y3_MEDIAN_R2, "noun_r2": Y3_NOUN_R2, "slope_band": list(Y3_SLOPE_BAND), "bias": Y3_BIAS, "share": Y3_SHARE},
+            "preconditions": {"scored_tokens": MIN_SCORED_TOKENS, "valid_exposed_frames": MIN_VALID_EXPOSED_FRAMES, "valid_fresh_frames": MIN_VALID_FRESH_FRAMES,
+                              "valid_coordinated": MIN_VALID_COORDINATED_FRAMES, "scorable_fresh_nouns": MIN_SCORABLE_FRESH_NOUNS},
+            "tolerances": {"readout": READOUT_IDENTITY_TOLERANCE, "logit": LOGIT_IDENTITY_TOLERANCE, "additive": ADDITIVE_IDENTITY_TOLERANCE, "level1": LEVEL1_TOLERANCE,
+                           "inherited_017": INHERITED_017_TOLERANCE, "prediction_reproduction": PREDICTION_REPRODUCTION_TOLERANCE, "provenance": PROVENANCE_TOLERANCE, "norm_floor": NORM_FLOOR}}
+
+
+def build_candidate_lock(*, state: Mapping[str, Any], digests: Mapping[str, str], confirmation: Confirmation020, rows: Sequence[Mapping[str, Any]], noun_keys: Sequence[str],
+                         protocol_code_commit: str) -> dict[str, Any]:
+    exploration = state["exploration"]
+    lock = {"experiment": "020", "run_id": state["run_id"], "protocol_code_commit": protocol_code_commit,
+            **{f"{key}_sha256": digests[key] for key in CONFIRMATION_DIGEST_KEYS},
+            "confirmation_020_sha256": confirmation.content_sha256,
+            "populations": {name: dict(value) for name, value in POPULATIONS.items()},
+            "noun_keys": list(noun_keys), "fresh_noun_keys": [noun.lexical_key for noun in confirmation.nouns],
+            "locked_states": exploration["locked_states"], "template_bases": exploration["template_bases"],
+            "rank1": exploration["rank1"], "dT_only_noun_vector": exploration["comparators"]["dT_only"]["noun_vector"],
+            "floors": frozen_floors(), "comparator_standing": dict(COMPARATOR_STANDING),
+            "confirmation_prompt_manifest": manifest_classes(confirmation),
+            "predictions": {"rows": [dict(row) for row in rows], "columns": list(PREDICTION_COLUMNS)}}
+    lock["content_sha256"] = pm.sha256_text(pm.canonical_json(lock))
+    return lock
+
+
+def assert_lock_predictions_reproduced(lock: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]) -> float:
+    """Every locked Y1 row recomputed from the locked states and the weights: exact, before anything fresh runs."""
+    locked = lock["predictions"]["rows"]
+    if len(locked) != len(rows):
+        raise PhaseError(f"the lock holds {len(locked)} prediction rows and {len(rows)} were recomputed")
+    worst = 0.0
+    for left, right in zip(locked, rows):
+        if (left["token"], left["frame_id"], left["template"]) != (right["token"], right["frame_id"], right["template"]):
+            raise PhaseError("the recomputed prediction rows are not in the locked order")
+        worst = max(worst, atp._max_numeric_difference(dict(right), dict(left), "prediction row"))
+    if worst > PREDICTION_REPRODUCTION_TOLERANCE:
+        raise PhaseError(f"the locked predictions do not reproduce: max difference {worst:.3e}")
+    return float(worst)
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests: Mapping[str, str], confirmation: Confirmation020, predictions_text: str, git_state: Mapping[str, Any],
+                  tracked: bool, changed_paths: Sequence[str] | None) -> None:
+    if lock.get("experiment") != "020":
+        raise PhaseError("the installed lock is not Experiment 020's")
+    unsigned = {key: value for key, value in lock.items() if key != "content_sha256"}
+    if lock.get("content_sha256") != pm.sha256_text(pm.canonical_json(unsigned)):
+        raise PhaseError("the lock's content digest does not verify")
+    if state.get("lock") is None or state["lock"]["content_sha256"] != lock["content_sha256"]:
+        raise PhaseError("the installed lock is not the candidate this run wrote")
+    if tuple(lock[f"{key}_sha256"] for key in CONFIRMATION_DIGEST_KEYS) != digest_tuple(digests) or lock["confirmation_020_sha256"] != confirmation.content_sha256:
+        raise PhaseError("the lock was written against different frozen inputs")
+    if lock["floors"] != frozen_floors() or lock["populations"] != {name: dict(value) for name, value in POPULATIONS.items()}:
+        raise PhaseError("the lock's floors or populations are not the frozen ones")
+    if lock["confirmation_prompt_manifest"] != manifest_classes(confirmation):
+        raise PhaseError("the lock's prompt manifest is not the frozen one")
+    if lock["comparator_standing"] != dict(COMPARATOR_STANDING):
+        raise PhaseError("the lock's comparator standing is not the frozen one")
+    if not tracked:
+        raise PhaseError("the lock and predictions must be tracked and committed")
+    if git_state.get("dirty"):
+        raise PhaseError("confirm requires a clean Git tree")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = [path for path in changed_paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and path not in NON_SCIENTIFIC_PATHS and not path.startswith(NON_SCIENTIFIC_PREFIXES)]
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock: {scientific}")
+    if pm.sha256_text(predictions_text) != state["lock"]["predictions_sha256"]:
+        raise PhaseError("the installed predictions artifact is not the candidate this run wrote")
+
+
+def render_predictions(lock: Mapping[str, Any]) -> str:
+    rows = lock["predictions"]["rows"]
+    noun_keys = lock["noun_keys"]
+    lines = [f"# Experiment 020 — preregistered predictions (the decoded mechanism's singular-versus-plural contrast change)", "",
+             f"- Lock run `{lock['run_id']}` at commit `{lock['protocol_code_commit']}`; confirmation set sha256 `{lock['confirmation_020_sha256']}`",
+             f"- Populations: Y1 {lock['populations']['Y1']}, Y2 {lock['populations']['Y2']}, Y3 {lock['populations']['Y3']}; the joint fresh-noun statistic carries no threshold",
+             f"- Floors: {lock['floors']['Y1']} (Y1), {lock['floors']['Y2']} (Y2), {lock['floors']['Y3']} (Y3)",
+             f"- Y1 table: {len(rows)} rows (fresh cues × exposed frames), each with the predicted Δĉ of the {len(noun_keys)} scorable exposed nouns, the nested no-layer-5-head and template-base comparators and the head's own ΔT̂",
+             f"- Comparator standing: {lock['comparator_standing']}", "",
+             "| token | frame | template | mean Δĉ | mean Δĉ (no L05 heads) | mean Δĉ (template-base MLPs) | ΔT̂ |", "|---|---|---|---|---|---|---|"]
+    for row in rows[:40]:
+        mean = sum(row["dc"]) / len(row["dc"]) if row["dc"] else float("nan")
+        mean_no5 = sum(row["dc_no_l5_heads"]) / len(row["dc_no_l5_heads"]) if row["dc_no_l5_heads"] else float("nan")
+        mean_base = sum(row["dc_template_base"]) / len(row["dc_template_base"]) if row["dc_template_base"] else float("nan")
+        lines.append(f"| {row['token']} | {row['frame_id']} | {row['template']} | {mean:.4f} | {mean_no5:.4f} | {mean_base:.4f} | {row['dT']:.4f} |")
+    if len(rows) > 40:
+        lines.append(f"| … | … | … | … | … | … | … |  <!-- {len(rows) - 40} further rows in the lock -->")
+    lines += ["", "Every row is a prediction of the model's own contrast change, computed from the frame's reference state, the committed Experiment 011/012/017 locks and the cue's token id alone.", ""]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# The two-stage confirmation.
+
+
+def stage_digest(rows: Sequence[Mapping[str, Any]], states: Mapping[str, Any], frames: Mapping[str, Any]) -> str:
+    return pm.sha256_text(pm.canonical_json({"rows": [dict(row) for row in rows], "states": dict(states), "frames": dict(frames)}))
+
+
+def assert_stage_one_digest(stage1: Mapping[str, Any]) -> None:
+    """The barrier's own check: the re-read stage-1 record must digest to what was written."""
+    recomputed = stage_digest(stage1["rows"], stage1["states"], stage1["frames"])
+    if recomputed != stage1.get("digest"):
+        raise PhaseError("the stage-1 record does not reproduce its digest; no fresh cue prompt may run")
+
+
+def stage_one(model: Any, pool: cs.Pool008, confirmation: Confirmation020, lock: Mapping[str, Any], lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any],
+              *, protocol_code_commit: str, log: Any = None) -> dict[str, Any]:
+    """Only the fresh frames' S1-REF and S1-VALIDITY prompts, their reference states and the frame-conditional
+    prediction table; then the digest. An invalid frame is a scientific fact recorded here, never an incident: its
+    S2-TARGET prompts simply never run."""
+    say = log or (lambda message: None)
+    weights = pm.Weights.from_model(model)
+    head = ht.HeadWeights.from_model(model)
+    lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
+    programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
+    chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
+    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
+                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
+    nouns = NounSet.build(weights, pool.nouns, confirmation.nouns)
+    bases = {template: {int(layer): torch.tensor(vector, dtype=torch.float64) for layer, vector in entry.items()} for template, entry in lock["template_bases"].items()}
+    cache = pm.PromptCache(model, tuple(pool.single_nouns))
+    say("stage 1: the fresh frames' reference and validity prompts, their reference states and the frame-conditional prediction table — no fresh cue prompt")
+    frames_out: dict[str, Any] = {}
+    states: dict[str, Any] = {}
+    rows: list[dict[str, Any]] = []
+    for frame in confirmation.frames:
+        template = frame.template_id
+        state = capture_frame_020(model, head, confirmation.reference_prompt(frame), nouns, axis_T)
+        rows16 = atp.reference_rows(programs, state.state_017.x1_all, state.state_017.x2_all)
+        singular, plural = pm.frame_prompts(frame)
+        c_sg, c_pl = cache.c(singular), cache.c(plural)
+        positive = sum(1 for noun in pool.single_nouns if c_sg[noun.lexical_key] - c_pl[noun.lexical_key] > 0)
+        required = pm.exact_count_floor(FRAME_CUE_EFFECT_RATE, len(pool.single_nouns))
+        measured_plural = measure_pair(model, state, nouns, pool.plural_cue[template], plural.cue_token_id)
+        informative = bool(float(measured_plural.dc[list(nouns.exposed_scorable)].abs().mean()) > 0.0)
+        valid = bool(informative and positive >= required)
+        frames_out[frame.frame_id] = {"template_id": template, "valid": valid, "cue_effect_positive": positive, "cue_effect_required": required,
+                                      "plural_contrast_shift": float(measured_plural.dc[list(nouns.exposed_scorable)].mean()), "informative": informative,
+                                      "p_c": frame.p_c, "p_t": frame.p_t, "cue_final": frame.p_t == frame.p_c}
+        states[frame.frame_id] = locked_state(state)
+        index_exposed, index_fresh = list(nouns.exposed_scorable), list(nouns.fresh)
+        for token in confirmation.tokens:
+            prediction = predict_pair(program, chain, weights, state, rows16, nouns, int(token["token_id"]), template_bases=bases, dT_direction=axis_T.direction.double())
+            rows.append({"token": token["word"], "frame_id": frame.frame_id, "template": template,
+                         "dc": [float(value) for value in prediction["dc"][index_exposed]],
+                         "dc_fresh_nouns": [float(value) for value in prediction["dc"][index_fresh]],
+                         "dc_no_l5_heads": [float(value) for value in prediction["dc_no_l5_heads"][index_exposed]],
+                         "dc_template_base": [float(value) for value in prediction["dc_template_base"][index_exposed]],
+                         "dT": float(prediction["dT"])})
+        say(f"  {frame.frame_id}: {'valid' if valid else 'INVALID'} (cue effect {positive}/{required}, plural shift {frames_out[frame.frame_id]['plural_contrast_shift']:.3f}); p_c {frame.p_c}, p_t {frame.p_t}; {len(confirmation.tokens)} predictions")
+    record = {"frames": frames_out, "states": states, "rows": rows, "commit": protocol_code_commit, "lock_sha256": lock["content_sha256"],
+              "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision},
+              "noun_keys": [nouns.nouns[index].lexical_key for index in nouns.exposed_scorable],
+              "fresh_noun_keys": [nouns.nouns[index].lexical_key for index in nouns.fresh]}
+    record["digest"] = stage_digest(rows, states, frames_out)
+    return record
+
+
+def stage_two(model: Any, pool: cs.Pool008, confirmation: Confirmation020, lock: Mapping[str, Any], lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any],
+              stage1: Mapping[str, Any], *, log: Any = None) -> dict[str, Any]:
+    """Only after the barrier: the S2-TARGET prompts of the Y1 block and of the valid fresh frames' Y2 block."""
+    say = log or (lambda message: None)
+    weights = pm.Weights.from_model(model)
+    head = ht.HeadWeights.from_model(model)
+    lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
+    programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
+    chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
+    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
+                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
+    nouns = NounSet.build(weights, pool.nouns, confirmation.nouns)
+    exposed_index, fresh_index = list(nouns.exposed_scorable), list(nouns.fresh)
+    exposed_keys = tuple(nouns.nouns[index].lexical_key for index in exposed_index)
+    fresh_keys = tuple(nouns.nouns[index].lexical_key for index in fresh_index)
+    locked_rows = {(row["token"], row["frame_id"]): row for row in lock["predictions"]["rows"]}
+    stage1_rows = {(row["token"], row["frame_id"]): row for row in stage1["rows"]}
+    identities: dict[str, float] = {}
+    blocks: dict[str, dict[str, list]] = {name: {"cues": [], "frames": [], "templates": [], "measured": [], "predicted": [], "measured_fresh": [], "predicted_fresh": [], "no_l5": [], "base": [], "dT": []} for name in ("Y1", "Y2")}
+    say("stage 2: the fresh cues in the exposed frames (Y1) and in the valid fresh frames (Y2)")
+    for name, frames, rows_source in (("Y1", pool.frames, locked_rows), ("Y2", [frame for frame in confirmation.frames if stage1["frames"][frame.frame_id]["valid"]], stage1_rows)):
+        for frame in frames:
+            state = state_from_locked(lock["locked_states"][frame.frame_id] if name == "Y1" else stage1["states"][frame.frame_id], frame)
+            c_ref = nouns.contrast_from_residual(program, state.h6)
+            if len(state.c_ref) == len(nouns.nouns):  # a stage-1 state carries the captured contrasts: check them
+                identities["reference_contrast"] = max(identities.get("reference_contrast", 0.0), float((c_ref - state.c_ref).abs().max()))
+            for token in confirmation.tokens:
+                measurement = measure_pair(model, state, nouns, token["word"], int(token["token_id"]), c_ref=c_ref)
+                identities["readout"] = max(identities.get("readout", 0.0), abs_max(program, nouns, state, measurement))
+                row = rows_source[(token["word"], frame.frame_id)]
+                block = blocks[name]
+                block["cues"].append(token["word"]); block["frames"].append(frame.frame_id); block["templates"].append(frame.template_id)
+                block["measured"].append(measurement.dc[exposed_index]); block["predicted"].append(torch.tensor(row["dc"], dtype=torch.float64))
+                block["measured_fresh"].append(measurement.dc[fresh_index]); block["predicted_fresh"].append(torch.tensor(row.get("dc_fresh_nouns", row["dc"][: len(fresh_index)]), dtype=torch.float64))
+                block["no_l5"].append(torch.tensor(row["dc_no_l5_heads"], dtype=torch.float64)); block["base"].append(torch.tensor(row["dc_template_base"], dtype=torch.float64)); block["dT"].append(float(row["dT"]))
+        say(f"  {name}: {len(blocks[name]['cues'])} pairs measured")
+    enforce("readout identity", identities.get("readout", 0.0), READOUT_IDENTITY_TOLERANCE)
+    if "reference_contrast" in identities:
+        enforce("reference contrast from the locked residual", identities["reference_contrast"], READOUT_IDENTITY_TOLERANCE)
+    tables = {}
+    for name in ("Y1", "Y2"):
+        block = blocks[name]
+        common = (tuple(block["cues"]), tuple(block["frames"]), tuple(block["templates"]))
+        tables[name] = {
+            "exposed": ScoringTable(*common, torch.stack(block["measured"]), torch.stack(block["predicted"]), exposed_keys) if block["cues"] else None,
+            "fresh": ScoringTable(*common, torch.stack(block["measured_fresh"]), torch.stack(block["predicted_fresh"]), fresh_keys) if block["cues"] else None,
+            "no_l5": ScoringTable(*common, torch.stack(block["measured"]), torch.stack(block["no_l5"]), exposed_keys) if block["cues"] else None,
+            "base": ScoringTable(*common, torch.stack(block["measured"]), torch.stack(block["base"]), exposed_keys) if block["cues"] else None,
+            "dT": torch.tensor(block["dT"], dtype=torch.float64) if block["cues"] else None,
+        }
+    return {"tables": tables, "identities": {name: float(value) for name, value in identities.items()}, "noun_keys": list(exposed_keys), "fresh_noun_keys": list(fresh_keys)}
+
+
+def score_confirmation(stage1: Mapping[str, Any], tables: Mapping[str, Mapping[str, Any]], lock: Mapping[str, Any]) -> dict[str, Any]:
+    """Y1 and Y2 on the scorable exposed nouns, Y3 on the fresh nouns over the Y1 population, the joint statistic
+    descriptive, and every comparator beside them."""
+    valid = [frame_id for frame_id, entry in stage1["frames"].items() if entry["valid"]]
+    coordinated = sum(1 for frame_id in valid if stage1["frames"][frame_id]["template_id"] == pm.COORDINATED_TEMPLATE)
+    y1_table, y2_table = tables["Y1"]["exposed"], tables["Y2"]["exposed"]
+    n_valid_exposed = len({frame_id for frame_id in y1_table.frames}) if y1_table is not None else 0
+    y1 = score_y1(y1_table, n_valid_frames=n_valid_exposed) if y1_table is not None else {"label": OUTCOME_Y1[2], "precondition": {"ok": False}, "population": POPULATIONS["Y1"]}
+    y2 = score_y2(y2_table, valid_frames=valid, valid_coordinated=coordinated) if y2_table is not None else {"label": OUTCOME_Y2[2], "precondition": {"ok": False}, "population": POPULATIONS["Y2"]}
+    y3 = score_y3(tables["Y1"]["fresh"]) if tables["Y1"]["fresh"] is not None else {"label": OUTCOME_Y3[2], "precondition": {"ok": False}, "population": POPULATIONS["Y3"]}
+    joint = pair_statistics(tables["Y2"]["fresh"]) if tables["Y2"]["fresh"] is not None else None
+    comparators = {}
+    for name in ("Y1", "Y2"):
+        entry = tables[name]
+        if entry["exposed"] is None:
+            continue
+        comparators[name] = {
+            "no_l5_heads": {"standing": COMPARATOR_STANDING["no_l5_heads"], "flattened_r2": pair_statistics(entry["no_l5"])["flattened_r2"]},
+            "template_base_mlps": {"standing": COMPARATOR_STANDING["template_base_mlps"], "flattened_r2": pair_statistics(entry["base"])["flattened_r2"]},
+            "dT_only": {"standing": COMPARATOR_STANDING["dT_only"], "flattened_r2": dT_only_r2(entry["dT"], entry["exposed"], lock.get("dT_only_noun_vector"))},
+            "rank1_nouns": {"standing": COMPARATOR_STANDING["rank1_nouns"], "fresh_noun_r2": rank1_fresh_r2(entry, lock)},
+        }
+    return {"Y1": y1, "Y2": y2, "Y3": y3, "joint_fresh_nouns": joint, "comparators": comparators,
+            "valid_frames": sorted(valid), "n_valid_coordinated": coordinated, "outcome": outcome_label(y1, y2, y3)}
+
+
+def dT_only_r2(dT: torch.Tensor | None, table: ScoringTable, noun_vector: Sequence[float] | None) -> float | None:
+    """The exposed-disfavoured baseline on fresh data, with the noun vector the lock carries (never refitted here)."""
+    if dT is None or noun_vector is None:
+        return None
+    predicted = dT.unsqueeze(1) * torch.tensor(noun_vector, dtype=torch.float64)
+    if predicted.shape != table.measured.shape:
+        return None
+    return _r2(table.measured, predicted)
+
+
+def rank1_fresh_r2(entry: Mapping[str, Any], lock: Mapping[str, Any]) -> float | None:
+    """The descriptive rank-1 comparator: the locked exposed noun vector scoring the fresh nouns' table."""
+    table = entry["fresh"]
+    if table is None or lock.get("rank1") is None:
+        return None
+    return _r2(table.measured, table.predicted)
+
+
+# ---------------------------------------------------------------------------
+# The report.
+
+
+def render_report(state: Mapping[str, Any]) -> str:
+    f = cd._f
+    lines = ["# Experiment 020 Report", "", f"- Run ID: `{state['run_id']}`", f"- Confirmation sha256: `{state.get('confirmation_020_sha256', '')}`",
+             f"- Protocol/code commit at explore: `{state['protocol_code_commit']}`", "", "## Phases", ""]
+    lines += [f"- `{phase}`: `{entry['status']}`" for phase, entry in state["phases"].items()] + [""]
+    exploration = state.get("exploration") or {}
+    incidents = list(exploration.get("incidents", [])) + ([state["confirmation"]["incident"]] if isinstance(state.get("confirmation"), dict) and "incident" in state["confirmation"] else [])
+    if incidents:
+        lines += ["## Incidents", ""] + [f"- `{entry['phase']}` at commit `{entry.get('commit', '?')}` ({entry['at']}): {entry['message']}" for entry in incidents] + [""]
+    if exploration.get("statistics"):
+        statistics = exploration["statistics"]
+        lines += ["## Tier A — exposed pool (calibration record only; the floors are frozen constants)", "",
+                  f"- {statistics['n_pairs']} pairs × {statistics['n_nouns']} scorable exposed nouns (of {exploration['noun_population']['exposed']}; non-scorable {exploration['noun_population']['non_scorable']})",
+                  f"- End-to-end: flattened R² {f(statistics['flattened_r2'], 4)}, token means {f(statistics['token_mean_r2'], 4)}, pair means {f(statistics['pair_mean_r2'], 4)}, pooled MAE {f(statistics['pooled_mae'], 3)} nats",
+                  f"- Per template: " + ", ".join(f"{template} {f(entry['r2'], 3)}" for template, entry in sorted(statistics["per_template"].items())),
+                  f"- Comparators: downstream ceiling (measured Δx₃) {f(exploration['comparators']['ceiling_measured_dx3'], 4)}; no-layer-5-head {f(exploration['comparators']['no_l5_heads'], 4)} (nested simplification); template-base MLPs {f(exploration['comparators']['template_base_mlps'], 4)} (operating-point comparator); ΔT-only {f(exploration['comparators']['dT_only']['r2'], 4)} (exposed-disfavoured baseline); rank-1 noun share {f(exploration['rank1']['rank1_share'], 4)} (descriptive)",
+                  "- Identities (checks only): " + ", ".join(f"{name} {value:.1e}" for name, value in sorted(exploration["identities"].items())), ""]
+    if state.get("lock"):
+        lines += ["## Lock", "", f"- Candidate lock sha256 `{state['lock']['content_sha256']}`; predictions sha256 `{state['lock']['predictions_sha256']}`", ""]
+    confirmation = state.get("confirmation")
+    if isinstance(confirmation, dict) and "stage1" in confirmation:
+        stage1 = confirmation["stage1"]
+        lines += ["## Confirmation — stage 1 (the fresh frames' reference states; the prediction table digested before any fresh cue prompt)", "",
+                  f"- Table rows {len(stage1['rows'])}; digest `{stage1['digest']}`; commit `{stage1['commit']}`", ""]
+        for frame_id, entry in sorted(stage1["frames"].items()):
+            lines.append(f"  - {frame_id}: {'valid' if entry['valid'] else 'INVALID'} (cue effect {entry['cue_effect_positive']}/{entry['cue_effect_required']}, plural contrast shift {f(entry['plural_contrast_shift'], 3)}; p_c {entry['p_c']}, p_t {entry['p_t']})")
+        lines.append("")
+    if isinstance(confirmation, dict) and "outcome" in confirmation:
+        lines += [f"## Confirmation — stage 2 — `{confirmation['outcome']['label']}`", ""]
+        for name in ("Y1", "Y2"):
+            entry = confirmation[name]
+            statistics = entry.get("statistics")
+            lines.append(f"- {name} ({entry['population']}): **{entry['label']}**" + (f"; precondition {entry['precondition']}" if not entry["precondition"].get("ok") else ""))
+            if statistics:
+                lines.append(f"  - flattened R² {f(statistics['flattened_r2'], 4)}, token means {f(statistics['token_mean_r2'], 4)}, frame means {f(statistics['frame_mean_r2'], 4)}, pair means {f(statistics['pair_mean_r2'], 4)}, pooled MAE {f(statistics['pooled_mae'], 3)}")
+                lines.append(f"  - splits: cue-final {f(statistics['cue_final_r2'], 3)}, coordinated {f(statistics['coordinated_r2'], 3)}; conditions {entry.get('conditions')}")
+            if name in confirmation.get("comparators", {}):
+                lines.append(f"  - comparators: " + ", ".join(f"{key} {f(value.get('flattened_r2', value.get('fresh_noun_r2')), 4)} ({value['standing']})" for key, value in sorted(confirmation["comparators"][name].items())))
+        y3 = confirmation["Y3"]
+        lines.append(f"- Y3 (the 24 fresh nouns on the Y1 population): **{y3['label']}**" + (f"; median R² {f(y3.get('median_r2'), 3)}, minimum {f(y3.get('min_r2'), 3)} (reported, not gated); conditions {y3.get('conditions')}" if y3.get("conditions") else ""))
+        if confirmation.get("joint_fresh_nouns"):
+            joint = confirmation["joint_fresh_nouns"]
+            lines.append(f"- Joint diagnostic (fresh cues × fresh frames × fresh nouns; no threshold): flattened R² {f(joint['flattened_r2'], 4)}, pooled MAE {f(joint['pooled_mae'], 3)}")
+        lines += ["", "Interpretation limit (frozen): Y2 is conditional on each fresh frame's stage-1 reference state; Experiment 020 does not predict the frame state from text.", ""]
+    lines += ["## Execution ledger", "", f"- Executed prompt keys: {len(state['executed_prompt_keys'])}", f"- Executed noun keys: {len(state['executed_noun_keys'])}", ""]
+    return "\n".join(lines)

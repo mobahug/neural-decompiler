@@ -409,10 +409,27 @@ validity and exclusion rules, the prompt-key manifest, every threshold, the seed
 definitions. No token, frame, noun, table or prediction may be changed after the lock; no fresh prompt runs before
 `confirm`, and no fresh cue prompt runs before its frame's stage-1 table is digested and re-read from disk.
 
+## Implementation note (2026-09-22, before any Experiment 020 model run): a calibration bug found by the Level 1 identity
+
+The scratch design pass that produced every exposed number in this document fed block 5's MLP the **post-attention**
+residual. Pythia is a GPT-NeoX parallel-residual model: each block's MLP reads the block's *input*. The production
+implementation (`src/neural_decompiler/readout_decompilation.py`) uses the correct parallel residual, and the Level 1
+identity is what caught the difference — `E₁` was 1.5e-2 on the fake with the sequential input and is below 1e-3 with
+the correct one; a regression test keeps the sequential variant and asserts it is worse.
+
+Consequences, stated exactly:
+
+- **No frozen floor, population, tolerance, label or list changes.** The floors stay as calibrated.
+- **The exposed numbers in this document were computed with the wrong block-5 MLP input.** Their direction of error
+  is *unknown*: it is not claimed that they were pessimistic, optimistic or unchanged. They remain what they are — a
+  scratch calibration that establishes nothing.
+- **No ad-hoc diagnostic is rerun.** The single official `explore` will produce the corrected exposed values with the
+  production implementation, and they will be reported as they come out, whether they are better or worse.
+
 ## Revision history
 
 - **Revision 2** (2026-09-22, amended the same day with the Level 1 error formula `E₁` before implementation
-  planning — the 1e-3 threshold is unchanged and no prompt was run for the amendment): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the
+  planning, and with the implementation note above after Task 1's identity check found the calibration bug — the 1e-3 threshold is unchanged and no prompt was run for the amendment): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the
   frozen single-token rule) and the fresh nouns' freshness certification (freshness for a noun is *no prior
   inspection of any model-output-derived statistic*, since a noun needs no prompt); the label-bearing populations of
   Y1, Y2 and Y3 frozen in a table (Y1 and Y2 on the scorable exposed nouns only, Y3 on the fresh nouns only, the
