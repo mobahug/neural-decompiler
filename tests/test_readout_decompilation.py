@@ -290,6 +290,55 @@ def test_y3_branches_and_the_negative_label_on_synthetic_tables():
     assert rd.score_y3(degenerate)["label"] == "PRECONDITION_FAILED_NOUNS" and rd.score_y3(degenerate)["precondition"]["n_scorable_nouns"] == 0
 
 
+def test_every_frozen_identity_has_a_tolerance_and_an_unknown_one_is_a_defect():
+    tolerances = rd.identity_tolerances()
+    assert set(tolerances) == set(rd.IDENTITY_NAMES)
+    assert rd.enforce_all({"readout": 1e-3, "level1": 1e-4, "additive": 1e-6, "logit": 1e-3, "inherited_017": 1e-8, "lock_rows": 0.0, "stage1_rows": 0.0, "provenance": 0.0,
+                           "reference_contrast": 1e-3}) is not None
+    with pytest.raises(pm.IncidentError, match="no frozen tolerance"):
+        rd.enforce_all({"invented": 0.0})
+    with pytest.raises(pm.IncidentError, match="frozen tolerance"):
+        rd.enforce_all({"level1": 1.0})
+
+
+def test_the_rank1_comparator_is_the_frozen_rule_not_the_primary_program():
+    """Two frozen objects: the exposed noun vector (which defines the pair score) and d_noun (which gives a fresh
+    noun's factor from its weights alone). The comparator must differ from the primary prediction."""
+    generator = torch.Generator().manual_seed(11)
+    n_pairs, n_exposed, n_fresh, d_model = 40, 12, 5, 16
+    dw_exposed = torch.randn(n_exposed, d_model, generator=generator, dtype=torch.float64)
+    dw_fresh = torch.randn(n_fresh, d_model, generator=generator, dtype=torch.float64)
+    delta = torch.randn(n_pairs, d_model, generator=generator, dtype=torch.float64)
+    measured_exposed = delta @ dw_exposed.T
+    table = rd.ScoringTable(tuple(f"c{i}" for i in range(n_pairs)), tuple("f" for _ in range(n_pairs)), tuple("cardinal" for _ in range(n_pairs)),
+                            measured_exposed, measured_exposed, tuple(f"n{i}" for i in range(n_exposed)))
+    frozen = rd.rank1_noun_factor(table, dw_exposed)
+    assert len(frozen["noun_vector"]) == n_exposed and len(frozen["d_noun"]) == d_model and frozen["exposed_fit_r2"] is not None
+    fresh_table = rd.ScoringTable(table.cues, table.frames, table.templates, delta @ dw_fresh.T, delta @ dw_fresh.T, tuple(f"x{i}" for i in range(n_fresh)))
+    entry = {"exposed": table, "fresh": fresh_table}
+    value = rd.rank1_fresh_r2(entry, {"rank1": frozen}, dw_fresh)
+    assert value is not None and value < 1.0  # a rank-1 factorization, not the primary prediction it is compared against
+    assert rd.rank1_fresh_r2(entry, {"rank1": {}}, dw_fresh) is None and rd.rank1_fresh_r2(entry, {"rank1": frozen}, None) is None
+
+
+def test_the_frozen_validity_rule_uses_the_head_change_and_the_cue_effect_count(fake_frame, monkeypatch):
+    """The inherited 017–019 rule: |⟨ΔT, d̂_T⟩| ≥ floor · σ_T together with the frozen cue-effect count."""
+    program, state, nouns, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["dx3"]
+    axis = pm.SiteAxis("T", torch.zeros(state.h6.shape[0], dtype=torch.float64), torch.nn.functional.normalize(torch.arange(1.0, state.h6.shape[0] + 1, dtype=torch.float64), dim=0), 1.0)
+    measurement = rd.PairMeasurement("pl", 1, state.frame.frame_id, state.frame.template_id, torch.full((len(nouns.nouns),), -1.0, dtype=torch.float64), dx3,
+                                     torch.zeros_like(state.h6), state.h6, torch.zeros(3), {})
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+    verdict = rd.frame_validity(program, state, nouns, measurement, axis)
+    assert verdict["head_informative"] and verdict["cue_effect_positive"] == len(nouns.exposed_scorable) and verdict["valid"]
+    assert verdict["plural_head_change"] == pytest.approx(float(rd.head_output_change(program, state, dx3) @ axis.direction))
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 1e9)  # an unreachable floor makes the frame uninformative
+    assert not rd.frame_validity(program, state, nouns, measurement, axis)["valid"]
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+    wrong_sign = rd.PairMeasurement("pl", 1, state.frame.frame_id, state.frame.template_id, torch.full((len(nouns.nouns),), +1.0, dtype=torch.float64), dx3,
+                                    torch.zeros_like(state.h6), state.h6, torch.zeros(3), {})
+    assert rd.frame_validity(program, state, nouns, wrong_sign, axis)["cue_effect_positive"] == 0  # c_sg − c_pl = −Δc
+
+
 def test_outcome_label_joins_the_three_frozen_labels():
     y1 = {"label": "CONTRAST_PREDICTED_TOKENS"}
     y2 = {"label": "CONTRAST_NOT_PREDICTED_FRAMES_CONDITIONAL"}

@@ -155,6 +155,10 @@ def make_runner(sandbox, monkeypatch, *, logs=None, small_confirmation=True):
     return runner, logs
 
 
+def pool_frame_id(lock):
+    return sorted(lock["locked_states"])[0]
+
+
 def test_parser_has_exactly_the_six_phases_and_no_overrides():
     parser = runner_module.build_parser()
     for phase in ("validate", "freeze-confirmation", "explore", "lock", "confirm", "report"):
@@ -162,6 +166,24 @@ def test_parser_has_exactly_the_six_phases_and_no_overrides():
     for forbidden in (["calibrate"], ["confirm", "--stage", "2"]):
         with pytest.raises(SystemExit):
             parser.parse_args(forbidden)
+
+
+class ExecutionSpy:
+    """Counts actual forward executions by prompt key (multiplicity, not membership)."""
+
+    def __init__(self, monkeypatch):
+        self.counts: dict[str, int] = {}
+        original = pm.capture_prompt
+
+        def spy(model, prompt, sites):
+            self.counts[prompt.key] = self.counts.get(prompt.key, 0) + 1
+            return original(model, prompt, sites)
+
+        for module in (pm, ra.pm, rd.pm):
+            monkeypatch.setattr(module, "capture_prompt", spy)
+
+    def total(self) -> int:
+        return sum(self.counts.values())
 
 
 def test_one_reference_execution_per_frame(sandbox, monkeypatch):
@@ -212,6 +234,41 @@ def test_explore_never_touches_a_fresh_noun(sandbox, monkeypatch):
         rd.assert_explore_nouns(sneaked, fake_confirmation)
 
 
+def test_stage_one_executes_each_manifest_prompt_exactly_once_and_uses_the_frozen_validity_rule(sandbox, monkeypatch):
+    """Multiplicity, not membership: one S1-REF and one S1-VALIDITY execution per fresh frame, no S2-TARGET, and the
+    validity verdict is the inherited head-informative rule with the frozen cue-effect count."""
+    root, manifest, small, digests, lock_011, lock_012, lock_017 = sandbox
+    confirmation = rd.load_confirmation(root / rd.CONFIRMATION_RELATIVE_PATH, small, dict(digests) | {"confirmation_020": json.loads((root / rd.CONFIRMATION_RELATIVE_PATH).read_text())["content_sha256"]})
+    model = make_fake_model()
+    lock = {"content_sha256": "0" * 64, "template_bases": {}, "locked_states": {}}
+    weights = pm.Weights.from_model(model)
+    lw = lc.LayerWeights.from_model(model, layers=rd.PROGRAM_LAYERS)
+    programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in rd.PROGRAM_LAYERS}
+    states = {frame.frame_id: hp.capture_frame_017(model, ht.HeadWeights.from_model(model), small.reference_prompt(frame), small.single_nouns,
+                                                   pm.SiteAxis("T", torch.zeros(int(model.cfg.d_model), dtype=torch.float64), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"])))
+              for frame in small.frames[:1]}
+    bases = rd.template_bases_020({}, []) if False else {}
+    for template in pm.TEMPLATE_ORDER:  # the comparator's bases; their values do not matter to this test
+        bases[template] = {"4": [0.0] * int(model.cfg.d_model), "5": [0.0] * int(model.cfg.d_model)}
+    lock["template_bases"] = bases
+    spy = ExecutionSpy(monkeypatch)
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+    record = rd.stage_one(model, small, confirmation, lock, lock_011, lock_012, lock_017, protocol_code_commit="a" * 40)
+    classes = rd.manifest_classes(confirmation)
+    for key in classes["S1-REF"] + classes["S1-VALIDITY"]:
+        assert spy.counts.get(key) == 1, (key, spy.counts.get(key))
+    assert not (set(spy.counts) & set(classes["S2-TARGET"])) and spy.total() == len(classes["S1-REF"]) + len(classes["S1-VALIDITY"])
+    for frame_id, entry in record["frames"].items():
+        assert set(entry) >= {"valid", "head_informative", "plural_head_change", "cue_effect_positive", "cue_effect_required"}
+        assert entry["cue_effect_required"] == pm.exact_count_floor(rd.FRAME_CUE_EFFECT_RATE, len([n for n in small.nouns if n.single_token]))
+        assert entry["valid"] == bool(entry["head_informative"] and entry["cue_effect_positive"] >= entry["cue_effect_required"])
+    # the frozen head-informative rule is a real gate: a floor above every measured head change invalidates every frame
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 1e6)
+    strict = rd.stage_one(model, small, confirmation, lock, lock_011, lock_012, lock_017, protocol_code_commit="a" * 40)
+    assert not any(entry["valid"] for entry in strict["frames"].values()) and all(not entry["head_informative"] for entry in strict["frames"].values())
+    assert all("dc_fresh_nouns" in row and len(row["dc_fresh_nouns"]) == len(confirmation.nouns) for row in record["rows"])
+
+
 def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox, monkeypatch):
     runner, logs = make_runner(sandbox, monkeypatch)
     root = runner.root
@@ -238,6 +295,16 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert lock["experiment"] == "020" and lock["floors"] == rd.frozen_floors() and lock["populations"] == {name: dict(value) for name, value in rd.POPULATIONS.items()}
     assert len(lock["predictions"]["rows"]) == len(confirmation.tokens) * len(sandbox[2].frames) and lock["confirmation_prompt_manifest"] == rd.manifest_classes(confirmation)
     assert set(lock["noun_keys"]) and "peach" not in lock["noun_keys"] and lock["fresh_noun_keys"] == [noun.lexical_key for noun in confirmation.nouns]
+    # (1) the lock carries a committed prediction for BOTH populations; no row may fall back to exposed values for Y3
+    assert lock["n_predicted_nouns"] == {"exposed_scorable": len(lock["noun_keys"]), "fresh": len(confirmation.nouns)}
+    for row in lock["predictions"]["rows"]:
+        assert len(row["dc"]) == len(lock["noun_keys"]) and len(row["dc_fresh_nouns"]) == len(confirmation.nouns)
+        assert row["dc"][: len(confirmation.nouns)] != row["dc_fresh_nouns"]  # the fresh predictions are their own, not the first 24 exposed ones
+    # (4) the rank-1 comparator's two frozen objects are in the lock
+    assert len(lock["rank1"]["noun_vector"]) == len(lock["noun_keys"]) and len(lock["rank1"]["d_noun"]) == len(lock["locked_states"][pool_frame_id(lock)]["h6"])
+    assert lock["rank1"]["exposed_fit_r2"] is not None
+    # (5) the lock phase proved its own provenance invariant
+    assert rd.load_results_state(runner.results_path)["lock"]["provenance_difference"] <= rd.PROVENANCE_TOLERANCE
     text = (runner.results_path.parent / "candidate-predictions.md").read_text()
     assert "preregistered predictions" in text and "Y1 table" in text
     with pytest.raises(rd.PhaseError):
@@ -287,6 +354,18 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     state = rd.load_results_state(runner.results_path)
     results = state["confirmation"]
     assert state["phases"]["confirm"]["status"] == "complete" and state["phases"]["confirm"]["lock_predictions_reproduced_max_difference"] == 0.0
+    # (6) the Y2 table was recomputed from the digested states before any target prompt
+    assert state["phases"]["confirm"]["stage1_rows_reproduced_max_difference"] == 0.0
+    # (5) every frozen identity that a measured pair can carry has a recorded value
+    assert {"readout", "logit", "level1"} <= set(results["identities"]) and set(results["identities"]) <= set(rd.IDENTITY_NAMES)
+    assert {"readout", "logit", "level1", "additive", "inherited_017"} <= set(results["stage1"]["identities"])
+    # (4) the rank-1 comparator is scored as the frozen rule, not as the primary program
+    for name in ("Y1", "Y2"):
+        if name in results["comparators"]:
+            assert results["comparators"][name]["rank1_nouns"]["standing"] == "descriptive comparator"
+    y3_direct = results["Y3"].get("nouns")
+    if y3_direct and results["comparators"].get("Y1", {}).get("rank1_nouns", {}).get("fresh_noun_r2") is not None:
+        assert results["comparators"]["Y1"]["rank1_nouns"]["fresh_noun_r2"] != pytest.approx(1.0)  # it is a different predictor
     s1 = results["stage1"]
     assert s1["digest"] == seen["digest"] == rd.stage_digest(s1["rows"], s1["states"], s1["frames"]) and len(s1["rows"]) == len(confirmation.tokens) * len(confirmation.frames)
     parts = results["outcome"]["label"].split(" | ")
@@ -306,6 +385,30 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert runner.report() == 0
     report = runner.report_path.read_text()
     assert "## Tier A" in report and "stage 1" in report and "Interpretation limit" in report and "conditional on each fresh frame's stage-1 reference state" in report
+
+
+def test_stage_two_refuses_a_committed_row_without_a_fresh_noun_prediction(sandbox, monkeypatch):
+    """The removed fallback: a row that carries no dc_fresh_nouns has no committed Y3 prediction, and stage 2 refuses
+    rather than scoring the fresh nouns against exposed-noun predictions."""
+    root, manifest, small, digests, lock_011, lock_012, lock_017 = sandbox
+    confirmation = rd.load_confirmation(root / rd.CONFIRMATION_RELATIVE_PATH, small, dict(digests) | {"confirmation_020": json.loads((root / rd.CONFIRMATION_RELATIVE_PATH).read_text())["content_sha256"]})
+    model = make_fake_model()
+    frame = small.frames[0]
+    weights = pm.Weights.from_model(model)
+    nouns = rd.NounSet.build(weights, small.nouns, confirmation.nouns)
+    program = rd.ReadoutProgram.from_model(model)
+    state = rd.capture_frame_020(model, ht.HeadWeights.from_model(model), small.reference_prompt(frame), nouns,
+                                 pm.SiteAxis("T", torch.zeros(int(model.cfg.d_model), dtype=torch.float64), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"])))
+    exposed_keys = [nouns.nouns[i].lexical_key for i in nouns.exposed_scorable]
+    row = {"token": confirmation.tokens[0]["word"], "frame_id": frame.frame_id, "template": frame.template_id,
+           "dc": [0.0] * len(exposed_keys), "dc_no_l5_heads": [0.0] * len(exposed_keys), "dc_template_base": [0.0] * len(exposed_keys), "dT": 0.0}
+    lock = {"content_sha256": "0" * 64, "template_bases": {}, "locked_states": {frame.frame_id: rd.locked_state(state)}, "predictions": {"rows": [row]}}
+    stage1 = {"frames": {}, "states": {}, "rows": []}
+    small_one = cs.Pool008((frame,), small.frame_origin, small.tokens, small.token_category, small.token_source, small.nouns, small.noun_source, small.reference_ids, small.plural_cue)
+    one_token = type("C", (), {k: getattr(confirmation, k) for k in ("reference_ids", "frames", "exposed_frame_ids", "nouns", "token_prompts", "exposed_frame_prompts", "content_sha256")})()
+    one_token.tokens = (confirmation.tokens[0],)
+    with pytest.raises(rd.PhaseError, match="no fresh-noun prediction"):
+        rd.stage_two(model, small_one, one_token, lock, lock_011, lock_012, lock_017, stage1)
 
 
 def test_incidents_are_recorded_and_block_reruns(sandbox, monkeypatch):
@@ -332,7 +435,7 @@ def test_an_identity_beyond_its_tolerance_is_an_incident_but_an_invalid_frame_is
         guard.setattr(rd, "LEVEL1_TOLERANCE", 0.0)  # the float32 captures cannot reproduce the chain exactly: the identity must stop the phase
         assert runner.explore() == 2
     state = rd.load_results_state(runner.results_path)
-    assert "Level 1" in state["exploration"]["incidents"][-1]["message"]
+    assert "level1 failed" in state["exploration"]["incidents"][-1]["message"] and "frozen tolerance" in state["exploration"]["incidents"][-1]["message"]
     # an invalid fresh frame is a scientific fact: the scoring records it and the phase continues
     stage1 = {"frames": {"f1": {"valid": False, "template_id": "cardinal"}, "f2": {"valid": True, "template_id": "cardinal"}}, "rows": [], "states": {}}
     scored = rd.score_confirmation(stage1, {"Y1": {"exposed": None, "fresh": None}, "Y2": {"exposed": None, "fresh": None}}, {"dT_only_noun_vector": None, "rank1": None})

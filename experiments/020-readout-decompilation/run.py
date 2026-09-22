@@ -107,6 +107,28 @@ def _load_tokenizer(spec: ModelSpec) -> Any:
     return AutoTokenizer.from_pretrained(spec.model_id, revision=spec.revision)
 
 
+class pytest_free_guard:
+    """Disable every capture and intervention entry point for the duration of a block: the lock phase's own proof
+    that its predictions cannot reach a forward pass. Independent of the test framework."""
+
+    _NAMES = ("capture_prompt", "run_patched", "run_capture", "run_interventions")
+
+    def __enter__(self):
+        self._saved = {name: getattr(pm, name) for name in self._NAMES if hasattr(pm, name)}
+
+        def refuse(*args, **kwargs):
+            raise rd.PhaseError("the lock phase reached a forward pass")
+
+        for name in self._saved:
+            setattr(pm, name, refuse)
+        return self
+
+    def __exit__(self, *exc):
+        for name, value in self._saved.items():
+            setattr(pm, name, value)
+        return False
+
+
 def _load_lock(path: Path, experiment: str) -> dict[str, Any]:
     lock = json.loads(path.read_text(encoding="utf-8"))
     unsigned = {key: value for key, value in lock.items() if key != "content_sha256"}
@@ -332,6 +354,12 @@ class Runner:
             raise rd.PhaseError(f"scientific paths changed since explore: {scientific}; lock must be written at the explore protocol")
         weights, lw, programs = self._weights_only()
         rows, nouns = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool)
+        # the provenance invariant, executed rather than asserted: the same rows with every capture entry point disabled
+        guard = pytest_free_guard()
+        with guard:
+            again, _ = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool)
+        provenance = max((atp._max_numeric_difference(dict(b), dict(a), "provenance") for a, b in zip(rows, again)), default=0.0)
+        rd.enforce("provenance invariant", provenance, rd.PROVENANCE_TOLERANCE)
         noun_keys = [nouns.nouns[index].lexical_key for index in nouns.exposed_scorable]
         lock = rd.build_candidate_lock(state=state, digests=digests, confirmation=confirmation, rows=rows, noun_keys=noun_keys, protocol_code_commit=self._provenance()["protocol_code_commit"])
         candidate_path = self.results_path.parent / "candidate-lock.json"
@@ -340,7 +368,7 @@ class Runner:
         candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
         predictions_text = rd.render_predictions(lock)
         predictions_path.write_text(predictions_text, encoding="utf-8")
-        state["lock"] = {"candidate_path": str(candidate_path), "predictions_path": str(predictions_path), "content_sha256": lock["content_sha256"],
+        state["lock"] = {"candidate_path": str(candidate_path), "predictions_path": str(predictions_path), "content_sha256": lock["content_sha256"], "provenance_difference": provenance,
                          "predictions_sha256": pm.sha256_text(predictions_text), "written_at": pm.utc_now(), "n_rows": len(rows), "n_nouns": len(noun_keys)}
         state["phases"]["lock"] = {"status": "complete", "completed_at": pm.utc_now()}
         rd.write_results_state(self.results_path, state)
@@ -385,13 +413,16 @@ class Runner:
                 rd.assert_stage_one_digest(state["confirmation"]["stage1"])
                 rd.assert_no_target_prompt_executed(state, confirmation)
                 valid = [frame_id for frame_id, entry in state["confirmation"]["stage1"]["frames"].items() if entry["valid"]]
+                stage1_reproduced = rd.reproduce_stage_one_rows(model, pool, confirmation, lock, lock_011, lock_012, lock_017, state["confirmation"]["stage1"])
+                state["phases"]["confirm"]["stage1_rows_reproduced_max_difference"] = stage1_reproduced
+                rd.assert_no_target_prompt_executed(state, confirmation)
                 self.log(f"stage 1 digested: {len(state['confirmation']['stage1']['rows'])} rows, digest {state['confirmation']['stage1']['digest'][:16]}…; {len(valid)} valid fresh frames; "
-                         "no fresh cue prompt has run; stage 2 begins")
+                         f"every row recomputed from the digested states with difference {stage1_reproduced:.1e}; no fresh cue prompt has run; stage 2 begins")
                 targets = tuple(confirmation.exposed_frame_prompts) + tuple(prompt for prompt in confirmation.token_prompts if prompt.frame.frame_id in valid)
                 pm.record_execution(state, targets, pool.nouns)
                 rd.write_results_state(self.results_path, state)
                 measured = rd.stage_two(model, pool, confirmation, lock, lock_011, lock_012, lock_017, state["confirmation"]["stage1"], log=self.log)
-                results = rd.score_confirmation(state["confirmation"]["stage1"], measured["tables"], lock)
+                results = rd.score_confirmation(state["confirmation"]["stage1"], measured["tables"], lock, measured["dw_fresh"])
                 results["identities"] = measured["identities"]
                 results["noun_keys"] = measured["noun_keys"]
                 results["fresh_noun_keys"] = measured["fresh_noun_keys"]
