@@ -380,12 +380,14 @@ class ReadoutProgram:
     ln_final_w: torch.Tensor
     ln_final_b: torch.Tensor
     eps: float
+    attn_bias_sum: torch.Tensor | None = None  # Σ_{ℓ∈3,4,5} b_O(ℓ): the part of each block's attention output that no
+    # per-head capture carries, needed to read the reference component sum off the residual boundary
 
     @classmethod
     def from_model(cls, model: Any) -> "ReadoutProgram":
         weights = pm.Weights.from_model(model)
         return cls(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: atp.LayerProgram.from_model(model, layer) for layer in READOUT_LAYERS},
-                   weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+                   weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps), attention_bias_sum(model))
 
     def ln_final(self, residual: torch.Tensor) -> torch.Tensor:
         return pm.exact_layer_norm(residual.double(), self.ln_final_w, self.ln_final_b, self.eps)
@@ -527,15 +529,15 @@ def enforce(name: str, value: float, tolerance: float, *, context: str = "") -> 
     return float(value)
 
 
-IDENTITY_NAMES = ("readout", "logit", "additive", "level1", "inherited_017", "reference_contrast", "provenance", "stage1_rows", "lock_rows")
+IDENTITY_NAMES = ("readout", "logit", "additive", "level1", "inherited_017", "reference_contrast", "reference_component_sum", "provenance", "stage1_rows", "lock_rows")
 
 
 def identity_tolerances() -> dict[str, float]:
     """The frozen tolerance of every identity, read from the module constants at call time so that the constants stay
     the single source of truth."""
     return {"readout": READOUT_IDENTITY_TOLERANCE, "logit": LOGIT_IDENTITY_TOLERANCE, "additive": ADDITIVE_IDENTITY_TOLERANCE, "level1": LEVEL1_TOLERANCE,
-            "inherited_017": INHERITED_017_TOLERANCE, "reference_contrast": READOUT_IDENTITY_TOLERANCE, "provenance": PROVENANCE_TOLERANCE,
-            "stage1_rows": PREDICTION_REPRODUCTION_TOLERANCE, "lock_rows": PREDICTION_REPRODUCTION_TOLERANCE}
+            "inherited_017": INHERITED_017_TOLERANCE, "reference_contrast": READOUT_IDENTITY_TOLERANCE, "reference_component_sum": ADDITIVE_IDENTITY_TOLERANCE,
+            "provenance": PROVENANCE_TOLERANCE, "stage1_rows": PREDICTION_REPRODUCTION_TOLERANCE, "lock_rows": PREDICTION_REPRODUCTION_TOLERANCE}
 
 
 def enforce_all(identities: Mapping[str, float]) -> dict[str, float]:
@@ -1098,6 +1100,16 @@ def measure_pair(model: Any, state: FrameState020, nouns: NounSet, word: str, to
                            h6 - state.h6, h6, run.logits, parts)
 
 
+def attention_bias_sum(model: Any) -> torch.Tensor:
+    """``Σ_ℓ b_O(ℓ)`` over the readout blocks, in float64: a checkpoint constant."""
+    total = None
+    for layer in READOUT_LAYERS:
+        bias = getattr(model.blocks[layer].attn, "b_O", None)
+        vector = torch.zeros(int(model.cfg.d_model), dtype=torch.float64) if bias is None else bias.detach().to("cpu", torch.float64).clone().reshape(-1)
+        total = vector if total is None else total + vector
+    return total
+
+
 def head_output_change(program: ReadoutProgram, state: FrameState020, dx3: Mapping[int, torch.Tensor], head_index: int = hp.HEAD_INDEX) -> torch.Tensor:
     """One head's output change at ``p_t`` from a layer-3 input change, by the exact layer-3 program at the frame's
     own state. With the *measured* ``Δx3`` this is the transport head's measured output change, and it needs no
@@ -1136,9 +1148,15 @@ def pair_identities(program: ReadoutProgram, weights: pm.Weights, nouns: NounSet
     out = {"readout": float((predicted[index] - measurement.dc[index]).abs().max()),
            "logit": logit_identity(program, weights, measurement.h6, measurement.logits),
            "level1": level1_error(program.level1(state, measurement.dx3), measurement.dh6)}
-    if measurement.components and state.components:
-        parts = [measurement.components[key] - state.components[key] for key in sorted(measurement.components)]
-        out["additive"] = additive_identity(measurement.dh6, measurement.dx3[state.p_t], parts)
+    if measurement.components and program.attn_bias_sum is not None:
+        # The reference component sum comes from the locked residual boundary — ``h6_ref − x3_ref(p_t)`` minus the
+        # per-layer attention output biases, which no per-head capture carries — so the frozen additive identity also
+        # runs on a state rebuilt from the lock or from the digested stage-1 record, where no component map exists.
+        reference_sum = state.h6 - state.x3_all[state.p_t].double() - program.attn_bias_sum.double()
+        if state.components:
+            out["reference_component_sum"] = float((sum(state.components.values()) - reference_sum).abs().max())
+        measured_sum = sum(measurement.components.values())
+        out["additive"] = additive_identity(measurement.dh6, measurement.dx3[state.p_t], [measured_sum - reference_sum])
     return out
 
 
@@ -1153,7 +1171,10 @@ def predict_pair(program: ReadoutProgram, chain: hp.HeadChainModel, weights: pm.
         bases = template_bases[state.frame.template_id]
         out["dc_template_base"] = program.contrast(state, program.blocks_3_to_5(state, dx3, mlps_at_base=bases)["dh6"], nouns)
     if dT_direction is not None:
-        out["dT"] = float(level0["parts"]["block3_attention"].double() @ dT_direction.double())
+        # the frozen comparator is Experiment 009/017's transport head L03.H04 alone, never the summed layer-3 attention
+        out["dT_head"] = head_output_change(program, state, dx3)
+        out["dT"] = float(out["dT_head"].double() @ dT_direction.double())
+        out["dT_all_heads"] = float(level0["parts"]["block3_attention"].double() @ dT_direction.double())  # recorded, never the comparator
     return out
 
 
@@ -1203,8 +1224,7 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
     lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
     programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
     chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
-    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
-                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    program = ReadoutProgram.from_model(model)  # carries Σ b_O, so the additive identity runs wherever components exist
     axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
     nouns = NounSet.build(weights, pool.nouns, [])
     assert_explore_nouns(nouns, confirmation)
@@ -1468,8 +1488,7 @@ def stage_one(model: Any, pool: cs.Pool008, confirmation: Confirmation020, lock:
     lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
     programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
     chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
-    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
-                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    program = ReadoutProgram.from_model(model)  # carries Σ b_O, so the additive identity runs wherever components exist
     axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
     nouns = NounSet.build(weights, pool.nouns, confirmation.nouns)
     bases = {template: {int(layer): torch.tensor(vector, dtype=torch.float64) for layer, vector in entry.items()} for template, entry in lock["template_bases"].items()}
@@ -1522,8 +1541,7 @@ def reproduce_stage_one_rows(model: Any, pool: cs.Pool008, confirmation: Confirm
     lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
     programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
     chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
-    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
-                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    program = ReadoutProgram.from_model(model)  # carries Σ b_O, so the additive identity runs wherever components exist
     nouns = NounSet.build(weights, pool.nouns, confirmation.nouns)
     bases = {template: {int(layer): torch.tensor(vector, dtype=torch.float64) for layer, vector in entry.items()} for template, entry in lock["template_bases"].items()}
     axis_T = torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)
@@ -1551,8 +1569,7 @@ def stage_two(model: Any, pool: cs.Pool008, confirmation: Confirmation020, lock:
     lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
     programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
     chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
-    program = ReadoutProgram(lc.LayerWeights.from_model(model, layers=READOUT_LAYERS), {layer: programs[layer] for layer in READOUT_LAYERS},
-                             weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    program = ReadoutProgram.from_model(model)  # carries Σ b_O, so the additive identity runs wherever components exist
     axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
     nouns = NounSet.build(weights, pool.nouns, confirmation.nouns)
     exposed_index, fresh_index = list(nouns.exposed_scorable), list(nouns.fresh)

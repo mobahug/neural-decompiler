@@ -327,13 +327,13 @@ class Runner:
             weights = pm.Weights.from_model(model)
             lw = lc.LayerWeights.from_model(model, layers=rd.PROGRAM_LAYERS)
             programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in rd.PROGRAM_LAYERS}
-            return weights, lw, programs
+            return weights, lw, programs, rd.attention_bias_sum(model)
         finally:
             del model
             gc.collect()
 
-    def _prediction_rows(self, weights, lw, programs, source: Mapping[str, Any], lock_011, lock_012, lock_017, confirmation, pool):
-        program = rd.ReadoutProgram(lw, {layer: programs[layer] for layer in rd.READOUT_LAYERS}, weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps))
+    def _prediction_rows(self, weights, lw, programs, source: Mapping[str, Any], lock_011, lock_012, lock_017, confirmation, pool, *, bias_sum=None):
+        program = rd.ReadoutProgram(lw, {layer: programs[layer] for layer in rd.READOUT_LAYERS}, weights.ln_final_w.double(), weights.ln_final_b.double(), float(weights.eps), bias_sum)
         chain = rd.chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
         nouns = rd.NounSet.build(weights, pool.nouns, confirmation.nouns)
         frames_by_id = {frame.frame_id: frame for frame in pool.frames}
@@ -352,12 +352,12 @@ class Runner:
         scientific = [path for path in changed if path.startswith(rd.SCIENTIFIC_PATH_PREFIXES) and path not in rd.NON_SCIENTIFIC_PATHS and not path.startswith(rd.NON_SCIENTIFIC_PREFIXES)]
         if scientific:
             raise rd.PhaseError(f"scientific paths changed since explore: {scientific}; lock must be written at the explore protocol")
-        weights, lw, programs = self._weights_only()
-        rows, nouns = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool)
+        weights, lw, programs, bias_sum = self._weights_only()
+        rows, nouns = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool, bias_sum=bias_sum)
         # the provenance invariant, executed rather than asserted: the same rows with every capture entry point disabled
         guard = pytest_free_guard()
         with guard:
-            again, _ = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool)
+            again, _ = self._prediction_rows(weights, lw, programs, state["exploration"], lock_011, lock_012, lock_017, confirmation, pool, bias_sum=bias_sum)
         provenance = max((atp._max_numeric_difference(dict(b), dict(a), "provenance") for a, b in zip(rows, again)), default=0.0)
         rd.enforce("provenance invariant", provenance, rd.PROVENANCE_TOLERANCE)
         noun_keys = [nouns.nouns[index].lexical_key for index in nouns.exposed_scorable]
@@ -397,7 +397,7 @@ class Runner:
             weights = pm.Weights.from_model(model)
             lw = lc.LayerWeights.from_model(model, layers=rd.PROGRAM_LAYERS)
             programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in rd.PROGRAM_LAYERS}
-            rows, _ = self._prediction_rows(weights, lw, programs, lock, lock_011, lock_012, lock_017, confirmation, pool)
+            rows, _ = self._prediction_rows(weights, lw, programs, lock, lock_011, lock_012, lock_017, confirmation, pool, bias_sum=rd.attention_bias_sum(model))
             reproduced = rd.assert_lock_predictions_reproduced(lock, rows)  # PhaseError before anything fresh runs
             state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": commit,
                                           "lock_predictions_reproduced_max_difference": reproduced}

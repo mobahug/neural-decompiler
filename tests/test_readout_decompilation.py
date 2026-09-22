@@ -193,6 +193,43 @@ def test_the_readout_program_reads_only_the_reference_state_and_the_predicted_ch
     assert set(out["parts"]) == {"block3_attention", "block3_mlp", "block4_mlp", "block5_attention", "block5_mlp"} and out["dh6"].shape == state.h6.shape
 
 
+def test_the_additive_identity_uses_the_locked_residual_boundary(fake_frame):
+    """Σ components_ref = h6_ref − x3_ref(p_t): the identity therefore also runs on a state rebuilt from the lock,
+    which carries no captured component map."""
+    program, state, nouns, run, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["run"], fake_frame["dx3"]
+    weights = fake_frame["weights"]
+    captured = sum(state.components.values())
+    boundary = state.h6 - state.x3_all[state.p_t].double() - program.attn_bias_sum
+    assert float((captured - boundary).abs().max()) < rd.ADDITIVE_IDENTITY_TOLERANCE  # the two agree, which is why the boundary suffices
+    assert float(program.attn_bias_sum.abs().max()) > 0.0  # the per-head captures exclude each block's b_O: the correction is real
+    model = fake_frame["model"]
+    measurement = rd.measure_pair(model, state, nouns, "pl", state.frame.cue_ids["pl"])
+    with_components = rd.pair_identities(program, weights, nouns, state, measurement)
+    assert {"readout", "logit", "level1", "additive", "reference_component_sum"} <= set(with_components)
+    assert with_components["additive"] < rd.ADDITIVE_IDENTITY_TOLERANCE
+    locked = rd.state_from_locked(rd.locked_state(state), state.frame)
+    assert not locked.components  # a locked state carries no component map …
+    from_lock = rd.pair_identities(program, weights, nouns, locked, measurement)
+    assert "additive" in from_lock and from_lock["additive"] == pytest.approx(with_components["additive"], abs=1e-9)  # … and the identity still runs
+    assert "reference_component_sum" not in from_lock
+
+
+def test_the_dT_only_comparator_is_the_transport_head_alone(fake_frame):
+    """The frozen comparator is Experiment 009/017's L03.H04, not the summed layer-3 attention change."""
+    program, state, nouns, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["dx3"]
+    direction = torch.nn.functional.normalize(torch.arange(1.0, state.h6.shape[0] + 1, dtype=torch.float64), dim=0)
+    parts = program.blocks_3_to_5(state, dx3)["parts"]
+    head_only = float(rd.head_output_change(program, state, dx3) @ direction)
+    all_heads = float(parts["block3_attention"].double() @ direction)
+    assert head_only != pytest.approx(all_heads)  # the two differ, so the choice matters
+    class _Chain:  # the prediction path only needs the predicted Δx3, which this test supplies directly
+        def upstream(self, *args, **kwargs):
+            return {"dx3": dx3}
+    prediction = rd.predict_pair(program, _Chain(), fake_frame["weights"], state, {}, nouns, 1, template_bases=None, dT_direction=direction)
+    assert prediction["dT"] == pytest.approx(head_only) and prediction["dT_all_heads"] == pytest.approx(all_heads)
+    assert torch.allclose(prediction["dT_head"], rd.head_output_change(program, state, dx3))
+
+
 def test_the_comparators_change_the_prediction_in_the_declared_direction(fake_frame):
     program, state, nouns, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["dx3"]
     full = program.contrast(state, program.blocks_3_to_5(state, dx3)["dh6"], nouns)

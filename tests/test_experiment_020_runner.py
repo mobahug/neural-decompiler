@@ -357,8 +357,9 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     # (6) the Y2 table was recomputed from the digested states before any target prompt
     assert state["phases"]["confirm"]["stage1_rows_reproduced_max_difference"] == 0.0
     # (5) every frozen identity that a measured pair can carry has a recorded value
-    assert {"readout", "logit", "level1"} <= set(results["identities"]) and set(results["identities"]) <= set(rd.IDENTITY_NAMES)
+    assert {"readout", "logit", "level1", "additive"} <= set(results["identities"]) and set(results["identities"]) <= set(rd.IDENTITY_NAMES)
     assert {"readout", "logit", "level1", "additive", "inherited_017"} <= set(results["stage1"]["identities"])
+    assert results["identities"]["additive"] < rd.ADDITIVE_IDENTITY_TOLERANCE  # it runs on the stage-2 target pairs, whose states come from the lock and the digest
     # (4) the rank-1 comparator is scored as the frozen rule, not as the primary program
     for name in ("Y1", "Y2"):
         if name in results["comparators"]:
