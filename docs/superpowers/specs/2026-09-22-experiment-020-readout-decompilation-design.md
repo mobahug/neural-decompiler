@@ -345,11 +345,27 @@ the capture-facing tolerances are looser than the arithmetic ones.
 | readout identity | max abs difference, per noun, between `⟨ΔLN_final, Δw(n)⟩` and the measured log-probability contrast difference | **2e-2 nats** | 5.0e-3 |
 | logit reconstruction | max abs difference between `LN_final(h6)·W_U + b_U` and the captured logits | **2e-2** | 2.9e-3 |
 | additive residual identity | max abs difference between `Δh6` and `Δx3 + Σ(heads and MLPs of blocks 3–5)` | **1e-4** | 1.4e-6 |
-| Level 1 exact downstream chain | max abs relative difference between the recomputed final residual change and the measured one, from the measured `Δx3` | **1e-3 relative** | the Experiment 017/018/019 identity family on this model is 1e-5 to 3e-5 (I4 8.5e-6, I5 1.2e-5, I6 3.3e-5, I1 2.2e-5); `explore` records this experiment's own value |
+| Level 1 exact downstream chain | the norm-normalized residual error `E₁` defined below | **`E₁` ≤ 1e-3** | the Experiment 017/018/019 identity family on this model is 1e-5 to 3e-5 (I4 8.5e-6, I5 1.2e-5, I6 3.3e-5, I1 2.2e-5); `explore` records this experiment's own value |
 | inherited Experiment 017 reproduction | max abs difference between this runner's `Δ̂x3` and the Experiment 017 chain's own output for the same inputs | **1e-6** | 4.5e-7 for a full recomputation in a separate process (float64 reassociation) |
 | locked Y1 prediction reproduction | max abs difference between the recomputed Y1 prediction rows and the locked rows, both canonical-JSON rounded | **0.0 (exact)** | Experiments 013–019 reproduce their locked tables at 0.0 |
 | stage-1 Y2 table reproduction | the re-read stage-1 digest against the written one, and the recomputed stage-2 predictions against the digested rows | **digest equality; 0.0 (exact) on the rows** | Experiments 017–019 reproduce their stage-1 tables at 0.0 |
 | provenance invariant | max abs difference between a prediction computed with the cue prompt available and one computed in a process that never executes it | **1e-6** | 4.5e-7 |
+
+**The Level 1 error `E₁` (frozen formula).** Componentwise ratios are never used: a residual component near zero
+would make them explode and could stop the experiment irreversibly for a numerical artefact. With `Δh6^exact` the
+final residual change recomputed by the exact chain from the **measured** `Δx3`, and `Δh6^meas` the measured one,
+both float64 vectors of length `d_model` at `p_t`:
+
+```
+E₁(pair) = ‖Δh6^exact − Δh6^meas‖_∞ / max( ‖Δh6^meas‖_∞ , 1e-12 )
+```
+
+`‖·‖_∞` is the maximum absolute component. The check is `max over the evaluated pairs of E₁ ≤ 1e-3`; the maximum,
+the median and the argmax pair are recorded. The same normalization — maximum absolute error over the maximum
+absolute value of the measured quantity, floored at 1e-12 — defines every other *relative* tolerance in the table
+above; the tolerances stated as absolute (the readout identity, the logit reconstruction, the additive residual
+identity, the reproduction checks and the provenance invariant) are plain maximum absolute differences and use no
+normalization.
 
 A value above its tolerance is an incident. A value below it is recorded in the results state and enters no floor.
 
@@ -395,7 +411,8 @@ definitions. No token, frame, noun, table or prediction may be changed after the
 
 ## Revision history
 
-- **Revision 2** (2026-09-22): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the
+- **Revision 2** (2026-09-22, amended the same day with the Level 1 error formula `E₁` before implementation
+  planning — the 1e-3 threshold is unchanged and no prompt was run for the amendment): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the
   frozen single-token rule) and the fresh nouns' freshness certification (freshness for a noun is *no prior
   inspection of any model-output-derived statistic*, since a noun needs no prompt); the label-bearing populations of
   Y1, Y2 and Y3 frozen in a table (Y1 and Y2 on the scorable exposed nouns only, Y3 on the fresh nouns only, the
