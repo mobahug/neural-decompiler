@@ -40,35 +40,53 @@ def make_fake_model():
     return TinyPlural(seed=3, d_vocab=60000, n_layers=6, n_heads=8)
 
 
-@pytest.fixture
-def sandbox(tmp_path, monkeypatch):
-    for relative in (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH):
-        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(ROOT / relative, tmp_path / relative)
-    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+REPO_FILES = (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH)
+
+
+def _copy_repo_files(root: Path) -> None:
+    for relative in REPO_FILES:
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / relative, root / relative)
+
+
+@pytest.fixture(scope="module")
+def fake_world(tmp_path_factory):
+    """Built once per module (immutable: the manifest and the extract's JSON text): the 010-style extract, the fake's transport fractions over 63 × 24 (computed with the same code path Experiment 011 uses)."""
+    tmp_path = tmp_path_factory.mktemp("world")
+    _copy_repo_files(tmp_path)
     manifest, manifest_sha256, extension = pm.load_inputs(tmp_path)
     confirmation_006 = cd.load_confirmation(tmp_path / cd.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
     confirmation_009 = ht.load_confirmation(tmp_path / ht.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, confirmation_006)
     pool = ra.build_pool_010(manifest, extension, confirmation_006, confirmation_009)
-    # The 010-style extract: the fake's transport fractions over 63 × 24 (computed with the same code path Experiment 011 uses).
-    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
-    model = make_fake_model()
-    weights = pm.Weights.from_model(model)
-    head = ht.HeadWeights.from_model(model)
-    cache = pm.PromptCache(model, tuple(pool.nouns))
-    axes = cs.stage_axes(cache, weights, pool)
-    fractions = {}
-    for frame in pool.frames:
-        ref, components = ra.capture_reference(model, head, pool.reference_prompt(frame), pool.single_nouns)
-        functional = ra.read_functional(head, ref, axes["T"])
-        records = {name: ra.measure_token_010(model, weights, head, ref, components, functional, name, token_id, axes["R0"], axes["T"], pool.single_nouns) for name, token_id in pool.tokens}
-        plural = records[pool.plural_cue[frame.template_id]]
-        for name, record in records.items():
-            analysis = ra.fractions(record, plural, axes["T"], plural.g_E_inner)
-            fractions[f"{name}|{frame.frame_id}"] = None if analysis is None else analysis["q_T"]
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+        model = make_fake_model()
+        weights = pm.Weights.from_model(model)
+        head = ht.HeadWeights.from_model(model)
+        cache = pm.PromptCache(model, tuple(pool.nouns))
+        axes = cs.stage_axes(cache, weights, pool)
+        fractions = {}
+        for frame in pool.frames:
+            ref, components = ra.capture_reference(model, head, pool.reference_prompt(frame), pool.single_nouns)
+            functional = ra.read_functional(head, ref, axes["T"])
+            records = {name: ra.measure_token_010(model, weights, head, ref, components, functional, name, token_id, axes["R0"], axes["T"], pool.single_nouns) for name, token_id in pool.tokens}
+            plural = records[pool.plural_cue[frame.template_id]]
+            for name, record in records.items():
+                analysis = ra.fractions(record, plural, axes["T"], plural.g_E_inner)
+                fractions[f"{name}|{frame.frame_id}"] = None if analysis is None else analysis["q_T"]
     payload = er.inherited_010_payload(fractions, source={"path": "fake"}, manifest_sha256=manifest_sha256, extension_sha256=extension.content_sha256, confirmation_sha256=confirmation_006.content_sha256,
                                        confirmation_009_sha256=confirmation_009.content_sha256, model={"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision})
-    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
+    return manifest, pm.canonical_json(payload) + "\n"
+
+
+@pytest.fixture
+def sandbox(tmp_path, monkeypatch, fake_world):
+    """A fresh writable root per test: the repo files and the fake's extract, written into this test's own directory."""
+    manifest, extract_text = fake_world
+    _copy_repo_files(tmp_path)
+    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).write_text(extract_text, encoding="utf-8")
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
     return tmp_path, manifest
 
 

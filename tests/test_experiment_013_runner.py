@@ -41,13 +41,21 @@ def make_fake_model():
     return TinyPlural(seed=3, d_vocab=60000, n_layers=6, n_heads=8)
 
 
-@pytest.fixture
-def sandbox(tmp_path, monkeypatch):
-    for relative in (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH, er.CONFIRMATION_RELATIVE_PATH, er.LOCK_RELATIVE_PATH,
-                     lc.CONFIRMATION_RELATIVE_PATH, lc.LOCK_RELATIVE_PATH):
-        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(ROOT / relative, tmp_path / relative)
-    (tmp_path / ap.INHERITED_012_LEDGER_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+REPO_FILES = (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH, er.CONFIRMATION_RELATIVE_PATH, er.LOCK_RELATIVE_PATH,
+              lc.CONFIRMATION_RELATIVE_PATH, lc.LOCK_RELATIVE_PATH)
+
+
+def _copy_repo_files(root: Path) -> None:
+    for relative in REPO_FILES:
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / relative, root / relative)
+
+
+@pytest.fixture(scope="module")
+def fake_world(tmp_path_factory):
+    """Built once per module (immutable: the manifest, the pool, the fake 011 and 012 locks — copied by the loaders — and the ledger's JSON text): the fake's Experiment 012 model and its per-pair ledger over the 2724 recorded pairs."""
+    tmp_path = tmp_path_factory.mktemp("world")
+    _copy_repo_files(tmp_path)
     manifest, manifest_sha256, extension = pm.load_inputs(tmp_path)
     confirmation_006 = cd.load_confirmation(tmp_path / cd.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
     confirmation_009 = ht.load_confirmation(tmp_path / ht.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, confirmation_006)
@@ -58,45 +66,56 @@ def sandbox(tmp_path, monkeypatch):
     confirmation_012 = lc.load_confirmation(tmp_path / lc.CONFIRMATION_RELATIVE_PATH, pool_012, digests)
     digests["confirmation_012"] = confirmation_012.content_sha256
     pool = ap.build_pool_013(manifest, extension, confirmation_006, confirmation_009, confirmation_011, confirmation_012)
-    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
-    model = make_fake_model()
-    weights = pm.Weights.from_model(model)
-    head = ht.HeadWeights.from_model(model)
-    lw = lc.LayerWeights.from_model(model)
-    heads = ap.HeadSet.from_model(model)
-    cache = pm.PromptCache(model, tuple(pool.nouns))
-    axes = cs.stage_axes(cache, weights, pool_010)  # the fake's own axes stand in for the Experiment 011 lock's
-    plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
-    read = lc.CorrectionRead(ra.read_weight(head, axes["T"]).double(), axes["R0"].direction.double(), dict(pool.reference_ids), plural_ids)
-    fake_lock_011 = {"experiment": "011", "axes_vectors": {"T": axes["T"].direction.double().tolist(), "R0": axes["R0"].direction.double().tolist()}, "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
-                     "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}, "sigma_r": er.sigma_r_from_pairs(read, weights, pool_010.frames)},
-                     "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
-    # The fake's Experiment 012 model: template-mean base states over the 30 frames exposed then; and its per-pair ledger over the 2724 recorded pairs.
-    states = {}
-    for frame in pool.frames:
-        states[frame.frame_id] = ap.capture_frame_013(model, head, pool.reference_prompt(frame), pool.single_nouns, axes["T"])
-    bases_012 = lc.template_bases(pool_012.frames, {fid: (s.x1, s.x2) for fid, s in states.items() if fid in {f.frame_id for f in pool_012.frames}})
-    fake_lock_012 = {"experiment": "012", "axes_vectors": fake_lock_011["axes_vectors"], "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
-                     "base_states": lc.bases_to_json(bases_012, {template: len(pool_012.frames_of(template)) for template in pm.TEMPLATE_ORDER}), "defined_templates": list(pm.TEMPLATE_ORDER),
-                     "denominators": {"weight_only": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}}}, "confirmation_012_sha256": confirmation_012.content_sha256,
-                     "lock_011_sha256": fake_lock_011["content_sha256"], "content_sha256": "e" * 64}
-    fpm = ap.FrozenPatternModel(read, lw, heads, bases_012)
-    frames_012 = {frame.frame_id for frame in confirmation_012.frames}
-    words_012 = {token["word"] for token in confirmation_012.tokens}
-    entries = {}
-    for frame in pool.frames:
-        state = states[frame.frame_id]
-        names = [name for name, _ in pool.tokens if (frame.frame_id not in frames_012 and name not in words_012) or (frame.frame_id in frames_012 and name in words_012)]
-        plural_name = pool.plural_cue[frame.template_id]
-        plural = ap.measure_pair_013(model, weights, head, state, plural_name, pool.token_id(plural_name), axes["R0"], axes["T"], pool.single_nouns)
-        for name in names:
-            record = ap.measure_pair_013(model, weights, head, state, name, pool.token_id(name), axes["R0"], axes["T"], pool.single_nouns)
-            analysis = ap.analyse_pair_013(record, plural, model=fpm, weights=weights, state=state, axis_T=axes["T"])
-            if analysis is not None:
-                entries[f"{name}|{frame.frame_id}"] = ap.ledger_entry_from_013(analysis)
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+        model = make_fake_model()
+        weights = pm.Weights.from_model(model)
+        head = ht.HeadWeights.from_model(model)
+        lw = lc.LayerWeights.from_model(model)
+        heads = ap.HeadSet.from_model(model)
+        cache = pm.PromptCache(model, tuple(pool.nouns))
+        axes = cs.stage_axes(cache, weights, pool_010)  # the fake's own axes stand in for the Experiment 011 lock's
+        plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
+        read = lc.CorrectionRead(ra.read_weight(head, axes["T"]).double(), axes["R0"].direction.double(), dict(pool.reference_ids), plural_ids)
+        fake_lock_011 = {"experiment": "011", "axes_vectors": {"T": axes["T"].direction.double().tolist(), "R0": axes["R0"].direction.double().tolist()}, "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
+                         "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}, "sigma_r": er.sigma_r_from_pairs(read, weights, pool_010.frames)},
+                         "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
+        # The fake's Experiment 012 model: template-mean base states over the 30 frames exposed then; and its per-pair ledger over the 2724 recorded pairs.
+        states = {}
+        for frame in pool.frames:
+            states[frame.frame_id] = ap.capture_frame_013(model, head, pool.reference_prompt(frame), pool.single_nouns, axes["T"])
+        bases_012 = lc.template_bases(pool_012.frames, {fid: (s.x1, s.x2) for fid, s in states.items() if fid in {f.frame_id for f in pool_012.frames}})
+        fake_lock_012 = {"experiment": "012", "axes_vectors": fake_lock_011["axes_vectors"], "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
+                         "base_states": lc.bases_to_json(bases_012, {template: len(pool_012.frames_of(template)) for template in pm.TEMPLATE_ORDER}), "defined_templates": list(pm.TEMPLATE_ORDER),
+                         "denominators": {"weight_only": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}}}, "confirmation_012_sha256": confirmation_012.content_sha256,
+                         "lock_011_sha256": fake_lock_011["content_sha256"], "content_sha256": "e" * 64}
+        fpm = ap.FrozenPatternModel(read, lw, heads, bases_012)
+        frames_012 = {frame.frame_id for frame in confirmation_012.frames}
+        words_012 = {token["word"] for token in confirmation_012.tokens}
+        entries = {}
+        for frame in pool.frames:
+            state = states[frame.frame_id]
+            names = [name for name, _ in pool.tokens if (frame.frame_id not in frames_012 and name not in words_012) or (frame.frame_id in frames_012 and name in words_012)]
+            plural_name = pool.plural_cue[frame.template_id]
+            plural = ap.measure_pair_013(model, weights, head, state, plural_name, pool.token_id(plural_name), axes["R0"], axes["T"], pool.single_nouns)
+            for name in names:
+                record = ap.measure_pair_013(model, weights, head, state, name, pool.token_id(name), axes["R0"], axes["T"], pool.single_nouns)
+                analysis = ap.analyse_pair_013(record, plural, model=fpm, weights=weights, state=state, axis_T=axes["T"])
+                if analysis is not None:
+                    entries[f"{name}|{frame.frame_id}"] = ap.ledger_entry_from_013(analysis)
     assert len(entries) == ap.EXPECTED_LEDGER_SIZE
     payload = ap.inherited_ledger_payload(entries, source={"path": "fake"}, digests=digests | {"lock_012": fake_lock_012["content_sha256"]})
-    (tmp_path / ap.INHERITED_012_LEDGER_RELATIVE_PATH).write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
+    return manifest, pool, fake_lock_011, fake_lock_012, pm.canonical_json(payload) + "\n"
+
+
+@pytest.fixture
+def sandbox(tmp_path, monkeypatch, fake_world):
+    """A fresh writable root per test: the repo files and the fake's ledger, written into this test's own directory."""
+    manifest, pool, fake_lock_011, fake_lock_012, ledger_text = fake_world
+    _copy_repo_files(tmp_path)
+    (tmp_path / ap.INHERITED_012_LEDGER_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / ap.INHERITED_012_LEDGER_RELATIVE_PATH).write_text(ledger_text, encoding="utf-8")
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
     return tmp_path, manifest, pool, fake_lock_011, fake_lock_012
 
 

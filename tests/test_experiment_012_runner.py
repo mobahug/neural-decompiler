@@ -40,12 +40,20 @@ def make_fake_model():
     return TinyPlural(seed=3, d_vocab=60000, n_layers=6, n_heads=8)
 
 
-@pytest.fixture
-def sandbox(tmp_path, monkeypatch):
-    for relative in (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH, er.CONFIRMATION_RELATIVE_PATH, er.LOCK_RELATIVE_PATH):
-        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(ROOT / relative, tmp_path / relative)
-    (tmp_path / lc.INHERITED_010_LEDGER_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+REPO_FILES = (pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH, cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, ht.LOCK_RELATIVE_PATH, er.CONFIRMATION_RELATIVE_PATH, er.LOCK_RELATIVE_PATH)
+
+
+def _copy_repo_files(root: Path) -> None:
+    for relative in REPO_FILES:
+        (root / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / relative, root / relative)
+
+
+@pytest.fixture(scope="module")
+def fake_world(tmp_path_factory):
+    """Built once per module (immutable: the manifest, the fake 011 lock — copied by the loader — and the two ledgers' JSON text)."""
+    tmp_path = tmp_path_factory.mktemp("world")
+    _copy_repo_files(tmp_path)
     manifest, manifest_sha256, extension = pm.load_inputs(tmp_path)
     confirmation_006 = cd.load_confirmation(tmp_path / cd.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
     confirmation_009 = ht.load_confirmation(tmp_path / ht.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, confirmation_006)
@@ -53,36 +61,50 @@ def sandbox(tmp_path, monkeypatch):
     digests = {"manifest": manifest_sha256, "extension": extension.content_sha256, "confirmation_006": confirmation_006.content_sha256, "confirmation_009": confirmation_009.content_sha256, "confirmation_011": confirmation_011.content_sha256}
     pool_010 = ra.build_pool_010(manifest, extension, confirmation_006, confirmation_009)
     pool = lc.build_pool_012(manifest, extension, confirmation_006, confirmation_009, confirmation_011)
-    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
-    model = make_fake_model()
-    weights = pm.Weights.from_model(model)
-    head = ht.HeadWeights.from_model(model)
-    cache = pm.PromptCache(model, tuple(pool.nouns))
-    axes = cs.stage_axes(cache, weights, pool_010)  # the fake's own axes stand in for the Experiment 011 lock's
-    plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
-    read = lc.CorrectionRead(ra.read_weight(head, axes["T"]).double(), axes["R0"].direction.double(), dict(pool.reference_ids), plural_ids)
-    fake_lock_011 = {"experiment": "011", "axes_vectors": {"T": axes["T"].direction.double().tolist(), "R0": axes["R0"].direction.double().tolist()}, "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
-                     "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}, "sigma_r": er.sigma_r_from_pairs(read, weights, pool_010.frames)},
-                     "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
-    # The two extracts: the fake's per-component fractions over 63 × 24 (Experiment 010) and over the 011 tokens' licensed 011 frames (142), computed with the code path Experiment 012 uses.
-    entries_010, entries_011 = {}, {}
-    frames_011 = {frame.frame_id for frame in confirmation_011.frames}
-    words_011 = {token["word"]: token for token in confirmation_011.tokens}
-    for frame in pool.frames:
-        ref, components = ra.capture_reference(model, head, pool.reference_prompt(frame), pool.single_nouns)
-        functional = ra.read_functional(head, ref, axes["T"])
-        records = {name: ra.measure_token_010(model, weights, head, ref, components, functional, name, token_id, axes["R0"], axes["T"], pool.single_nouns) for name, token_id in pool.tokens}
-        plural = records[pool.plural_cue[frame.template_id]]
-        for name, record in records.items():
-            entry = lc.ledger_entry(ra.fractions(record, plural, axes["T"], plural.g_E_inner))
-            if frame.frame_id not in frames_011 and name not in words_011:
-                entries_010[f"{name}|{frame.frame_id}"] = entry
-            elif frame.frame_id in frames_011 and name in words_011 and frame.frame_id in words_011[name]["licensed_frames"]:
-                entries_011[f"{name}|{frame.frame_id}"] = entry
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+        model = make_fake_model()
+        weights = pm.Weights.from_model(model)
+        head = ht.HeadWeights.from_model(model)
+        cache = pm.PromptCache(model, tuple(pool.nouns))
+        axes = cs.stage_axes(cache, weights, pool_010)  # the fake's own axes stand in for the Experiment 011 lock's
+        plural_ids = {template: pool.token_id(name) for template, name in pool.plural_cue.items()}
+        read = lc.CorrectionRead(ra.read_weight(head, axes["T"]).double(), axes["R0"].direction.double(), dict(pool.reference_ids), plural_ids)
+        fake_lock_011 = {"experiment": "011", "axes_vectors": {"T": axes["T"].direction.double().tolist(), "R0": axes["R0"].direction.double().tolist()}, "sigma_T": axes["T"].sigma, "read_weight": read.weight.tolist(),
+                         "denominators": {"denominators": {template: read.denominator(weights, template) for template in pm.TEMPLATE_ORDER}, "sigma_r": er.sigma_r_from_pairs(read, weights, pool_010.frames)},
+                         "confirmation_011_sha256": confirmation_011.content_sha256, "content_sha256": "f" * 64}
+        # The two extracts: the fake's per-component fractions over 63 × 24 (Experiment 010) and over the 011 tokens' licensed 011 frames (142), computed with the code path Experiment 012 uses.
+        entries_010, entries_011 = {}, {}
+        frames_011 = {frame.frame_id for frame in confirmation_011.frames}
+        words_011 = {token["word"]: token for token in confirmation_011.tokens}
+        for frame in pool.frames:
+            ref, components = ra.capture_reference(model, head, pool.reference_prompt(frame), pool.single_nouns)
+            functional = ra.read_functional(head, ref, axes["T"])
+            records = {name: ra.measure_token_010(model, weights, head, ref, components, functional, name, token_id, axes["R0"], axes["T"], pool.single_nouns) for name, token_id in pool.tokens}
+            plural = records[pool.plural_cue[frame.template_id]]
+            for name, record in records.items():
+                entry = lc.ledger_entry(ra.fractions(record, plural, axes["T"], plural.g_E_inner))
+                if frame.frame_id not in frames_011 and name not in words_011:
+                    entries_010[f"{name}|{frame.frame_id}"] = entry
+                elif frame.frame_id in frames_011 and name in words_011 and frame.frame_id in words_011[name]["licensed_frames"]:
+                    entries_011[f"{name}|{frame.frame_id}"] = entry
     assert len(entries_010) == 63 * 24 and len(entries_011) == 142
+    texts = {}
     for entries, experiment, relative in ((entries_010, "010", lc.INHERITED_010_LEDGER_RELATIVE_PATH), (entries_011, "011", lc.INHERITED_011_LEDGER_RELATIVE_PATH)):
         payload = lc.inherited_ledger_payload(entries, experiment=experiment, source={"path": "fake"}, digests=digests)
-        (tmp_path / relative).write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
+        texts[relative] = pm.canonical_json(payload) + "\n"
+    return manifest, fake_lock_011, texts
+
+
+@pytest.fixture
+def sandbox(tmp_path, monkeypatch, fake_world):
+    """A fresh writable root per test: the repo files and the fake's two ledgers, written into this test's own directory."""
+    manifest, fake_lock_011, texts = fake_world
+    _copy_repo_files(tmp_path)
+    for relative, text in texts.items():
+        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / relative).write_text(text, encoding="utf-8")
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
     return tmp_path, manifest, fake_lock_011
 
 
