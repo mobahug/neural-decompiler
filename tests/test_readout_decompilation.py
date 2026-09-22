@@ -42,7 +42,9 @@ def make_fake_model():
 def test_frozen_constants_match_the_design():
     assert rd.READOUT_LAYERS == (3, 4, 5) and rd.HEAD_LAYER == 3 and rd.RUNTIME_SEED == 20260916 and rd.CONTROL_SEED == 20260924
     assert (rd.READOUT_IDENTITY_TOLERANCE, rd.LOGIT_IDENTITY_TOLERANCE, rd.ADDITIVE_IDENTITY_TOLERANCE) == (2e-2, 2e-2, 1e-4)
-    assert (rd.LEVEL1_TOLERANCE, rd.INHERITED_017_TOLERANCE, rd.PREDICTION_REPRODUCTION_TOLERANCE, rd.PROVENANCE_TOLERANCE, rd.NORM_FLOOR) == (1e-3, 1e-6, 0.0, 1e-6, 1e-12)
+    # E₁'s tolerance was amended from 1e-3 to 7e-3 after the 2026-09-22 explore incident; every other constant is the
+    # design's own, and no scientific floor moved with it
+    assert (rd.LEVEL1_TOLERANCE, rd.INHERITED_017_TOLERANCE, rd.PREDICTION_REPRODUCTION_TOLERANCE, rd.PROVENANCE_TOLERANCE, rd.NORM_FLOOR) == (7e-3, 1e-6, 0.0, 1e-6, 1e-12)
     assert (rd.Y1_TOKEN_MEAN_R2, rd.Y1_PAIR_MEAN_R2, rd.Y1_CUE_MAE, rd.Y1_CUE_MAE_SHARE, rd.Y1_POOLED_MAE) == (0.80, 0.65, 1.5, 0.80, 1.0)
     assert (rd.Y2_FRAME_MEAN_R2, rd.Y2_FRAME_R2, rd.Y2_FRAME_SHARE, rd.Y2_SPLIT_R2) == (0.55, 0.40, 0.75, 0.40)
     assert (rd.Y3_MEDIAN_R2, rd.Y3_NOUN_R2, rd.Y3_SLOPE_BAND, rd.Y3_BIAS, rd.Y3_SHARE) == (0.70, 0.55, (0.75, 1.15), 0.8, 0.90)
@@ -75,9 +77,15 @@ def test_level1_error_is_norm_normalized_and_cannot_explode_near_zero():
 def test_enforce_raises_above_the_tolerance_and_records_below_it():
     assert rd.enforce("check", 9e-4, rd.LEVEL1_TOLERANCE) == pytest.approx(9e-4)
     with pytest.raises(pm.IncidentError, match="frozen tolerance"):
-        rd.enforce("check", 2e-3, rd.LEVEL1_TOLERANCE)
+        rd.enforce("check", 2e-2, rd.LEVEL1_TOLERANCE)
     with pytest.raises(pm.IncidentError):
         rd.enforce("check", float("nan"), rd.LEVEL1_TOLERANCE)
+    # the amended E₁ envelope: the diagnosed float32 floor passes, the full-pool incident maximum passes, and the
+    # structural sequential block-5 defect at ~1.5e-2 does not
+    assert rd.enforce("check", 4.593e-3, rd.LEVEL1_TOLERANCE) == pytest.approx(4.593e-3)
+    assert rd.enforce("check", 6.77e-3, rd.LEVEL1_TOLERANCE) == pytest.approx(6.77e-3)
+    with pytest.raises(pm.IncidentError, match="frozen tolerance"):
+        rd.enforce("check", 1.5e-2, rd.LEVEL1_TOLERANCE)
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +171,11 @@ def test_identities_hold_on_the_fake(fake_frame):
     # the parallel residual is what makes it exact: feeding block 5's MLP the post-attention state instead breaks it
     dh4 = program.blocks_3_to_5(state, fake_frame["dx3"])
     sequential = dh4["dh4"][state.p_t] + dh4["parts"]["block5_attention"] + program.mlp_delta(5, state.x5_all[state.p_t], dh4["dh4"][state.p_t] + dh4["parts"]["block5_attention"])
-    assert rd.level1_error(sequential, h6 - state.h6) > e1
+    sequential_error = rd.level1_error(sequential, h6 - state.h6)
+    assert sequential_error > e1
+    # the tolerance was amended to 7e-3 for the float32 attention-score floor, so this is the guard that it still gates:
+    # the structural defect must fail by a wide margin, not merely exceed the exact chain's own error
+    assert sequential_error > 2.0 * rd.LEVEL1_TOLERANCE
 
 
 _REFERENCE_COMPONENTS: dict[tuple[int, str], torch.Tensor] = {}

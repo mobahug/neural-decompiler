@@ -69,7 +69,15 @@ NON_SCIENTIFIC_PREFIXES = (f"{EXPERIMENT_DIR}/evidence/",)
 READOUT_IDENTITY_TOLERANCE = 2e-2  # nats: ⟨ΔLN_final, Δw(n)⟩ against the measured log-probability contrast difference
 LOGIT_IDENTITY_TOLERANCE = 2e-2  # LN_final(h6)·W_U + b_U against the captured logits
 ADDITIVE_IDENTITY_TOLERANCE = 1e-4  # Δh6 against Δx3 + Σ(heads and MLPs of blocks 3–5)
-LEVEL1_TOLERANCE = 1e-3  # the norm-normalized E₁ below
+# Amended from 1e-3 to 7e-3 after the recorded explore incident of 2026-09-22 (run 9d0c1a998732b9c1 at abf3df9, full-pool
+# maximum 4.593e-03). The diagnostic placed the error in the *pinned float32 forward's own* attention scores, not in the
+# chain: later blocks carry a large common offset in the scores (‖scores‖∞ ~ 2.0e4 / 7.9e4 / 1.2e5 at layers 3/4/5) while
+# the within-row spread the softmax uses is only ~10–23, so float32 granularity eats 2.5e-4 / 3.9e-4 / 7.8e-4 of that
+# spread and the attention pattern cannot be reproduced below ~1e-3. The envelope is the conditional per-block attention
+# maxima 1.45e-3 + 1.78e-3 + 2.12e-3 = 5.35e-3 absolute over the smallest observed ‖Δh6^meas‖∞ of 0.79, i.e. 6.77e-3,
+# rounded up. It stays a real gate: the sequential block-5 variant the parallel residual forbids gives ~1.5e-2, still
+# rejected by more than 2×, and the MLP terms, the additive identity and the inherited chain are unaffected at ~1e-6.
+LEVEL1_TOLERANCE = 7e-3  # the norm-normalized E₁ below
 INHERITED_017_TOLERANCE = 1e-6  # this runner's Δ̂x3 against the Experiment 017 chain's own output
 PREDICTION_REPRODUCTION_TOLERANCE = 0.0  # locked rows, canonical-JSON rounded: exact
 PROVENANCE_TOLERANCE = 1e-6  # a prediction computed without any cue prompt against the ordinary one

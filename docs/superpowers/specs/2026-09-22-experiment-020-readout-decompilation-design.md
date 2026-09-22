@@ -345,7 +345,7 @@ the capture-facing tolerances are looser than the arithmetic ones.
 | readout identity | max abs difference, per noun, between `⟨ΔLN_final, Δw(n)⟩` and the measured log-probability contrast difference | **2e-2 nats** | 5.0e-3 |
 | logit reconstruction | max abs difference between `LN_final(h6)·W_U + b_U` and the captured logits | **2e-2** | 2.9e-3 |
 | additive residual identity | max abs difference between `Δh6` and `Δx3 + Σ(heads and MLPs of blocks 3–5)` | **1e-4** | 1.4e-6 |
-| Level 1 exact downstream chain | the norm-normalized residual error `E₁` defined below | **`E₁` ≤ 1e-3** | the Experiment 017/018/019 identity family on this model is 1e-5 to 3e-5 (I4 8.5e-6, I5 1.2e-5, I6 3.3e-5, I1 2.2e-5); `explore` records this experiment's own value |
+| Level 1 exact downstream chain | the norm-normalized residual error `E₁` defined below | **`E₁` ≤ 7e-3** (amended from 1e-3; see the amendment note below) | the 2026-09-22 explore incident recorded a full-pool maximum of 4.593e-3; the diagnosed float32 attention-score floor is 3e-4 to 1.6e-3 in the diagnostic subsets, and the conservative envelope is 6.77e-3 |
 | inherited Experiment 017 reproduction | max abs difference between this runner's `Δ̂x3` and the Experiment 017 chain's own output for the same inputs | **1e-6** | 4.5e-7 for a full recomputation in a separate process (float64 reassociation) |
 | locked Y1 prediction reproduction | max abs difference between the recomputed Y1 prediction rows and the locked rows, both canonical-JSON rounded | **0.0 (exact)** | Experiments 013–019 reproduce their locked tables at 0.0 |
 | stage-1 Y2 table reproduction | the re-read stage-1 digest against the written one, and the recomputed stage-2 predictions against the digested rows | **digest equality; 0.0 (exact) on the rows** | Experiments 017–019 reproduce their stage-1 tables at 0.0 |
@@ -360,7 +360,8 @@ both float64 vectors of length `d_model` at `p_t`:
 E₁(pair) = ‖Δh6^exact − Δh6^meas‖_∞ / max( ‖Δh6^meas‖_∞ , 1e-12 )
 ```
 
-`‖·‖_∞` is the maximum absolute component. The check is `max over the evaluated pairs of E₁ ≤ 1e-3`; the maximum,
+`‖·‖_∞` is the maximum absolute component. The check is `max over the evaluated pairs of E₁ ≤ 7e-3` (revision 3; the
+formula itself is unchanged from revision 2, only the threshold); the maximum,
 the median and the argmax pair are recorded. The same normalization — maximum absolute error over the maximum
 absolute value of the measured quantity, floored at 1e-12 — defines every other *relative* tolerance in the table
 above; the tolerances stated as absolute (the readout identity, the logit reconstruction, the additive residual
@@ -426,7 +427,53 @@ Consequences, stated exactly:
 - **No ad-hoc diagnostic is rerun.** The single official `explore` will produce the corrected exposed values with the
   production implementation, and they will be reported as they come out, whether they are better or worse.
 
+## Amendment (2026-09-22, after the recorded `explore` incident): the `E₁` tolerance, and nothing else
+
+`explore` ran once, at `abf3df9` (run `9d0c1a998732b9c1`, cpu/float32/4 threads, 2 h 56 m). It captured all 108 exposed
+reference states and measured all 30,024 exposed pairs, then stopped at
+`level1 failed: 4.593e-03 above the frozen tolerance 1.000e-03`. No `lock`, no `confirm`, no confirmation prompt and no
+fresh-noun quantity was touched, so the fresh test is intact.
+
+A committed diagnostic (`diagnose`, not a phase: it never opens the results state and enforces nothing; records
+`outputs/experiment-020/level1-diagnostic*.json`) established that the failure is a property of the **pinned float32
+model forward**, not of the decoded chain:
+
+- The MLP reconstruction of every readout block is exact to ~1e-6; the attention carries the entire discrepancy.
+- The discrepancy is already present **at the reference state, with no cue and no `Δ`**: each layer program against the
+  model's own captured per-head outputs gives 6.1e-5 / 1.4e-4 / 3.1e-4 median at layers 3 / 4 / 5, while the MLPs give
+  1.7e-6 / 3.2e-6 / 6.8e-6.
+- The mechanism is a large **common offset** in the attention scores: `‖scores‖∞` is 2.0e4 / 7.9e4 / 1.2e5 median while
+  the within-row spread the softmax actually uses is only ~10 / 23 / 21. float32 granularity at those magnitudes
+  (`eps·‖scores‖∞` = 2.4e-3 / 9.5e-3 / 1.4e-2) therefore eats 2.5e-4 / 3.9e-4 / 7.8e-4 of the spread, which matches the
+  measured attention-pattern error (5.9e-4 at layer 4, 1.3e-3 at layer 5) within ~1.6×. Softmax row sums are 1.0 in both
+  the recomputed and the captured pattern and `scale` is 8.0 = √64, so it is the scores, not masking or scaling.
+- Ruled out by measurement: a small denominator (the absolute error is flat at ~4.8e-4 across every denominator decile,
+  and the denominators are 0.79 to 2.44), chaining (chained ÷ conditional error is 1.0× at block 4 and 1.5× at block 5),
+  the measurement itself (`additive` 1.06e-6, `reference_component_sum` 1.24e-6), the inherited Experiment 017 chain
+  (exactly 0), `Σ b_O`, and the parallel residual.
+
+**The amendment.** `LEVEL1_TOLERANCE` is raised from `1e-3` to `7e-3`. Its envelope is the diagnosed floor, not the
+observed maximum: the conditional per-block attention maxima are 1.45e-3 (block 3), 1.78e-3 (block 4) and 2.12e-3
+(block 5), whose conservative absolute sum is 5.35e-3; over the smallest observed `‖Δh6^meas‖∞` of 0.79 that is
+6.77e-3, rounded up to 7e-3.
+
+**What this is and is not.** It is an identity/numerical tolerance amended after a recorded incident, with a measured
+numerical reason. It is **not** a scientific outcome floor. Unchanged: the `E₁` formula and its norm normalization,
+every Y1/Y2/Y3 floor and precondition, the populations, the 24 fresh cues, the 18 fresh frames, the 24 fresh nouns and
+the confirmation set digest `e098e2b4…`, the comparator standing, the model, the runtime dtype and thread count, the
+seeds, and every outcome rule and label. The Level 1 check keeps its force: the sequential block-5 variant that the
+parallel residual forbids gives ~1.5e-2, which the amended gate still rejects by more than 2×, and a regression test
+asserts exactly that. The diagnostic persistence added with the amendment stays: the identity maxima, their tolerances
+and the worst Level-1 pair's full breakdown are written to the results state **before** enforcement, so a future
+incident leaves the record needed to place it.
+
 ## Revision history
+
+- **Revision 3** (2026-09-22, after the recorded `explore` incident and its diagnostic; authorized by the user on the
+  diagnostic's evidence): `LEVEL1_TOLERANCE` 1e-3 → 7e-3 with the justification in the amendment note above, and the
+  diagnostic persistence and `diagnose` subcommand that produced it. Nothing else changed — no floor, population,
+  fresh set, comparator standing, model, runtime, seed, label or outcome rule. The incident run consumed no
+  confirmation prompt and no fresh-noun quantity.
 
 - **Revision 2** (2026-09-22, amended the same day with the Level 1 error formula `E₁` before implementation
   planning, and with the implementation note above after Task 1's identity check found the calibration bug — the 1e-3 threshold is unchanged and no prompt was run for the amendment): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the

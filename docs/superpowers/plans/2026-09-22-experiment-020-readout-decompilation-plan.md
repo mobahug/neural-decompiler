@@ -25,7 +25,7 @@
   | readout identity | `READOUT_IDENTITY_TOLERANCE` | 2e-2 nats |
   | logit reconstruction | `LOGIT_IDENTITY_TOLERANCE` | 2e-2 |
   | additive residual identity | `ADDITIVE_IDENTITY_TOLERANCE` | 1e-4 |
-  | Level 1 chain, `E₁ = ‖Δh6^exact − Δh6^meas‖_∞ / max(‖Δh6^meas‖_∞, 1e-12)` | `LEVEL1_TOLERANCE` | 1e-3 |
+  | Level 1 chain, `E₁ = ‖Δh6^exact − Δh6^meas‖_∞ / max(‖Δh6^meas‖_∞, 1e-12)` | `LEVEL1_TOLERANCE` | 7e-3 (revision 3; 1e-3 until the 2026-09-22 explore incident — see the design's amendment note) |
   | inherited 017 reproduction | `INHERITED_017_TOLERANCE` | 1e-6 |
   | locked Y1 prediction reproduction | `PREDICTION_REPRODUCTION_TOLERANCE` | 0.0 (exact) |
   | stage-1 table reproduction | digest equality + exact rows | 0.0 (exact) |
