@@ -215,7 +215,8 @@ def test_the_diagnostic_enforces_nothing_and_leaves_the_recorded_run_untouched(s
     # the reference-state program errors are the floor under every reconstruction, so they belong in the record
     for entry in record["reference_program"].values():
         assert {"block3", "block4", "block5"} == set(entry)
-        assert all({"attention_absolute_error", "mlp_absolute_error", "score_infinity_norm"} <= set(block) for block in entry.values())
+        assert all({"attention_absolute_error", "mlp_absolute_error", "score_infinity_norm", "score_spread",
+                    "score_float32_granularity", "granularity_over_spread"} <= set(block) for block in entry.values())
         assert {"pattern_absolute_error"} <= set(entry["block4"]) and "pattern_absolute_error" not in entry["block3"]
     assert record["subset"]["n_pairs"] == len(record["pairs"]) > 0 and record["subset"]["templates"]
     assert record["level1"]["n_above_tolerance"] == len(record["pairs"]) and record["identity_maxima"]["level1"] == record["level1"]["worst"]["e1"]

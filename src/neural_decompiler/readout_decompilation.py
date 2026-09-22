@@ -1496,7 +1496,14 @@ def reference_program_errors(program: ReadoutProgram, state: FrameState020, n_he
             "attention_captured_norm": float(captured_attention.abs().max()),
             "mlp_absolute_error": float((recomputed_mlp - captured_mlp).abs().max()),
             "mlp_captured_norm": float(captured_mlp.abs().max()),
-            "score_infinity_norm": float(row.scores_ref.abs().max())}
+            # The softmax depends only on score *differences*, but float32 stores the scores at their own magnitude.
+            # A large common offset therefore costs precision on exactly the differences the pattern is made of, and
+            # the ratio below is how much of the spread that offset's granularity eats.
+            "score_infinity_norm": float(row.scores_ref.abs().max()),
+            "score_spread": float((row.scores_ref.max(dim=-1).values - row.scores_ref.min(dim=-1).values).median()),
+            "score_float32_granularity": float(torch.finfo(torch.float32).eps * row.scores_ref.abs().max()),
+            "granularity_over_spread": float(torch.finfo(torch.float32).eps * row.scores_ref.abs().max()
+                                             / max(float((row.scores_ref.max(dim=-1).values - row.scores_ref.min(dim=-1).values).median()), NORM_FLOOR))}
         if layer in rows:
             captured_row = rows[layer].double()
             entry["pattern_absolute_error"] = float((row.A_ref - captured_row).abs().max())
