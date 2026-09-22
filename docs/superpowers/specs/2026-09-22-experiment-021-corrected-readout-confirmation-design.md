@@ -2,11 +2,17 @@
 
 **Date:** 2026-09-22
 
-**Status:** Revision 2 — revision 1 (`5ef57a6`) was reviewed on 2026-09-22: the Experiment 020 closure and the
-re-materialization of the exposed table were approved, and two changes were requested before implementation — Y2
-floors that respect the valid-frame population actually scored, and a precise statement of what the exposed rerun
-adds. This revision makes both, and applies the review's own criterion for variable evaluable populations to Y1 and
-Y3 (Y1 is fixed by construction and keeps one floor row; Y3 is not and is indexed like Y2). Nothing is implemented:
+**Status:** Revision 3 — a minimal correction. Revision 2 (`c242652`) was approved in structure on review (the 64 Y2
+and 84 Y3 compositions independently verified, the prefix bootstrap valid, the Y2 row selection frozen and digested
+before any Y2 target runs, the Y3 row selection prediction-blind). One formal inconsistency was found: with a floor
+clamped to `0.0` and a `≥` pass rule, an `R²` of exactly `0.0` would have passed, contradicting the stated
+positive-skill requirement. Revision 3 gives every condition an explicit pass predicate — for an `R²`-type condition
+`finite(value) ∧ value > 0.0 ∧ value ≥ floor` — used identically at `confirm` and in the calibration's pass rates, and
+lists the replacement of Experiment 020's `value or −1.0` idiom among the changes. Nothing else changes: no draw,
+`α`, floor row, composition rule, population, label, fresh set, program, model or other threshold. (Revision 2 had
+answered the review of revision 1: Y2 floors by the valid-frame population actually scored, the precise statement of
+what the exposed rerun adds, and the same criterion applied to Y1 — fixed by construction, one row — and Y3 — indexed
+like Y2.) Nothing is implemented:
 no Experiment 021 directory, code, results state, calibration record, lock or model run exists. This document freezes
 the calibration procedure and the rule that turns its distributions into floors; **no floor has been computed**. The
 floors are computed exactly once, after approval, by the committed `calibrate` phase, whose output is reviewed before
@@ -83,6 +89,11 @@ them after it runs.
    writing this design; 020 never reached stage 2, so nothing was affected.
 5. **Experiment 021's own results state, calibration record, lock and report**, and Experiment 020's runner refusing
    `lock` and `confirm` (its closure record, already committed).
+6. **Explicit pass predicates replace Experiment 020's truthiness idiom.** 020's scoring code compared
+   `value or −1.0` with its floors — an accident of Python truthiness that failed an undefined value and, as a side
+   effect, an `R²` of exactly `0.0`. 021 replaces it with an explicit rule matching the written scientific
+   definition (the floor rule below): an `R²`-type condition passes iff `finite(value) ∧ value > 0.0 ∧ value ≥ floor`,
+   an error-type condition iff `finite(value) ∧ value ≤ floor`.
 
 ## The calibration data: the exposed table must be re-materialized
 
@@ -237,10 +248,13 @@ median as the mean of the two middle values); `k` uses integer arithmetic, `k = 
 | S12 | `noun_bias_k90` | ≤ | no | the `k`-th smallest per-noun `|mean(ŷ − y)|` |
 
 A statistic that is undefined in a draw (a zero-variance denominator) takes the worst value (`−∞` for ≥, `+∞` for ≤)
-and the draw is kept; at `confirm`, as in 020, an undefined value fails its condition. Only an undefined value fails
-for that reason: Experiment 020's scoring code writes `value or −1.0`, which would also fail an `R²` of exactly `0.0`;
-021's scoring does not reproduce that quirk, so its order-statistic form is exactly equivalent to the share conditions
-as Experiment 020's design defines them.
+in the ordering and the draw is kept. Whether a value passes is decided only by the explicit pass predicates of the
+floor rule below, at `confirm` and in the draws alike: an undefined, NaN or infinite value fails, and an `R²`-type
+value must also be strictly positive. Experiment 020's code reached the first effect through `value or −1.0`, which
+also failed an `R²` of exactly `0.0` by accident of truthiness; 021 states both as rules instead. For an order
+statistic the predicate reads per unit — `S6 ≥ F6` with `S6` finite and positive is exactly "at least `k` of the `n`
+frames have a finite, positive `R²` that is at least `F6`", and likewise for S3, S10, S11 and S12 — so the
+order-statistic form is exactly equivalent to the share conditions with the explicit predicate.
 
 ## The floor rule (frozen)
 
@@ -248,18 +262,30 @@ For every row and every statistic `S_j` of it, with its `B = 10 000` values over
 
 - for a **≥** statistic, the floor is the **250th smallest** value (`k = ⌈0.025·B⌉`);
 - for a **≤** statistic, the floor is the **250th largest** value;
-- for an **`R²`-type** statistic, the floor is `max(floor, 0.0)` — the **zero-skill clamp**: no calibration may
-  certify as a prediction a performance that explains none of the fresh units' variance;
+- for an **`R²`-type** statistic, the floor is `max(floor, 0.0)` — the **zero-skill clamp**: a floor is never
+  negative, and together with the pass predicate below no calibration can certify as a prediction a performance that
+  explains none of the fresh units' variance;
 - floors are recorded at full float64 precision; nothing is rounded.
 
 Notation: `F_j` (Y1, j = 1…4), `F_j[n_card, n_quant, n_coord]` (Y2, j = 5…8), `F_j[n_simple, n_sibilant,
 n_consonant_y]` (Y3, j = 9…12).
 
+**Pass predicates** (frozen; the same function decides every condition at `confirm` and every empirical pass rate of
+the calibration):
+
+- **`R²`-type** (every ≥ statistic: S1, S2, S5–S10): pass ⟺ `finite(value) ∧ value > 0.0 ∧ value ≥ F`.
+- **error-type** (every ≤ statistic: S3, S4, S11, S12): pass ⟺ `finite(value) ∧ value ≤ F`.
+
+`finite` excludes an undefined, NaN or infinite value. When `F > 0`, the term `value > 0.0` is redundant; when the
+clamp sets `F = 0.0`, it is what makes an `R²` of exactly `0.0`, or a negative one, fail, while any positive `R²`,
+however small, may pass if it meets the rest of the rule.
+
 Property: if the fresh units are exchangeable with the pools' units within strata, then **for the population actually
 scored**, each condition fails with probability about 0.025, and each outcome (four conditions) with probability at
-most 0.10 by the union bound — less in practice, since the four statistics are positively correlated. The empirical
-joint pass rate of every row over the draws, with that row's final floors, is recorded; when the clamp binds, that
-rate may fall below 0.90, and it is recorded, not corrected.
+most 0.10 by the union bound — less in practice, since the four statistics are positively correlated — as long as no
+clamp binds. The empirical per-condition and joint pass rates of every row over the draws are computed with the pass
+predicates and that row's final floors, and recorded; when a clamp binds, the positive-skill term can bring them below
+the nominal 0.975 and 0.90, which is recorded exactly and never corrected by adjusting a floor.
 
 **What the rule is not.** It is not the exposed values minus a margin, it does not compare with or cap at the 020
 floors, it does not treat any condition or row differently, and it is applied once. A floor may come out above its 020
@@ -269,7 +295,7 @@ floors are seen; a floor that proves uninformative is reported as such.
 ## Descriptive records of the calibration (no outcome force)
 
 - Per row and statistic: the floor, whether the clamp bound, the median and the 2.5 / 97.5 % points; per row, each
-  condition's and the joint pass rate. At the full rows (Y1; Y2 6/6/6; Y3 8/8/8): the joint pass rate over all three
+  condition's and the joint pass rate under the pass predicates. At the full rows (Y1; Y2 6/6/6; Y3 8/8/8): the joint pass rate over all three
   outcomes, and the pass rate each **Experiment 020 condition, in its original form and with its original floor,**
   would have had over the same draws — the size of the calibration mismatch that closed 020.
 - The validity screen of the 42 frames (each frame's verdict and values).
@@ -286,6 +312,8 @@ floors are seen; a floor that proves uninformative is reported as such.
 None of these can replace a floor.
 
 ## Outcomes (frozen form; the numeric floors come from the committed calibration record)
+
+Every `≥` below is the `R²`-type pass predicate and every `≤` the error-type pass predicate of the floor rule.
 
 - **Y1:** `CONTRAST_PREDICTED_TOKENS` iff `S1 ≥ F1`, `S2 ≥ F2`, `S3 ≤ F3` and `S4 ≤ F4` on the Y1 population; else
   `CONTRAST_NOT_PREDICTED_TOKENS`; `PRECONDITION_FAILED_TOKENS` as in 020.
@@ -372,7 +400,18 @@ exposed pair-level information re-materialized only after the procedure and rule
 revision under the review's own criterion: (3) Y3 floors indexed by the scorable-noun composition, 84 rows, because
 noun scorability includes a measured non-zero-variance clause that the frozen construction cannot guarantee; Y1 stays
 a single row because its population is fixed by construction. Also recorded: the integer form of `k`, and that 021's
-scoring fails only undefined values (not 020's `value or −1.0`).
+scoring fails only undefined values (not 020's `value or −1.0`) — superseded by revision 3 below.
+
+**Revision 2 → revision 3 (review of 2026-09-22).** Approved in structure: the 64 Y2 and 84 Y3 compositions
+(independently enumerated), the shared prefix bootstrap, the Y2 row selection frozen and digested before any Y2
+target execution, the Y3 row selection by measured-target scorability only, and the exposed-only 30,132-prompt
+calibration rerun. Corrected: revision 2 clamped `R²` floors at `0.0`, passed on `value ≥ floor` and no longer failed
+an exact `0.0` — so a clamped floor would have let zero skill pass, contradicting the positive-skill reading. Revision
+3 adds the explicit pass predicates (`finite ∧ > 0.0 ∧ ≥ F` for `R²`-type, `finite ∧ ≤ F` for error-type), used
+identically for the calibration's pass rates, lists the replacement of 020's `value or −1.0` idiom in "What changes",
+and adds the boundary tests. Unchanged by instruction: every bootstrap draw, `α = 0.025`, the 149 floor rows, the
+Y2/Y3 composition rules, the confirmation populations, the labels, the fresh set, the program, the model and every
+other threshold.
 
 ## Implementation boundary (for the plan, after approval)
 
@@ -385,7 +424,12 @@ order-statistic equivalence with 020's share conditions for every `n` (including
 its clamp; the draw index derivation and its digest; the prefix construction (each row's draws have exactly the
 row's counts per stratum); the admissible-row enumeration (64 Y2 and 84 Y3 rows, none inadmissible, none missing);
 the reproduction gate's refusal on a planted `1e-8` difference; the Y2 row selected and digested before the barrier
-and a planted mismatch refused; the Y3 selection invariant under any change of the predictions.
+and a planted mismatch refused; the Y3 selection invariant under any change of the predictions. The pass predicates
+at their boundaries, for an `R²`-type condition at a clamped floor `0.0` and at a positive floor `F`: a negative `R²`
+fails; exactly `0.0` fails; the smallest positive float64 (`math.nextafter(0.0, 1.0)`, 5e-324) passes at the clamped
+floor; a value exactly at a positive floor passes and `math.nextafter(F, −∞)` fails; an undefined, NaN or infinite
+value fails; for an error-type condition a value exactly at its floor passes; and the calibration's pass rates are
+computed by the same predicate function that `confirm` uses.
 
 ## Stopping condition
 
@@ -396,7 +440,13 @@ closure.
 
 ## Revision history
 
-- **Revision 2** (2026-09-22, after review of revision 1): floor tables by evaluable population — Y2 by the stage-1
+- **Revision 3** (2026-09-22, after review of revision 2; minimal): the explicit pass predicates — `R²`-type
+  `finite(value) ∧ value > 0.0 ∧ value ≥ F`, error-type `finite(value) ∧ value ≤ F` — at `confirm` and in the
+  calibration's pass rates, so that a floor clamped to `0.0` can no longer pass zero skill; the replacement of 020's
+  `value or −1.0` idiom listed in "What changes"; the boundary tests. No draw, `α`, floor row, composition rule,
+  population, label, fresh set, program, model or other threshold changed; no model run, no fresh quantity, no
+  pair-level value and no per-draw statistic was computed for it.
+- **Revision 2** (2026-09-22, `c242652`, after review of revision 1): floor tables by evaluable population — Y2 by the stage-1
   valid-frame composition (64 rows, selection digested before the barrier), Y3 by the scorable-noun composition (84
   rows), Y1 a single row with the reason it is fixed; the prefix construction that scores every row on shared base
   draws; the calibration precondition of at least 6 screened frames per template; the corrected description of what
