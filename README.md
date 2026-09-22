@@ -48,11 +48,17 @@ The Phase 1 instrumentation layer provides pinned Pythia loading, canonical Tran
 
 Its purpose is to support progressively stronger causal accounts of learned computation. A captured activation, a decomposition identity, or a behavioral change after ablation is not by itself a mechanistic explanation. Future experiments must preregister controls, competing explanations, predicted intervention outcomes, and success criteria.
 
-The default test suite is offline. The separately marked live contract test checks the exact pinned Pythia-70M adapter on CPU when the model is available:
+The test suite is offline and organised in tiers (`tests/conftest.py` classifies every test by its path; `tests/test_tiers.py` checks the partition on every run). A bare `pytest` runs tier A only; the historical runner tests never run unless asked for.
 
-```bash
-NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 uv run pytest tests/test_pythia_bridge_contract.py -m pythia_smoke -q
-```
+| tier | selection | when | command |
+|---|---|---|---|
+| A | unit tests that are not slow | the normal edit/test loop (< 1 min) | `uv run pytest` |
+| B | every unit test (slow ones included) plus the current experiment's runner test | while the current experiment changes (minutes) | `uv run pytest --tier B` |
+| C | tier B plus the pinned-model contract | the gate before `explore`, `lock` and `confirm`, on a clean tree at the gated commit | `HF_HUB_OFFLINE=1 uv run pytest --tier C` |
+| D | the closed experiments' runner tests (fake replays; hours) | when shared source, the fakes or the locked dependencies change; overnight; never a routine gate | `uv run pytest --tier D` |
+| all | everything (the pinned-model contract still needs its opt-in variable) | periodic | `uv run pytest --tier all` |
+
+`--tier C` sets `NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1` itself; the contract tests skip in every other tier unless that variable is set. The experiment under development is named by `CURRENT_EXPERIMENT` in `tests/conftest.py` (or the `NEURAL_DECOMPILER_CURRENT_EXPERIMENT` environment variable); it is unset while no experiment is open, and every `tests/test_experiment_*` file is then historical. Explicit selections — paths, node ids, `-m`, `-k` — switch the default tier off, so `uv run pytest tests/test_experiment_017_runner.py` runs that file; `--tier` always applies and intersects with them. Process-parallel runs use the optional `parallel` group (`uv sync --group parallel`): `OMP_NUM_THREADS=2 uv run pytest --tier D -n 3 --dist loadfile` keeps each test module, and so each module-scoped fake world, on one worker; the pinned-model contract should run serially. Markers: `unit`, `slow`, `runner`, `current`, `historical`, `pythia_smoke`, and `protocol` (reserved for the explicit protocol-guarantee tests of new experiments).
 
 ## Setup
 

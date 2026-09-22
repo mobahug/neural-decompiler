@@ -163,13 +163,29 @@ shape, dtype, and digest rather than silently expanded into JSON.
 
 ## Verification
 
-The normal suite is offline:
+The suite is offline and tiered (see the root README's test table; `tests/conftest.py` classifies every test by path
+and `tests/test_tiers.py` checks the partition). The normal run is tier A — unit tests that are not slow:
 
 ```bash
 uv run pytest -q
 ```
 
-The live adapter contract is opt-in:
+The current experiment's suite and the gate before `explore`, `lock` and `confirm`:
+
+```bash
+uv run pytest --tier B -q
+HF_HUB_OFFLINE=1 uv run pytest --tier C -q
+```
+
+The closed experiments' runner tests (fake replays, hours) run only on request — after a change to shared source, to
+the fakes or to the locked dependencies, or periodically:
+
+```bash
+uv run pytest --tier D -q
+OMP_NUM_THREADS=2 uv run pytest --tier D -q -n 3 --dist loadfile   # with `uv sync --group parallel`
+```
+
+The live adapter contract is opt-in; tier C opts in by itself, and it can also run alone:
 
 ```bash
 NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 \

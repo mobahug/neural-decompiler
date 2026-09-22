@@ -19,9 +19,21 @@ dependencies = [
 dev = [
     "pytest>=8,<9",
 ]
+# Optional: process-parallel test runs (`uv sync --group parallel`, then `pytest --tier D -n 3 --dist loadfile`).
+parallel = [
+    "pytest-xdist>=3.6,<4",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Tiers (tests/conftest.py classifies every test by path and selects with --tier; bare `pytest` runs tier A):
+#   A  unit and not slow   B  not historical   C  B plus the pinned-model contract   D  historical   all
 markers = [
     "pythia_smoke: opt-in contract test for the pinned Pythia-70M TransformerBridge",
+    "unit: module-level test (pure functions, digests, loaders, policies, identities on the small fakes, committed-artifact reproduction, poison boundaries); tier A unless slow",
+    "slow: unit test taking tens of seconds or more; excluded from tier A, kept in tiers B and C",
+    "runner: an experiment runner's state machine on a fake (tests/test_experiment_*); current or historical",
+    "current: runner test of the experiment under development (CURRENT_EXPERIMENT in tests/conftest.py); tiers B and C",
+    "historical: runner test of a closed experiment; tier D only (never a routine gate)",
+    "protocol: reserved for explicit protocol-guarantee tests of new experiments (lock validation, phase isolation, poison boundaries, stage barrier)",
 ]
