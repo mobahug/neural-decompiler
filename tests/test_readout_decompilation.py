@@ -211,6 +211,27 @@ def test_the_breakdown_separates_the_ratio_from_its_two_terms(fake_frame):
     assert rd.level1_breakdown(program, locked, measurement)["blocks"] == {}  # no component map, so no block errors are invented
 
 
+def test_the_conditional_block_errors_are_independent_of_one_another(fake_frame):
+    """Each block fed its own measured input change: the three errors then say nothing about each other, which is what
+    separates a block's own reconstruction error from the error it inherited."""
+    program, state, nouns, model = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["model"]
+    measurement, boundaries = rd.measure_pair_with_boundaries(model, state, nouns, "pl", state.frame.cue_ids["pl"])
+    assert set(boundaries) == {4, 5} and set(boundaries[4]) == set(measurement.dx3)
+    # the captured boundaries telescope: Δx4 − Δx3, Δx5 − Δx4 and Δh6 − Δx5 are the three blocks' own output changes
+    blocks = rd.measured_block_changes(state, measurement)
+    assert float((boundaries[4][state.p_t] - measurement.dx3[state.p_t] - blocks[3]).abs().max()) < rd.ADDITIVE_IDENTITY_TOLERANCE
+    assert float((boundaries[5][state.p_t] - boundaries[4][state.p_t] - blocks[4]).abs().max()) < rd.ADDITIVE_IDENTITY_TOLERANCE
+    assert float((measurement.dh6.double() - boundaries[5][state.p_t] - blocks[5]).abs().max()) < rd.ADDITIVE_IDENTITY_TOLERANCE
+    errors = rd.block_conditional_errors(program, state, measurement, boundaries)
+    assert set(errors) == {"block3", "block4", "block5"}
+    for layer in (3, 4, 5):
+        entry = errors[f"block{layer}"]
+        assert entry["absolute_error"] < rd.ADDITIVE_IDENTITY_TOLERANCE  # every block reconstructs its own output on the fake
+        assert {"attention_absolute_error", "mlp_absolute_error", "attention_measured_norm", "mlp_measured_norm"} <= set(entry)
+    parts = rd.measured_part_changes(state, measurement, 4)
+    assert float((parts["attention"] + parts["mlp"] - blocks[4]).abs().max()) == 0.0  # the split is the same sum
+
+
 def test_the_readout_program_reads_only_the_reference_state_and_the_predicted_change(fake_frame):
     """Provenance: with every capture and intervention entry point disabled, the program still produces its prediction."""
     program, state, nouns, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["dx3"]

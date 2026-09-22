@@ -553,6 +553,82 @@ def level1_breakdown(program: ReadoutProgram, state: FrameState020, measurement:
     return record
 
 
+def diagnostic_sites_020(frame: pm.Frame, n_layers: int, n_heads: int) -> tuple[pm.Site, ...]:
+    """The scientific site set plus each later block's *input* residual at both changed positions.
+
+    Diagnostic only. It is what lets every block be checked at its own measured operating point: with the boundaries
+    captured, block 4 can be fed the measured ``Δx₄`` instead of the reconstructed one, so the error it reports is its
+    own and not the amplification of block 3's.
+    """
+    positions = sorted({frame.p_c, frame.p_t})
+    extra = tuple((f"RESID_PRE.L{layer}", position) for layer in READOUT_LAYERS[1:] for position in positions)
+    return measured_sites_020(frame, n_layers, n_heads) + extra
+
+
+def measure_pair_with_boundaries(model: Any, state: FrameState020, nouns: NounSet, word: str, token_id: int) -> tuple[PairMeasurement, dict[int, dict[int, torch.Tensor]]]:
+    """One cue prompt captured for the diagnostic: the ordinary measurement and each later block's measured input
+    change at both changed positions, from the same single forward."""
+    frame = state.frame
+    n_layers, n_heads = int(model.cfg.n_layers), int(model.cfg.n_heads)
+    run = pm.capture_prompt(model, pm.Prompt(frame, token_id, word), diagnostic_sites_020(frame, n_layers, n_heads))
+    positions = sorted({state.p_c, state.p_t})
+    reference = {4: state.x4_all, 5: state.x5_all}
+    boundaries = {layer: {position: run.vector((f"RESID_PRE.L{layer}", position)).double() - reference[layer][position].double() for position in positions}
+                  for layer in READOUT_LAYERS[1:]}
+    h6 = run.vector((f"RESID_POST.L{n_layers - 1}", frame.p_t)).double()
+    parts = {}
+    for layer in READOUT_LAYERS:
+        parts[f"L0{layer}.MLP"] = run.vector((f"L0{layer}.MLP", frame.p_t)).double()
+        for index in range(n_heads):
+            parts[f"L0{layer}.H0{index}"] = run.vector((f"L0{layer}.H0{index}", frame.p_t)).double()
+    measurement = PairMeasurement(word, token_id, frame.frame_id, frame.template_id, nouns.contrasts(run.logits) - state.c_ref,
+                                  {position: run.vector((f"RESID_PRE.L{HEAD_LAYER}", position)).double() - state.x3_all[position].double() for position in positions},
+                                  h6 - state.h6, h6, run.logits, parts)
+    return measurement, boundaries
+
+
+def measured_part_changes(state: FrameState020, measurement: PairMeasurement, layer: int) -> dict[str, torch.Tensor]:
+    """One block's measured attention and MLP output changes at ``p_t``, separately."""
+    mlp = measurement.components[f"L0{layer}.MLP"].double() - state.components[f"L0{layer}.MLP"].double()
+    attention = None
+    for label in sorted(label for label in measurement.components if label.startswith(f"L0{layer}.H")):
+        delta = measurement.components[label].double() - state.components[label].double()
+        attention = delta if attention is None else attention + delta
+    return {"attention": attention, "mlp": mlp}
+
+
+def block_conditional_errors(program: ReadoutProgram, state: FrameState020, measurement: PairMeasurement,
+                             boundaries: Mapping[int, Mapping[int, torch.Tensor]]) -> dict[str, Any]:
+    """Each readout block's reconstruction error at its **own measured** input change, attention and MLP separately.
+
+    The unconditional per-block errors cannot separate a block's own error from the error it was handed: block 4 fed a
+    reconstructed ``Δx₄`` reports whatever block 3's residual error becomes after block 4's Jacobian. Here every block
+    starts from the measured boundary of the same forward, so the three errors are independent of one another and the
+    gain between them is measurable.
+    """
+    p_t = state.p_t
+    inputs = {3: dict(measurement.dx3), 4: dict(boundaries[4]), 5: dict(boundaries[5])}
+    references = {3: state.x3_all, 4: state.x4_all, 5: state.x5_all}
+    outputs = {3: dict(boundaries[4]), 4: dict(boundaries[5]), 5: {p_t: measurement.dh6.double()}}
+    errors: dict[str, Any] = {}
+    for layer in READOUT_LAYERS:
+        changes = inputs[layer]
+        attention = program.attention_delta(layer, references[layer], changes, p_t)
+        mlp = program.mlp_delta(layer, references[layer][p_t].double(), changes[p_t])
+        target = outputs[layer][p_t] - changes[p_t]  # the block's own output change, from the measured boundaries
+        measured_parts = measured_part_changes(state, measurement, layer) if measurement.components and state.components else None
+        entry = {"absolute_error": float((attention + mlp - target).abs().max()),
+                 "input_norm": float(changes[p_t].abs().max()), "output_norm": float(target.abs().max()),
+                 "attention_predicted_norm": float(attention.abs().max()), "mlp_predicted_norm": float(mlp.abs().max())}
+        if measured_parts is not None:
+            entry["attention_absolute_error"] = float((attention - measured_parts["attention"]).abs().max())
+            entry["mlp_absolute_error"] = float((mlp - measured_parts["mlp"]).abs().max())
+            entry["attention_measured_norm"] = float(measured_parts["attention"].abs().max())
+            entry["mlp_measured_norm"] = float(measured_parts["mlp"].abs().max())
+        errors[f"block{layer}"] = entry
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # The inherited upstream: Experiment 017's chain, used verbatim.
 
@@ -1377,7 +1453,7 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
 # ---------------------------------------------------------------------------
 # The Level-1 diagnostic: an exposed-only subset, the full breakdown per pair, and no enforcement.
 
-DIAGNOSTIC_SCHEMA_VERSION = 1
+DIAGNOSTIC_SCHEMA_VERSION = 2
 
 
 def diagnostic_frames(pool: cs.Pool008, frames_per_template: int) -> tuple[pm.Frame, ...]:
@@ -1430,13 +1506,16 @@ def run_level1_diagnostic(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str
         if cues_per_frame is not None:
             tokens = tokens[:cues_per_frame]
         for word, token_id in tokens:
-            measurement = measure_pair(model, state, nouns, word, token_id)
+            measurement, boundaries = measure_pair_with_boundaries(model, state, nouns, word, token_id)
             executed.add(pm.Prompt(frame, token_id, word).key)
             pair = pair_identities(program, weights, nouns, state, measurement)
             pair["inherited_017"] = inherited_reproduction(chain, weights, state, rows16, token_id, predicted_dx3(chain, weights, state, rows16, token_id, frame.template_id))
             for name, value in pair.items():
                 identities[name] = max(identities.get(name, 0.0), value)
-            rows.append({**level1_breakdown(program, state, measurement), "pair_identities": {name: float(value) for name, value in pair.items()}})
+            rows.append({**level1_breakdown(program, state, measurement),
+                         "blocks_conditional": block_conditional_errors(program, state, measurement, boundaries),
+                         "boundary_norm": {str(layer): {str(position): float(value.abs().max()) for position, value in sorted(entry.items())} for layer, entry in sorted(boundaries.items())},
+                         "pair_identities": {name: float(value) for name, value in pair.items()}})
         say(f"  {frame.frame_id}: {len(tokens)} exposed cues measured; worst E1 so far {max(row['e1'] for row in rows):.3e}")
 
     tolerances = identity_tolerances()
