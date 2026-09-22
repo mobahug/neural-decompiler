@@ -16,6 +16,9 @@ stage 2 (the S2-TARGET prompts of the Y1 block and of the valid fresh frames' Y2
 populations). ``report`` renders the report. ``diagnose`` is not a phase: it never opens the results state and it
 enforces no identity — it measures a template-complete subset of the *exposed* pool, records each pair's Level-1
 breakdown, and writes ``level1-diagnostic.json``, so that a Level-1 failure can be placed.
+
+Experiment 020 is closed at Tier A (2026-09-22; ``closure.json``): with the closure record present, ``lock`` and
+``confirm`` refuse before reading anything, so the confirmation set it froze can never run under this protocol.
 """
 
 from __future__ import annotations
@@ -54,6 +57,7 @@ OUTPUT_DIR = ROOT / "outputs/experiment-020"
 RESULTS_PATH = OUTPUT_DIR / "results.json"
 DIAGNOSTIC_PATH = OUTPUT_DIR / "level1-diagnostic.json"
 REPORT_PATH = OUTPUT_DIR / "report.md"
+CLOSURE_RELATIVE_PATH = f"{rd.EXPERIMENT_DIR}/closure.json"
 CONTRACT_TEST = ("tests/test_pythia_bridge_contract.py", "-m", "pythia_smoke", "-q")
 PHASES = rd.PHASES
 LOCK_011_REQUIRED_KEYS = ("axes_vectors", "read_weight", "sigma_T", "denominators", "confirmation_011_sha256", "content_sha256")
@@ -262,6 +266,14 @@ class Runner:
 
     # -- scientific phases ----------------------------------------------------
 
+    def _refuse_if_closed(self, phase: str) -> None:
+        """The closure record ends this protocol: no lock is written and no confirmation prompt runs under it."""
+        path = self.root / CLOSURE_RELATIVE_PATH
+        if path.exists():
+            closure = json.loads(path.read_text(encoding="utf-8"))
+            raise rd.PhaseError(f"Experiment 020 is closed ({closure.get('stage_reached', 'see closure.json')}); {phase} never runs under this protocol and its "
+                                f"confirmation set {str(closure.get('confirmation_set', {}).get('content_sha256', ''))[:12]}… stays unexecuted")
+
     def _provenance(self) -> dict[str, Any]:
         git = self.git_state()
         return {"protocol_code_commit": str(git.get("commit") or ""), "git_dirty": bool(git.get("dirty", True)), "versions": dict(self.versions())}
@@ -353,6 +365,7 @@ class Runner:
         return rd.prediction_rows(program, chain, weights, states, rows16, nouns, list(pool.frames), list(confirmation.tokens), bases, axis_T), nouns
 
     def lock(self) -> int:
+        self._refuse_if_closed("lock")
         pool, lock_011, lock_012, lock_017, confirmation, digests = self._inputs()
         state = self._state_for("lock", digests)
         changed = self.changed_paths(state["protocol_code_commit"])
@@ -386,6 +399,7 @@ class Runner:
         return 0
 
     def confirm(self) -> int:
+        self._refuse_if_closed("confirm")
         pool, lock_011, lock_012, lock_017, confirmation, digests = self._inputs()
         state = self._state_for("confirm", digests)
         lock_path, predictions_path = self.root / rd.LOCK_RELATIVE_PATH, self.root / rd.PREDICTIONS_RELATIVE_PATH

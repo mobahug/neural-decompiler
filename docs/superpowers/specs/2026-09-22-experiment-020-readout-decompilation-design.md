@@ -2,6 +2,12 @@
 
 **Date:** 2026-09-22
 
+**Closed (2026-09-22, after revision 3):** exploration completed at `ce3766b`; confirmation intentionally not run
+because the corrected block-5 parallel-residual implementation materially changed the exposed calibration on which
+the floors below had been based. The floors are not changed retrospectively and no Y1/Y2/Y3 label is assigned; the
+confirmation set was never executed. See the experiment's
+[README](../../../experiments/020-readout-decompilation/README.md) and `closure.json`.
+
 **Status:** Revision 2 — revision 1 approved subject to five specification items, which this revision makes and
 which are textual only (no new prompt was executed for it): the exposed-noun accounting and the freshness
 certification of the 24 fresh nouns, the label-bearing noun populations of Y1/Y2/Y3, the separation of scientific

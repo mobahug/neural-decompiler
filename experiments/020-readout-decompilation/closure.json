@@ -1,0 +1,41 @@
+{
+  "experiment": "020",
+  "status": "closed",
+  "closed_on": "2026-09-22",
+  "stage_reached": "explore complete (Tier A); no lock written, no confirmation executed",
+  "labels": null,
+  "reason": "Confirmation intentionally not executed: the corrected block-5 parallel-residual implementation materially changed the exposed calibration on which the frozen Y1/Y2/Y3 floors had been based (scratch flattened R2 0.848 against the official corrected 0.689; six of the twelve floor conditions sit below their thresholds on the exposed pool). The Experiment 020 floors are not changed retrospectively and no Y1/Y2/Y3 label is assigned.",
+  "explore": {
+    "run_id": "9d0c1a998732b9c1",
+    "protocol_code_commit": "ce3766bc3d364250516472f2c6e0aa2f0869e17a",
+    "attempts": 2,
+    "attempt_commits": [
+      "abf3df9c2aed737ef73ca1b7ac3ddee3b8f9a3a9",
+      "ce3766bc3d364250516472f2c6e0aa2f0869e17a"
+    ],
+    "completed_at": "2026-09-22T18:12:43+00:00",
+    "results_state_sha256": "2e5485dccb39c018eb02ee8d0a3086004399690a4dfd9c114008f057b23bf8f5",
+    "results_file_sha256": "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00"
+  },
+  "lock": null,
+  "confirmation": null,
+  "confirmation_set": {
+    "path": "experiments/020-readout-decompilation/confirmation-v1.json",
+    "content_sha256": "e098e2b44a1702d2b35c20db2ce111358897ea867996024c3e51a79f379c309d",
+    "manifest": {
+      "S1-REF": 18,
+      "S1-VALIDITY": 18,
+      "S2-TARGET": 3024
+    },
+    "executed_keys": 0,
+    "fresh_noun_keys_executed": 0,
+    "disposition": "never executed; reserved, byte-for-byte and read in place, for the next protocol version (the Experiment 021 design proposal)"
+  },
+  "evidence": {
+    "exploration_report": "evidence/exploration-report-2026-09-22.md",
+    "exploration_report_sha256": "ffb2bfbe39053eda87e88c93cc649d0d3d3837ae68cd1614656376eabf3b7caf",
+    "exploration_record": "evidence/exploration-record-2026-09-22.json",
+    "exploration_record_content_sha256": "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b8013e2dea"
+  },
+  "content_sha256": "f2b1b5e793dad75f648fe1fb8347fde75c128a3ea00c0b14b4946814068fe9e0"
+}

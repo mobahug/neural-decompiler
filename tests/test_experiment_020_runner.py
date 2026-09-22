@@ -175,6 +175,35 @@ def test_parser_has_exactly_the_six_phases_and_no_overrides():
             parser.parse_args([phase, "--cues", "3"])
 
 
+def test_the_closed_experiment_refuses_lock_and_confirm_before_reading_anything(tmp_path):
+    """Experiment 020 closed at Tier A: with its committed closure record in place, ``lock`` and ``confirm`` refuse
+    before any input, state or model is read, so the confirmation set it froze can never run under this protocol. The
+    record's own digests bind it to the frozen confirmation set and to the committed evidence."""
+    closure_path = ROOT / runner_module.CLOSURE_RELATIVE_PATH
+    closure = json.loads(closure_path.read_text(encoding="utf-8"))
+    assert closure["content_sha256"] == pm.sha256_text(pm.canonical_json({key: value for key, value in closure.items() if key != "content_sha256"}))
+    assert closure["status"] == "closed" and closure["lock"] is None and closure["confirmation"] is None and closure["labels"] is None
+    frozen = json.loads((ROOT / rd.CONFIRMATION_RELATIVE_PATH).read_text(encoding="utf-8"))
+    assert closure["confirmation_set"]["content_sha256"] == frozen["content_sha256"] and closure["confirmation_set"]["executed_keys"] == 0
+    evidence = closure_path.parent
+    assert pm.sha256_text((evidence / closure["evidence"]["exploration_report"]).read_text(encoding="utf-8")) == closure["evidence"]["exploration_report_sha256"]
+    record = json.loads((evidence / closure["evidence"]["exploration_record"]).read_text(encoding="utf-8"))
+    assert record["content_sha256"] == closure["evidence"]["exploration_record_content_sha256"] == pm.sha256_text(pm.canonical_json({key: value for key, value in record.items() if key != "content_sha256"}))
+    assert record["confirmation_isolation"]["confirmation_prompts_executed"] == 0 and record["confirmation_isolation"]["fresh_noun_keys_executed"] == 0
+
+    def untouchable(*args, **kwargs):
+        raise AssertionError("a closed experiment reached an input, a state or a model")
+
+    (tmp_path / runner_module.CLOSURE_RELATIVE_PATH).parent.mkdir(parents=True)
+    shutil.copy(closure_path, tmp_path / runner_module.CLOSURE_RELATIVE_PATH)
+    runner = runner_module.Runner(root=tmp_path, results_path=tmp_path / "outputs/experiment-020/results.json", model_loader=untouchable, tokenizer_loader=untouchable,
+                                  lock_011_loader=untouchable, lock_012_loader=untouchable, lock_017_loader=untouchable, git_state=untouchable, log=lambda message: None)
+    for phase in (runner.lock, runner.confirm):
+        with pytest.raises(rd.PhaseError, match="Experiment 020 is closed"):
+            phase()
+    assert not (tmp_path / "outputs").exists()
+
+
 def test_a_level1_incident_persists_every_maximum_and_names_the_failing_pair(sandbox, monkeypatch):
     """An identity that stops the phase must leave the record needed to place it: every maximum reaches disk before
     enforcement, and the pair carrying the worst Level-1 ratio is named with both terms of that ratio."""
