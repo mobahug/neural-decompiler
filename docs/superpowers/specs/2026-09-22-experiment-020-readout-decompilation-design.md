@@ -2,8 +2,16 @@
 
 **Date:** 2026-09-22
 
-**Status:** Revision 1, for review. No Experiment 020 directory, confirmation set, lock or model run exists. The
-design pass behind it ran on the **exposed** pool only (90 exposed frames × 32 exposed cues = 2850 pairs × 79 nouns,
+**Status:** Revision 2 — revision 1 approved subject to five specification items, which this revision makes and
+which are textual only (no new prompt was executed for it): the exposed-noun accounting and the freshness
+certification of the 24 fresh nouns, the label-bearing noun populations of Y1/Y2/Y3, the separation of scientific
+invalidity from incidents, frozen numerical tolerances for every incident-triggering check, and an enumerated stage-1
+prompt manifest. Revision 2 also corrects one error of revision 1: its fresh-noun list contained `tunnel`, which is an
+exposed noun (the check that produced the list did not apply the exposure filter); it is replaced by the next eligible
+entry, `pillar`. Nothing else changes: the Level 0 program, the floors, the comparator standing, the cue and frame
+lists and the interpretation limits stand as in revision 1. No Experiment 020 directory, confirmation set, lock or model run exists. The
+design pass behind it ran on the **exposed** pool only (90 exposed frames × 32 exposed cues = 2850 pairs × 79 scorable
+exposed nouns,
 pinned Pythia-70M, scratch scripts outside the repository, nothing committed); every exposed number quoted below comes
 from that pass and is calibration, never evidence. Experiments 005–019 are closed and are not amended by this
 document; Experiment 019's closure stands exactly as recorded (`ROUTING_PREDICTED_TOKENS |
@@ -119,7 +127,17 @@ an invariant.
 - The Experiment 011 lock (axes `T`, `R0`, read weight, `σ_T`), the Experiment 012 lock (template bases), the
   Experiment 017 lock (layer-3 bases) — read verbatim, digests recorded, never refitted.
 - The exposed pool: the **279** exposed cue tokens (Experiment 019's 255 plus its 24 confirmed) and the **108**
-  exposed frames (its 90 plus its 18 confirmed), with the 80 manifest/extension nouns.
+  exposed frames (its 90 plus its 18 confirmed), with the **80 manifest/extension nouns, of which 79 are scorable**.
+
+**Exposed-noun accounting (frozen).** The manifest and extension contribute 80 noun entries. One of them, `peach`
+(`sibilant-es`, holdout split), is **not single token**: its singular tokenizes as two tokens (ids 759, 607) and its
+plural as (759, 3844). The frozen contrast `c(prompt, n) = log P(sg(n)) − log P(pl(n))` is defined on single-token
+forms only — `pm.contrasts` skips every non-single-token noun, and `Δw(n) = W_U[:, sg(n)] − W_U[:, pl(n)]` would be
+the zero vector for `peach` because both forms share their first token — so `peach` is **non-scorable by the frozen
+rule**, not excluded by choice. Every statistic in this document that says *79* is over the 79 scorable exposed
+nouns; wherever the diagnostic tables of the design pass carried 80 columns, `peach`'s column was identically zero and
+was dropped by the same rule. The document uses **“80 exposed nouns, 79 scorable”** throughout, and the
+implementation asserts both counts.
 
 ## Exposed pool (calibration record only; nothing is fitted)
 
@@ -156,20 +174,56 @@ factor of the rank-1 comparator, which bears no label.
   from the 80 exposed nouns and from every cue token, tokenizer-checked on 2026-09-22 with their ids:
   - `simple-suffix`: `brick`/`bricks` (20098/40154), `candle`/`candles` (28725/36555), `statue`/`statues`
     (23957/38490), `barrel`/`barrels` (15474/33545), `curtain`/`curtains` (31261/36708), `magnet`/`magnets`
-    (10973/43733), `puzzle`/`puzzles` (25351/43884), `tunnel`/`tunnels` (16583/37285).
+    (10973/43733), `puzzle`/`puzzles` (25351/43884), `pillar`/`pillars` (43035/40652).
   - `sibilant-es`: `switch`/`switches` (5234/20994), `branch`/`branches` (7789/12998), `ash`/`ashes` (15898/39187),
     `sketch`/`sketches` (23211/46159), `batch`/`batches` (14604/39657), `flash`/`flashes` (10299/41483),
     `arch`/`arches` (4222/50042), `crash`/`crashes` (13035/29212).
   - `consonant-y`: `colony`/`colonies` (17562/19665), `gallery`/`galleries` (19718/40871), `cavity`/`cavities`
     (13369/38674), `battery`/`batteries` (9378/19978), `category`/`categories` (7140/9050), `artery`/`arteries`
     (12235/24908), `boundary`/`boundaries` (7548/13674), `anomaly`/`anomalies` (30207/31101).
+  `tunnel`/`tunnels` was named in revision 1 and is withdrawn: `tunnel` is an exposed noun. The list is the first
+  eligible entries of the literal candidate lists, eligibility being: both forms single token with a leading space;
+  the singular not an exposed noun key; neither form among the exposed nouns' token strings; neither form among the
+  279 exposed cue tokens.
+
   Fresh nouns are **output alternatives**, never inserted into a prompt: they cost no forward pass and enter only
   through their frozen weight vectors `Δw(n)`.
-- **The prompt-key manifest** — every fresh cue in the 108 exposed frames, every cue (exposed reference cue and the
-  24 fresh cues) in the 18 fresh frames, and the fresh frames' reference prompts — is part of the frozen set.
-- Two fresh sets, both executed only by `confirm`: **Y1** the 24 fresh cues in the 108 exposed frames (2592 pairs) and
-  **Y2** the 24 fresh cues in the 18 fresh frames (432 pairs). Every pair is read on all 104 nouns (80 exposed + 24
-  fresh) without any further prompt.
+
+  **Freshness certification (frozen, and the definition of freshness for nouns).** Because a noun needs no prompt, “no
+  prompt was run” would not establish freshness. The certification is therefore about *inspection*: none of the 24
+  nouns above appeared in any exposed diagnostic table, and no model-output-derived statistic of any of them — a
+  contrast, a `Δc`, an `R²`, a slope, a bias, a rank-1 loading, a failure rate or any other — was computed or
+  inspected before the list was frozen. The design pass computed noun statistics for the 79 scorable **exposed**
+  nouns only; the 24 fresh nouns were selected afterwards by the tokenizer-only rule stated above, from literal
+  candidate lists, with no model loaded. `explore` is forbidden to compute any quantity of a fresh noun, and the
+  implementation asserts that the fresh-noun ids appear in no exploration record.
+- **The prompt-key manifest** is part of the frozen set and lists every prompt the experiment may ever execute, in
+  three mechanically checkable classes. Writing `ref(τ)` for template `τ`'s frozen singular reference cue and
+  `pl(τ)` for its frozen plural manifest cue:
+  - **S1-REF** — one per fresh frame: the fresh frame with `ref(τ)` in its cue slot (18 keys). Stage 1 only.
+  - **S1-VALIDITY** — one per fresh frame: the fresh frame with `pl(τ)` in its cue slot (18 keys); together with its
+    S1-REF key it forms the frozen validity cue pair that decides the frame's validity. Stage 1 only.
+  - **S2-TARGET** — the fresh-cue prompts, in two disjoint blocks: each of the 24 fresh cues in each of the 108
+    exposed frames (2592 keys, the Y1 block) and in each of the 18 fresh frames (432 keys, the Y2 block). Stage 2
+    only, and in the Y2 block only for frames that stage 1 marked valid.
+  No S2-TARGET key may appear in the execution ledger before the barrier, and no key outside these three classes may
+  be executed by `confirm` at all; both are asserted, and a violation is an incident.
+- Two fresh prompt sets, both executed only by `confirm`: **Y1** the 24 fresh cues in the 108 exposed frames (2592
+  pairs) and **Y2** the 24 fresh cues in the 18 fresh frames (432 pairs). Every pair is read on all 103 scorable
+  nouns (79 scorable exposed + 24 fresh) in the same forward pass, at no extra prompt cost.
+
+**Label-bearing populations (frozen).** The noun population of each outcome is fixed here and the implementation
+asserts it; computing all 103 readouts in one pass is allowed, letting a fresh noun enter a Y1 or Y2 statistic is not:
+
+| outcome | cues | frames | nouns | pairs × nouns |
+|---|---|---|---|---|
+| **Y1** | the 24 fresh cues | the 108 exposed frames | the **79 scorable exposed** nouns only | 2592 × 79 |
+| **Y2** | the 24 fresh cues | the valid fresh frames (≤ 18) | the **79 scorable exposed** nouns only | ≤ 432 × 79 |
+| **Y3** | the 24 fresh cues | the 108 exposed frames (the Y1 population) | the **24 fresh** nouns only | 2592 × 24 |
+| joint diagnostic (no threshold) | the 24 fresh cues | the valid fresh frames | the 24 fresh nouns | ≤ 432 × 24 |
+
+No fresh noun contributes to any Y1 or Y2 statistic — not to a token mean, a pair-level mean, an MAE, a frame mean, a
+split or a guard count. No exposed noun contributes to a Y3 statistic.
 - The set is committed as `confirmation-v1.json` before `explore`; `confirm` refuses if any fresh prompt key appears
   in the execution ledger earlier.
 
@@ -184,22 +238,25 @@ factor of the rank-1 comparator, which bears no label.
 2. **Stage 1 — the fresh frames' reference states only.** For each of the 18 fresh frames: its reference prompt and
    its template's cue-pair prompts; the validity rule (the same head-informative and cue-effect rule as Experiments
    017–019); the frame's reference captures (`x1…x5` at every position ≤ `p_t`, `h6`, the layer-4/5 reference rows,
-   the reference contrasts of all 104 nouns); the frame-conditional prediction table for every fresh cue × noun.
+   the reference contrasts of all 103 scorable nouns); the frame-conditional prediction table for every fresh cue ×
+   scorable noun.
    The table, the states and the per-frame reference contrasts are serialized and **digested**. **Zero** of the 432
    Y2 target pairs and zero of the 2592 Y1 pairs run before the barrier.
 3. **The barrier.** The digested stage-1 record is written to disk, re-read from disk, its digest re-verified, and the
    execution ledger is asserted to contain no target prompt key. Only then does stage 2 begin.
-4. **Stage 2 — the fresh cues.** The 2592 Y1 prompts and the 432 Y2 prompts (of the valid fresh frames) are executed;
-   each prompt yields the contrasts of all 104 nouns at `p_t`; every recomputed prediction is compared with its locked
-   or digested row; the scoring below runs afterwards.
+4. **Stage 2 — the fresh cues.** The S2-TARGET keys are executed: the 2592 Y1 prompts and the Y2 prompts of the
+   valid fresh frames (≤ 432); each prompt yields the contrasts of all 103 scorable nouns at `p_t` in one pass; every
+   recomputed prediction is compared with its locked (Y1) or digested (Y2) row at the frozen tolerance; the scoring
+   below then runs on the label-bearing populations fixed above.
 
 ## Floors and outcome (frozen)
 
 Generalization units: the **cue** and the **frame** for Y1 and Y2, the **noun** for Y3. Flattened `pairs × nouns` `R²`
-is reported but is never the only guard: the 80 or 104 noun contrasts of one pair are readouts of one hidden-state
+is reported but is never the only guard: the 79 or 24 noun contrasts of one pair are readouts of one hidden-state
 change, not independent samples.
 
-**Y1 — unseen cues in the exposed frames (2592 pairs; the strict token boundary).**
+**Y1 — unseen cues in the exposed frames, read on the 79 scorable exposed nouns (2592 × 79; the strict token
+boundary).**
 
 | condition | floor | exposed value |
 |---|---|---|
@@ -211,7 +268,8 @@ change, not independent samples.
 `CONTRAST_PREDICTED_TOKENS` when all four hold, else `CONTRAST_NOT_PREDICTED_TOKENS`; `PRECONDITION_FAILED_TOKENS`
 only when the evaluability conditions fail (fewer than 16 scored cues, or fewer than 60 valid exposed frames).
 
-**Y2 — unseen cues in the fresh frames (432 pairs; conditional on each fresh frame's stage-1 reference state).**
+**Y2 — unseen cues in the valid fresh frames, read on the 79 scorable exposed nouns (≤ 432 × 79; conditional on each
+fresh frame's stage-1 reference state).**
 
 | condition | floor | exposed value |
 |---|---|---|
@@ -223,12 +281,13 @@ only when the evaluability conditions fail (fewer than 16 scored cues, or fewer 
 `CONTRAST_PREDICTED_FRAMES_CONDITIONAL`, else `CONTRAST_NOT_PREDICTED_FRAMES_CONDITIONAL`;
 `PRECONDITION_FAILED_FRAMES` when fewer than 12 fresh frames are valid or fewer than 4 of them are coordinated.
 
-**Y3 — unseen nouns, evaluated on the Y1 pair population (fresh cues × exposed frames).**
+**Y3 — the 24 fresh nouns, evaluated on the Y1 pair population (the 24 fresh cues × the 108 exposed frames; no
+exposed noun enters).**
 
-| condition | floor | exposed value (80 nouns, none of which is in the program) |
+| condition | floor | exposed value (the 79 scorable exposed nouns, none of which is in the program) |
 |---|---|---|
 | median per-fresh-noun `R²` | ≥ **0.70** | 0.829 (min 0.721) |
-| per-noun `R²` ≥ 0.55 in at least **90 %** of the 24 fresh nouns | ≥ 0.90 | 79/79 |
+| per-noun `R²` ≥ 0.55 in at least **90 %** of the scorable fresh nouns | ≥ 0.90 | 79/79 |
 | per-noun slope ∈ [0.75, 1.15] in at least **90 %** | ≥ 0.90 | 79/79 (median 0.917) |
 | per-noun \|bias\| ≤ 0.8 nats in at least **90 %** | ≥ 0.90 | 79/79 (mean +0.226, max 0.434) |
 
@@ -236,13 +295,15 @@ only when the evaluability conditions fail (fewer than 16 scored cues, or fewer 
 fixed-unembedding predictor was not established on this sample; it does not assert that the model implements a
 noun-specific downstream mechanism, since a shortfall may equally reflect components missing from the predicted
 `ΔLN_final` along those output directions. The minimum per-noun `R²` is reported and bears no gate.
-`PRECONDITION_FAILED_NOUNS` when fewer than 18 fresh nouns are scorable (a noun is scorable when its measured `Δc`
-has non-zero variance over the Y1 population).
+`PRECONDITION_FAILED_NOUNS` when fewer than 18 fresh nouns are scorable (a noun is scorable when both of its forms
+are single tokens and its measured `Δc` has non-zero variance over the Y1 population). A non-scorable noun is a
+scientific evaluability fact, not an incident.
 
 **Outcome label** = `Y1 | Y2 | Y3`.
 
-**Joint diagnostic, no threshold.** The 24 fresh nouns on the Y2 population — fresh cue × fresh frame × fresh noun —
-are computed and reported in full. They are not calibrated and carry no label; if they hold, that is the strongest
+**Joint diagnostic, no threshold.** The 24 fresh nouns on the Y2 population — fresh cue × fresh frame × fresh noun,
+the only statistic of this experiment in which all three dimensions are simultaneously unseen — are computed and
+reported in full. They are not calibrated and carry no label; if they hold, that is the strongest
 descriptive statement the experiment can make.
 
 ## Comparators and their standing
@@ -261,13 +322,43 @@ readout program with a small frozen-row second-transport term, never as purely p
 
 ## Incidents versus preconditions
 
-Following Experiment 019 exactly. **Incidents** stop the phase, are recorded with their commit, permit no re-run in
-this protocol version and are never an outcome label: failure of any exact identity (the readout identity, the
-additive residual identity, the Level 1 chain, the reproduction of the Experiment 017 chain's outputs), failure to
-reproduce a locked prediction row or a locked digest, a provenance violation (any cue prompt reachable from the
-prediction path; any fresh prompt key in the ledger before its phase), a validity or capture failure, or any
-implementation invariant. **`PRECONDITION_FAILED_*`** covers only the scientific evaluability counts listed with each
-outcome.
+Following Experiment 019 exactly, with the two categories kept apart.
+
+**Scientific invalidity is not an incident.** A fresh frame that fails the frozen validity criterion (the
+head-informative rule and the cue-effect rule of Experiments 017–019, evaluated at stage 1 from its reference and
+validity cue-pair prompts) is simply an **invalid frame**: it is recorded with its measured values, its fresh-cue
+target prompts are never executed, and it counts against the `PRECONDITION_FAILED_FRAMES` rule (fewer than 12 valid
+fresh frames, or fewer than 4 valid coordinated ones). The same holds for the other evaluability rules: a cue that
+cannot be scored (fewer than the required valid frames) is an **unscored cue** feeding `PRECONDITION_FAILED_TOKENS`
+(fewer than 16 scored cues, or fewer than 60 valid exposed frames), and a noun whose measured `Δc` has zero variance
+over its population, or which is non-single-token, is a **non-scorable noun** feeding `PRECONDITION_FAILED_NOUNS`
+(fewer than 18 scorable fresh nouns). None of these is an incident, none stops the phase, and each is reported with
+the values that produced it.
+
+**Frozen tolerances (an identity or reproduction check fails, and the phase stops, when its quantity exceeds the
+tolerance in this table).** Every tolerance is fixed here, before any fresh data exists; the observed exposed value is
+given only to show the margin. Captured activations are float32 and every chain computation is float64, which is why
+the capture-facing tolerances are looser than the arithmetic ones.
+
+| check | quantity | frozen tolerance | observed on the exposed pool |
+|---|---|---|---|
+| readout identity | max abs difference, per noun, between `⟨ΔLN_final, Δw(n)⟩` and the measured log-probability contrast difference | **2e-2 nats** | 5.0e-3 |
+| logit reconstruction | max abs difference between `LN_final(h6)·W_U + b_U` and the captured logits | **2e-2** | 2.9e-3 |
+| additive residual identity | max abs difference between `Δh6` and `Δx3 + Σ(heads and MLPs of blocks 3–5)` | **1e-4** | 1.4e-6 |
+| Level 1 exact downstream chain | max abs relative difference between the recomputed final residual change and the measured one, from the measured `Δx3` | **1e-3 relative** | the Experiment 017/018/019 identity family on this model is 1e-5 to 3e-5 (I4 8.5e-6, I5 1.2e-5, I6 3.3e-5, I1 2.2e-5); `explore` records this experiment's own value |
+| inherited Experiment 017 reproduction | max abs difference between this runner's `Δ̂x3` and the Experiment 017 chain's own output for the same inputs | **1e-6** | 4.5e-7 for a full recomputation in a separate process (float64 reassociation) |
+| locked Y1 prediction reproduction | max abs difference between the recomputed Y1 prediction rows and the locked rows, both canonical-JSON rounded | **0.0 (exact)** | Experiments 013–019 reproduce their locked tables at 0.0 |
+| stage-1 Y2 table reproduction | the re-read stage-1 digest against the written one, and the recomputed stage-2 predictions against the digested rows | **digest equality; 0.0 (exact) on the rows** | Experiments 017–019 reproduce their stage-1 tables at 0.0 |
+| provenance invariant | max abs difference between a prediction computed with the cue prompt available and one computed in a process that never executes it | **1e-6** | 4.5e-7 |
+
+A value above its tolerance is an incident. A value below it is recorded in the results state and enters no floor.
+
+**Incidents** are implementation or protocol failures only. They stop the phase, are recorded with their commit,
+permit no re-run in this protocol version and are never an outcome label: a capture failure or a non-finite value;
+failure of any frozen identity or reproduction check beyond its tolerance below; a provenance violation (any cue
+prompt reachable from the prediction path, any fresh prompt key in the execution ledger before its phase, any
+fresh-noun quantity in an exploration record); a digest or lock mismatch; an unexpected prompt execution; or any
+implementation invariant of the runner.
 
 ## Interpretation limits
 
@@ -304,6 +395,18 @@ definitions. No token, frame, noun, table or prediction may be changed after the
 
 ## Revision history
 
+- **Revision 2** (2026-09-22): the exposed-noun accounting (80 entries, 79 scorable; `peach` non-scorable by the
+  frozen single-token rule) and the fresh nouns' freshness certification (freshness for a noun is *no prior
+  inspection of any model-output-derived statistic*, since a noun needs no prompt); the label-bearing populations of
+  Y1, Y2 and Y3 frozen in a table (Y1 and Y2 on the scorable exposed nouns only, Y3 on the fresh nouns only, the
+  joint cue × frame × noun statistic descriptive); scientific invalidity (invalid frames, unscored cues, non-scorable
+  nouns) separated from incidents (implementation and protocol failures) and routed to the `PRECONDITION_FAILED_*`
+  counts; a frozen tolerance for every identity and reproduction check that can stop a phase; the prompt-key manifest
+  enumerated as S1-REF, S1-VALIDITY and S2-TARGET keys. One correction: revision 1's fresh-noun list contained
+  `tunnel`, an exposed noun, because the list's tokenizer check did not apply the exposure filter; it is replaced by
+  the next eligible entry `pillar`/`pillars` (43035/40652), and the eligibility rule is written out. No new prompt
+  was executed for this revision; the floors, the program, the comparators, the cue and frame lists and the
+  interpretation limits are unchanged.
 - **Revision 1** (2026-09-22): first draft, written after the research spike (candidate A selected), the focused
   design pass (exact path, projection shares, freezability, rank-1 diagnostics, S1 ladder, reserve-noun margins) and
   the pre-spec diagnostics (end-to-end composition with the committed locks, provenance proof, Y3 formalization,
