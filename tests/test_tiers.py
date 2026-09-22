@@ -74,7 +74,8 @@ def test_known_files_land_where_expected():
     assert classify("tests/test_pythia_bridge_contract.py::test_pinned") == {"pythia_smoke"}
     assert classify("tests/test_attention_patterns.py::test_program_reproduces_the_pinned_model_rows_on_a_neutral_prompt", frozenset({"pythia_smoke"})) == {"pythia_smoke"}
     assert classify("tests/test_block_routing.py::test_routing_statistics_and_every_label_branch_on_synthetic_tables") == {"unit", "slow"}
-    assert classify("tests/test_experiment_020_runner.py::test_x", frozenset({"slow"})) == {"runner", "historical", "slow"}
+    future = classify("tests/test_experiment_042_runner.py::test_x", frozenset({"slow"}))
+    assert "runner" in future and "slow" in future and len(future & {"current", "historical"}) == 1  # a runner file is current xor historical whatever CURRENT_EXPERIMENT is
 
 
 def test_slow_list_names_only_collected_unit_tests(record):

@@ -33,9 +33,8 @@ from pathlib import Path
 import pytest
 
 # The experiment under development: the three-digit number whose runner test is ``current``; ``None`` while no
-# experiment is open (Experiment 019 is closed; set to "020" when its runner exists). The environment variable
-# NEURAL_DECOMPILER_CURRENT_EXPERIMENT overrides it.
-CURRENT_EXPERIMENT: str | None = None
+# experiment is open. The environment variable NEURAL_DECOMPILER_CURRENT_EXPERIMENT overrides it.
+CURRENT_EXPERIMENT: str | None = None  # set to "020" with tests/test_experiment_020_runner.py (Experiment 020, Task 2)
 
 TIERS = ("A", "B", "C", "D", "all")
 KINDS = ("unit", "runner", "pythia_smoke")
