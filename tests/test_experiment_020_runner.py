@@ -148,6 +148,7 @@ def make_runner(sandbox, monkeypatch, *, logs=None, small_confirmation=True):
     root, manifest, small, digests, lock_011, lock_012, lock_017 = sandbox
     logs = logs if logs is not None else []
     runner = runner_module.Runner(root=root, results_path=root / "outputs/experiment-020/results.json", report_path=root / "outputs/experiment-020/report.md",
+                                  diagnostic_path=root / "outputs/experiment-020/level1-diagnostic.json",
                                   model_loader=lambda spec: make_fake_model(), tokenizer_loader=lambda spec: toy_tokenizer_020(manifest, small),
                                   lock_011_loader=lambda path: dict(lock_011), lock_012_loader=lambda path: dict(lock_012), lock_017_loader=lambda path: dict(lock_017),
                                   git_state=lambda: {"commit": "a" * 40, "dirty": False}, versions=lambda: {"torch": "test"}, tracked=lambda path: True, changed_paths=lambda commit: [],
@@ -206,10 +207,16 @@ def test_the_diagnostic_enforces_nothing_and_leaves_the_recorded_run_untouched(s
     spy = ExecutionSpy(monkeypatch)
     with pytest.MonkeyPatch.context() as guard:
         guard.setattr(rd, "LEVEL1_TOLERANCE", 0.0)  # every pair is now above tolerance and the diagnostic still completes
-        assert runner.diagnose(frames_per_template=1, cues=2) == 0
+        assert runner.diagnose(frames_per_template=1, cues=2, label="pass2") == 0
     assert runner.results_path.read_bytes() == before
-    record = json.loads(runner.diagnostic_path.read_text())
+    assert not runner.diagnostic_path.exists()  # a label keeps one record from overwriting another
+    record = json.loads(runner.diagnostic_path.with_name("level1-diagnostic-pass2.json").read_text())
     assert record["content_sha256"] == pm.sha256_text(pm.canonical_json({key: value for key, value in record.items() if key != "content_sha256"}))
+    # the reference-state program errors are the floor under every reconstruction, so they belong in the record
+    for entry in record["reference_program"].values():
+        assert {"block3", "block4", "block5"} == set(entry)
+        assert all({"attention_absolute_error", "mlp_absolute_error", "score_infinity_norm"} <= set(block) for block in entry.values())
+        assert {"pattern_absolute_error"} <= set(entry["block4"]) and "pattern_absolute_error" not in entry["block3"]
     assert record["subset"]["n_pairs"] == len(record["pairs"]) > 0 and record["subset"]["templates"]
     assert record["level1"]["n_above_tolerance"] == len(record["pairs"]) and record["identity_maxima"]["level1"] == record["level1"]["worst"]["e1"]
     assert set(record["level1"]["worst"]["blocks"]) == {"block3", "block4", "block5"}

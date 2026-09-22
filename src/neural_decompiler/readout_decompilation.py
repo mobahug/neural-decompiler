@@ -1472,6 +1472,40 @@ def diagnostic_frames(pool: cs.Pool008, frames_per_template: int) -> tuple[pm.Fr
     return tuple(frame for template in sorted(taken) for frame in taken[template])
 
 
+def reference_program_errors(program: ReadoutProgram, state: FrameState020, n_heads: int) -> dict[str, Any]:
+    """Each readout block's program against the model's own captured outputs **at the reference state itself**.
+
+    No cue, no ``Δ`` and no chain: this is the layer program reproducing the reference forward it was read from. It is
+    the floor under every reconstruction downstream of it, so a Level-1 error at or below this scale says nothing about
+    the chain and everything about the program's agreement with the float32 forward.
+    """
+    residuals = {3: state.x3_all, 4: state.x4_all, 5: state.x5_all}
+    rows = {4: state.rows4, 5: state.rows5}
+    out: dict[str, Any] = {}
+    for layer in READOUT_LAYERS:
+        layer_program = program.programs[layer]
+        row = atp.ReferenceRow(layer_program, [residuals[layer][k].double() for k in range(state.p_t + 1)])
+        captured_attention: torch.Tensor | None = None
+        for index in range(n_heads):
+            value = state.components[f"L0{layer}.H0{index}"].double()
+            captured_attention = value if captured_attention is None else captured_attention + value
+        captured_mlp = state.components[f"L0{layer}.MLP"].double()
+        recomputed_mlp = program.lw.out(layer, residuals[layer][state.p_t].double())
+        entry = {
+            "attention_absolute_error": float((row.output_ref - captured_attention).abs().max()),
+            "attention_captured_norm": float(captured_attention.abs().max()),
+            "mlp_absolute_error": float((recomputed_mlp - captured_mlp).abs().max()),
+            "mlp_captured_norm": float(captured_mlp.abs().max()),
+            "score_infinity_norm": float(row.scores_ref.abs().max())}
+        if layer in rows:
+            captured_row = rows[layer].double()
+            entry["pattern_absolute_error"] = float((row.A_ref - captured_row).abs().max())
+            entry["pattern_row_sum_recomputed"] = [float(row.A_ref.sum(-1).min()), float(row.A_ref.sum(-1).max())]
+            entry["pattern_row_sum_captured"] = [float(captured_row.sum(-1).min()), float(captured_row.sum(-1).max())]
+        out[f"block{layer}"] = entry
+    return out
+
+
 def run_level1_diagnostic(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any], confirmation: Confirmation020,
                           frames_per_template: int = 1, cues_per_frame: int | None = None, log: Any = None) -> dict[str, Any]:
     """The smallest exposed-only run that can place the Level-1 failure.
@@ -1497,10 +1531,12 @@ def run_level1_diagnostic(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str
     rows: list[dict[str, Any]] = []
     identities: dict[str, float] = {}
     executed: set[str] = set()
+    reference_program: dict[str, Any] = {}
     for frame in frames:
         state = capture_frame_020(model, head, pool.reference_prompt(frame), nouns, axis_T)
         rows16 = atp.reference_rows(programs, state.state_017.x1_all, state.state_017.x2_all)
         executed.add(pool.reference_prompt(frame).key)
+        reference_program[frame.frame_id] = reference_program_errors(program, state, int(model.cfg.n_heads))
         reference_id = pool.reference_ids[frame.template_id]
         tokens = [(word, token_id) for word, token_id in pool.tokens if token_id != reference_id]
         if cues_per_frame is not None:
@@ -1531,6 +1567,7 @@ def run_level1_diagnostic(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str
         "level1": {"tolerance": LEVEL1_TOLERANCE, "n_above_tolerance": len(above), "share_above_tolerance": (len(above) / len(rows)) if rows else 0.0,
                    "worst": ordered[0] if ordered else None, "worst_20": ordered[:20],
                    "best": ordered[-1] if ordered else None},
+        "reference_program": reference_program,
         "pairs": rows,
         "executed_prompt_keys": sorted(executed),
         "isolation": {"n_executed_prompts": len(executed),

@@ -75,6 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     diagnose = phases.add_parser("diagnose", help="exposed-only Level-1 diagnostic: place a Level-1 identity failure without enforcing anything")
     diagnose.add_argument("--frames-per-template", type=int, default=1, help="exposed frames per template, taken in pool order (default 1)")
     diagnose.add_argument("--cues", type=int, default=0, help="exposed cues per frame, 0 for every one of them (default 0)")
+    diagnose.add_argument("--label", default="", help="suffix for the diagnostic filename, so one record never overwrites another")
     return parser
 
 
@@ -449,7 +450,7 @@ class Runner:
         self.log(f"confirm complete: {results['outcome']['label']}; results sha256 {digest}")
         return 0
 
-    def diagnose(self, *, frames_per_template: int = 1, cues: int | None = None) -> int:
+    def diagnose(self, *, frames_per_template: int = 1, cues: int | None = None, label: str = "") -> int:
         """The Level-1 diagnostic. Not a phase: it never opens the results state, so the recorded run, its ledger and
         its incident are untouched, and it enforces no identity — the failure under investigation must be measured, not
         re-raised. Exposed frames, exposed cues and exposed scorable nouns only."""
@@ -469,10 +470,11 @@ class Runner:
                   "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision},
                   "created_at": pm.utc_now(),
                   "investigating": {"run_id": recorded["run_id"], "incidents": recorded["exploration"].get("incidents", [])} if recorded else None}
-        self.diagnostic_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {**record, "content_sha256": pm.sha256_text(pm.canonical_json(record))}
-        self.diagnostic_path.write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
-        self.log(f"diagnostic written to {self.diagnostic_path} sha256 {payload['content_sha256']}")
+        path = self.diagnostic_path if not label else self.diagnostic_path.with_name(f"{self.diagnostic_path.stem}-{label}{self.diagnostic_path.suffix}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {**record, "label": label, "content_sha256": pm.sha256_text(pm.canonical_json({**record, "label": label}))}
+        path.write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
+        self.log(f"diagnostic written to {path} sha256 {payload['content_sha256']}")
         if self.results_path.exists() and rd.load_results_state(self.results_path)["state_sha256"] != (recorded or {}).get("state_sha256"):
             raise rd.PhaseError("the diagnostic changed the recorded results state")
         return 0
@@ -491,7 +493,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     runner = Runner()
     if args.phase == "diagnose":
-        return runner.diagnose(frames_per_template=int(args.frames_per_template), cues=int(args.cues) or None)
+        return runner.diagnose(frames_per_template=int(args.frames_per_template), cues=int(args.cues) or None, label=str(args.label))
     if args.phase in PHASES:
         return getattr(runner, args.phase.replace("-", "_"))()
     raise SystemExit(f"unknown phase {args.phase}")
