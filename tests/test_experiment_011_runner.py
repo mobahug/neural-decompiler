@@ -79,15 +79,48 @@ def fake_world(tmp_path_factory):
     return manifest, pm.canonical_json(payload) + "\n"
 
 
+def _populate(root: Path, monkeypatch, fake_world):
+    """The repo files, the fake's inherited records and the per-test constants, into ``root``."""
+    manifest, extract_text = fake_world
+    _copy_repo_files(root)
+    (root / er.INHERITED_010_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (root / er.INHERITED_010_EXTRACT_RELATIVE_PATH).write_text(extract_text, encoding="utf-8")
+    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
+    return root, manifest
+
+
 @pytest.fixture
 def sandbox(tmp_path, monkeypatch, fake_world):
     """A fresh writable root per test: the repo files and the fake's extract, written into this test's own directory."""
-    manifest, extract_text = fake_world
-    _copy_repo_files(tmp_path)
-    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
-    (tmp_path / er.INHERITED_010_EXTRACT_RELATIVE_PATH).write_text(extract_text, encoding="utf-8")
-    monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
-    return tmp_path, manifest
+    return _populate(tmp_path, monkeypatch, fake_world)
+
+
+@pytest.fixture(scope="module")
+def explored_world(tmp_path_factory, fake_world):
+    """Built once per module and never modified (tests copy it): a root taken through validate (refused before the freeze), freeze-confirmation (once; a second
+    freeze refused), explore (once) and lock with every capture entry point disabled. Every test that needs a post-explore or post-lock state starts from a copy."""
+    root = tmp_path_factory.mktemp("explored")
+    with pytest.MonkeyPatch.context() as patch:
+        runner, logs = make_runner(_populate(root, patch, fake_world), patch)
+        assert runner.validate() == 1
+        assert runner.freeze_confirmation() == 0 and runner.freeze_confirmation() == 1 and runner.validate() == 0
+        assert runner.explore() == 0, logs[-3:]
+        with pytest.MonkeyPatch.context() as guard:
+            for name in ("capture_prompt", "run_patched", "run_capture", "run_interventions"):
+                if hasattr(pm, name):
+                    guard.setattr(pm, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("the lock phase ran a forward pass")))
+            assert runner.lock() == 0
+    return root, tuple(logs)
+
+
+@pytest.fixture
+def explored_sandbox(tmp_path_factory, monkeypatch, fake_world, explored_world):
+    """A fresh writable copy of the explored world for one test — its results state, candidate lock and predictions included — in its own directory (distinct from
+    the test's ``sandbox``, which stays a pre-freeze root); the world itself is never modified."""
+    root, _ = explored_world
+    copy = tmp_path_factory.mktemp("explored-copy")
+    shutil.copytree(root, copy, dirs_exist_ok=True)
+    return _populate(copy, monkeypatch, fake_world)
 
 
 def make_runner(sandbox, monkeypatch, *, logs=None):
@@ -119,17 +152,17 @@ def test_parser_has_exactly_the_six_phases_and_no_overrides():
             parser.parse_args(forbidden)
 
 
-def test_full_state_machine_and_weights_only_lock(sandbox, monkeypatch):
-    runner, logs = make_runner(sandbox, monkeypatch)
-    assert runner.validate() == 1
-    assert runner.freeze_confirmation() == 0 and runner.freeze_confirmation() == 1 and runner.validate() == 0
+def test_full_state_machine_and_weights_only_lock(explored_sandbox, monkeypatch):
+    runner, logs = make_runner(explored_sandbox, monkeypatch)
+    assert runner.freeze_confirmation() == 1 and runner.validate() == 0  # frozen once in the explored world (validate was refused there before the freeze); never overwritten
     manifest, manifest_sha256, extension = pm.load_inputs(runner.root)
     confirmation_006 = cd.load_confirmation(runner.root / cd.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
     confirmation_009 = ht.load_confirmation(runner.root / ht.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, confirmation_006)
     confirmation = er.load_confirmation(runner.confirmation_path, manifest, manifest_sha256, extension, confirmation_006, confirmation_009)
-    assert runner.explore() == 0
+    # explore ran once in the explored world; this test asserts its record
     state = er.load_results_state(runner.results_path)
     exploration = state["exploration"]
+    assert state["phases"]["explore"]["attempts"] == 1 and state["phases"]["explore"]["attempt_commits"] == ["a" * 40] and "incidents" not in exploration
     assert state["phases"]["explore"]["status"] == "complete" and exploration["replication"]["experiment_010"]["max_abs_deviation"] == 0.0
     assert len(exploration["tokens"]) == 63 and exploration["tolerances"]["tau_g"] >= er.TAU_MIN and exploration["tolerances"]["tau_M"] >= er.TAU_MIN
     assert not {prompt.key for prompt in confirmation.all_prompts} & set(state["executed_prompt_keys"])
@@ -137,11 +170,7 @@ def test_full_state_machine_and_weights_only_lock(sandbox, monkeypatch):
         runner.explore()
     # The lock phase must not be able to run any prompt: every capture or intervention entry point raises while it runs.
     assert not exploration["summary"]["prediction_undefined"]
-    with pytest.MonkeyPatch.context() as guard:
-        for name in ("capture_prompt", "run_patched", "run_capture", "run_interventions"):
-            if hasattr(pm, name):
-                guard.setattr(pm, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("the lock phase ran a forward pass")))
-        assert runner.lock() == 0
+    # lock ran once in the explored world with every capture entry point disabled (no forward pass); this test asserts the candidates it wrote
     candidate = runner.results_path.parent / "candidate-lock.json"
     predictions_path = runner.results_path.parent / "candidate-predictions.md"
     lock = json.loads(candidate.read_text())
@@ -174,11 +203,10 @@ def test_full_state_machine_and_weights_only_lock(sandbox, monkeypatch):
     assert "## Tier A" in report and "## Confirmation" in report
 
 
-def test_validity_is_independent_of_candidates(sandbox, monkeypatch):
+def test_validity_is_independent_of_candidates(explored_sandbox, monkeypatch):
     """A frame's validity depends on the template's plural cue and cue pair only; every licensed candidate in a valid frame is scored."""
-    runner, logs = make_runner(sandbox, monkeypatch)
-    assert runner.freeze_confirmation() == 0 and runner.explore() == 0
-    assert runner.lock() == 0
+    runner, logs = make_runner(explored_sandbox, monkeypatch)
+    # freeze, explore and lock ran once per module in the explored world; this test starts from a copy of its post-lock state
     candidate = runner.results_path.parent / "candidate-lock.json"
     shutil.copy(candidate, runner.root / er.LOCK_RELATIVE_PATH)
     shutil.copy(runner.results_path.parent / "candidate-predictions.md", runner.root / er.PREDICTIONS_RELATIVE_PATH)

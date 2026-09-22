@@ -145,15 +145,58 @@ def _relax_float32_identities(patch) -> None:
     patch.setattr(ra, "NEURON_SUM_TOLERANCE", max(ra.NEURON_SUM_TOLERANCE, 1e-3))
 
 
-@pytest.fixture
-def sandbox(tmp_path, monkeypatch, fake_world):
+def _populate(root: Path, monkeypatch, fake_world):
+    """The repo files, the fake's inherited records and the per-test constants, into ``root``."""
     manifest, pool, fake_lock_011, fake_lock_012, fake_locks, extract_text = fake_world
-    _copy_repo_files(tmp_path)
-    (tmp_path / bc.INHERITED_017_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
-    (tmp_path / bc.INHERITED_017_EXTRACT_RELATIVE_PATH).write_text(extract_text, encoding="utf-8")
+    _copy_repo_files(root)
+    (root / bc.INHERITED_017_EXTRACT_RELATIVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    (root / bc.INHERITED_017_EXTRACT_RELATIVE_PATH).write_text(extract_text, encoding="utf-8")
     monkeypatch.setattr(cs, "STAGE_UNINFORMATIVE_FLOOR", 0.0)
     _relax_float32_identities(monkeypatch)
-    return tmp_path, manifest, pool, fake_lock_011, fake_lock_012, fake_locks
+    return root, manifest, pool, fake_lock_011, fake_lock_012, fake_locks
+
+
+@pytest.fixture
+def sandbox(tmp_path, monkeypatch, fake_world):
+    """A fresh writable root per test: the repo files and the fake's inherited records, written into this test's own directory."""
+    return _populate(tmp_path, monkeypatch, fake_world)
+
+
+@pytest.fixture(scope="module")
+def explored_world(tmp_path_factory, fake_world):
+    """Built once per module and never modified (tests copy it): a root taken through validate (refused before the freeze), freeze-confirmation (once; a second
+    freeze refused), an explore attempt stopped by a synthetic incident at commit 0…0, the refusal to explore again at that commit, the resumed explore at
+    commit a…a (complete) and lock with every capture entry point disabled. The module's single full explore is that resumed run; the state-machine test
+    asserts its record, and the incident test takes its confirm-incident half from a copy of this post-lock state."""
+    root = tmp_path_factory.mktemp("explored")
+    with pytest.MonkeyPatch.context() as patch:
+        runner, logs = make_runner(_populate(root, patch, fake_world), patch)
+        assert runner.validate() == 1
+        assert runner.freeze_confirmation() == 0 and runner.freeze_confirmation() == 1 and runner.validate() == 0
+        runner.git_state = lambda: {"commit": "0" * 40, "dirty": False}
+        with pytest.MonkeyPatch.context() as guard:
+            guard.setattr(hp, "capture_frame_017", lambda *args, **kwargs: (_ for _ in ()).throw(pm.IncidentError("synthetic capture failure")))
+            assert runner.explore() == 2, logs[-3:]
+        with pytest.raises(bc.PhaseError, match="incident"):
+            runner.explore()
+        runner.git_state = lambda: {"commit": "a" * 40, "dirty": False}
+        assert runner.explore() == 0, logs[-3:]
+        with pytest.MonkeyPatch.context() as guard:
+            for name in ("capture_prompt", "run_patched", "run_capture", "run_interventions"):
+                if hasattr(pm, name):
+                    guard.setattr(pm, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("the lock phase ran a forward pass")))
+            assert runner.lock() == 0
+    return root, tuple(logs)
+
+
+@pytest.fixture
+def explored_sandbox(tmp_path_factory, monkeypatch, fake_world, explored_world):
+    """A fresh writable copy of the explored world for one test — its results state, candidate lock and predictions included — in its own directory (distinct from
+    the test's ``sandbox``, which stays a pre-freeze root); the world itself is never modified."""
+    root, _ = explored_world
+    copy = tmp_path_factory.mktemp("explored-copy")
+    shutil.copytree(root, copy, dirs_exist_ok=True)
+    return _populate(copy, monkeypatch, fake_world)
 
 
 def make_runner(sandbox, monkeypatch, *, logs=None):
@@ -178,15 +221,15 @@ def test_parser_has_exactly_the_six_phases_and_no_overrides():
             parser.parse_args(forbidden)
 
 
-def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox, monkeypatch):
-    runner, logs = make_runner(sandbox, monkeypatch)
-    assert runner.validate() == 1
-    assert runner.freeze_confirmation() == 0 and runner.freeze_confirmation() == 1 and runner.validate() == 0
+def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(explored_sandbox, monkeypatch):
+    runner, logs = make_runner(explored_sandbox, monkeypatch)
+    assert runner.freeze_confirmation() == 1 and runner.validate() == 0  # frozen once in the explored world (validate was refused there before the freeze); never overwritten
     pool, pool_010, lock_011, lock_012, lock_017, extract, confirmation, digests = runner._inputs()
     assert len(pool.tokens) == 231 and len(pool.frames) == 78 and len(confirmation.tokens) == 24 and len(confirmation.exposed_frame_prompts) == 24 * 78 and len(confirmation.frames) == 12
-    assert runner.explore() == 0, logs[-3:]
+    # explore ran once in the explored world: a synthetic incident at commit 0…0, the refusal to rerun at that commit, then the complete run at a…a; this test asserts that run's record
     state = bc.load_results_state(runner.results_path)
     exploration = state["exploration"]
+    assert state["phases"]["explore"]["attempts"] == 2 and state["phases"]["explore"]["attempt_commits"] == ["0" * 40, "a" * 40] and exploration["incidents"][-1]["commit"] == "0" * 40 and state["protocol_code_commit"] == "a" * 40
     assert state["phases"]["explore"]["status"] == "complete" and exploration["replication"]["experiment_017"]["max_abs_deviation"] == 0.0
     assert len(exploration["pairs"]) == bc.EXPECTED_EXTRACT_SIZE_017 and set(exploration["locked_states"]) == {frame.frame_id for frame in pool.frames}
     assert exploration["base2_pt"]["n_frames"] == 26 and len(exploration["base2_pt"]["vector"]) == lw_dim(runner) and set(exploration["subsets"]) == set(bc.RUNGS) and len(exploration["scores"]) == bc.N_NEURONS
@@ -200,11 +243,7 @@ def test_full_state_machine_lock_without_forward_pass_and_stage_barrier(sandbox,
     assert not {prompt.key for prompt in confirmation.all_prompts} & set(state["executed_prompt_keys"])
     with pytest.raises(bc.PhaseError):
         runner.explore()
-    with pytest.MonkeyPatch.context() as guard:
-        for name in ("capture_prompt", "run_patched", "run_capture", "run_interventions"):
-            if hasattr(pm, name):
-                guard.setattr(pm, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("the lock phase ran a forward pass")))
-        assert runner.lock() == 0
+    # lock ran once in the explored world with every capture entry point disabled (no forward pass); this test asserts the candidates it wrote
     candidate = runner.results_path.parent / "candidate-lock.json"
     predictions_path = runner.results_path.parent / "candidate-predictions.md"
     lock = json.loads(candidate.read_text())
@@ -270,7 +309,7 @@ def lw_dim(runner) -> int:
     return int(model.cfg.d_model)
 
 
-def test_incidents_are_recorded_and_block_reruns(sandbox, monkeypatch):
+def test_incidents_are_recorded_and_block_reruns(sandbox, explored_sandbox, monkeypatch):
     runner, logs = make_runner(sandbox, monkeypatch)
     assert runner.freeze_confirmation() == 0
     with pytest.MonkeyPatch.context() as guard:
@@ -280,8 +319,16 @@ def test_incidents_are_recorded_and_block_reruns(sandbox, monkeypatch):
     assert state["exploration"]["incidents"][-1]["phase"] == "explore" and state["phases"]["explore"]["status"] == "running"
     with pytest.raises(bc.PhaseError, match="incident"):
         runner.explore()
+    # A committed fix (a new commit) permits explore to run again: the phase starts and records a second attempt at the new commit (a fresh synthetic incident stops it at once);
+    # the resumed run's completion and lock run once per module in the explored world, whose record the state-machine test asserts.
     runner.git_state = lambda: {"commit": "b" * 40, "dirty": False}
-    assert runner.explore() == 0 and runner.lock() == 0
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(hp, "capture_frame_017", lambda *args, **kwargs: (_ for _ in ()).throw(pm.IncidentError("synthetic capture failure")))
+        assert runner.explore() == 2
+    state = bc.load_results_state(runner.results_path)
+    assert state["phases"]["explore"]["attempts"] == 2 and state["phases"]["explore"]["attempt_commits"] == ["a" * 40, "b" * 40] and state["exploration"]["incidents"][-1]["commit"] == "b" * 40
+    # The same failure at confirm is terminal: from a fresh copy of the explored world's post-lock state, with its candidates installed.
+    runner, logs = make_runner(explored_sandbox, monkeypatch)
     shutil.copy(runner.results_path.parent / "candidate-lock.json", runner.root / bc.LOCK_RELATIVE_PATH)
     shutil.copy(runner.results_path.parent / "candidate-predictions.md", runner.root / bc.PREDICTIONS_RELATIVE_PATH)
     with pytest.MonkeyPatch.context() as guard:
