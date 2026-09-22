@@ -166,6 +166,59 @@ def test_parser_has_exactly_the_six_phases_and_no_overrides():
     for forbidden in (["calibrate"], ["confirm", "--stage", "2"]):
         with pytest.raises(SystemExit):
             parser.parse_args(forbidden)
+    # the diagnostic takes arguments because its subset is the thing being chosen, and it is not one of the phases
+    assert "diagnose" not in rd.PHASES and parser.parse_args(["diagnose"]).phase == "diagnose"
+    assert parser.parse_args(["diagnose", "--frames-per-template", "2", "--cues", "3"]).cues == 3
+    for phase in ("explore", "lock", "confirm"):
+        with pytest.raises(SystemExit):
+            parser.parse_args([phase, "--cues", "3"])
+
+
+def test_a_level1_incident_persists_every_maximum_and_names_the_failing_pair(sandbox, monkeypatch):
+    """An identity that stops the phase must leave the record needed to place it: every maximum reaches disk before
+    enforcement, and the pair carrying the worst Level-1 ratio is named with both terms of that ratio."""
+    runner, logs = make_runner(sandbox, monkeypatch)
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(rd, "LEVEL1_TOLERANCE", 0.0)
+        assert runner.explore() == 2
+    exploration = rd.load_results_state(runner.results_path)["exploration"]
+    assert exploration["incidents"][-1]["message"].startswith("level1 failed")
+    assert {"readout", "logit", "level1", "additive"} <= set(exploration["identities"]) <= set(rd.IDENTITY_NAMES)
+    assert exploration["identity_tolerances"]["level1"] == 0.0 and exploration["identity_tolerances"]["additive"] == rd.ADDITIVE_IDENTITY_TOLERANCE
+    worst = exploration["level1_worst"]
+    assert worst["e1"] == pytest.approx(exploration["identities"]["level1"])  # the named pair is the maximum's own pair
+    assert worst["frame_id"] in exploration.get("locked_states", {worst["frame_id"]: None}) and worst["cue"] and worst["p_c"] <= worst["p_t"]
+    assert worst["absolute_error"] == pytest.approx(worst["e1"] * worst["denominator"], rel=1e-9) and worst["denominator"] > 0.0
+    assert set(worst["blocks"]) == {"block3", "block4", "block5"}
+    assert all({"absolute_error", "predicted_norm", "measured_norm"} <= set(entry) for entry in worst["blocks"].values())
+    assert {"readout", "logit", "level1", "additive"} <= set(worst["pair_identities"])
+    assert "summary" not in exploration  # the phase is resumable at a committed fix, exactly as before
+
+
+def test_the_diagnostic_enforces_nothing_and_leaves_the_recorded_run_untouched(sandbox, monkeypatch):
+    """The diagnostic exists to measure the failure, so it must not re-raise it, must not write the results state, and
+    must reach nothing of the confirmation set."""
+    runner, logs = make_runner(sandbox, monkeypatch)
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(rd, "LEVEL1_TOLERANCE", 0.0)
+        assert runner.explore() == 2
+    before = runner.results_path.read_bytes()
+    spy = ExecutionSpy(monkeypatch)
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(rd, "LEVEL1_TOLERANCE", 0.0)  # every pair is now above tolerance and the diagnostic still completes
+        assert runner.diagnose(frames_per_template=1, cues=2) == 0
+    assert runner.results_path.read_bytes() == before
+    record = json.loads(runner.diagnostic_path.read_text())
+    assert record["content_sha256"] == pm.sha256_text(pm.canonical_json({key: value for key, value in record.items() if key != "content_sha256"}))
+    assert record["subset"]["n_pairs"] == len(record["pairs"]) > 0 and record["subset"]["templates"]
+    assert record["level1"]["n_above_tolerance"] == len(record["pairs"]) and record["identity_maxima"]["level1"] == record["level1"]["worst"]["e1"]
+    assert set(record["level1"]["worst"]["blocks"]) == {"block3", "block4", "block5"}
+    assert record["isolation"]["confirmation_prompt_overlap"] == [] and record["isolation"]["fresh_nouns_in_noun_set"] == []
+    assert record["investigating"]["incidents"][-1]["phase"] == "explore"
+    assert record["confirmation_020_sha256"] and "fresh" not in json.dumps(record["subset"])
+    manifest = rd.manifest_classes(runner._inputs()[4])
+    forbidden = {key for name in rd.MANIFEST_CLASSES for key in manifest[name]}
+    assert not (set(spy.counts) & forbidden)  # no confirmation prompt was executed, by count and not only by membership
 
 
 class ExecutionSpy:

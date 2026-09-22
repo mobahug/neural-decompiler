@@ -452,18 +452,40 @@ class ReadoutProgram:
         """The predicted contrast change per noun."""
         return nouns.read(self.delta_ln(state, dh6))
 
+    def level1_detail(self, state: FrameState020, dx3_measured: Mapping[int, torch.Tensor], *, l4_heads: bool = True) -> dict[str, Any]:
+        """``level1`` with each block's own output change at ``p_t`` kept alongside the result.
+
+        The arithmetic is the identity's, in the identity's order — every term is hoisted into a name, nothing is
+        reassociated — so the breakdown a diagnostic records can never describe a different chain from the enforced
+        one. ``level1`` reads ``dh6`` from here rather than repeating the computation.
+        """
+        p_t = state.p_t
+        positions = sorted(dx3_measured)
+        dh3: dict[int, torch.Tensor] = {}
+        blocks: dict[int, torch.Tensor] = {}
+        parts: dict[str, torch.Tensor] = {}
+        for p in positions:
+            attn3 = self.attention_delta(3, state.x3_all, dx3_measured, p)
+            mlp3 = self.mlp_delta(3, state.x3_all[p].double(), dx3_measured[p])
+            dh3[p] = dx3_measured[p] + attn3 + mlp3
+            if p == p_t:
+                blocks[3], parts["block3_attention"], parts["block3_mlp"] = attn3 + mlp3, attn3, mlp3
+        dh4: dict[int, torch.Tensor] = {}
+        for position in positions:
+            attn4 = self.attention_delta(4, state.x4_all, dh3, position) if l4_heads else torch.zeros_like(dh3[position])
+            mlp4 = self.mlp_delta(4, state.x4_all[position], dh3[position])
+            dh4[position] = dh3[position] + attn4 + mlp4
+            if position == p_t:
+                blocks[4], parts["block4_attention"], parts["block4_mlp"] = attn4 + mlp4, attn4, mlp4
+        a5 = self.attention_delta(5, state.x5_all, dh4, p_t)
+        mlp5 = self.mlp_delta(5, state.x5_all[p_t], dh4[p_t])
+        blocks[5], parts["block5_attention"], parts["block5_mlp"] = a5 + mlp5, a5, mlp5
+        return {"dh6": dh4[p_t] + a5 + mlp5, "dh3": dh3, "dh4": dh4, "blocks": blocks, "parts": parts}
+
     def level1(self, state: FrameState020, dx3_measured: Mapping[int, torch.Tensor], *, l4_heads: bool = True) -> torch.Tensor:
         """The exact chain from the measured layer-3 input change: every head and MLP recomputed at the frame's own
         state, with no reduction. An identity; it enters no floor."""
-        p_t = state.p_t
-        positions = sorted(dx3_measured)
-        dh3 = {p: dx3_measured[p] + self.attention_delta(3, state.x3_all, dx3_measured, p) + self.mlp_delta(3, state.x3_all[p].double(), dx3_measured[p]) for p in positions}
-        dh4 = {}
-        for position in positions:
-            attn4 = self.attention_delta(4, state.x4_all, dh3, position) if l4_heads else torch.zeros_like(dh3[position])
-            dh4[position] = dh3[position] + attn4 + self.mlp_delta(4, state.x4_all[position], dh3[position])
-        a5 = self.attention_delta(5, state.x5_all, dh4, p_t)
-        return dh4[p_t] + a5 + self.mlp_delta(5, state.x5_all[p_t], dh4[p_t])
+        return self.level1_detail(state, dx3_measured, l4_heads=l4_heads)["dh6"]
 
 
 def level1_error(predicted: torch.Tensor, measured: torch.Tensor) -> float:
@@ -479,6 +501,56 @@ def level1_error(predicted: torch.Tensor, measured: torch.Tensor) -> float:
 def relative_error(predicted: torch.Tensor, measured: torch.Tensor) -> float:
     """The same normalization for every other quantity declared *relative* in the design."""
     return level1_error(predicted, measured)
+
+
+def measured_block_changes(state: FrameState020, measurement: PairMeasurement) -> dict[int, torch.Tensor]:
+    """Each readout block's measured output change at ``p_t``, over its captured heads and its MLP.
+
+    The attention output bias is the same constant in both runs, so it cancels in this difference and no ``Σ b_O``
+    term belongs here — unlike the reference component sum, which is read off the residual boundary of one run.
+    """
+    changes: dict[int, torch.Tensor] = {}
+    for layer in READOUT_LAYERS:
+        labels = [f"L0{layer}.MLP"] + sorted(label for label in measurement.components if label.startswith(f"L0{layer}.H"))
+        total: torch.Tensor | None = None
+        for label in labels:
+            delta = measurement.components[label].double() - state.components[label].double()
+            total = delta if total is None else total + delta
+        if total is None:
+            raise PhaseError(f"block {layer} has no captured components to sum")
+        changes[layer] = total
+    return changes
+
+
+def level1_breakdown(program: ReadoutProgram, state: FrameState020, measurement: PairMeasurement) -> dict[str, Any]:
+    """Where a Level-1 failure sits: the pair that carries it, the ratio with *both* of its terms separately, and each
+    block's own reconstruction error against that block's captured heads and MLP.
+
+    Diagnostic only — it enforces nothing and it decides nothing. Its purpose is that ``E₁`` above its tolerance can be
+    read as either a small absolute discrepancy over a small denominator or a real reconstruction error in one block,
+    which the ratio alone cannot distinguish.
+    """
+    detail = program.level1_detail(state, measurement.dx3)
+    exact, measured = detail["dh6"].double(), measurement.dh6.double()
+    absolute = float((exact - measured).abs().max())
+    denominator = float(measured.abs().max())
+    record: dict[str, Any] = {
+        "frame_id": measurement.frame_id, "template": measurement.template, "cue": measurement.word, "cue_token_id": int(measurement.token_id),
+        "p_c": int(state.p_c), "p_t": int(state.p_t),
+        "e1": absolute / max(denominator, NORM_FLOOR), "absolute_error": absolute, "denominator": denominator,
+        "dh6_exact_norm": float(exact.abs().max()),
+        "dx3_measured_norm": {str(position): float(value.double().abs().max()) for position, value in sorted(measurement.dx3.items())},
+        "blocks": {}}
+    if measurement.components and state.components:
+        measured_blocks = measured_block_changes(state, measurement)
+        for layer in READOUT_LAYERS:
+            predicted = detail["blocks"][layer].double()
+            record["blocks"][f"block{layer}"] = {
+                "absolute_error": float((predicted - measured_blocks[layer]).abs().max()),
+                "predicted_norm": float(predicted.abs().max()), "measured_norm": float(measured_blocks[layer].abs().max()),
+                "attention_predicted_norm": float(detail["parts"][f"block{layer}_attention"].double().abs().max()),
+                "mlp_predicted_norm": float(detail["parts"][f"block{layer}_mlp"].double().abs().max())}
+    return record
 
 
 # ---------------------------------------------------------------------------
@@ -1242,6 +1314,7 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
     dT_direction = axis_T.direction.double()
 
     identities: dict[str, float] = {}
+    worst_level1: dict[str, Any] | None = None
     cues, frame_ids, templates, measured_rows, level0_rows, ceiling_rows, no_l5_rows, base_rows, dT_values = [], [], [], [], [], [], [], [], []
     scorable = list(nouns.exposed_scorable)
     for frame in pool.frames:
@@ -1253,8 +1326,12 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
         for word, token_id in tokens:
             measurement = measure_pair(model, frame_state, nouns, word, token_id)
             prediction = predict_pair(program, chain, weights, frame_state, rows16[frame.frame_id], nouns, token_id, template_bases=bases, dT_direction=dT_direction)
-            for name, value in pair_identities(program, weights, nouns, frame_state, measurement).items():
+            pair = pair_identities(program, weights, nouns, frame_state, measurement)
+            for name, value in pair.items():
                 identities[name] = max(identities.get(name, 0.0), value)
+            if worst_level1 is None or pair["level1"] > worst_level1["e1"]:
+                # only when the running maximum moves, so the breakdown costs a handful of recomputations in a full pass
+                worst_level1 = {**level1_breakdown(program, frame_state, measurement), "pair_identities": {name: float(value) for name, value in pair.items()}}
             identities["inherited_017"] = max(identities.get("inherited_017", 0.0), inherited_reproduction(chain, weights, frame_state, rows16[frame.frame_id], token_id, prediction["dx3"]))
             cues.append(word); frame_ids.append(frame.frame_id); templates.append(frame.template_id)
             measured_rows.append(measurement.dc[scorable]); level0_rows.append(prediction["dc"][scorable])
@@ -1265,6 +1342,16 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
         if results_path is not None and len(cues) % 2000 < len(tokens):
             write_results_state(results_path, state)
         say(f"  {frame.frame_id}: {len(tokens)} exposed cues measured and predicted")
+    exploration["identities"] = {name: float(value) for name, value in identities.items()}
+    exploration["level1_worst"] = worst_level1
+    exploration["identity_tolerances"] = identity_tolerances()
+    assert_fresh_nouns_absent(exploration, confirmation)
+    if results_path is not None:
+        write_results_state(results_path, state)  # the identities are on disk before any one of them can stop the phase
+    say("identity maxima: " + ", ".join(f"{name} {value:.3e}" for name, value in sorted(exploration["identities"].items())))
+    if worst_level1 is not None:
+        say(f"worst Level-1 pair: {worst_level1['frame_id']} / {worst_level1['cue']!r} E1 {worst_level1['e1']:.3e} "
+            f"= {worst_level1['absolute_error']:.3e} / {worst_level1['denominator']:.3e}")
     enforce_all(identities)
 
     noun_keys = tuple(nouns.nouns[index].lexical_key for index in scorable)
@@ -1279,13 +1366,104 @@ def run_exploration(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any]
         "standing": dict(COMPARATOR_STANDING),
     }
     exploration["rank1"] = rank1_noun_factor(table, nouns.dw[scorable])
-    exploration["identities"] = {name: float(value) for name, value in identities.items()}
     exploration["locked_states"] = {frame_id: locked_state(state_020) for frame_id, state_020 in states.items()}
     exploration["template_bases"] = {template: {str(layer): vector.tolist() for layer, vector in entry.items()} for template, entry in bases.items()}
     exploration["n_pairs"] = len(cues)
     assert_fresh_nouns_absent(exploration, confirmation)
     say(f"exposed record: {len(cues)} pairs × {len(noun_keys)} nouns; flattened R² {exploration['statistics']['flattened_r2']:.4f}; ceiling {exploration['comparators']['ceiling_measured_dx3']:.4f}")
     return exploration
+
+
+# ---------------------------------------------------------------------------
+# The Level-1 diagnostic: an exposed-only subset, the full breakdown per pair, and no enforcement.
+
+DIAGNOSTIC_SCHEMA_VERSION = 1
+
+
+def diagnostic_frames(pool: cs.Pool008, frames_per_template: int) -> tuple[pm.Frame, ...]:
+    """The first ``frames_per_template`` exposed frames of each template, in the pool's own order.
+
+    Deterministic and template-complete by construction: every geometry the exposed pool contains — including the
+    coordinated template, the only one whose cue and target positions differ — is represented in the subset.
+    """
+    if frames_per_template < 1:
+        raise PhaseError("the diagnostic needs at least one frame per template")
+    taken: dict[str, list[pm.Frame]] = {}
+    for frame in pool.frames:
+        entry = taken.setdefault(frame.template_id, [])
+        if len(entry) < frames_per_template:
+            entry.append(frame)
+    return tuple(frame for template in sorted(taken) for frame in taken[template])
+
+
+def run_level1_diagnostic(model: Any, pool: cs.Pool008, *, lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any], confirmation: Confirmation020,
+                          frames_per_template: int = 1, cues_per_frame: int | None = None, log: Any = None) -> dict[str, Any]:
+    """The smallest exposed-only run that can place the Level-1 failure.
+
+    It measures every exposed cue of a template-complete frame subset, records ``level1_breakdown`` for each pair and
+    every identity of each pair, and **enforces nothing**: the known failure must be describable, not re-raised. It
+    scores the exposed scorable nouns only, it writes no results state, and it records its own executed prompt keys so
+    that its distance from the confirmation set is a fact on the record rather than a claim.
+    """
+    say = log or (lambda message: None)
+    weights = pm.Weights.from_model(model)
+    head = ht.HeadWeights.from_model(model)
+    lw = lc.LayerWeights.from_model(model, layers=PROGRAM_LAYERS)
+    programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in PROGRAM_LAYERS}
+    chain = chain_from_locks(lock_011, lock_012, lock_017, lw, programs, pool)
+    program = ReadoutProgram.from_model(model)
+    axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
+    nouns = NounSet.build(weights, pool.nouns, [])
+    assert_explore_nouns(nouns, confirmation)
+    frames = diagnostic_frames(pool, frames_per_template)
+    say(f"diagnostic subset: {len(frames)} exposed frames {[frame.frame_id for frame in frames]}; exposed scorable nouns {len(nouns.exposed_scorable)}")
+
+    rows: list[dict[str, Any]] = []
+    identities: dict[str, float] = {}
+    executed: set[str] = set()
+    for frame in frames:
+        state = capture_frame_020(model, head, pool.reference_prompt(frame), nouns, axis_T)
+        rows16 = atp.reference_rows(programs, state.state_017.x1_all, state.state_017.x2_all)
+        executed.add(pool.reference_prompt(frame).key)
+        reference_id = pool.reference_ids[frame.template_id]
+        tokens = [(word, token_id) for word, token_id in pool.tokens if token_id != reference_id]
+        if cues_per_frame is not None:
+            tokens = tokens[:cues_per_frame]
+        for word, token_id in tokens:
+            measurement = measure_pair(model, state, nouns, word, token_id)
+            executed.add(pm.Prompt(frame, token_id, word).key)
+            pair = pair_identities(program, weights, nouns, state, measurement)
+            pair["inherited_017"] = inherited_reproduction(chain, weights, state, rows16, token_id, predicted_dx3(chain, weights, state, rows16, token_id, frame.template_id))
+            for name, value in pair.items():
+                identities[name] = max(identities.get(name, 0.0), value)
+            rows.append({**level1_breakdown(program, state, measurement), "pair_identities": {name: float(value) for name, value in pair.items()}})
+        say(f"  {frame.frame_id}: {len(tokens)} exposed cues measured; worst E1 so far {max(row['e1'] for row in rows):.3e}")
+
+    tolerances = identity_tolerances()
+    ordered = sorted(rows, key=lambda row: row["e1"], reverse=True)
+    above = [row for row in rows if row["e1"] > LEVEL1_TOLERANCE]
+    record = {
+        "schema_version": DIAGNOSTIC_SCHEMA_VERSION, "purpose": "place the Level-1 identity failure of the Experiment 020 explore phase",
+        "subset": {"frames_per_template": frames_per_template, "cues_per_frame": cues_per_frame, "frame_ids": [frame.frame_id for frame in frames],
+                   "templates": sorted({frame.template_id for frame in frames}), "n_pairs": len(rows), "n_nouns": len(nouns.exposed_scorable)},
+        "noun_population": {"exposed": len(pool.nouns), "exposed_scorable": len(nouns.exposed_scorable), "non_scorable": list(nouns.non_scorable)},
+        "identity_maxima": {name: float(value) for name, value in identities.items()}, "identity_tolerances": tolerances,
+        "identity_status": {name: bool(value <= tolerances[name]) for name, value in identities.items()},
+        "level1": {"tolerance": LEVEL1_TOLERANCE, "n_above_tolerance": len(above), "share_above_tolerance": (len(above) / len(rows)) if rows else 0.0,
+                   "worst": ordered[0] if ordered else None, "worst_20": ordered[:20],
+                   "best": ordered[-1] if ordered else None},
+        "pairs": rows,
+        "executed_prompt_keys": sorted(executed),
+        "isolation": {"n_executed_prompts": len(executed),
+                      "confirmation_prompt_overlap": sorted(executed & {prompt.key for prompt in confirmation.all_prompts}),
+                      "fresh_nouns_in_noun_set": [noun.lexical_key for noun in nouns.nouns if noun.lexical_key in {fresh.lexical_key for fresh in confirmation.nouns}]},
+        "confirmation_020_sha256": confirmation.content_sha256}
+    if record["isolation"]["confirmation_prompt_overlap"] or record["isolation"]["fresh_nouns_in_noun_set"]:
+        raise PhaseError("the diagnostic reached the confirmation set")
+    assert_fresh_nouns_absent(record, confirmation)
+    say(f"{len(rows)} pairs; {len(above)} above the {LEVEL1_TOLERANCE:.3e} Level-1 tolerance; "
+        + ", ".join(f"{name} {value:.3e}" for name, value in sorted(record["identity_maxima"].items())))
+    return record
 
 
 def inherited_reproduction(chain: hp.HeadChainModel, weights: pm.Weights, state: FrameState020, rows16: Mapping[int, atp.ReferenceRow], token_id: int, dx3: Mapping[int, torch.Tensor]) -> float:

@@ -179,6 +179,38 @@ def reference_component(state, model, key):
     return _REFERENCE_COMPONENTS[cache_key]
 
 
+def test_level1_detail_is_the_enforced_chain_split_by_block(fake_frame):
+    """The diagnostic breakdown must describe the enforced chain, never a second one: ``level1`` reads its result from
+    ``level1_detail``, so the two agree bitwise, and the three block changes account for ``Δh6`` exactly."""
+    program, state, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["dx3"]
+    detail = program.level1_detail(state, dx3)
+    assert torch.equal(detail["dh6"], program.level1(state, dx3))
+    total = dx3[state.p_t].double() + detail["blocks"][3] + detail["blocks"][4] + detail["blocks"][5]
+    assert float((total - detail["dh6"]).abs().max()) < 1e-10  # reassociation only; the terms are the same ones
+    assert set(detail["parts"]) == {f"block{layer}_{part}" for layer in (3, 4, 5) for part in ("attention", "mlp")}
+    for layer in (3, 4, 5):
+        assert torch.equal(detail["blocks"][layer], detail["parts"][f"block{layer}_attention"] + detail["parts"][f"block{layer}_mlp"])
+
+
+def test_the_breakdown_separates_the_ratio_from_its_two_terms(fake_frame):
+    """``E₁`` alone cannot say whether a failure is a small absolute discrepancy over a small denominator or a real
+    reconstruction error in one block; the breakdown records both terms and every block separately."""
+    program, state, nouns, model = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["model"]
+    measurement = rd.measure_pair(model, state, nouns, "pl", state.frame.cue_ids["pl"])
+    record = rd.level1_breakdown(program, state, measurement)
+    assert record["e1"] == pytest.approx(rd.level1_error(program.level1(state, measurement.dx3), measurement.dh6))
+    assert record["absolute_error"] == pytest.approx(record["e1"] * record["denominator"], rel=1e-9)
+    assert record["frame_id"] == state.frame.frame_id and record["cue"] == "pl" and record["p_c"] == state.p_c and record["p_t"] == state.p_t
+    assert set(record["blocks"]) == {"block3", "block4", "block5"}
+    measured = rd.measured_block_changes(state, measurement)
+    total = measurement.dx3[state.p_t].double() + sum(measured.values())
+    assert float((total - measurement.dh6.double()).abs().max()) < rd.ADDITIVE_IDENTITY_TOLERANCE  # the same sum the additive identity checks
+    for layer in (3, 4, 5):
+        assert record["blocks"][f"block{layer}"]["measured_norm"] == pytest.approx(float(measured[layer].abs().max()))
+    locked = rd.state_from_locked(rd.locked_state(state), state.frame)
+    assert rd.level1_breakdown(program, locked, measurement)["blocks"] == {}  # no component map, so no block errors are invented
+
+
 def test_the_readout_program_reads_only_the_reference_state_and_the_predicted_change(fake_frame):
     """Provenance: with every capture and intervention entry point disabled, the program still produces its prediction."""
     program, state, nouns, dx3 = fake_frame["program"], fake_frame["state"], fake_frame["nouns"], fake_frame["dx3"]

@@ -13,7 +13,9 @@ predictions artifact. ``confirm`` (once) validates the artifacts, reproduces eve
 (each fresh frame's S1-REF and S1-VALIDITY prompts only, its validity, its reference state and the frame-conditional
 prediction table, serialized and digested into the results state) and, only after re-reading that digest from disk,
 stage 2 (the S2-TARGET prompts of the Y1 block and of the valid fresh frames' Y2 block, then the scoring on the frozen
-populations). ``report`` renders the report.
+populations). ``report`` renders the report. ``diagnose`` is not a phase: it never opens the results state and it
+enforces no identity — it measures a template-complete subset of the *exposed* pool, records each pair's Level-1
+breakdown, and writes ``level1-diagnostic.json``, so that a Level-1 failure can be placed.
 """
 
 from __future__ import annotations
@@ -50,6 +52,7 @@ from neural_decompiler.provenance import collect_git_state, collect_versions
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = ROOT / "outputs/experiment-020"
 RESULTS_PATH = OUTPUT_DIR / "results.json"
+DIAGNOSTIC_PATH = OUTPUT_DIR / "level1-diagnostic.json"
 REPORT_PATH = OUTPUT_DIR / "report.md"
 CONTRACT_TEST = ("tests/test_pythia_bridge_contract.py", "-m", "pythia_smoke", "-q")
 PHASES = rd.PHASES
@@ -68,6 +71,10 @@ def build_parser() -> argparse.ArgumentParser:
                              ("confirm", "Tier C: stage 1 (the fresh frames' reference states, digested) then stage 2 (the fresh cues, the scoring)"),
                              ("report", "render the report from the results state")):
         phases.add_parser(phase, help=help_text)
+    # Not a phase: it writes its own record, never the results state, and it enforces no identity.
+    diagnose = phases.add_parser("diagnose", help="exposed-only Level-1 diagnostic: place a Level-1 identity failure without enforcing anything")
+    diagnose.add_argument("--frames-per-template", type=int, default=1, help="exposed frames per template, taken in pool order (default 1)")
+    diagnose.add_argument("--cues", type=int, default=0, help="exposed cues per frame, 0 for every one of them (default 0)")
     return parser
 
 
@@ -142,6 +149,7 @@ class Runner:
     root: Path = ROOT
     results_path: Path = RESULTS_PATH
     report_path: Path = REPORT_PATH
+    diagnostic_path: Path = DIAGNOSTIC_PATH
     model_loader: Callable[[ModelSpec], Any] = load_model
     tokenizer_loader: Callable[[ModelSpec], Any] = _load_tokenizer
     lock_011_loader: Callable[[Path], dict[str, Any]] = lambda path: _load_lock(path, "011")  # tests inject locks built from the fake
@@ -441,6 +449,34 @@ class Runner:
         self.log(f"confirm complete: {results['outcome']['label']}; results sha256 {digest}")
         return 0
 
+    def diagnose(self, *, frames_per_template: int = 1, cues: int | None = None) -> int:
+        """The Level-1 diagnostic. Not a phase: it never opens the results state, so the recorded run, its ledger and
+        its incident are untouched, and it enforces no identity — the failure under investigation must be measured, not
+        re-raised. Exposed frames, exposed cues and exposed scorable nouns only."""
+        pool, lock_011, lock_012, lock_017, confirmation, digests = self._inputs()
+        provenance = self._provenance()
+        seed_runtime(rd.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+        model = self.model_loader(PYTHIA_70M)
+        try:
+            record = rd.run_level1_diagnostic(model, pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, confirmation=confirmation,
+                                              frames_per_template=frames_per_template, cues_per_frame=cues, log=self.log)
+        finally:
+            del model
+            gc.collect()
+        recorded = rd.load_results_state(self.results_path) if self.results_path.exists() else None
+        record = {**record, "protocol_code_commit": provenance["protocol_code_commit"], "git_dirty": provenance["git_dirty"],
+                  "versions": provenance["versions"], "runtime": runtime_record(PYTHIA_70M),
+                  "model": {"model_id": PYTHIA_70M.model_id, "revision": PYTHIA_70M.revision},
+                  "created_at": pm.utc_now(),
+                  "investigating": {"run_id": recorded["run_id"], "incidents": recorded["exploration"].get("incidents", [])} if recorded else None}
+        self.diagnostic_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {**record, "content_sha256": pm.sha256_text(pm.canonical_json(record))}
+        self.diagnostic_path.write_text(pm.canonical_json(payload) + "\n", encoding="utf-8")
+        self.log(f"diagnostic written to {self.diagnostic_path} sha256 {payload['content_sha256']}")
+        if self.results_path.exists() and rd.load_results_state(self.results_path)["state_sha256"] != (recorded or {}).get("state_sha256"):
+            raise rd.PhaseError("the diagnostic changed the recorded results state")
+        return 0
+
     def report(self) -> int:
         self._inputs()
         state = rd.load_results_state(self.results_path)
@@ -454,6 +490,8 @@ class Runner:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     runner = Runner()
+    if args.phase == "diagnose":
+        return runner.diagnose(frames_per_template=int(args.frames_per_template), cues=int(args.cues) or None)
     if args.phase in PHASES:
         return getattr(runner, args.phase.replace("-", "_"))()
     raise SystemExit(f"unknown phase {args.phase}")
