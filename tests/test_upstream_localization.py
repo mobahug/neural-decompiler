@@ -780,3 +780,86 @@ def test_a_full_scale_synthetic_calibration_dry_run_at_b_10000():
     print(f"\nfull-scale dry run: table {built - started:.1f} s, draws+kernel+check+envelopes+record {finished - built:.1f} s, "
           f"peak RSS {peak * scale / 2**30:.2f} GiB (was {before * scale / 2**30:.2f} GiB)")
     assert finished - built < 600 and peak * scale < 6 * 2**30
+
+
+# ---------------------------------------------------------------------------
+# The confirmation's scoring on synthetic fresh populations (tier A): the one kernel with D = 1, its direct check,
+# and every one of the four results reachable through the frozen classification.
+
+
+def _fresh_population(generator, *, cue_final_scale=1.0, coordinated_r=1.0, nouns=11):
+    scale = {"R": 0.05, "emb": 0.03, "Bv": 0.3, "Bp": 0.2, "T": 0.25}
+    blocks, tables = {}, {}
+    for group, n, width in (("cue_final", 12, 16), ("coordinated", 6, 32)):
+        dc = torch.randn(n, nouns, generator=generator, dtype=torch.float64)
+        residual = 0.02 * torch.randn(n, nouns, generator=generator, dtype=torch.float64)
+        errors = {name: value * torch.randn(n, nouns, generator=generator, dtype=torch.float64) for name, value in scale.items()}
+        if group == "cue_final":
+            errors = {name: value * cue_final_scale for name, value in errors.items()}
+            errors["T"] = torch.zeros_like(errors["T"])
+            residual = residual * cue_final_scale
+        else:
+            errors["R"] = errors["R"] * coordinated_r
+        rows = torch.empty(n, width, nouns, dtype=torch.float64)
+        for mask in range(width):
+            rows[:, mask] = dc + residual
+            for name in ul.FACTORS:
+                if not mask & ul.BIT[name]:
+                    rows[:, mask] += errors[name]
+        blocks[group] = {"dc": dc}
+        tables[group] = rows
+    return {"units": None, "blocks": blocks}, tables
+
+
+def test_score_022_reaches_every_result_through_the_locked_envelopes_and_guards():
+    generator = torch.Generator().manual_seed(9)
+    y1_measured, y1_tables = _fresh_population(generator, coordinated_r=4.0)  # Y1: the reductions hold a fair share of the coordinated gap
+    y2_measured, y2_tables = _fresh_population(generator, cue_final_scale=1e-3, coordinated_r=40.0)  # Y2: no cue-final gap; R dominates the coordinated gap
+    measured, tables = {"Y1": y1_measured, "Y2": y2_measured}, {"Y1": y1_tables, "Y2": y2_tables}
+    lower = lambda bound: {"kind": "lower", "rank": 1, "element": 0, "bound": bound}  # noqa: E731
+    upper = lambda bound: {"kind": "upper", "rank": 1, "element": 0, "bound": bound}  # noqa: E731
+    band = {"kind": "two-sided", "ranks": [1, 1], "elements": [0, 0], "low": -10.0, "high": 10.0}
+    envelopes = {"Y1/C1": lower(0.0), "Y1/C2": upper(-1.0), "Y1/C3": band, "Y1/C4": lower(10.0), "Y2/C1": lower(0.0), "Y2/C2": upper(1.0), "Y2/C3": band, "Y2/C4": lower(-10.0)}
+    lock = {"conditions": {key: {"envelope": envelope, "guard": dict(ul.GUARDS[key.split("/")[1]])} for key, envelope in envelopes.items()}}
+    scored = ul.score_022(measured, tables, lock)
+    results = {key: entry["result"] for key, entry in scored["conditions"].items()}
+    assert results == {"Y1/C1": "PASS", "Y1/C2": "ENVELOPE_ONLY_FAILURE", "Y1/C3": "PASS", "Y1/C4": "ENVELOPE_ONLY_FAILURE",
+                       "Y2/C1": "NOT_INTERPRETABLE", "Y2/C2": "NOT_INTERPRETABLE", "Y2/C3": "GUARD_FAILURE", "Y2/C4": "PASS"}
+    assert set(results.values()) == set(ul.RESULTS) and scored["aggregate_label"] is None
+    assert scored["conditions"]["Y2/C1"]["value"] is None and scored["conditions"]["Y2/C3"]["value"] > 0.9 and scored["conditions"]["Y2/C3"]["direction"]["larger"].startswith("the layer-1")
+    assert scored["cross_check"]["n_exceeding"] == 0 and scored["cross_check"]["n_checked"] == 4 * 44 and max(scored["efficiency_I6"].values()) <= 1e-12
+    shares = scored["games"]["Y1"]["cue_final"]["shares"]
+    assert shares["T"] == 0.0 and abs(sum(shares.values()) - 1.0) < 1e-12  # the cue-final null player, and efficiency
+    y2_rows = y2_tables["coordinated"].clone()
+    stats = ul.fresh_game(y2_measured["blocks"]["coordinated"]["dc"], y2_rows, "coordinated")
+    assert float(stats["shares"][0, 0]) == scored["conditions"]["Y2/C3"]["value"]  # the kernel with D = 1 is the scored value
+
+
+def test_verified_y2_blocks_and_the_barrier_refuse_every_mismatch(tmp_path):
+    units = ul.table_units([{"word": "b", "token_id": 9, "class": "quantity"}, {"word": "a", "token_id": 3, "class": "adjective"}],
+                           [SimpleNamespace(frame_id="quantifier-022-1", template_id="quantifier"), SimpleNamespace(frame_id="coordinated-adjective-022-1", template_id=ul.COORDINATED)])
+    assert units.pair_json() == {"cue_final": [["a", 3, "quantifier-022-1"], ["b", 9, "quantifier-022-1"]], "coordinated": [["a", 3, "coordinated-adjective-022-1"], ["b", 9, "coordinated-adjective-022-1"]]}
+    meta = ul.table_meta("Y2", units, ["n1", "n2"])
+    layout = ul.table_layout(units, 2)
+    lock = {"content_sha256": "L", "y2_table": {"data_path": "y2.f64", "index_path": "y2.json", "layout": layout, "meta": meta}}
+    blocks = [("cue_final", torch.randn(2, 16, 2, dtype=torch.float64)), ("coordinated", torch.randn(2, 32, 2, dtype=torch.float64))]
+    index = ul.write_table(tmp_path / "y2.f64", tmp_path / "y2.json", blocks, meta)
+    stage1 = {"y2_table": {"data_path": "y2.f64", "index_path": "y2.json", "file_sha256": index["file_sha256"], "index_sha256": rc.file_sha256(tmp_path / "y2.json")},
+              "lock_sha256": "L", "frames": {}}
+    stage1["digest"] = ul.stage_one_digest(stage1)
+    back = ul.verified_y2_blocks(tmp_path, stage1, lock)
+    assert all(torch.equal(back[name], block) for name, block in blocks)
+    confirmation = SimpleNamespace(target_prompts=(SimpleNamespace(key="k1"), SimpleNamespace(key="k2")))
+    state = {"confirmation": {"stage1": stage1}, "executed_prompt_keys": ["other"]}
+    assert set(ul.barrier_022(tmp_path, state, lock, confirmation)) == {"cue_final", "coordinated"}
+    with pytest.raises(ul.IncidentError, match="S2-TARGET"):
+        ul.barrier_022(tmp_path, {**state, "executed_prompt_keys": ["k2"]}, lock, confirmation)
+    with pytest.raises(ul.IncidentError, match="digest"):
+        ul.barrier_022(tmp_path, {**state, "confirmation": {"stage1": {**stage1, "frames": {"x": 1}}}}, lock, confirmation)
+    with pytest.raises(ul.IncidentError, match="bound layout"):
+        ul.verified_y2_blocks(tmp_path, stage1, {**lock, "y2_table": {**lock["y2_table"], "layout": list(reversed(layout))}})
+    with pytest.raises(ul.IncidentError, match="noun order"):
+        ul.verified_y2_blocks(tmp_path, stage1, {**lock, "y2_table": {**lock["y2_table"], "meta": {**meta, "nouns": ["n2", "n1"]}}})
+    (tmp_path / "y2.json").write_text((tmp_path / "y2.json").read_text().replace('"Y2"', '"Y1"'))
+    with pytest.raises(ul.IncidentError, match="index changed"):
+        ul.verified_y2_blocks(tmp_path, stage1, lock)

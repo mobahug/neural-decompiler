@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -1336,6 +1336,20 @@ def draw_pairs(units: CalibrationUnits, draws: Mapping[str, Any], population: st
     return cues.repeat_interleave(frames.shape[0]), frames.repeat(cues.shape[0])
 
 
+def game_quantities(stats: Mapping[str, torch.Tensor], b: int, direct: Mapping[str, Any]) -> list[tuple[str, float | None, float | None]]:
+    """Row ``b`` of the kernel's statistics beside the direct recomputation: every coalition's value, the gap, the
+    Shapley values, the shares and the interpretability flag (undefined on both sides agrees)."""
+    positive = bool(stats["sst_positive"][b])
+    interpretable = bool(stats["interpretable"][b])
+    quantities = [(f"v[{mask}]", float(stats["v"][b, mask]) if positive else None, direct["v"][mask]) for mask in range(N_MASKS)]
+    quantities.append(("gap", float(stats["gap"][b]) if positive else None, direct["gap"]))
+    quantities += [(f"phi[{name}]", float(stats["phi"][b, i]) if positive else None, None if direct["phi"] is None else direct["phi"][i]) for i, name in enumerate(FACTORS)]
+    quantities += [(f"share[{name}]", float(stats["shares"][b, i]) if interpretable else None, None if direct["shares"] is None else direct["shares"][i])
+                   for i, name in enumerate(FACTORS)]
+    quantities.append(("interpretable", 0.0 if interpretable == bool(direct["interpretable"]) else math.inf, 0.0))
+    return quantities
+
+
 def kernel_direct_check(table: CalibrationTable, units: CalibrationUnits, draws: Mapping[str, Any], kernel: Mapping[str, Any], *, n_draws: int | None = None) -> dict[str, Any]:
     """The kernel against the direct recomputation from the materialized pairs (flattened two-pass ``R²``, the
     permutation formula) on the first draws of each population and group: every coalition's value, the gap, the
@@ -1350,15 +1364,7 @@ def kernel_direct_check(table: CalibrationTable, units: CalibrationUnits, draws:
             for b in range(count):
                 cues, frames = draw_pairs(units, draws, population, group, b)
                 direct = direct_group_statistics(table.dc[cues, frames], table.dc_hat[cues, frames])
-                positive = bool(stats["sst_positive"][b])
-                interpretable = bool(stats["interpretable"][b])
-                quantities = [(f"v[{mask}]", float(stats["v"][b, mask]) if positive else None, direct["v"][mask]) for mask in range(N_MASKS)]
-                quantities.append(("gap", float(stats["gap"][b]) if positive else None, direct["gap"]))
-                quantities += [(f"phi[{name}]", float(stats["phi"][b, i]) if positive else None, None if direct["phi"] is None else direct["phi"][i]) for i, name in enumerate(FACTORS)]
-                quantities += [(f"share[{name}]", float(stats["shares"][b, i]) if interpretable else None, None if direct["shares"] is None else direct["shares"][i])
-                               for i, name in enumerate(FACTORS)]
-                quantities.append(("interpretable", 0.0 if interpretable == bool(direct["interpretable"]) else math.inf, 0.0))
-                for name, k, d in quantities:
+                for name, k, d in game_quantities(stats, b, direct):
                     difference = agreement(k, d)
                     checked += 1
                     location = {"population": population, "group": group, "draw": b, "quantity": name, "kernel": k, "direct": d}
@@ -1445,16 +1451,21 @@ LADDER = (("Level 0", 0), ("R", BIT["R"]), ("R+emb", BIT["R"] | BIT["emb"]), ("R
 INPUTS_ONLY_MASK = FULL_MASK & ~BIT["R"]  # the complete layer-0 input with the reduced layers 1–2 (a number only, never a corrected program)
 
 
+def stats_summary(stats: Mapping[str, torch.Tensor], b: int = 0) -> dict[str, Any]:
+    """Row ``b`` of a game, descriptively: the ladder in the spike's order, the ``R``-only and inputs-only values,
+    every coalition's value, the gap, the Shapley values and the shares (``None`` where undefined)."""
+    if not bool(stats["sst_positive"][b]):
+        return {"sst_positive": False, "interpretable": False}
+    interpretable = bool(stats["interpretable"][b])
+    return rc.json_safe({"ladder": {name: float(stats["v"][b, mask]) for name, mask in LADDER}, "r_only": float(stats["v"][b, BIT["R"]]),
+                         "inputs_only": float(stats["v"][b, INPUTS_ONLY_MASK]), "v": [float(value) for value in stats["v"][b]], "gap": float(stats["gap"][b]),
+                         "phi": {name: float(stats["phi"][b, i]) for i, name in enumerate(FACTORS)},
+                         "shares": {name: float(stats["shares"][b, i]) for i, name in enumerate(FACTORS)} if interpretable else None,
+                         "sst_positive": True, "interpretable": interpretable, "efficiency": float(stats["efficiency"][b])})
+
+
 def game_summary(sse: torch.Tensor, sst: torch.Tensor) -> dict[str, Any]:
-    """One aggregate's game, descriptively: the ladder in the spike's order, the ``R``-only and inputs-only values,
-    every coalition's value, the gap, the Shapley values and the shares."""
-    stats = group_statistics(sse.reshape(1, N_MASKS), sst.reshape(1))
-    interpretable = bool(stats["interpretable"][0])
-    return rc.json_safe({"ladder": {name: float(stats["v"][0, mask]) for name, mask in LADDER}, "r_only": float(stats["v"][0, BIT["R"]]),
-                         "inputs_only": float(stats["v"][0, INPUTS_ONLY_MASK]), "v": [float(value) for value in stats["v"][0]], "gap": float(stats["gap"][0]),
-                         "phi": {name: float(stats["phi"][0, i]) for i, name in enumerate(FACTORS)},
-                         "shares": {name: float(stats["shares"][0, i]) for i, name in enumerate(FACTORS)} if interpretable else None,
-                         "interpretable": interpretable, "efficiency": float(stats["efficiency"][0])})
+    return stats_summary(group_statistics(sse.reshape(1, N_MASKS), sst.reshape(1)))
 
 
 def exposed_descriptives(table: CalibrationTable, units: CalibrationUnits) -> dict[str, Any]:
@@ -1496,7 +1507,8 @@ def record_constants(draws: int) -> dict[str, Any]:
 def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], units: CalibrationUnits, confirmation_sha256: str,
                        gates: Mapping[str, Any], r1: Mapping[str, Any], table_digests: Mapping[str, str], draws: Mapping[str, Any], cross_check: Mapping[str, Any],
                        efficiency: Mapping[str, float], undefined: Mapping[str, Any], evaluated: Mapping[str, Any], descriptives: Mapping[str, Any],
-                       array_digests: Mapping[str, str], n_draws: int = B) -> dict[str, Any]:
+                       array_digests: Mapping[str, str], n_draws: int | None = None) -> dict[str, Any]:
+    n_draws = B if n_draws is None else int(n_draws)
     record = {
         "experiment": EXPERIMENT, "schema_version": 1, "kind": "exposed-only calibration record (design revision 3)", "design": dict(DESIGN), "plan": dict(PLAN),
         "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
@@ -1511,9 +1523,10 @@ def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mappi
     return record
 
 
-def verify_calibration_record(record: Mapping[str, Any], draws: int = B) -> None:
+def verify_calibration_record(record: Mapping[str, Any], draws: int | None = None) -> None:
     """The installed record: its digest, the frozen constants, design, plan and module blobs, and exactly the eight
     envelopes with passing direction checks."""
+    draws = B if draws is None else int(draws)
     if record.get("experiment") != EXPERIMENT or record.get("content_sha256") != rc.content_digest(record):
         raise PhaseError("the calibration record's content digest does not verify")
     if record.get("constants") != record_constants(draws) or record.get("design") != dict(DESIGN) or record.get("plan") != dict(PLAN) or record.get("module_blobs") != dict(FROZEN_BLOBS):
@@ -1529,3 +1542,818 @@ def verify_calibration_record(record: Mapping[str, Any], draws: int = B) -> None
             bounds = [envelope["low"], envelope["high"]] if claim == "C3" else [envelope["bound"]]
             if any(bound is None for bound in bounds):
                 raise PhaseError(f"the calibration record's {population}/{claim} envelope is not finite")
+
+
+# ---------------------------------------------------------------------------
+# The composition tables: one construction and one byte format for Y1 (committed with the lock) and Y2 (written at
+# stage 1, frozen at the barrier, committed as closure evidence) — plan revision 2, Q7 and R-1.
+
+TABLE_SCHEMA_VERSION = 1
+TABLE_CONSTRUCTION = (
+    "per pair (cue t, frame f, the template's reference cue r): the factors of design revision 3 — ΔE (the committed cue input), Δemb, block 0's value term V "
+    "and pattern term P at p_c, and ΔA0(p_t) in coordinated frames — from the frame's reference state and the weights; per canonical coalition m (cue-final: "
+    "m & ~T, masks 0–15; coordinated: masks 0–31) the inputs u(p_c) = ΔE + [emb]Δemb + [Bv]V + [Bp]P (in that order) and u(p_t) = [T]ΔA0(p_t); layers 1–2 "
+    "exact when R is in m, else the committed reduced program (Experiment 017's chain at LEVEL0 with its input replaced); then the frozen Experiment 020 "
+    "readout (blocks 3–5, LN_final, the noun read); Δĉ over the scorable exposed nouns in the listed order")
+Y2_TABLE_OUTPUT = "outputs/experiment-022/y2-table.f64"
+Y2_TABLE_INDEX_OUTPUT = "outputs/experiment-022/y2-table.json"
+
+
+@dataclass(frozen=True)
+class TableUnits:
+    """A table's pairs in the frozen order (plan revision 2, Q6): cue token id, then ``frame_id``; one block per
+    group, cue-final first."""
+
+    tokens: tuple[Mapping[str, Any], ...]
+    frames: tuple[pm.Frame, ...]
+    pairs: Mapping[str, tuple[tuple[int, int], ...]]  # group -> ((token index, frame index), ...)
+
+    def pair_json(self) -> dict[str, list[list[Any]]]:
+        return {group: [[self.tokens[t]["word"], int(self.tokens[t]["token_id"]), self.frames[f].frame_id] for t, f in pairs] for group, pairs in self.pairs.items()}
+
+
+def table_units(tokens: Sequence[Mapping[str, Any]], frames: Sequence[pm.Frame]) -> TableUnits:
+    ordered_tokens = tuple(sorted((dict(token) for token in tokens), key=lambda token: int(token["token_id"])))
+    ordered_frames = tuple(sorted(frames, key=lambda frame: frame.frame_id))
+    pairs = {group: tuple((t, f) for t in range(len(ordered_tokens)) for f, frame in enumerate(ordered_frames) if (frame.template_id == COORDINATED) == (group == "coordinated"))
+             for group in GROUPS}
+    return TableUnits(ordered_tokens, ordered_frames, pairs)
+
+
+def group_masks(group: str) -> tuple[int, ...]:
+    return CUE_FINAL_MASKS if group == "cue_final" else tuple(range(N_MASKS))
+
+
+def table_meta(kind: str, units: TableUnits, noun_keys: Sequence[str]) -> dict[str, Any]:
+    """Everything a table's index binds besides its bytes: the construction, the pair, mask and noun orders."""
+    return {"experiment": EXPERIMENT, "kind": kind, "schema_version": TABLE_SCHEMA_VERSION, "construction": TABLE_CONSTRUCTION, "design": dict(DESIGN),
+            "pair_order": "cue token id, then frame_id (plan revision 2, Q6)", "pairs": units.pair_json(), "masks": {group: list(group_masks(group)) for group in GROUPS},
+            "mask_bits": dict(BIT), "canonical": "cue-final rows carry T cleared (m & ~T): the value of m | T is the row of m", "nouns": list(noun_keys)}
+
+
+def table_layout(units: TableUnits, n_nouns: int) -> list[dict[str, Any]]:
+    return [{"name": group, "shape": [len(units.pairs[group]), len(group_masks(group)), int(n_nouns)]} for group in GROUPS]
+
+
+def _f64(tensor: torch.Tensor) -> bytes:
+    return numpy.ascontiguousarray(tensor.detach().cpu().double().numpy(), dtype=TABLE_DTYPE).tobytes()
+
+
+def _worse(entry: dict[str, Any], value: float, where: str) -> None:
+    """Keep the largest value and where it is; a NaN is kept as ``None`` and never displaced (it never passes)."""
+    if entry.get("undefined"):
+        return
+    if math.isnan(value):
+        entry.update({"max": None, "at": where, "undefined": True})
+    elif value > entry["max"]:
+        entry.update({"max": value, "at": where})
+
+
+def composition_tables(progs: ModelPrograms, units: TableUnits, states: Mapping[str, rd.FrameState020], reference_ids: Mapping[str, int], *,
+                       log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Every pair's canonical compositions in the table's order, weight-only (no measured quantity): the blocks, the
+    maxima of I2 (the block-0 algebra) and I5 (the empty coalition against the committed Level 0, exactly), and
+    sha256 digests of every pair's Level-0 ``Δx̂3`` and factor vectors."""
+    say = log or (lambda message: None)
+    rows16: dict[str, Mapping[int, atp.ReferenceRow]] = {}
+    level0, factor_bytes = hashlib.sha256(), hashlib.sha256()
+    gates = {"I2": {"max": 0.0, "at": ""}, "I5": {"max": 0.0, "at": ""}}
+    blocks = []
+    for group in GROUPS:
+        masks = list(group_masks(group))
+        out = torch.empty(len(units.pairs[group]), len(masks), len(progs.scorable), dtype=torch.float64)
+        for row, (t, f) in enumerate(units.pairs[group]):
+            frame, token = units.frames[f], units.tokens[t]
+            state = states[frame.frame_id]
+            if frame.frame_id not in rows16:
+                rows16[frame.frame_id] = atp.reference_rows(progs.programs, state.state_017.x1_all, state.state_017.x2_all)
+            ctx = pair_context(progs, frame, state, int(reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
+            compositions, composed = pair_compositions(progs, ctx)
+            out[row] = compositions[masks]
+            committed = rd.predicted_dx3(progs.chain, progs.weights, state, ctx.rows16, ctx.token_id, frame.template_id)
+            i5 = math.inf if set(committed) != set(composed["empty"]) else max(float((composed["empty"][p] - committed[p]).abs().max()) for p in committed)
+            factors = ctx.factors
+            i2 = float((factors.value_pc + factors.pattern_pc - factors.block0_pc.total).abs().max())
+            where = f"{token['word']}|{frame.frame_id}"
+            _worse(gates["I2"], i2, where)
+            _worse(gates["I5"], i5, where)
+            for position in sorted(composed["empty"]):
+                level0.update(_f64(composed["empty"][position]))
+            for vector in (factors.delta_e, factors.d_emb, factors.value_pc, factors.pattern_pc) + (() if factors.attn_pt is None else (factors.attn_pt,)):
+                factor_bytes.update(_f64(vector))
+        blocks.append((group, out))
+        say(f"  {group}: {len(units.pairs[group])} pairs × {len(masks)} coalitions composed")
+    return {"blocks": blocks, "gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "level0_dx3_sha256": level0.hexdigest(), "factors_sha256": factor_bytes.hexdigest()}
+
+
+def enforce_table_gates(gates: Mapping[str, Mapping[str, Any]], error: type[Exception] = IncidentError) -> None:
+    for name in ("I2", "I5"):
+        value = gates[name]["max"]
+        if value is None or not value <= TOLERANCES[name]:
+            raise error(f"identity gate {name} failed while composing a table: {value} at {gates[name]['at']} against {TOLERANCES[name]:.0e}")
+
+
+def verify_table_index(index: Mapping[str, Any], *, layout: Sequence[Mapping[str, Any]], meta: Mapping[str, Any], error: type[Exception] = IncidentError) -> None:
+    """A table index against what the lock binds: the byte format, the block names and shapes, and every meta field."""
+    if index.get("format") != TABLE_FORMAT or index.get("dtype") != TABLE_DTYPE:
+        raise error("the table index names a different byte format")
+    if [{"name": entry["name"], "shape": list(entry["shape"])} for entry in index.get("blocks", [])] != [dict(entry) for entry in layout]:
+        raise error("the table's blocks are not the bound layout (names, order and shapes)")
+    if {key: index.get(key) for key in meta} != dict(meta):
+        raise error("the table index's construction, pair order, mask order or noun order is not the bound one")
+
+
+# ---------------------------------------------------------------------------
+# The lock (no forward pass): the eight condition definitions, the Y1 table companion, the Y2 specification.
+
+GUARDS = {"C1": {"min_inclusive": GUARD_C1_MIN}, "C2": {"max_inclusive": GUARD_C2_MAX}, "C3": {"range_inclusive": list(GUARD_C3_RANGE)}, "C4": {"min_exclusive": GUARD_C4_EXCLUSIVE_MIN}}
+SEMANTICS = {
+    "results": {
+        "NOT_INTERPRETABLE": "the gap rule fails (G < 0.02 or SST = 0 on the full aggregate): localization is not interpretable; neither a pass nor a failure",
+        "GUARD_FAILURE": "the meaning guard fails: the preregistered qualitative localization claim fails for that population, whatever the envelope",
+        "ENVELOPE_ONLY_FAILURE": "the guard holds and the envelope fails: a quantitative shift relative to the exposed-like calibration; the qualitative claim survives",
+        "PASS": "guard and envelope hold: the attribution lies within the exposed-like envelope and keeps the claim's meaning",
+    },
+    "precedence": list(RESULTS),
+    "c4": "a PASS of C4 establishes a positive contribution of block-0 cue→target attention only, never a large or substantial one",
+    "aggregate": "none: the eight condition results are the result, each reported and read on its own; Y1 and Y2 are never pooled; no all-pass requirement",
+    "gap_rule": "evaluated on the condition's full group aggregate; it removes, re-weights or selects no pair, cue, frame or noun",
+    "cdf_percentile": "descriptive only; the frozen envelope decides; for the upper-bound C2 a high percentile lies toward the unfavorable upper tail",
+}
+
+
+def lock_conditions(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {f"{population}/{claim}": {"population": population, "claim": claim, "group": CLAIM_GROUP[claim], "statistic": CLAIM_STATISTIC[claim], "wording": CLAIM_WORDING[claim],
+                                      "envelope": dict(record["envelopes"][population][claim]), "guard": dict(GUARDS[claim]),
+                                      "guard_bound": bool(record["guard_bound"][population][claim])} for population in POPULATIONS for claim in CLAIMS}
+
+
+def exposed_states_digest(locked_states: Mapping[str, Any]) -> str:
+    return pm.sha256_text(pm.canonical_json({frame_id: rd.state_digest(entry) for frame_id, entry in sorted(locked_states.items())}))
+
+
+def y2_table_spec(confirmation: Confirmation022, noun_keys: Sequence[str]) -> dict[str, Any]:
+    """What the lock binds of the Y2 table, which cannot exist before stage 1 (R-1): the construction, the byte
+    format, the block layout and every order. Its numbers are frozen at the stage-1 barrier."""
+    units = table_units(confirmation.tokens, confirmation.frames)
+    return {"data_path": Y2_TABLE_OUTPUT, "index_path": Y2_TABLE_INDEX_OUTPUT, "format": TABLE_FORMAT, "dtype": TABLE_DTYPE, "layout": table_layout(units, len(noun_keys)),
+            "meta": table_meta("Y2", units, noun_keys), "states": "each new frame's digested S1-REF reference state (rd.locked_state), rebuilt by rd.state_from_locked",
+            "freeze": "written once at stage 1 with its digests in the stage-1 record; frozen at the stage-1 barrier, where it is re-read from disk and verified; stage 2 "
+                      "consumes the verified file; any later change is an incident; preserved if confirm stops after stage 1; committed as closure evidence after a "
+                      "successful confirmation (R-1)"}
+
+
+def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], record: Mapping[str, Any], record_file_sha256: str, confirmation: Confirmation022,
+               confirmation_file_sha256: str, y1_index: Mapping[str, Any], y1_index_sha256: str, y1_tables: Mapping[str, Any], noun_keys: Sequence[str],
+               exposed_states: Mapping[str, Any]) -> dict[str, Any]:
+    lock = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "the preregistration lock of Experiment 022 (design revision 3, plan revision 2)", "design": dict(DESIGN),
+        "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
+        "constants": record_constants(B), "calibration": {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]},
+        "confirmation_022": {"path": CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_file_sha256, "content_sha256": confirmation.content_sha256, "counts": confirmation.counts(),
+                             "manifest_sizes": {"S1-REF": len(confirmation.frames), "S1-VALIDITY": len(confirmation.frames), "Y1": len(confirmation.y1_prompts),
+                                                "Y2": len(confirmation.y2_prompts)}},
+        "conditions": lock_conditions(record), "semantics": dict(SEMANTICS), "noun_keys": list(noun_keys), "exposed_states_sha256": exposed_states_digest(exposed_states),
+        "y1_table": {"data_path": Y1_TABLE_RELATIVE_PATH, "index_path": Y1_TABLE_INDEX_RELATIVE_PATH, "file_sha256": y1_index["file_sha256"], "index_sha256": y1_index_sha256,
+                     "total_bytes": y1_index["total_bytes"], "layout": [{"name": entry["name"], "shape": list(entry["shape"])} for entry in y1_index["blocks"]],
+                     "level0_dx3_sha256": y1_tables["level0_dx3_sha256"], "factors_sha256": y1_tables["factors_sha256"], "gates": dict(y1_tables["gates"])},
+        "y2_table": y2_table_spec(confirmation, noun_keys),
+    }
+    validate_json_safe(lock)
+    lock["content_sha256"] = rc.content_digest(lock)
+    return lock
+
+
+def _format_envelope(envelope: Mapping[str, Any]) -> str:
+    if envelope["kind"] == "two-sided":
+        return f"[v₍{envelope['ranks'][0]}₎, v₍{envelope['ranks'][1]}₎] = [{envelope['low']:.6f}, {envelope['high']:.6f}]"
+    sign = "≥" if envelope["kind"] == "lower" else "≤"
+    return f"{sign} v₍{envelope['rank']}₎ = {envelope['bound']:.6f}"
+
+
+def _format_guard(claim: str) -> str:
+    return {"C1": f"s1 ≥ {GUARD_C1_MIN}", "C2": f"s2 ≤ {GUARD_C2_MAX}", "C3": f"{GUARD_C3_RANGE[0]} ≤ s3 ≤ {GUARD_C3_RANGE[1]}", "C4": f"s4 > {GUARD_C4_EXCLUSIVE_MIN}"}[claim]
+
+
+def render_preregistration(lock: Mapping[str, Any]) -> str:
+    lines = ["# Experiment 022 — preregistered conditions", "",
+             f"- Lock run `{lock['run_id']}` at commit `{lock['protocol_code_commit']}`; design revision {lock['design']['revision']} (`{lock['design']['commit']}`), "
+             f"plan revision {lock['plan']['revision']} (`{lock['plan']['commit']}`)",
+             f"- Calibration record content sha256 `{lock['calibration']['content_sha256']}` (file `{lock['calibration']['file_sha256']}`), B = {lock['constants']['B']}",
+             f"- Confirmation file content sha256 `{lock['confirmation_022']['content_sha256']}`: {lock['confirmation_022']['manifest_sizes']}",
+             f"- Y1 table companion `{lock['y1_table']['data_path']}`: sha256 `{lock['y1_table']['file_sha256']}`, index sha256 `{lock['y1_table']['index_sha256']}`, "
+             f"blocks {[(entry['name'], entry['shape']) for entry in lock['y1_table']['layout']]}",
+             f"- Y2 table: written at stage 1 as `{lock['y2_table']['data_path']}` in the same format, blocks {[(entry['name'], entry['shape']) for entry in lock['y2_table']['layout']]}; "
+             "frozen at the stage-1 barrier", "",
+             "| condition | statistic | envelope (exact order statistic) | meaning guard | guard-bound |", "|---|---|---|---|---|"]
+    for key in (f"{population}/{claim}" for population in POPULATIONS for claim in CLAIMS):  # fixed orders: the text must not depend on a mapping's order
+        condition = lock["conditions"][key]
+        lines.append(f"| {key} {condition['wording']} | {condition['statistic']} | {_format_envelope(condition['envelope'])} | {_format_guard(condition['claim'])} | "
+                     f"{'yes' if condition['guard_bound'] else 'no'} |")
+    lines += ["", "Each condition has exactly one result, decided in the order NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS:", ""]
+    lines += [f"- `{name}`: {lock['semantics']['results'][name]}" for name in RESULTS]
+    lines += ["", f"- C4: {lock['semantics']['c4']}.", f"- Aggregate: {lock['semantics']['aggregate']}.", f"- Gap rule: {lock['semantics']['gap_rule']}.", ""]
+    return "\n".join(lines)
+
+
+SCIENTIFIC_PATH_PREFIXES = ("src/", f"{EXPERIMENT_DIR}/", *rc.SCIENTIFIC_PATH_PREFIXES[1:])
+NON_SCIENTIFIC_PATHS = (CALIBRATION_RELATIVE_PATH, LOCK_RELATIVE_PATH, PREREGISTRATION_RELATIVE_PATH, Y1_TABLE_RELATIVE_PATH, Y1_TABLE_INDEX_RELATIVE_PATH, f"{EXPERIMENT_DIR}/README.md")
+NON_SCIENTIFIC_PREFIXES = (f"{EXPERIMENT_DIR}/evidence/",)
+
+
+def scientific_changes(paths: Sequence[str]) -> list[str]:
+    return [path for path in paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and path not in NON_SCIENTIFIC_PATHS and not path.startswith(NON_SCIENTIFIC_PREFIXES)]
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests: Mapping[str, str], record: Mapping[str, Any], record_file_sha256: str,
+                  confirmation: Confirmation022, confirmation_file_sha256: str, noun_keys: Sequence[str], exposed_states: Mapping[str, Any], preregistration_text: str,
+                  y1_index_text: str, y1_file_sha256: str, git_state: Mapping[str, Any], tracked: bool, changed_paths: Sequence[str] | None) -> dict[str, Any]:
+    """The installed lock before any fresh prompt: its digest; that it is this run's candidate; every bound input,
+    constant, condition and semantics; the Y1 companion's file and index; the Y2 specification; the rendered
+    preregistration; and a clean tree with no scientific change since the lock commit. Returns the Y1 index."""
+    import json
+
+    if lock.get("experiment") != EXPERIMENT or lock.get("content_sha256") != rc.content_digest(lock):
+        raise PhaseError("the installed lock is not a verified Experiment 022 lock")
+    if state.get("lock") is None or state["lock"].get("content_sha256") != lock["content_sha256"]:
+        raise PhaseError("the installed lock is not the candidate this run wrote")
+    if lock["inputs"] != dict(digests) or lock["module_blobs"] != dict(FROZEN_BLOBS) or lock["design"] != dict(DESIGN) or lock["plan"] != dict(PLAN):
+        raise PhaseError("the lock was written against different frozen inputs, modules, design or plan")
+    verify_calibration_record(record)
+    if lock["calibration"] != {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]}:
+        raise PhaseError("the lock was written against a different calibration record")
+    if lock["constants"] != record_constants(B) or lock["conditions"] != lock_conditions(record) or lock["semantics"] != dict(SEMANTICS):
+        raise PhaseError("the lock's constants, conditions or semantics are not those of the committed record and the frozen design")
+    if lock["confirmation_022"]["content_sha256"] != confirmation.content_sha256 or lock["confirmation_022"]["file_sha256"] != confirmation_file_sha256:
+        raise PhaseError("the lock was written against a different confirmation file")
+    if lock["noun_keys"] != list(noun_keys) or lock["exposed_states_sha256"] != exposed_states_digest(exposed_states):
+        raise PhaseError("the lock names a different noun order or different exposed reference states")
+    if lock["y2_table"] != y2_table_spec(confirmation, noun_keys):
+        raise PhaseError("the lock's Y2 table specification is not the frozen construction, format and order")
+    if pm.sha256_text(y1_index_text) != lock["y1_table"]["index_sha256"]:
+        raise PhaseError("the committed Y1 table index is not the one the lock binds")
+    y1_index = json.loads(y1_index_text)
+    if y1_index.get("file_sha256") != lock["y1_table"]["file_sha256"] or y1_file_sha256 != lock["y1_table"]["file_sha256"]:
+        raise PhaseError("the committed Y1 table companion is not the one the lock binds")
+    verify_table_index(y1_index, layout=lock["y1_table"]["layout"], meta=table_meta("Y1", table_units(confirmation.tokens, confirmation.exposed_frames), noun_keys), error=PhaseError)
+    if preregistration_text != render_preregistration(lock) or pm.sha256_text(preregistration_text) != state["lock"].get("preregistration_sha256"):
+        raise PhaseError("the installed preregistration is not the one this lock renders")
+    if not tracked:
+        raise PhaseError("the lock, the preregistration and the Y1 table companion must be tracked and committed")
+    if git_state.get("dirty"):
+        raise PhaseError("confirm requires a clean Git tree")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = scientific_changes(changed_paths)
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock: {scientific}")
+    return y1_index
+
+
+# ---------------------------------------------------------------------------
+# Confirm: stage 1, the barrier, stage 2, the gates and the scoring (once; no resume).
+
+
+def stage_one_digest(stage1: Mapping[str, Any]) -> str:
+    return pm.sha256_text(pm.canonical_json({key: value for key, value in stage1.items() if key != "digest"}))
+
+
+def stage_one_022(model: Any, progs: ModelPrograms, confirmation: Confirmation022, lock: Mapping[str, Any], *, root: Path, protocol_code_commit: str,
+                  executed: list[pm.Prompt], log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Exactly the S1-REF and the S1-VALIDITY prompt of each new frame, one forward each, in ``frame_id`` order. The
+    validity verdicts are recorded descriptively and select nothing. Then the Y2 table, from the recorded reference
+    states, written once in the bound byte format, and the stage-1 record carrying its digests."""
+    say = log or (lambda message: None)
+    frames_out: dict[str, Any] = {}
+    states: dict[str, Any] = {}
+    for frame in sorted(confirmation.frames, key=lambda frame: frame.frame_id):
+        reference = confirmation.reference_prompt(frame)
+        state = rd.capture_frame_020(model, progs.head, reference, progs.nouns, progs.axis_T)
+        executed.append(reference)
+        coordinated = frame.template_id == COORDINATED
+        if (state.p_c, state.p_t) != (frame.p_c, frame.p_t) or frame.p_t != frame.p_c + (1 if coordinated else 0):
+            raise IncidentError(f"{frame.frame_id}: the reference capture's positions ({state.p_c}, {state.p_t}) break the frame's frozen structure")
+        validity = confirmation.validity_prompt(frame)
+        plural = rd.measure_pair(model, state, progs.nouns, validity.cue_label, validity.cue_token_id)
+        executed.append(validity)
+        verdict = rd.frame_validity(progs.readout, state, progs.nouns, plural, progs.axis_T)
+        frames_out[frame.frame_id] = {"template_id": frame.template_id, "p_c": frame.p_c, "p_t": frame.p_t, "cue_final": not coordinated,
+                                      "validity": rc.json_safe(dict(verdict)), "selects": "nothing: descriptive only"}
+        states[frame.frame_id] = rd.locked_state(state)
+        say(f"  {frame.frame_id}: reference state captured; validity {verdict['valid']} (descriptive)")
+    data_path, index_path = root / lock["y2_table"]["data_path"], root / lock["y2_table"]["index_path"]
+    if data_path.exists() or index_path.exists():
+        raise IncidentError("a Y2 table is already on disk; it is written exactly once, at stage 1")
+    rebuilt = {frame.frame_id: rd.state_from_locked(states[frame.frame_id], frame) for frame in confirmation.frames}
+    tables = composition_tables(progs, table_units(confirmation.tokens, confirmation.frames), rebuilt, confirmation.reference_ids, log=say)
+    index = write_table(data_path, index_path, tables["blocks"], lock["y2_table"]["meta"])
+    record = {"frames": frames_out, "states": states, "state_digests": {frame_id: rd.state_digest(entry) for frame_id, entry in sorted(states.items())},
+              "y2_table": {"data_path": lock["y2_table"]["data_path"], "index_path": lock["y2_table"]["index_path"], "file_sha256": index["file_sha256"],
+                           "index_sha256": rc.file_sha256(index_path), "total_bytes": index["total_bytes"], "level0_dx3_sha256": tables["level0_dx3_sha256"],
+                           "factors_sha256": tables["factors_sha256"], "gates": tables["gates"]},
+              "commit": protocol_code_commit, "lock_sha256": lock["content_sha256"], "noun_keys": list(lock["noun_keys"])}
+    record["digest"] = stage_one_digest(record)
+    return record
+
+
+def verified_y2_blocks(root: Path, stage1: Mapping[str, Any], lock: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    """The Y2 table re-read from disk: its index against the stage-1 record's digest, the bytes against the index's,
+    and the layout, construction and orders against the lock. Every mismatch is an incident."""
+    import json
+
+    entry = stage1["y2_table"]
+    if (entry["data_path"], entry["index_path"]) != (lock["y2_table"]["data_path"], lock["y2_table"]["index_path"]):
+        raise IncidentError("the stage-1 record names a Y2 table other than the bound one")
+    data_path, index_path = root / entry["data_path"], root / entry["index_path"]
+    if not data_path.exists() or not index_path.exists():
+        raise IncidentError("the Y2 table written at stage 1 is missing")
+    if rc.file_sha256(index_path) != entry["index_sha256"]:
+        raise IncidentError("the Y2 table index changed after its stage-1 digest")
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    if index.get("file_sha256") != entry["file_sha256"]:
+        raise IncidentError("the Y2 table index binds bytes other than the stage-1 record's")
+    verify_table_index(index, layout=lock["y2_table"]["layout"], meta=lock["y2_table"]["meta"])
+    return read_table(data_path, index)
+
+
+def barrier_022(root: Path, state: Mapping[str, Any], lock: Mapping[str, Any], confirmation: Confirmation022) -> dict[str, torch.Tensor]:
+    """The hard boundary, on the results state re-read from disk: the stage-1 record reproduces its digest and names
+    this lock; the ledger holds no S2-TARGET key; the Y2 table is re-read and verified. Returns the verified blocks,
+    which stage 2's scoring consumes."""
+    stage1 = (state.get("confirmation") or {}).get("stage1")
+    if stage1 is None or stage1.get("digest") != stage_one_digest(stage1):
+        raise IncidentError("the stage-1 record does not reproduce its digest; no S2-TARGET prompt may run")
+    if stage1.get("lock_sha256") != lock["content_sha256"]:
+        raise IncidentError("the stage-1 record was written under a different lock")
+    overlap = {prompt.key for prompt in confirmation.target_prompts} & set(state["executed_prompt_keys"])
+    if overlap:
+        raise IncidentError(f"{len(overlap)} S2-TARGET keys are in the ledger before the barrier, e.g. {sorted(overlap)[:2]}")
+    return verified_y2_blocks(root, stage1, lock)
+
+
+def y1_states(locked_states: Mapping[str, Any], frames: Sequence[pm.Frame]) -> dict[str, rd.FrameState020]:
+    return {frame.frame_id: rd.state_from_locked(locked_states[frame.frame_id], frame) for frame in frames}
+
+
+def stage_two_022(model: Any, progs: ModelPrograms, confirmation: Confirmation022, states: Mapping[str, Mapping[str, rd.FrameState020]], *, executed: list[pm.Prompt],
+                  log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Every S2-TARGET prompt once — the Y1 block (the exposed frames), then the Y2 block (the new frames), frame by
+    frame in ``frame_id`` order, cues by token id — one forward each (logits, ``RESID_PRE.L1`` and ``RESID_PRE.L3`` at the
+    changed positions). Returns per population and group, in the table's pair order, the measured ``Δc``, ``Δx1``,
+    ``Δx3`` and the ceiling ``Δĉ``. Nothing is enforced."""
+    say = log or (lambda message: None)
+    d_model = int(progs.weights.W_E.shape[1])
+    n_nouns = len(progs.scorable)
+    out: dict[str, Any] = {}
+    for population, frames in (("Y1", confirmation.exposed_frames), ("Y2", confirmation.frames)):
+        units = table_units(confirmation.tokens, frames)
+        where = {group: {pair: row for row, pair in enumerate(pairs)} for group, pairs in units.pairs.items()}
+        blocks = {group: {"dc": torch.full((len(pairs), n_nouns), math.nan, dtype=torch.float64), "ceiling": torch.full((len(pairs), n_nouns), math.nan, dtype=torch.float64),
+                          "dx1": torch.full((len(pairs), 2, d_model), math.nan, dtype=torch.float64), "dx3": torch.full((len(pairs), 2, d_model), math.nan, dtype=torch.float64),
+                          "positions": torch.zeros(len(pairs), 2, dtype=torch.int64)} for group, pairs in units.pairs.items()}
+        for f, frame in enumerate(units.frames):
+            state = states[population][frame.frame_id]
+            group = "coordinated" if frame.template_id == COORDINATED else "cue_final"
+            for t, token in enumerate(units.tokens):
+                measurement = measure_prompt(model, progs, frame, state, int(token["token_id"]), token["word"])
+                executed.append(pm.Prompt(frame, int(token["token_id"]), token["word"]))
+                row, block = where[group][(t, f)], blocks[group]
+                block["dc"][row] = measurement["dc"]
+                block["ceiling"][row] = contrast_of(progs, state, measurement["dx3"])
+                block["positions"][row] = torch.tensor([frame.p_c, frame.p_t], dtype=torch.int64)
+                for slot, position in enumerate((frame.p_c, frame.p_t)):
+                    block["dx1"][row, slot] = measurement["dx1"][position]
+                    block["dx3"][row, slot] = measurement["dx3"][position]
+        say(f"  {population}: {sum(len(pairs) for pairs in units.pairs.values())} target pairs measured")
+        out[population] = {"units": units, "blocks": blocks}
+    return out
+
+
+def measurement_tensors(measured: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    return {f"{population}/{group}/{name}": tensor for population, entry in measured.items() for group, block in entry["blocks"].items() for name, tensor in block.items()}
+
+
+def _changes(block: Mapping[str, torch.Tensor], row: int, name: str, frame: pm.Frame) -> dict[int, torch.Tensor]:
+    return {frame.p_c: block[name][row, 0]} if frame.p_t == frame.p_c else {frame.p_c: block[name][row, 0], frame.p_t: block[name][row, 1]}
+
+
+def target_gates(progs: ModelPrograms, confirmation: Confirmation022, measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]],
+                 states: Mapping[str, Mapping[str, rd.FrameState020]]) -> dict[str, Any]:
+    """I1–I4 on every target pair, from the saved measurements and a weight-only recomputation of its factors and
+    full composition (I4 against the scored table's full row); and, descriptively, block 0's head profile and the
+    ladder compositions' ``Δx3`` errors. I5 was enforced when the tables were composed (lock and stage 1)."""
+    gates = {name: {"max": 0.0, "at": ""} for name in ("I1", "I2", "I3", "I4")}
+    profile: dict[str, Any] = {}
+    ladder_errors: dict[str, Any] = {}
+    for population, entry in measured.items():
+        units = entry["units"]
+        rows16: dict[str, Any] = {}
+        for group, pairs in units.pairs.items():
+            block = entry["blocks"][group]
+            masks = list(group_masks(group))
+            full_row = masks.index(canonical_mask(FULL_MASK, group == "cue_final"))
+            self_weight, value_norm, target_weight = [], [], []
+            errors = {f"{name}@{slot}": [] for name, _ in LADDER for slot in (("p_c",) if group == "cue_final" else ("p_c", "p_t"))}
+            for row, (t, f) in enumerate(pairs):
+                frame, token = units.frames[f], units.tokens[t]
+                state = states[population][frame.frame_id]
+                if frame.frame_id not in rows16:
+                    rows16[frame.frame_id] = atp.reference_rows(progs.programs, state.state_017.x1_all, state.state_017.x2_all)
+                ctx = pair_context(progs, frame, state, int(confirmation.reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
+                factors, where = ctx.factors, f"{population}|{token['word']}|{frame.frame_id}"
+                dx1, dx3 = _changes(block, row, "dx1", frame), _changes(block, row, "dx3", frame)
+                i1 = float((factors.d_emb + factors.delta_e + factors.block0_pc.total - dx1[frame.p_c]).abs().max())
+                if factors.block0_pt is not None:
+                    i1 = max(i1, float((factors.block0_pt.total - dx1[frame.p_t]).abs().max()))
+                _worse(gates["I1"], i1, where)
+                _worse(gates["I2"], float((factors.value_pc + factors.pattern_pc - factors.block0_pc.total).abs().max()), where)
+                for name, mask in LADDER:
+                    predicted = compose_dx3(progs, ctx, mask)
+                    for position in sorted(dx3):
+                        slot = "p_c" if position == frame.p_c else "p_t"
+                        errors[f"{name}@{slot}"].append(i3_error({position: predicted[position]}, {position: dx3[position]}))
+                    if mask == FULL_MASK:
+                        _worse(gates["I3"], i3_error(predicted, dx3), where)
+                _worse(gates["I4"], float((tables[population][group][row, full_row] - block["ceiling"][row]).abs().max()), where)
+                self_weight.append(factors.block0_pc.weight_to_cue)
+                value_norm.append(factors.block0_pc.per_head_value_norm)
+                if factors.block0_pt is not None:
+                    target_weight.append(factors.block0_pt.weight_to_cue)
+            median = lambda rows: [float(value) for value in torch.stack(rows).median(dim=0).values] if rows else None  # noqa: E731
+            profile[f"{population}/{group}"] = {"reference_self_weight_median": median(self_weight), "value_term_norm_median": median(value_norm),
+                                                 "attention_pt_to_pc_median": median(target_weight)}
+            ladder_errors[f"{population}/{group}"] = {name: {"median": float(torch.tensor(values).median()), "max": float(max(values))} for name, values in errors.items() if values}
+    return {"gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "block0_profile": rc.json_safe(profile), "dx3_relative_error": rc.json_safe(ladder_errors)}
+
+
+def enforce_target_gates(gates: Mapping[str, Mapping[str, Any]]) -> None:
+    for name in ("I1", "I2", "I3", "I4"):
+        value = gates[name]["max"]
+        if value is None or not value <= TOLERANCES[name]:
+            raise IncidentError(f"identity gate {name} failed at stage 2: {value} at {gates[name]['at']} against {TOLERANCES[name]:.0e}")
+
+
+def expand_rows(rows: torch.Tensor, group: str) -> torch.Tensor:
+    """``[P, 16 | 32, N]`` to ``[P, 32, N]``: a cue-final pair's row of ``m | T`` is its row of ``m``."""
+    return rows[:, [canonical_mask(mask, True) for mask in range(N_MASKS)], :] if group == "cue_final" else rows
+
+
+def fresh_game(dc: torch.Tensor, rows: torch.Tensor, group: str, subset: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
+    """The kernel on a fresh population (``D = 1``: every pair once), or on a descriptive subset of its pairs."""
+    full = expand_rows(rows, group)
+    cells = [pair_cells(dc[i], full[i]) for i in range(int(dc.shape[0]))]
+    sse = torch.stack([cell[0] for cell in cells])
+    count, mean, m2 = (torch.tensor([cell[k] for cell in cells], dtype=torch.float64) for k in (1, 2, 3))
+    index = torch.tensor([list(range(int(dc.shape[0])) if subset is None else list(subset))], dtype=torch.int64)
+    group_sse, _, _, sst = group_sums(sse, count, mean, m2, index)
+    return {**group_statistics(group_sse, sst), "sst": sst}
+
+
+def score_022(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]], lock: Mapping[str, Any]) -> dict[str, Any]:
+    """The eight conditions: per population and group the one kernel (``D = 1``), checked against the direct
+    recomputation (1e-10) and for efficiency (I6); then s1–s4 and ``classify`` against the locked envelopes and
+    guards. No aggregate label."""
+    games: dict[str, dict[str, Any]] = {}
+    efficiency: dict[str, float] = {}
+    worst: dict[str, Any] = {"max_difference": -1.0}
+    exceeding = checked = 0
+    for population in POPULATIONS:
+        games[population] = {}
+        for group in GROUPS:
+            dc, rows = measured[population]["blocks"][group]["dc"], tables[population][group]
+            stats = fresh_game(dc, rows, group)
+            direct = direct_group_statistics(dc, expand_rows(rows, group))
+            for name, k, d in game_quantities(stats, 0, direct):
+                difference = agreement(k, d)
+                checked += 1
+                if difference > worst["max_difference"]:
+                    worst = {"max_difference": difference, "at": f"{population}/{group}/{name}", "kernel": k, "direct": d}
+                exceeding += int(not difference <= TOLERANCES["kernel"])
+            efficiency[f"{population}/{group}"] = float(stats["efficiency"][0])
+            games[population][group] = stats
+    cross_check = rc.json_safe({**worst, "tolerance": TOLERANCES["kernel"], "scale": rc.AGREEMENT_SCALE, "n_checked": checked, "n_exceeding": exceeding})
+    if exceeding:
+        raise CrossCheckError(cross_check)
+    enforce_efficiency(efficiency)
+    conditions: dict[str, Any] = {}
+    for population in POPULATIONS:
+        claims = claim_statistics(games[population]["cue_final"], games[population]["coordinated"])
+        for claim in CLAIMS:
+            key = f"{population}/{claim}"
+            entry = claims[claim]
+            interpretable = bool(entry["interpretable"][0])
+            value = float(entry["value"][0]) if interpretable else None
+            condition = lock["conditions"][key]
+            result = classify(claim, value, interpretable, condition["envelope"])
+            group_stats = games[population][CLAIM_GROUP[claim]]
+            conditions[key] = rc.json_safe({"population": population, "claim": claim, "group": CLAIM_GROUP[claim], "statistic": CLAIM_STATISTIC[claim], "wording": CLAIM_WORDING[claim],
+                                            "value": value, "envelope": condition["envelope"], "guard": condition["guard"], "gap": float(entry["gap"][0]),
+                                            "sst_positive": bool(group_stats["sst_positive"][0]), "interpretable": interpretable, "result": result})
+            if claim == "C3" and value is not None:
+                conditions[key]["direction"] = {"reductions_share": value, "layer0_share": 1.0 - value, "larger": "the layer-1–2 reductions" if value > 0.5 else "layer 0" if value < 0.5 else "neither"}
+    return {"conditions": conditions, "games": {population: {group: stats_summary(stats) for group, stats in entries.items()} for population, entries in games.items()},
+            "cross_check": cross_check, "efficiency_I6": efficiency, "aggregate_label": None}
+
+
+def fresh_descriptives(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]]) -> dict[str, Any]:
+    """Per template and per cue class, the games on the fresh pairs (descriptive; the conditions use the full groups)."""
+    out: dict[str, Any] = {}
+    for population, entry in measured.items():
+        units = entry["units"]
+        for group, pairs in units.pairs.items():
+            dc, rows = entry["blocks"][group]["dc"], tables[population][group]
+            for template in sorted({units.frames[f].template_id for _, f in pairs}):
+                subset = [row for row, (_, f) in enumerate(pairs) if units.frames[f].template_id == template]
+                out[f"{population}/template/{template}"] = stats_summary(fresh_game(dc, rows, group, subset))
+            for cls in CUE_CLASSES:
+                subset = [row for row, (t, _) in enumerate(pairs) if units.tokens[t]["class"] == cls]
+                if subset:
+                    out[f"{population}/{group}/class/{cls}"] = stats_summary(fresh_game(dc, rows, group, subset))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# The results state and the phase rules (021's discipline).
+
+RESULTS_SCHEMA_VERSION = 1
+PHASES = ("validate", "freeze", "calibrate", "lock", "confirm", "report", "replicate-021")
+STATE_PHASES = ("calibrate", "lock", "confirm", "report", "replicate-021")
+DIGEST_KEYS = (*rc.DIGEST_KEYS, "confirmation_022", "confirmation_022_file", "calibration_021_file", "calibration_021_content", "exposed_measured_021")
+
+
+def verify_021_record(root: Path) -> dict[str, str]:
+    """Experiment 021's committed calibration record: its file digest, its content digest and the exposed-table
+    digest it records, each the frozen constant."""
+    import json
+
+    path = root / CALIBRATION_021_RELATIVE_PATH
+    if not path.exists() or rc.file_sha256(path) != INHERITED_021["calibration_file_sha256"]:
+        raise PhaseError("Experiment 021's committed calibration record is missing or not the frozen file")
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if record.get("content_sha256") != rc.content_digest(record) or record["content_sha256"] != INHERITED_021["calibration_content_sha256"]:
+        raise PhaseError("Experiment 021's calibration record does not verify against its frozen content digest")
+    if record.get("table_sha256", {}).get("measured") != INHERITED_021["exposed_measured_sha256"]:
+        raise PhaseError("Experiment 021's calibration record binds a different exposed table")
+    return {"calibration_021_file": INHERITED_021["calibration_file_sha256"], "calibration_021_content": INHERITED_021["calibration_content_sha256"],
+            "exposed_measured_021": INHERITED_021["exposed_measured_sha256"]}
+
+
+def input_digests(inputs: FrozenInputs, confirmation: Confirmation022, confirmation_file_sha256: str, digests_021: Mapping[str, str]) -> dict[str, str]:
+    return {**{key: inputs.digests[key] for key in rc.DIGEST_KEYS}, "confirmation_022": confirmation.content_sha256, "confirmation_022_file": confirmation_file_sha256,
+            **dict(digests_021)}
+
+
+def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> dict[str, Any]:
+    if not pm._COMMIT_SHA.fullmatch(protocol_code_commit or ""):
+        raise PhaseError("scientific execution requires a 40-character committed protocol/code SHA")
+    if git_dirty:
+        raise PhaseError("scientific execution requires a clean Git tree")
+    return {"schema_version": RESULTS_SCHEMA_VERSION, "experiment": EXPERIMENT, "run_id": pm.sha256_text(pm.canonical_json(dict(digests)) + protocol_code_commit + pm.utc_now())[:16],
+            "created_at": pm.utc_now(), "inputs": {key: digests[key] for key in DIGEST_KEYS}, "module_blobs": dict(FROZEN_BLOBS), "design": dict(DESIGN), "plan": dict(PLAN),
+            "protocol_code_commit": protocol_code_commit, "git_dirty": False, "model": {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision},
+            "versions": dict(versions), "phases": {phase: {"status": "not_started"} for phase in STATE_PHASES}, "executed_prompt_keys": [], "executed_noun_keys": [],
+            "calibration": {}, "lock": None, "confirmation": None, "report": None, "replication": None}
+
+
+def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
+    status = {name: entry["status"] for name, entry in state["phases"].items()}
+    calibration = state.get("calibration") or {}
+    if phase == "calibrate":
+        if status["calibrate"] == "running" and calibration.get("incidents") and not calibration.get("record_sha256"):
+            return  # resumable only after a recorded incident, at a new commit (the runner refuses the incident's commit)
+        if status["calibrate"] == "running":
+            raise PhaseError("calibrate is running without a recorded incident, or its record is already written; it cannot resume")
+        if status["calibrate"] != "not_started":
+            raise PhaseError(f"calibrate is {status['calibrate']}; the calibration runs once in this protocol version (a stop for review is never retried automatically)")
+    elif phase == "lock":
+        if status["calibrate"] != "complete":
+            raise PhaseError(f"lock requires the completed calibrate phase (it is {status['calibrate']})")
+        if status["lock"] == "complete":
+            raise PhaseError("lock already written; a new candidate lock requires a new protocol version")
+    elif phase == "confirm":
+        if status["lock"] != "complete":
+            raise PhaseError("confirm requires the lock phase")
+        if status["confirm"] != "not_started":
+            raise PhaseError("confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version")
+    elif phase == "report":
+        if status["calibrate"] not in ("complete", "stopped_for_review") and not calibration.get("incidents"):
+            raise PhaseError("report requires a calibrate phase that completed, stopped for review or recorded an incident")
+    elif phase == "replicate-021":
+        if status["confirm"] != "complete" or status["report"] != "complete":
+            raise PhaseError("replicate-021 runs only after a completed confirm and its report")
+        if status["replicate-021"] == "complete":
+            raise PhaseError("replicate-021 already ran")
+    else:
+        raise PhaseError(f"unknown phase {phase}")
+
+
+def assert_ledger_isolated(ledger: Sequence[str], forbidden: frozenset[str], what: str) -> None:
+    overlap = set(ledger) & forbidden
+    if overlap:
+        raise PhaseError(f"{what} holds {len(overlap)} confirmation-manifest keys, e.g. {sorted(overlap)[:2]}")
+
+
+# ---------------------------------------------------------------------------
+# The exploratory replication on Experiment 021's spent set (after report only; Q10).
+
+
+def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Experiment 021's stored stage-2 measurements (digest-verified) with weight-only compositions of its cues in its
+    frames, through the same kernel. Checks I4 (the full composition against 021's stored ceiling), I5 (the empty one
+    against 021's stored Level 0) and I6; I1–I3 are unavailable, with no substitute. Numbers only, no result names;
+    it can affect no 022 floor, claim or label."""
+    import dataclasses
+    import json
+
+    say = log or (lambda message: None)
+    results_path = root / RESULTS_021_RELATIVE_PATH
+    if not results_path.exists() or rc.file_sha256(results_path) != INHERITED_021["results_file_sha256"]:
+        raise PhaseError("Experiment 021's results state is missing or not the closed file")
+    state = rd.load_results_state(results_path)
+    if state["state_sha256"] != INHERITED_021["results_state_sha256"] or (state.get("phases", {}).get("confirm") or {}).get("status") != "complete":
+        raise PhaseError("Experiment 021's results state is not its completed, closed confirmation")
+    extract = json.loads((root / EXTRACT_021_RELATIVE_PATH).read_text(encoding="utf-8"))
+    if extract.get("content_sha256") != rc.content_digest(extract) or extract["content_sha256"] != INHERITED_021["extract_content_sha256"]:
+        raise PhaseError("Experiment 021's committed confirmation extract does not verify")
+    stored = torch.load(root / STAGE2_021_RELATIVE_PATH)
+    recorded = state["confirmation"]["stage2"]["tables_sha256"]
+    for population in POPULATIONS:
+        for part in ("exposed", "ceiling"):
+            for key in ("measured", "predicted"):
+                if rc.tensor_digest(stored[population][part][key]) != recorded[population][part][key]:
+                    raise PhaseError(f"Experiment 021's stored {population}/{part}/{key} table does not match its recorded digest")
+    confirmation_020 = inputs.confirmation_020
+    nouns = rd.NounSet.build(progs.weights, inputs.pool.nouns, confirmation_020.nouns)  # 021's own noun set, so its readout is reproduced exactly
+    progs_021 = dataclasses.replace(progs, nouns=nouns, scorable=list(nouns.exposed_scorable))
+    noun_keys = [nouns.nouns[index].lexical_key for index in nouns.exposed_scorable]
+    tokens = {token["word"]: token for token in confirmation_020.tokens}
+    frames = {frame.frame_id: frame for frame in (*inputs.pool.frames, *confirmation_020.frames)}
+    locked = {"Y1": inputs.closure["exploration"]["locked_states"], "Y2": state["confirmation"]["stage1"]["states"]}
+    out: dict[str, Any] = {}
+    gates = {"I4": {"max": 0.0, "at": ""}, "I5": {"max": 0.0, "at": ""}}
+    efficiency: dict[str, float] = {}
+    with torch.no_grad():
+        for population in POPULATIONS:
+            table, ceiling = stored[population]["exposed"], stored[population]["ceiling"]
+            if list(table["noun_keys"]) != noun_keys:
+                raise PhaseError(f"Experiment 021's {population} table orders a different noun set")
+            rows16: dict[str, Any] = {}
+            states: dict[str, rd.FrameState020] = {}
+            by_group: dict[str, dict[str, list]] = {group: {"dc": [], "rows": []} for group in GROUPS}
+            for i, (word, frame_id) in enumerate(zip(table["cues"], table["frames"])):
+                frame = frames[frame_id]
+                if frame_id not in states:
+                    states[frame_id] = rd.state_from_locked(locked[population][frame_id], frame)
+                    rows16[frame_id] = atp.reference_rows(progs_021.programs, states[frame_id].state_017.x1_all, states[frame_id].state_017.x2_all)
+                token = tokens[word]
+                ctx = pair_context(progs_021, frame, states[frame_id], int(inputs.pool.reference_ids[frame.template_id]), int(token["token_id"]), word, rows16[frame_id])
+                compositions, _ = pair_compositions(progs_021, ctx)
+                where = f"{population}|{word}|{frame_id}"
+                _worse(gates["I5"], float((compositions[0] - table["predicted"][i].double()).abs().max()), where)
+                _worse(gates["I4"], float((compositions[FULL_MASK] - ceiling["predicted"][i].double()).abs().max()), where)
+                group = "coordinated" if frame.template_id == COORDINATED else "cue_final"
+                by_group[group]["dc"].append(table["measured"][i].double())
+                by_group[group]["rows"].append(compositions[list(group_masks(group))])
+            games: dict[str, Any] = {}
+            for group in GROUPS:
+                if not by_group[group]["dc"]:  # a group without pairs (021's Y2 holds only its valid frames) has no game
+                    games[group] = None
+                    continue
+                stats = fresh_game(torch.stack(by_group[group]["dc"]), torch.stack(by_group[group]["rows"]), group)
+                efficiency[f"{population}/{group}"] = float(stats["efficiency"][0])
+                games[group] = stats
+            at = {name: index for index, name in enumerate(FACTORS)}
+
+            def share(stats: Mapping[str, torch.Tensor] | None, names: Sequence[str]) -> float | None:
+                return None if stats is None or not bool(stats["interpretable"][0]) else float(sum(stats["shares"][0, at[name]] for name in names))
+
+            out[population] = {"n_pairs": {group: len(by_group[group]["dc"]) for group in GROUPS},
+                               "games": {group: (None if stats is None else stats_summary(stats)) for group, stats in games.items()},
+                               "statistics": {"C1": share(games["cue_final"], ("Bv", "Bp")), "C2": share(games["cue_final"], ("R",)), "C3": share(games["coordinated"], ("R",)),
+                                              "C4": share(games["coordinated"], ("T",))}}
+            say(f"  {population}: {len(table['cues'])} of Experiment 021's pairs recomposed")
+    checks = {"I4": {**rc.json_safe(gates["I4"]), "tolerance": TOLERANCES["I4"], "passed": gates["I4"]["max"] is not None and gates["I4"]["max"] <= TOLERANCES["I4"]},
+              "I5": {**rc.json_safe(gates["I5"]), "tolerance": TOLERANCES["I5"], "passed": gates["I5"]["max"] is not None and gates["I5"]["max"] <= TOLERANCES["I5"]},
+              "I6": {"max": max(efficiency.values()), "tolerance": TOLERANCES["I6"], "passed": max(efficiency.values()) <= TOLERANCES["I6"], "per_game": efficiency},
+              **{name: "unavailable: Experiment 021 stored no Δx1 or Δx3 of its target pairs; no substitute" for name in ("I1", "I2", "I3")}}
+    record = {"experiment": EXPERIMENT, "kind": "EXPLORATORY replication on Experiment 021's spent set, after the 022 report; numbers only, no result names; it can "
+              "change no 022 floor, claim, threshold or result", "inputs": {"results_021_file": INHERITED_021["results_file_sha256"], "results_021_state": state["state_sha256"],
+                                                                          "extract_021": extract["content_sha256"], "stage2_021_tables": recorded},
+              "noun_keys": noun_keys, "checks": checks, "populations": out}
+    validate_json_safe(record)
+    record["content_sha256"] = rc.content_digest(record)
+    return record
+
+
+# ---------------------------------------------------------------------------
+# The report.
+
+
+def _fmt(value: Any, digits: int = 4) -> str:
+    return "—" if value is None else f"{value:.{digits}f}" if isinstance(value, float) else str(value)
+
+
+def draw_values_verified(arrays: Mapping[str, torch.Tensor], record: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    """The calibration's draw arrays, each against the digest the committed record carries."""
+    for key, values in arrays.items():
+        if rc.tensor_digest(values) != record["draw_arrays_sha256"].get(key):
+            raise PhaseError(f"the calibration draw array {key} does not match the record")
+    if set(arrays) != set(record["draw_arrays_sha256"]):
+        raise PhaseError("the calibration draw arrays are not the record's set")
+    return dict(arrays)
+
+
+def condition_percentiles(conditions: Mapping[str, Mapping[str, Any]], arrays: Mapping[str, torch.Tensor]) -> dict[str, Any]:
+    out = {}
+    for key, entry in conditions.items():
+        population, claim = key.split("/")
+        defined = arrays[f"{population}/{CLAIM_GROUP[claim]}/interpretable"].bool()
+        out[key] = cdf_percentile(arrays[key], defined, entry.get("value"))
+    return out
+
+
+def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, arrays: Mapping[str, torch.Tensor] | None) -> str:
+    phases = ", ".join(f"{name} {entry['status']}" for name, entry in state["phases"].items())
+    lines = ["# Experiment 022 — report", "", f"- Run `{state['run_id']}` at commit `{state['protocol_code_commit']}`; phases: {phases}",
+             f"- Design revision {state['design']['revision']} (`{state['design']['commit']}`), plan revision {state['plan']['revision']} (`{state['plan']['commit']}`)", ""]
+    calibration = state.get("calibration") or {}
+    for entry in calibration.get("incidents", []):
+        lines.append(f"- **Calibration incident** at `{entry['commit']}`: {entry['message']}")
+    if calibration.get("stop"):
+        lines.append(f"- **Calibration stopped for review** (undefined draws): {calibration['stop']['offending']}")
+    incident = (state.get("confirmation") or {}).get("incident")
+    if incident:
+        lines.append(f"- **Confirmation incident** at `{incident['commit']}`: {incident['message']} — the one-shot confirmation is consumed; nothing is retried")
+    if record is not None:
+        lines += ["", "## Calibration (exposed only, B = " + str(record["constants"]["B"]) + ")", "",
+                  f"- Re-materialized pairs: {record['rematerialization']['n_pairs']}; R1 max |Δc − 021| = {record['rematerialization']['r1']['max_difference']:.2e}; "
+                  f"kernel/direct max {record['cross_check']['max_difference']:.1e} over {record['cross_check']['n_checked']} quantities; "
+                  f"efficiency max {max(record['efficiency_I6'].values()):.1e}", "",
+                  "| condition | envelope | median of defined draws | undefined | guard-bound | PASS | ENVELOPE_ONLY | GUARD | NOT_INTERPRETABLE |",
+                  "|---|---|---|---|---|---|---|---|---|"]
+        for population in POPULATIONS:
+            for claim in CLAIMS:
+                rates = record["result_rates"][population][claim]
+                lines.append(f"| {population}/{claim} | {_format_envelope(record['envelopes'][population][claim])} | {_fmt(record['direction_checks'][population][claim]['median'])} | "
+                             f"{record['undefined_counts'][population][claim]} | {'yes' if record['guard_bound'][population][claim] else 'no'} | {rates['PASS']:.3f} | "
+                             f"{rates['ENVELOPE_ONLY_FAILURE']:.3f} | {rates['GUARD_FAILURE']:.3f} | {rates['NOT_INTERPRETABLE']:.3f} |")
+        lines += ["", f"- Joint rates (descriptive only): {record['joint_rates']}"]
+    confirmation = state.get("confirmation") or {}
+    conditions = confirmation.get("conditions")
+    if conditions:
+        percentiles = condition_percentiles(conditions, arrays) if arrays is not None else {}
+        lines += ["", "## The eight conditions (the result; no aggregate label)", "",
+                  "| condition | statistic | value | envelope | meaning guard | G | CDF percentile (defined / undefined draws) | result |", "|---|---|---|---|---|---|---|---|"]
+        for key in (f"{population}/{claim}" for population in POPULATIONS for claim in CLAIMS):
+            entry = conditions[key]
+            percentile = percentiles.get(key, {})
+            shown = "—" if not percentile else f"{_fmt(percentile.get('cdf_percentile'), 3)} ({percentile['defined']} / {percentile['undefined']})"
+            lines.append(f"| {key} {entry['wording']} | {entry['statistic']} | {_fmt(entry['value'])} | {_format_envelope(entry['envelope'])} | {_format_guard(entry['claim'])} | "
+                         f"{_fmt(entry['gap'])} | {shown} | **{entry['result']}** |")
+        lines += ["", "- The CDF percentile is descriptive only; the frozen envelope decides. For C2 (an upper bound) a high percentile lies toward the unfavorable upper tail.",
+                  f"- C4: {SEMANTICS['c4']}.", f"- {SEMANTICS['aggregate'][0].upper()}{SEMANTICS['aggregate'][1:]}."]
+        for population in POPULATIONS:
+            direction = conditions.get(f"{population}/C3", {}).get("direction")
+            if direction:
+                lines.append(f"- C3 direction ({population}): reductions share {direction['reductions_share']:.4f}, layer-0 share {direction['layer0_share']:.4f}; larger: {direction['larger']}.")
+        lines += ["", "## Shapley values and shares", "", "| population / group | G | φ R | φ emb | φ Bv | φ Bp | φ T | σ R | σ emb | σ Bv | σ Bp | σ T | efficiency |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        for population in POPULATIONS:
+            for group in GROUPS:
+                game = confirmation["games"][population][group]
+                if not game.get("sst_positive"):
+                    lines.append(f"| {population}/{group} | SST = 0 | | | | | | | | | | | |")
+                    continue
+                shares = game["shares"] or {}
+                lines.append(f"| {population}/{group} | {game['gap']:.4f} | " + " | ".join(_fmt(game["phi"][name]) for name in FACTORS) + " | "
+                             + " | ".join(_fmt(shares.get(name)) for name in FACTORS) + f" | {game['efficiency']:.1e} |")
+        descriptives = confirmation.get("descriptives") or {}
+        lines += ["", "## Descriptive records (no outcome force)", ""]
+        for population in POPULATIONS:
+            for group in GROUPS:
+                game = confirmation["games"][population][group]
+                if game.get("sst_positive"):
+                    lines.append(f"- Ladder {population}/{group}: " + ", ".join(f"{name} {game['ladder'][name]:.4f}" for name, _ in LADDER)
+                                 + f"; R only {game['r_only']:.4f}; inputs only (reduced layers 1–2) {game['inputs_only']:.4f}")
+        for key, game in (descriptives.get("subsets") or {}).items():
+            if game.get("interpretable"):
+                lines.append(f"- {key}: G {game['gap']:.4f}; shares " + ", ".join(f"{name} {game['shares'][name]:.3f}" for name in FACTORS))
+        for key, errors in (descriptives.get("dx3_relative_error") or {}).items():
+            lines.append(f"- Δx3 relative error {key}: " + ", ".join(f"{name} median {errors[name]['median']:.2e} max {errors[name]['max']:.2e}"
+                                                                      for rung, _ in LADDER for name in (f"{rung}@p_c", f"{rung}@p_t") if name in errors))
+        for key, profile in (descriptives.get("block0_profile") or {}).items():
+            lines.append(f"- Block-0 profile {key}: self-weight {profile['reference_self_weight_median']}; value-term norm {profile['value_term_norm_median']}; "
+                         f"p_t→p_c {profile['attention_pt_to_pc_median']}")
+        stage1 = confirmation.get("stage1") or {}
+        for frame_id, frame in sorted((stage1.get("frames") or {}).items()):
+            lines.append(f"- Validity (descriptive, selects nothing) {frame_id}: {frame['validity'].get('valid')}")
+        gates = confirmation.get("gates") or {}
+        lines.append("- Stage-2 gates (maxima): " + ", ".join(f"{name} {gates[name].get('max')}" for name in sorted(gates)))
+    replication = state.get("replication")
+    if replication:
+        lines += ["", "## EXPLORATORY replication on Experiment 021's spent set (after the report; no result names; affects nothing)", "",
+                  f"- Checks: I4 {replication['checks']['I4']}, I5 {replication['checks']['I5']}, I6 max {replication['checks']['I6']['max']:.1e}; I1–I3 unavailable"]
+        for population, entry in replication["populations"].items():
+            lines.append(f"- {population}: pairs {entry['n_pairs']}; s1–s4 {entry['statistics']}")
+    lines.append("")
+    return "\n".join(lines)
