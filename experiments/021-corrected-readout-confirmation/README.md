@@ -51,9 +51,9 @@ HF_HUB_OFFLINE=1 uv run python experiments/021-corrected-readout-confirmation/ru
 
 ## Status — 2026-09-23: implemented and independently reviewed, not run
 
-Tasks 1–4 of the plan are done: `src/neural_decompiler/readout_calibration.py`, the runner, 20 unit tests
-(`tests/test_readout_calibration.py`, tier A, ≈ 11 s) and 16 runner tests on a fake-closed Experiment 020 world
-(`tests/test_experiment_021_runner.py`, tier B, ≈ 5 min, `CURRENT_EXPERIMENT = "021"`). `validate` passes on the real
+Tasks 1–4 of the plan are done: `src/neural_decompiler/readout_calibration.py`, the runner, 23 unit tests
+(`tests/test_readout_calibration.py`, tier A, ≈ 12 s) and 18 runner tests on a fake-closed Experiment 020 world
+(`tests/test_experiment_021_runner.py`, tier B, ≈ 7 min, `CURRENT_EXPERIMENT = "021"`). `validate` passes on the real
 inputs. A full-scale run of the calibration on a synthetic table (B = 10,000, the real pool sizes, no model) takes
 ≈ 6 min and ≈ 0.9 GB, with the kernel agreeing with 020's direct statistics to 2.2e-16. No Experiment 021 model run
 has happened; `calibrate` waits for the implementation review.
@@ -77,7 +77,17 @@ The review found no blocker. Its should-fix and minor items are all in the code:
 - `lock` checks the runtime and thread count against 020's explore record, so the locked rows reproduce at `confirm`.
 - `confirm` writes every stage-2 measurement (with digests) and the identity maxima to disk before enforcing the
   identities or scoring, so no failure after stage 2 can lose a fresh measurement.
-- The 011/012/017 lock digests (`769bfeac…`, `830abc3b…`, `b4fc9014…`) are asserted and recorded; the calibration
-  record's constants, program blob and design are verified before `lock` uses it; `rematerialize` calls 020's own
+- The 011/012/017 lock digests (`769bfeac…`, `830abc3b…`, `b4fc9014…`) are asserted against frozen constants and
+  bound into the 021 results state (so every later phase enforces them), the calibration record's `inputs` (checked
+  against the current inputs by `lock` and `confirm`) and the 021 lock (checked by `confirm`); a self-consistently
+  replaced lock can reuse neither the state nor the record. The calibration record's constants, tolerances,
+  preconditions, program blob and design are verified before `lock` uses it; `rematerialize` calls 020's own
   `assert_explore_nouns`; the report prints each fresh value's exposed draw median and percentile and places the fresh
   ceiling within its row's distribution.
+
+A second independent review, of every change since `6004561`, found no blocker; its items are in the code too: the
+model loads inside the recorded region; an incident reaches disk before the slow re-check of Experiment 020; no
+commit that ever attempted `calibrate` is reused, and an attempt that ended without writing its incident (a kill) is
+recorded as one at the next start; the after-phase checks run before the candidate record is written; tests pin the
+two-pass pooling (a 1e4 offset), identity enforcement failing after stage 2 with the measurements already on disk, and
+the ceiling column the report ranks against.

@@ -329,6 +329,31 @@ def test_the_kernel_equals_experiment_020s_own_statistics_with_duplicated_units(
     assert math.isnan(float(values["r2"][0, 0])) and rc.direct_y3(flat_scoring, cues[:3], [nouns[0], nouns[1]])["noun_r2_k90"] is None
 
 
+def test_the_kernel_pools_two_pass_moments_so_a_large_offset_cannot_cost_it_precision():
+    """With every value shifted by 1e4 a one-pass Σy² − (Σy)²/n pooling drifts to ~1e-10 on the pair-mean R²; the
+    two-pass group moments stay at reassociation level. This pins the pooling, not only the definitions."""
+    table, pools = synthetic_table(seed=5)
+    shifted = rc.ExposedTable(table.cues, table.frames, table.templates, table.noun_keys, table.measured + 1e4, table.level0 + 1e4, table.ceiling + 1e4, table.no_l5 + 1e4,
+                              table.base + 1e4, table.dT)
+    scoring = shifted.scoring("level0")
+    cues = [cue for cls in rc.CUE_CLASSES for cue, _ in pools.cues[cls]]
+    frames = [frame for template in rc.Y2_AXES for frame in pools.frames_all_unscreened[template]]
+    nouns = [key for rule in rc.RULE_CLASSES for key in pools.nouns[rule]]
+    cue_index = torch.randint(0, len(cues), (4, 12), generator=torch.Generator().manual_seed(11))
+    y1 = rc.y1_statistics(rc.cue_sums(scoring, cues), cue_index)
+    grid = rc.grid_sums(scoring, cues, frames)
+    frame_index = torch.arange(len(frames)).unsqueeze(0).repeat(4, 1)
+    y2 = rc.y2_statistics(rc.y2_slot_sums(grid, cue_index, frame_index), list(range(len(frames))), list(grid.templates))
+    noun_index = torch.arange(len(nouns)).unsqueeze(0).repeat(4, 1)
+    y3 = rc.y3_statistics(rc.y3_slot_statistics(rc.noun_cue_sums(scoring, cues, nouns), noun_index, cue_index), list(range(len(nouns))))
+    for b in range(4):
+        units = [cues[int(i)] for i in cue_index[b]]
+        for kernel, direct in (({n: rc.as_values(y1[n][b : b + 1])[0] for n in rc.Y1_STATISTICS}, rc.direct_y1(scoring, units)),
+                               ({n: rc.as_values(y2[n][b : b + 1])[0] for n in rc.Y2_STATISTICS}, rc.direct_y2(scoring, units, frames)),
+                               ({n: rc.as_values(y3[n][b : b + 1])[0] for n in rc.Y3_STATISTICS}, rc.direct_y3(scoring, units, nouns))):
+            assert rc.agreement(kernel, direct)[0] <= 1e-11  # an order of magnitude inside the guard
+
+
 def test_the_floor_rule_is_the_directional_tail_with_the_zero_skill_clamp():
     values = [i / 10_000 for i in range(10_000)][::-1]
     assert rc.tail_floor(values, "r2") == {"floor": 249 / 10_000, "raw": 249 / 10_000, "clamped": False}
@@ -472,6 +497,15 @@ def test_every_label_branch_through_the_one_predicate(monkeypatch):
     assert scored(_floor_tables())["Y3"]["label"] == rd.OUTCOME_Y3[2]
 
 
+def test_the_report_ranks_the_fresh_ceiling_against_the_ceiling_column():
+    state = {"run_id": "r", "confirmation_020_sha256": "c", "program_blob_sha1": "p", "protocol_code_commit": "a" * 40, "phases": {}, "executed_prompt_keys": [], "executed_noun_keys": [],
+             "calibration": {}, "confirmation": {"outcome": {"label": "x"}, "Y1": {"label": "L", "row": None}, "Y2": {"label": "L", "row": "6/6/6"}, "Y3": {"label": "L"},
+                                                 "ceiling": {"Y1": {"flattened_r2": 0.5, "level0_flattened_r2": 0.2, "error_split": None}}}}
+    draws = {"ceiling:Y1": {"all": [[0.9, 0.1], [0.9, 0.2], [0.9, 0.3], [0.9, 0.7]]}}  # column 0 is Level 0, column 1 the ceiling
+    text = rc.render_report(state, draws)
+    assert "percentile among the row's exposed-like draws 0.750" in text  # 3 of 4 ceiling draws ≤ 0.5; ranked on Level 0 it would be 0.000
+
+
 def test_json_safety_and_the_descriptive_percentile():
     assert rc.json_safe({"a": [1.0, math.inf, {"b": math.nan}], "c": -math.inf, "d": "x"}) == {"a": [1.0, None, {"b": None}], "c": None, "d": "x"}
     assert rc.percentile_of(0.5, [None, 0.2, 0.6, 0.5], "r2") == 0.75  # an undefined draw ranks as the worst
@@ -549,6 +583,12 @@ def test_the_calibration_record_on_a_synthetic_table(monkeypatch, frozen):
     tampered["content_sha256"] = rc.content_digest(tampered)
     with pytest.raises(rd.PhaseError, match="program"):
         rc.verify_calibration_record(tampered)
+    for key, value in (("statistic_agreement_tolerance", 1e-6), ("cross_check_draws", 1), ("reconstruction_tolerance", 1e-6), ("preconditions", {})):
+        other = json.loads(json.dumps(record))
+        other["constants"][key] = value
+        other["content_sha256"] = rc.content_digest(other)
+        with pytest.raises(rd.PhaseError, match="frozen constants"):
+            rc.verify_calibration_record(other)
     tables = rc.floor_tables(record)
     assert set(tables["Y2"]) == {rc.row_key(row) for row in rc.y2_rows()} and set(tables["Y3"]) == {rc.row_key(row) for row in rc.y3_rows()}
 

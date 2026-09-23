@@ -94,7 +94,8 @@ EXPECTED_COHORT_SIZES = (19, 20)
 RECONSTRUCTION_TOLERANCE = 1e-9  # the reproduction gate, every numeric leaf
 LOCKED_STATE_TOLERANCE = 1e-9  # the environment check: a re-captured reference state against 020's (013–019 constant)
 MIN_SCREENED_FRAMES_PER_TEMPLATE = 6  # the calibration precondition
-STATISTIC_AGREEMENT_TOLERANCE = 1e-10  # the kernel against 020's direct statistics, on |kernel − direct| / max(1, |direct|)
+STATISTIC_AGREEMENT_TOLERANCE = 1e-10  # the kernel against 020's direct statistics, on the scale below
+AGREEMENT_SCALE = "|kernel - direct| / max(1, |direct|)"
 CROSS_CHECK_DRAWS = 16  # base draws of every row checked against the direct statistics inside calibrate
 
 Y1_STATISTICS = ("token_mean_r2", "pair_mean_r2", "cue_mae_k80", "pooled_mae")
@@ -1031,7 +1032,7 @@ def cross_check(inputs: KernelInputs, draws: Mapping[str, Any], statistics: Mapp
             if not difference <= STATISTIC_AGREEMENT_TOLERANCE:
                 exceeding += 1
                 first = first or {"max_difference": difference, **location}
-    result = json_safe({**worst, "tolerance": STATISTIC_AGREEMENT_TOLERANCE, "scale": "|kernel - direct| / max(1, |direct|)", "draws_per_row": count, "n_checked": checked,
+    result = json_safe({**worst, "tolerance": STATISTIC_AGREEMENT_TOLERANCE, "scale": AGREEMENT_SCALE, "draws_per_row": count, "n_checked": checked,
                         "n_exceeding": exceeding, "first_exceeding": first})
     if exceeding:
         raise CrossCheckError(result)  # the worst location, recorded; nothing after this point runs, no floor exists
@@ -1182,7 +1183,7 @@ def calibration_record(*, body: Mapping[str, Any], run_id: str, protocol_code_co
         "constants": {"B": body["draws"]["B"], "tail_index": body["draws"]["tail_index"], "alpha_per_mille": ALPHA_PER_MILLE, "shares": dict(SHARES), "slots": dict(SLOTS),
                       "variants": list(VARIANTS), "reconstruction_tolerance": RECONSTRUCTION_TOLERANCE, "locked_state_tolerance": LOCKED_STATE_TOLERANCE,
                       "min_screened_frames_per_template": MIN_SCREENED_FRAMES_PER_TEMPLATE, "statistic_agreement_tolerance": STATISTIC_AGREEMENT_TOLERANCE,
-                      "cross_check_draws": CROSS_CHECK_DRAWS, "kinds": dict(KIND),
+                      "statistic_agreement_scale": AGREEMENT_SCALE, "cross_check_draws": CROSS_CHECK_DRAWS, "kinds": dict(KIND),
                       "preconditions": {"scored_tokens": rd.MIN_SCORED_TOKENS, "valid_exposed_frames": rd.MIN_VALID_EXPOSED_FRAMES, "valid_fresh_frames": rd.MIN_VALID_FRESH_FRAMES,
                                         "valid_coordinated": rd.MIN_VALID_COORDINATED_FRAMES, "scorable_fresh_nouns": rd.MIN_SCORABLE_FRESH_NOUNS}},
         "rematerialization": dict(rematerialization), "reproduction_gate": dict(gate), "table_sha256": dict(table_digests),
@@ -1204,7 +1205,11 @@ def verify_calibration_record(record: Mapping[str, Any]) -> None:
     if record.get("experiment") != "021" or record.get("content_sha256") != content_digest(record):
         raise PhaseError("the calibration record's content digest does not verify")
     constants = record["constants"]
-    expected = {"B": B, "tail_index": tail_index(B), "alpha_per_mille": ALPHA_PER_MILLE, "shares": dict(SHARES), "slots": dict(SLOTS), "kinds": dict(KIND)}
+    expected = {"B": B, "tail_index": tail_index(B), "alpha_per_mille": ALPHA_PER_MILLE, "shares": dict(SHARES), "slots": dict(SLOTS), "kinds": dict(KIND), "variants": list(VARIANTS),
+                "reconstruction_tolerance": RECONSTRUCTION_TOLERANCE, "locked_state_tolerance": LOCKED_STATE_TOLERANCE, "min_screened_frames_per_template": MIN_SCREENED_FRAMES_PER_TEMPLATE,
+                "statistic_agreement_tolerance": STATISTIC_AGREEMENT_TOLERANCE, "statistic_agreement_scale": AGREEMENT_SCALE, "cross_check_draws": CROSS_CHECK_DRAWS,
+                "preconditions": {"scored_tokens": rd.MIN_SCORED_TOKENS, "valid_exposed_frames": rd.MIN_VALID_EXPOSED_FRAMES, "valid_fresh_frames": rd.MIN_VALID_FRESH_FRAMES,
+                                  "valid_coordinated": rd.MIN_VALID_COORDINATED_FRAMES, "scorable_fresh_nouns": rd.MIN_SCORABLE_FRESH_NOUNS}}
     if {key: constants.get(key) for key in expected} != expected or record.get("program_blob_sha1") != PROGRAM_BLOB_SHA1 or record.get("design") != dict(DESIGN):
         raise PhaseError("the calibration record was computed under different frozen constants, program or design")
     if len(record["rows"]["Y1"]) != 1 or [entry["key"] for entry in record["rows"]["Y2"]] != [row_key(c) for c in y2_rows()] or [entry["key"] for entry in record["rows"]["Y3"]] != [row_key(c) for c in y3_rows()]:
@@ -1444,7 +1449,7 @@ def score_021(stage1: Mapping[str, Any], measured: Mapping[str, Any], lock: Mapp
                          "error_split": None if level0 is None or top is None else {"total_unexplained": 1.0 - level0, "downstream": 1.0 - top, "inherited_upstream": top - level0}}
     joint = rd.pair_statistics(tables["Y2"]["fresh"]) if tables["Y2"]["fresh"] is not None else None
     return {"Y1": y1, "Y2": y2, "Y3": y3, "joint_fresh_nouns": joint, "comparators": comparators, "ceiling": ceiling,
-            "agreement": {"max_difference": agreement_worst[0], "at": agreement_worst[1], "tolerance": STATISTIC_AGREEMENT_TOLERANCE},
+            "agreement": {"max_difference": agreement_worst[0], "at": agreement_worst[1], "tolerance": STATISTIC_AGREEMENT_TOLERANCE, "scale": AGREEMENT_SCALE},
             "outcome": rd.outcome_label(y1, y2, y3)}
 
 
@@ -1467,7 +1472,7 @@ def build_candidate_lock(*, run_id: str, protocol_code_commit: str, digests: Map
             "floor_tables": floor_tables(record), "kinds": dict(KIND),
             "preconditions": {"scored_tokens": rd.MIN_SCORED_TOKENS, "valid_exposed_frames": rd.MIN_VALID_EXPOSED_FRAMES, "valid_fresh_frames": rd.MIN_VALID_FRESH_FRAMES,
                               "valid_coordinated": rd.MIN_VALID_COORDINATED_FRAMES, "scorable_fresh_nouns": rd.MIN_SCORABLE_FRESH_NOUNS},
-            "tolerances": {**rd.identity_tolerances(), "statistic_agreement": STATISTIC_AGREEMENT_TOLERANCE},
+            "tolerances": {**rd.identity_tolerances(), "statistic_agreement": STATISTIC_AGREEMENT_TOLERANCE, "statistic_agreement_scale": AGREEMENT_SCALE},
             "comparator_standing": dict(rd.COMPARATOR_STANDING), "confirmation_prompt_manifest": rd.manifest_classes(confirmation),
             "predictions": {"rows": [dict(row) for row in rows], "columns": list(rd.PREDICTION_COLUMNS)}}
     lock["content_sha256"] = content_digest(lock)

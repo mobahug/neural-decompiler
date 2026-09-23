@@ -287,11 +287,21 @@ def test_an_interruption_is_recorded_and_a_running_phase_without_an_incident_nev
     assert state["calibration"]["incidents"][-1]["type"] == "KeyboardInterrupt" and state["calibration"]["incidents"][-1]["closure_020_recheck"] == {"ok": True}
     with pytest.raises(rd.PhaseError, match="incident"):
         runner.calibrate()  # the interruption's own commit is blocked
-    state["calibration"]["incidents"] = []
+    # an attempt that ended with no incident at all (a kill): recorded at the next start, and its commit never reused
+    state["phases"]["calibrate"]["attempt_commits"].append(COMMIT_B)
+    state["phases"]["calibrate"]["commit"] = COMMIT_B
     rd.write_results_state(runner.results_path, {key: value for key, value in state.items() if key != "state_sha256"})
     runner.git_state = lambda: {"commit": COMMIT_B, "dirty": False}
-    with pytest.raises(rd.PhaseError, match="without a recorded incident"):
+    with pytest.raises(rd.PhaseError, match="incident is recorded at this commit"):
         runner.calibrate()
+    reconciled = rd.load_results_state(runner.results_path)["calibration"]["incidents"][-1]
+    assert reconciled["type"] == "UnrecordedTermination" and reconciled["commit"] == COMMIT_B
+    runner.git_state = lambda: {"commit": "c" * 40, "dirty": False}
+    with pytest.MonkeyPatch.context() as guard:  # a new commit may resume; a model that fails to load is an incident, not a stuck phase
+        runner.model_loader = lambda spec: (_ for _ in ()).throw(pm.IncidentError("synthetic load failure"))
+        assert runner.calibrate() == 2
+    state = rd.load_results_state(runner.results_path)
+    assert state["calibration"]["incidents"][-1]["message"] == "synthetic load failure" and state["phases"]["calibrate"]["attempt_commits"] == [COMMIT_A, COMMIT_B, "c" * 40]
 
 
 def test_a_cross_check_failure_through_calibrate_is_persisted_with_its_location_and_nothing_follows(sandbox, monkeypatch):
@@ -516,6 +526,30 @@ def test_a_failure_after_stage_two_keeps_every_fresh_measurement_on_disk(calibra
                 assert rc.tensor_digest(saved[block][part]["measured"]) == stage2["tables_sha256"][block][part]["measured"]
     assert saved["Y1"]["exposed"]["measured"].shape[0] == len(state["confirmation"]["tokens_meta"]) * 108
     assert state["confirmation"]["incident"]["message"] == "synthetic scoring failure" and state["confirmation"]["incident"]["closure_020_recheck"] == {"ok": True}
+
+
+def test_a_failing_identity_after_stage_two_is_an_incident_with_the_measurements_already_on_disk(calibrated, sandbox, monkeypatch):
+    runner, logs = calibrated
+    _install_record(runner)
+    runner.changed_paths = lambda commit: [rc.CALIBRATION_RELATIVE_PATH]
+    _lock(runner)
+    _install_lock(runner)
+    runner.changed_paths = lambda commit: [rc.LOCK_RELATIVE_PATH, rc.PREDICTIONS_RELATIVE_PATH, rc.CALIBRATION_RELATIVE_PATH]
+    original = rc.stage_two_021
+
+    def strict_after_stage_one(*args, **kwargs):  # stage 1 enforced its identities already; tighten the logit identity for stage 2's only
+        monkeypatch.setattr(rd, "LOGIT_IDENTITY_TOLERANCE", 0.0)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(rc, "stage_two_021", strict_after_stage_one)
+    scored = []
+    monkeypatch.setattr(rc, "score_021", lambda *args, **kwargs: scored.append(1))
+    assert runner.confirm() == 2
+    state = rd.load_results_state(runner.results_path)
+    assert state["confirmation"]["incident"]["message"].startswith("logit failed") and not scored
+    stage2 = state["confirmation"]["stage2"]
+    saved = torch.load(stage2["path"])
+    assert rc.tensor_digest(saved["Y1"]["fresh"]["measured"]) == stage2["tables_sha256"]["Y1"]["fresh"]["measured"] and stage2["identities"]["logit"] > 0.0
 
 
 def test_the_barrier_refuses_a_y2_row_that_the_reread_verdicts_do_not_select(calibrated, sandbox, monkeypatch):

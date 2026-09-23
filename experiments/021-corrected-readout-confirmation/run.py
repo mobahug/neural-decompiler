@@ -259,6 +259,8 @@ class Runner:
                 raise rd.PhaseError("scientific execution requires a clean Git tree at a committed SHA")
             if rc.state_digests(state) != rc.digest_tuple(digests) or dict(state["versions"]) != provenance["versions"]:
                 raise rd.PhaseError("frozen inputs or dependency versions differ from the recorded run")
+            if phase == "calibrate":
+                self._reconcile_unrecorded_attempt(state)
         else:
             if phase != "calibrate":
                 raise rd.PhaseError(f"{phase} requires an existing results state from calibrate")
@@ -269,6 +271,18 @@ class Runner:
     def _write(self, state: Mapping[str, Any]) -> str:
         return rd.write_results_state(self.results_path, state)
 
+    def _reconcile_unrecorded_attempt(self, state: dict[str, Any]) -> None:
+        """An attempt that ended without writing its incident (a kill, an out-of-memory stop, a second interrupt)
+        is recorded now as an incident of its own commit, so the phase can resume only at a new commit."""
+        phase = state["phases"]["calibrate"]
+        attempts = list(phase.get("attempt_commits", []))
+        recorded = {entry["commit"] for entry in state["calibration"].get("incidents", [])}
+        if phase.get("status") == "running" and attempts and attempts[-1] not in recorded and not state["calibration"].get("record_sha256"):
+            state["calibration"].setdefault("incidents", []).append({"message": f"the calibrate attempt at {attempts[-1]} ended without recording an incident (killed or interrupted)",
+                                                                     "type": "UnrecordedTermination", "at": pm.utc_now(), "phase": "calibrate", "commit": attempts[-1]})
+            self._write(state)
+            self.log(f"recorded the unrecorded end of the calibrate attempt at {attempts[-1]}")
+
     def _recheck_020(self, confirmation) -> dict[str, Any]:
         """Experiment 020's closure, extract and results state, verified again after a phase (or an incident)."""
         try:
@@ -278,17 +292,19 @@ class Runner:
         return {"ok": True}
 
     def _record_incident(self, state: dict[str, Any], phase: str, error: BaseException, confirmation=None) -> None:
-        entry = {"message": str(error) or type(error).__name__, "type": type(error).__name__, "at": pm.utc_now(), "phase": phase,
-                 "commit": self._provenance()["protocol_code_commit"]}
-        if confirmation is not None:
-            entry["closure_020_recheck"] = self._recheck_020(confirmation)
+        commit = str(state.get("phases", {}).get(phase, {}).get("commit") or state.get("phases", {}).get(phase, {}).get("confirm_commit") or state.get("protocol_code_commit") or "")
+        entry = {"message": str(error) or type(error).__name__, "type": type(error).__name__, "at": pm.utc_now(), "phase": phase, "commit": commit}
         if phase == "calibrate":
             state["calibration"] = rc.json_safe(state["calibration"])
             state["calibration"].setdefault("incidents", []).append(entry)
         else:
-            state["confirmation"] = rc.json_safe({**(state.get("confirmation") or {}), "incident": entry})
-        self._write(state)
+            state["confirmation"] = rc.json_safe(state.get("confirmation") or {})
+            state["confirmation"]["incident"] = entry  # the same object the re-check result is added to below
+        self._write(state)  # the incident is on disk before anything slow runs
         self.log(f"INCIDENT ({phase}): {error}")
+        if confirmation is not None:
+            entry["closure_020_recheck"] = self._recheck_020(confirmation)
+            self._write(state)
 
     def _check_runtime(self, closure: Mapping[str, Any]) -> dict[str, Any]:
         """The runtime and the dependency versions of Experiment 020's explore: the re-captured states must reproduce."""
@@ -307,6 +323,8 @@ class Runner:
         incidents = state["calibration"].get("incidents", [])
         if any(entry["commit"] == commit for entry in incidents):
             raise rd.PhaseError("a calibrate incident is recorded at this commit; a committed fix is required before calibrate runs again")
+        if commit in state["phases"]["calibrate"].get("attempt_commits", []):
+            raise rd.PhaseError("calibrate was already attempted at this commit; a new commit is required")
         runtime = self._check_runtime(closure)
         rc.assert_no_manifest_key(closure["state"]["executed_prompt_keys"], confirmation, "Experiment 020's ledger")
         contract = dict(self.contract_runner())
@@ -320,12 +338,13 @@ class Runner:
         state["phases"]["calibrate"] = {"status": "running", "started_at": pm.utc_now(), "runtime": runtime, "commit": commit, "attempts": int(previous.get("attempts", 0)) + 1,
                                         "attempt_commits": list(previous.get("attempt_commits", [])) + [commit]}
         self._write(state)
-        seed_runtime(rd.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
-        model = self.model_loader(PYTHIA_70M)
+        model = None
         executed: list[pm.Prompt] = []
         calibration = state["calibration"]
         try:
             try:
+                seed_runtime(rd.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+                model = self.model_loader(PYTHIA_70M)
                 try:
                     manifest_keys = frozenset(prompt.key for prompt in confirmation.all_prompts)
                     table, context = rc.rematerialize(model, pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, exploration_020=closure["exploration"],
@@ -367,6 +386,8 @@ class Runner:
                 record = rc.calibration_record(body=result["body"], run_id=state["run_id"], protocol_code_commit=commit, digests=digests, pools=pools, screen=screen,
                                                precondition=precondition, rematerialization=rematerialization, gate=gate, table_digests=table_digests, array_digests=array_digests)
                 rd.assert_fresh_nouns_absent(record, confirmation)
+                rc.verify_020_closure(self.root, confirmation)  # Experiment 020's files are unchanged by this phase
+                rd.assert_fresh_nouns_absent(state["calibration"], confirmation)
                 text = pm.canonical_json(record) + "\n"
                 self.candidate_calibration_path.write_text(text, encoding="utf-8")
                 calibration.update({"record_sha256": pm.sha256_text(text), "record_content_sha256": record["content_sha256"], "candidate_path": str(self.candidate_calibration_path),
@@ -374,9 +395,7 @@ class Runner:
                                     "record_summary": {"rows": {outcome: len(entries) for outcome, entries in record["rows"].items()},
                                                        "clamped": {outcome: sorted({name for entry in entries for name, flag in entry["clamped"].items() if flag}) for outcome, entries in record["rows"].items()},
                                                        "joint_pass_rate_all_outcomes": record["full_rows"]["joint_pass_rate_all_outcomes"]}})
-                self._write(state)  # the record's digest reaches disk with the record
-                rc.verify_020_closure(self.root, confirmation)  # Experiment 020's files are unchanged by this phase
-                rd.assert_fresh_nouns_absent(state["calibration"], confirmation)
+                self._write(state)  # the record's digest reaches disk with the record; nothing after this can fail the phase
             except rc.CrossCheckError as error:
                 calibration["cross_check"] = error.details
                 self._record_incident(state, "calibrate", error, confirmation)
@@ -392,7 +411,8 @@ class Runner:
                 self._record_incident(state, "calibrate", error, confirmation)
                 raise
         finally:
-            del model
+            if model is not None:
+                del model
             gc.collect()
         state["phases"]["calibrate"] = {**state["phases"]["calibrate"], "status": "complete", "completed_at": pm.utc_now()}
         digest = self._write(state)
