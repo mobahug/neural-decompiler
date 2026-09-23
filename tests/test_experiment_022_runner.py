@@ -444,9 +444,34 @@ def test_i7_refuses_a_y1_table_that_does_not_reproduce_before_any_fresh_prompt(w
     monkeypatch.setattr(ul, "composition_tables", drifted)
     spy = ExecutionSpy(monkeypatch)
     runner, logs = make_runner(root, world)
-    with pytest.raises(ul.PhaseError, match="I7"):
+    assert runner.confirm() == 2 and "I7" in logs[-1]
+    confirm = _state(runner)["phases"]["confirm"]
+    assert not spy.counts and confirm["status"] == "not_started" and confirm["incidents"][-1]["commit"] == COMMIT_A and "I7" in confirm["incidents"][-1]["message"]
+    monkeypatch.setattr(ul, "composition_tables", original)
+    runner, logs = make_runner(root, world, git_state=lambda: {"commit": COMMIT_B, "dirty": False})
+    with pytest.raises(ul.PhaseError, match="I7 incident"):  # never retried until it passes, at any commit
         runner.confirm()
-    assert not spy.counts and _state(runner)["phases"]["confirm"]["status"] == "not_started"
+    assert not spy.counts
+
+
+def test_a_lock_identity_failure_is_an_incident_that_blocks_lock(world, calibrated, sandbox, monkeypatch):
+    root = sandbox(calibrated)
+    original = ul.composition_tables
+
+    def inexact(*args, **kwargs):
+        out = original(*args, **kwargs)
+        out["gates"]["I5"] = {"max": 5e-324, "at": "planted"}  # the empty coalition no longer equals the committed Level 0 exactly
+        return out
+
+    monkeypatch.setattr(ul, "composition_tables", inexact)
+    runner, logs = make_runner(root, world)
+    assert runner.lock() == 2 and "I5" in logs[-1]
+    lock_phase = _state(runner)["phases"]["lock"]
+    assert lock_phase["status"] == "not_started" and lock_phase["incidents"][-1]["commit"] == COMMIT_A and not runner.output("candidate-lock.json").exists()
+    monkeypatch.setattr(ul, "composition_tables", original)
+    runner, logs = make_runner(root, world, git_state=lambda: {"commit": COMMIT_B, "dirty": False})
+    with pytest.raises(ul.PhaseError, match="lock identity incident"):
+        runner.lock()
 
 
 def test_the_lock_companions_are_bound(world, locked, sandbox):

@@ -2130,11 +2130,15 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
             raise PhaseError(f"lock requires the completed calibrate phase (it is {status['calibrate']})")
         if status["lock"] == "complete":
             raise PhaseError("lock already written; a new candidate lock requires a new protocol version")
+        if state["phases"]["lock"].get("incidents"):
+            raise PhaseError("a lock identity incident is recorded; lock is refused until the reviewer decides (a new protocol version)")
     elif phase == "confirm":
         if status["lock"] != "complete":
             raise PhaseError("confirm requires the lock phase")
         if status["confirm"] != "not_started":
             raise PhaseError("confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version")
+        if state["phases"]["confirm"].get("incidents"):
+            raise PhaseError("an I7 incident is recorded; confirm is refused until the reviewer decides (a new protocol version), never retried until it passes")
     elif phase == "report":
         if status["calibrate"] not in ("complete", "stopped_for_review") and not calibration.get("incidents"):
             raise PhaseError("report requires a calibrate phase that completed, stopped for review or recorded an incident")

@@ -305,6 +305,17 @@ class Runner:
             entry["recheck_020_021"] = self._recheck(inputs)
             self._write(state)
 
+    def _record_phase_incident(self, state: dict[str, Any], phase: str, error: BaseException, inputs: ul.FrozenInputs) -> None:
+        """An identity failure before any fresh prompt (lock's I2/I5 and provenance, confirm's I7): recorded with its
+        commit before anything else, after which the phase is refused (never retried until it passes)."""
+        entry = {"message": str(error) or type(error).__name__, "type": type(error).__name__, "at": pm.utc_now(), "phase": phase,
+                 "commit": self._provenance()["protocol_code_commit"]}
+        state["phases"][phase] = {**state["phases"][phase], "incidents": list(state["phases"][phase].get("incidents", [])) + [entry]}
+        self._write(state)
+        self.log(f"INCIDENT ({phase}): {error}")
+        entry["recheck_020_021"] = self._recheck(inputs)
+        self._write(state)
+
     def _check_runtime(self, closure: Mapping[str, Any]) -> dict[str, Any]:
         """The runtime and the dependency versions of Experiment 020's explore (021's check, unchanged)."""
         runtime = runtime_record(PYTHIA_70M)
@@ -461,13 +472,17 @@ class Runner:
         units = ul.table_units(confirmation.tokens, confirmation.exposed_frames)
         states = ul.y1_states(inputs.closure["exploration"]["locked_states"], units.frames)
         data_path, index_path = self.output("candidate-locked-y1-table.f64"), self.output("candidate-locked-y1-table.json")
-        with pytest_free_guard():  # the provenance invariant, executed rather than asserted
-            tables = ul.composition_tables(progs, units, states, confirmation.reference_ids, log=self.log)
-            ul.enforce_table_gates(tables["gates"], error=PhaseError)
-            index = ul.write_table(data_path, index_path, tables["blocks"], ul.table_meta("Y1", units, noun_keys))
-            again = ul.composition_tables(progs, units, states, confirmation.reference_ids)
-        if ul.table_bytes(again["blocks"]) != data_path.read_bytes() or (again["level0_dx3_sha256"], again["factors_sha256"]) != (tables["level0_dx3_sha256"], tables["factors_sha256"]):
-            raise PhaseError("provenance: the Y1 table does not reproduce bit for bit from the weights and the locked inputs")
+        try:
+            with pytest_free_guard():  # the provenance invariant, executed rather than asserted
+                tables = ul.composition_tables(progs, units, states, confirmation.reference_ids, log=self.log)
+                ul.enforce_table_gates(tables["gates"])
+                index = ul.write_table(data_path, index_path, tables["blocks"], ul.table_meta("Y1", units, noun_keys))
+                again = ul.composition_tables(progs, units, states, confirmation.reference_ids)
+            if ul.table_bytes(again["blocks"]) != data_path.read_bytes() or (again["level0_dx3_sha256"], again["factors_sha256"]) != (tables["level0_dx3_sha256"], tables["factors_sha256"]):
+                raise pm.IncidentError("provenance: the Y1 table does not reproduce bit for bit from the weights and the locked inputs")
+        except pm.IncidentError as error:
+            self._record_phase_incident(state, "lock", error, inputs)
+            return 2
         lock = ul.build_lock(run_id=state["run_id"], protocol_code_commit=self._provenance()["protocol_code_commit"], digests=digests, record=record, record_file_sha256=record_sha,
                              confirmation=confirmation, confirmation_file_sha256=confirmation_sha, y1_index=index, y1_index_sha256=rc.file_sha256(index_path), y1_tables=tables,
                              noun_keys=noun_keys, exposed_states=inputs.closure["exploration"]["locked_states"])
@@ -518,7 +533,8 @@ class Runner:
                 rebuilt = ul.composition_tables(progs, units_y1, states["Y1"], confirmation.reference_ids, log=self.log)
             if ul.table_bytes(rebuilt["blocks"]) != paths["y1_data"].read_bytes() or rebuilt["level0_dx3_sha256"] != lock["y1_table"]["level0_dx3_sha256"] \
                     or rebuilt["factors_sha256"] != lock["y1_table"]["factors_sha256"]:
-                raise PhaseError("I7 failed: the committed Y1 table does not reproduce bit for bit; no fresh prompt has run")
+                self._record_phase_incident(state, "confirm", pm.IncidentError("I7 failed: the committed Y1 table does not reproduce bit for bit; no fresh prompt has run"), inputs)
+                return 2
             y1_blocks = ul.read_table(paths["y1_data"], y1_index)
             state["phases"]["confirm"] = {"status": "running", "started_at": pm.utc_now(), "lock_sha256": lock["content_sha256"], "confirm_commit": commit,
                                           "I7": {"bitwise_equal": True, "file_sha256": lock["y1_table"]["file_sha256"]}}
