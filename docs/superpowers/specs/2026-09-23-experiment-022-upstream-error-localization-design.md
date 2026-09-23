@@ -2,8 +2,20 @@
 
 **Date:** 2026-09-23
 
-**Status:** Revision 1 — proposal for review. Nothing is implemented: no Experiment 022 directory, code, results
-state, confirmation file, calibration record, lock or model run exists. This document freezes the question, the
+**Status:** Revision 2. The review approved revision 1 (`2b20db3`) in principle and asked for precision changes
+before implementation. This revision makes exactly those changes (detailed in the revision history):
+
+1. Every claim's calibration tail is an exact order statistic, so the upper-bound claim C2 cannot be computed from the
+   lower tail.
+2. C4 is worded to match its guard: a positive contribution, not a substantial one.
+3. The gap precondition is a per-condition interpretability rule. It removes no example and is never a pass or fail.
+4. Each of the eight conditions is reported individually, with no aggregate label and no requirement that all pass.
+5. New-frame validity is stated never to select anything.
+
+Nothing else changes from revision 1.
+
+Nothing is implemented: no Experiment 022 directory, code, results state, confirmation file, calibration record, lock
+or model run exists. This document freezes the question, the
 attribution, the four claims, the identity gates, the fresh-unit candidate lists and their freeze rule, the calibration
 procedure and the floor rule. **No floor has been computed, and no fresh unit has been frozen or executed.** The only
 numbers quoted are Experiments 020/021's committed results and an exploratory spike on the exposed pool (below). The
@@ -191,7 +203,9 @@ The tolerances are frozen from the spike's exposed maxima, with margins of at le
 | **Y2** (frame-conditional) | 24 new cues × 18 new frames × 79 exposed nouns, each frame at its own stage-1 reference state | 288 / 144 |
 
 - **No new noun population.** Experiment 021 established the noun readout, and 022 isolates the upstream problem.
-- **No validity-based frame selection.** All 18 new frames are scored. The frozen 017–021 validity rule is evaluated
+- **No validity-based frame selection.** Frames are frozen structurally, never on model behavior. The validity rule
+  selects no frame, no calibration row, no threshold and no confirmation population. All 18 new frames are scored. The
+  frozen 017–021 validity rule is evaluated
   and recorded descriptively only. This removes the composition-indexed floor rows of 021.
 
 ### Fresh cues
@@ -248,37 +262,68 @@ before `calibrate`. The calibration reads only its class and template counts.
 
 ## The claims (frozen)
 
-| claim | group | statistic | direction | envelope (from the calibration) | meaning guard | exposed spike value |
+| claim | group | statistic | direction | envelope `E` (exact order statistic; see below) | meaning guard `M` | exposed spike value |
 |---|---|---|---|---|---|---|
-| **C1** block-0 attention dominates | cue-final | `s1 = σ_Bv + σ_Bp` | ≥ | `F1` = 250th smallest of 10,000 | ≥ 0.50 | 0.936 |
-| **C2** reductions contribute little | cue-final | `s2 = σ_R` | ≤ | `F2` = 250th largest | ≤ 0.10 | 0.001 |
-| **C3** split between layer 0 and the reductions | coordinated | `s3 = σ_R` (so `1 − s3` is the layer-0 share, including `T`) | within | `[F3lo, F3hi]` = 125th smallest, 125th largest | within [0.10, 0.90] | 0.444 |
-| **C4** block-0 copy into `p_t` | coordinated | `s4 = σ_T` | ≥ | `F4` = 250th smallest | > 0 | 0.155 |
+| **C1** block-0 attention dominates the cue-final gap | cue-final | `s1 = σ_Bv + σ_Bp` | lower bound | `s1 ≥ F1`, `F1 = v₍₂₅₀₎` (2.5 % lower tail) | `s1 ≥ 0.50` | 0.936 |
+| **C2** the layer-1–2 reductions contribute little to the cue-final gap | cue-final | `s2 = σ_R` | upper bound | `s2 ≤ F2`, `F2 = v₍₉₇₅₁₎` (2.5 % upper tail: the 250th largest, about the 97.5th percentile) | `s2 ≤ 0.10` | 0.001 |
+| **C3** the coordinated gap is split between layer 0 and the reductions | coordinated | `s3 = σ_R` (so `1 − s3` is the layer-0 share, including `T`) | two-sided | `F3lo ≤ s3 ≤ F3hi`, `F3lo = v₍₁₂₅₎`, `F3hi = v₍₉₈₇₆₎` (1.25 % in each tail) | `0.10 ≤ s3 ≤ 0.90` | 0.444 |
+| **C4** block-0 cue→target attention contributes positively to the coordinated gap | coordinated | `s4 = σ_T` | lower bound | `s4 ≥ F4`, `F4 = v₍₂₅₀₎` (2.5 % lower tail) | `s4 > 0` | 0.155 |
 
-**Pass predicates.** A statistic must be finite and must satisfy both its envelope and its meaning guard:
+C4's guard, `s4 > 0`, establishes a **positive** contribution only. It does not establish a large or substantial one,
+and no result of C4 is described that way; the calibrated envelope carries the quantitative comparison.
 
-| claim | passes if |
-|---|---|
-| C1 | `s1 ≥ max(F1, 0.50)` |
-| C2 | `s2 ≤ min(F2, 0.10)` |
-| C3 | `max(F3lo, 0.10) ≤ s3 ≤ min(F3hi, 0.90)` |
-| C4 | `s4 > 0` and `s4 ≥ max(F4, 0)` |
+### Exact order statistics (frozen, so no implementation can reverse a tail)
 
-A guard can only make a claim stricter, never easier. Where a guard changes a floor, the record marks it guard-bound,
-and the resulting shortfall in exposed-like pass rates is reported, never corrected (021's rule).
+Per population (Y1-like or Y2-like) and per statistic, sort the calibration's `B = 10,000` values in **ascending**
+order: `v₍₁₎ ≤ v₍₂₎ ≤ … ≤ v₍₁₀₀₀₀₎`. Ranks are 1-based; in 0-based code, `v₍k₎` is element `k − 1` of the ascending array.
 
-**Precondition** (per outcome, per group): `SST > 0` and `G ≥ 0.02`. Below that, shares are ratios of small numbers.
-If either group of an outcome fails, that outcome is `PRECONDITION_FAILED_*`. A precondition failure is not a claim
-failure.
+Undefined values (defined below) are placed at `−∞` when a lower bound is computed and at `+∞` when an upper bound is
+computed, so they always count against the envelope.
 
-**Labels:**
-- **Y1:** `LOCALIZATION_CONFIRMED_TOKENS` iff C1–C4 all pass on Y1; otherwise `LOCALIZATION_NOT_CONFIRMED_TOKENS`;
-  `PRECONDITION_FAILED_TOKENS` as above.
-- **Y2:** `LOCALIZATION_CONFIRMED_FRAMES_CONDITIONAL`, `LOCALIZATION_NOT_CONFIRMED_FRAMES_CONDITIONAL`,
-  `PRECONDITION_FAILED_FRAMES`.
-- **Outcome:** `Y1 | Y2`.
+- **Lower bounds (C1, C4):** `F = v₍₂₅₀₎`, element `[249]`. At most 249 values lie strictly below it.
+- **Upper bound (C2):** `F = v₍₉₇₅₁₎ = v₍₁₀₀₀₀ − 250 + 1₎`, element `[9750]`. This is the 250th largest; at most 249
+  values lie strictly above it. It is **never** `v₍₂₅₀₎`.
+- **Two-sided (C3):**
+  - `F3lo = v₍₁₂₅₎`, element `[124]`;
+  - `F3hi = v₍₉₈₇₆₎ = v₍₁₀₀₀₀ − 125 + 1₎`, element `[9875]`.
 
-That is four claims evaluated on two populations: eight conditions in all.
+Each claim therefore has α = 0.025 in its own direction. Full float64 precision; nothing is rounded.
+
+**Direction checks** (frozen for the implementation): `F1 ≤ median(s1)`, `F4 ≤ median(s4)`, `F2 ≥ median(s2)`, and
+`F3lo ≤ median(s3) ≤ F3hi`. A violation means a tail was reversed; it is an implementation incident, and no floor table
+is written.
+
+### Condition results (frozen)
+
+Each claim is evaluated **separately on Y1 and on Y2**: eight conditions, `C1–C4 × Y1/Y2`. Y1 and Y2 are never pooled.
+New cues in known frames and new cues in new frames are different generalization tests.
+
+**Interpretability (the gap rule).** A condition is evaluated on its group's aggregate population, in full: C1 and C2
+on the cue-final pairs of that population, C3 and C4 on its coordinated pairs. It is interpretable iff that aggregate
+has `SST > 0` and `G ≥ 0.02`; below that, shares are ratios of small numbers.
+
+The rule is applied to the aggregate only. **It never removes, re-weights or selects a pair, cue, frame or noun.**
+Every scored population is the full frozen one.
+
+Each condition has exactly one result, decided in this order:
+
+| result | when | reading |
+|---|---|---|
+| `NOT_INTERPRETABLE` | the gap rule fails | Localization is not interpretable because too little Level-0→ceiling gap remains (or `SST = 0`). This is neither a pass nor a failure. |
+| `GUARD_FAILURE` | `M` fails | The preregistered qualitative localization claim fails for that population, whatever the envelope. |
+| `ENVELOPE_ONLY_FAILURE` | `M` holds, `E` fails | A quantitative shift relative to the exposed-like calibration. The qualitative claim survives. |
+| `PASS` | `M` and `E` both hold | The attribution lies within the exposed-like envelope and keeps the claim's meaning. |
+
+A non-finite share where the gap rule holds is an implementation incident.
+
+**The eight results are the result of the experiment.** There is no aggregate label, no hidden pooling, and no
+requirement that all eight (or any subset of) envelopes pass before any localization conclusion is reported. Each
+condition is reported and read on its own. The report's headline is the 2 × 4 table of results, each with its
+statistic, envelope, guard, exposed-like percentile and gap `G`.
+
+A guard can make a `PASS` harder, never easier. A claim whose guard is stricter than its envelope (for example
+`F1 < 0.50`) is marked guard-bound in the calibration record. Its exposed-like result rates are computed with both
+predicates, and any resulting shortfall is reported and never corrected (021's rule).
 
 ## Calibration (exposed only, once)
 
@@ -306,25 +351,32 @@ information is introduced.
 - Y2-like set: the drawn cues × 18 frames, drawn with replacement at 6 per template from the 42.
 - Per draw: `SSE(S)` for every subset and group from per-pair sums (duplicates counted with multiplicity), then the
   Shapley values, `G`, and `s1`–`s4` for Y1 and Y2.
-- A draw whose precondition fails ranks worst for every statistic of that group (conservative); the count of such
-  draws is recorded.
+- A draw in which a group's aggregate has `G < 0.02` or `SST = 0` has no interpretable value for that group's
+  statistics. It is ranked by the convention above, so it always counts against the envelope, and it is counted in the
+  record.
 
 **Kernel check.** On the first 16 draws, the fast Shapley kernel is checked against a direct recomputation from the
 materialized draw, at `|k − d| / max(1, |d|) ≤ 1e-10`. This is implementation-only.
 
-**Floor rule.** Per statistic and outcome, over its 10,000 values:
-- one-sided claims (C1, C2, C4): the 250th value of the relevant tail;
-- the two-sided claim (C3): the 125th smallest and the 125th largest, so α is 0.025 per claim;
-- then the meaning guards;
-- full float64 precision.
+**Floor rule.** Per statistic and population, over its 10,000 values, by the exact order statistics above:
+
+| claim | bound |
+|---|---|
+| C1 | `F1 = v₍₂₅₀₎` |
+| C4 | `F4 = v₍₂₅₀₎` |
+| C2 | `F2 = v₍₉₇₅₁₎` (the upper tail, never `v₍₂₅₀₎`) |
+| C3 | `[v₍₁₂₅₎, v₍₉₈₇₆₎]` |
+
+The direction checks run before anything is written. The meaning guards are separate predicates, not floors.
 
 **Recorded, never corrected:**
-- each claim's exposed-like pass rate, each outcome's joint pass rate, and the joint rate over both outcomes;
-- the medians and tails;
-- where a guard binds.
+- For each condition, the share of draws that are `PASS`, `ENVELOPE_ONLY_FAILURE`, `GUARD_FAILURE` or
+  `NOT_INTERPRETABLE`.
+- Descriptively, the share of draws in which all four conditions of a population pass, and in which all eight do.
+- The medians and the tails, and which claims are guard-bound.
 
-**Calibration stop.** If more than 250 draws of any statistic are undefined, the floor would be degenerate. `calibrate`
-then writes no floor table and stops for review. This is not an incident.
+**Calibration stop.** If more than 250 values of a one-sided statistic, or more than 125 of C3's, are undefined, that
+envelope would be degenerate. `calibrate` then writes no floor table and stops for review. This is not an incident.
 
 The candidate calibration record is installed byte-identically, committed, and reviewed before `lock` (021's
 procedure).
@@ -357,7 +409,7 @@ procedure).
 | `report` | the results state, the calibration draws (digest-verified) | nothing | the report | |
 | `replicate-021` (after `report`) | 021's stored stage-2 tables and stage-1 states (digest-verified) | nothing | a separately labeled exploratory record | touch any 022 floor, claim or label |
 
-## Incidents and preconditions
+## Incidents and interpretability
 
 These follow Experiments 020/021: an implementation or protocol failure stops the phase, is recorded with its commit,
 and permits no rerun at that commit. An interruption of `confirm` spends the protocol version.
@@ -366,23 +418,33 @@ and permits no rerun at that commit. An interruption of `confirm` spends the pro
   - any I1–I7, R1 or L1–L3 violation;
   - a missing or non-finite measurement;
   - a structural failure of a new frame's reference capture.
-- **Preconditions:** the `G` and `SST` precondition above, applied per outcome.
+- **Interpretability:** the gap rule above, per condition, on the full aggregate. A `NOT_INTERPRETABLE` result is
+  neither an incident nor an exclusion.
 
 ## Interpretation (frozen)
 
-- **Pass.** The fresh population's attribution lies within the exposed-like envelope and keeps the claim's meaning.
-  The spike's localization generalized at that claim.
-- **Envelope-only failure** (the meaning guard is satisfied, but the share is outside the calibrated envelope). The
-  fresh population's share differs from exposed-like sets beyond sampling variability, but the qualitative statement
-  (dominant, little, split, positive) still holds. It is reported as a quantitative shift, never as a refutation of the
-  qualitative localization.
-- **Guard failure.** The qualitative statement is refuted for that population: block-0 attention does not dominate the
-  cue-final gap (C1); the reductions do not contribute little (C2); the coordinated error is not split, with one side
-  below 10 % (C3); or the copy pathway carries no positive share (C4).
+Every condition (`C1–C4 × Y1/Y2`) is read on its own, from its own result. No reading depends on how the other
+conditions came out.
+
+- **`PASS`.** The fresh population's attribution lies within the exposed-like envelope and keeps the claim's meaning.
+  The spike's localization generalized at that claim on that population.
+- **`ENVELOPE_ONLY_FAILURE`.** The meaning guard holds, but the share is outside the calibrated envelope. The fresh
+  population's share differs from exposed-like sets beyond sampling variability, but the qualitative statement still
+  holds: dominant (C1), little (C2), split (C3), positive (C4). It is reported as a quantitative shift, never as a
+  refutation of the qualitative localization. For example, if C2's share leaves its tight envelope but stays `≤ 0.10`,
+  the report says the reductions' share shifted relative to exposed-like sets and that "the reductions contribute
+  little" still holds.
+- **`GUARD_FAILURE`.** The preregistered qualitative claim fails for that population:
+  - C1: block-0 attention does not dominate the cue-final gap;
+  - C2: the reductions do not contribute little;
+  - C3: the coordinated error is not split, with one side below 10 %;
+  - C4: the block-0 cue→target attention does not contribute positively.
+- **`NOT_INTERPRETABLE`.** Localization is not interpretable on that population's group because too little
+  Level-0→ceiling gap remains. It is not a pass or a failure, and no example was removed to reach it.
 - **C3's direction** is always reported: below the band means the reductions matter less than in exposed-like sets;
   above it, more.
-- **Precondition failure** is reported as such, never as a claim result.
-- **Incidents carry no label.**
+- **C4** never supports "substantial" or "large" wording; its qualitative content is a positive contribution.
+- **Incidents** carry no result.
 - **What a pass does not show.** It does not show that any corrected program would predict well: 022 builds none; the
   full composition is the identity endpoint only. It also does not show which of 016/017's reductions carries `σ_R`.
 
@@ -410,6 +472,26 @@ The reviewer required the claim wording to separate cue-final (block-0 attention
 coordinated (layer 0, including the copy pathway, *and* the reductions). 022 must not claim that all coordinated error
 is in layer 0.
 
+**Review of revision 1 (2026-09-23).** The reviewer approved it in principle and set these decisions for revision 2:
+
+1. **Pooling.** Keep all eight conditions, C1–C4 separately on Y1 and Y2. Do not pool: new cues in known frames and
+   new cues in new frames are different tests, and pooling could hide a frame-specific weakness like the one 021
+   exposed.
+2. **Guards.** Accept `Bv+Bp ≥ 0.50`, `R ≤ 0.10` and coordinated `R ∈ [0.10, 0.90]`. C4's `T > 0` establishes only a
+   positive contribution, so the claim is worded "block-0 cue→target attention contributes positively".
+3. **Validity.** New-frame validity is descriptive only. Frames are frozen structurally; validity selects no frame,
+   calibration row, threshold or population.
+4. **Gap rule.** Keep `G ≥ 0.02` as an aggregate, per-condition interpretability rule. It never excludes examples, and
+   when it fails the result is "not interpretable", not a pass or a fail.
+5. **C2.** Accept its possibly tight envelope. The three-way reading reports a quantitative shift while the qualitative
+   claim stands.
+6. **Tails.** Fix the tail direction explicitly: lower tails for C1 and C4, the upper tail for C2, and 1.25 % per side
+   for C3, with the order-statistic indexing stated unambiguously.
+7. **Reporting.** Each of the eight conditions is reported individually, with no requirement that all eight envelopes
+   pass before any conclusion is reported.
+
+Everything else in revision 1 was preserved.
+
 ## Implementation boundary (for the plan, after approval)
 
 - **New module** `src/neural_decompiler/upstream_localization.py`:
@@ -426,7 +508,12 @@ is in layer 0.
   - the new chains equal `hp.exact_chain` and `HeadChainModel.upstream` bit for bit when only `ΔE` is supplied;
   - the decomposition identity on the pinned model;
   - Shapley efficiency and permutation invariance;
-  - the floor rule with guards, and the pass predicates at their boundaries;
+  - the floor rule's exact order statistics: `F1`, `F4` from element `[249]` of the ascending array; `F2` from element
+    `[9750]` (a test fails if C2 takes `[249]`); C3 from elements `[124]` and `[9875]`;
+  - the direction checks and the undefined-value convention;
+  - the four-way condition result (`NOT_INTERPRETABLE`, `GUARD_FAILURE`, `ENVELOPE_ONLY_FAILURE`, `PASS`) at every
+    boundary: exactly `0.50`, `0.10`, `0.90` and `0`, and exactly on each envelope bound;
+  - that the gap rule removes no unit;
   - a fake-closed world for the runner (021's pattern).
 - **Output directory.** `outputs/experiment-022/` is added to `.gitignore`.
 
@@ -446,4 +533,15 @@ Stop after this revision. After approval, the sequence is:
 
 ## Revision history
 
-- Revision 1 (2026-09-23): proposal for review, after the research-design spike and the reviewer's choice of Option A.
+- Revision 1 (2026-09-23, `2b20db3`): proposal for review, after the research-design spike and the reviewer's choice
+  of Option A.
+- Revision 2 (2026-09-23): the review's precision changes; nothing else changes.
+  - **Tails.** Each claim's envelope is an exact 1-based order statistic of the ascending draws: `v₍₂₅₀₎` for the lower
+    bounds C1 and C4; `v₍₉₇₅₁₎`, the upper tail, for C2; `v₍₁₂₅₎` and `v₍₉₈₇₆₎` for C3. Direction checks and tests are
+    added, and the generic "250th value" wording is removed.
+  - **C4.** Worded as a positive contribution.
+  - **Gap rule.** Per condition, on the full aggregate. It gives `NOT_INTERPRETABLE`, replacing `PRECONDITION_FAILED_*`,
+    and removes no unit.
+  - **Results.** The Y1/Y2 aggregate labels are replaced by eight individual condition results (`PASS`,
+    `ENVELOPE_ONLY_FAILURE`, `GUARD_FAILURE`, `NOT_INTERPRETABLE`), with no pooling and no all-pass requirement.
+  - **Validity.** Stated to select nothing.
