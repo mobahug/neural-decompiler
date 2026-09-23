@@ -450,7 +450,8 @@ def test_confirm_runs_stage1_the_barrier_and_stage2_once_each_and_scores_eight_c
     assert runner.report() == 0
     report = runner.report_path.read_text()
     assert "The eight conditions" in report and "CDF percentile" in report and "unfavorable upper tail" in report and "no aggregate label" in report
-    assert "C3 direction (Y1)" in report and "What a pass does not show" in report and all(f"{key}: **" in report for key in results["conditions"])
+    assert "Layers 1–2:" in report and "What a pass does not show" in report and all(f"{key}: **" in report for key in results["conditions"])
+    assert set(results["descriptives"]["historical_comparator"]) == {"Y1/cue_final", "Y1/coordinated", "Y2/cue_final", "Y2/coordinated"}
     assert _state(runner)["phases"]["report"]["status"] == "complete"
 
 

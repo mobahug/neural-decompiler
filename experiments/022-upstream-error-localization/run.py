@@ -582,7 +582,8 @@ class Runner:
                 self._write(state)
                 ul.enforce_target_gates(checked["gates"])
                 results = ul.score_022(measured, tables, lock)
-                descriptives = {"subsets": ul.fresh_descriptives(measured, tables), "dx3_relative_error": checked["dx3_relative_error"], "block0_profile": checked["block0_profile"]}
+                descriptives = {"subsets": ul.fresh_descriptives(measured, tables), "dx3_relative_error": checked["dx3_relative_error"], "block0_profile": checked["block0_profile"],
+                                "historical_comparator": checked["historical_comparator"]}
                 recheck = self._recheck(inputs)
                 if not recheck["ok"]:
                     raise pm.IncidentError(f"Experiment 020's closure or Experiment 021's record no longer verifies after confirm: {recheck['message']}")

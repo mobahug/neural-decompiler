@@ -24,7 +24,9 @@ def test_constants_are_the_frozen_design():
     assert ul.N_MASKS == 32 and ul.FULL_MASK == 31 and ul.CUE_FINAL_MASKS == tuple(range(16)) and ul.CUE_FINAL_FULL_MASK == 15
     assert ul.SHAPLEY_WEIGHTS == (Fraction(1, 5), Fraction(1, 20), Fraction(1, 30), Fraction(1, 20), Fraction(1, 5))
     assert ul.B == 10_000 and ul.CROSS_CHECK_DRAWS == 16 and ul.SLOTS == {"cue": 6, "frame": 6}
-    assert (ul.GUARD_C1_MIN, ul.GUARD_C2_MAX, ul.GUARD_C3_RANGE, ul.GUARD_C4_EXCLUSIVE_MIN) == (0.50, 0.10, (0.10, 0.90), 0.0)
+    assert (ul.GUARD_C1_MIN, ul.GUARD_C2_MAX, ul.GUARD_C3_MAX, ul.GUARD_C4_EXCLUSIVE_MIN) == (0.50, 0.10, 0.10, 0.0)
+    assert ul.CLAIM_WORDING["C3"] == "the layer-1–2 reductions contribute little to the coordinated gap"
+    assert ul.WIRING == "017: layer-1/2 reference rows from the reference residuals at positions 0..p_c"
     assert ul.GAP_MIN == 0.02
     assert ul.TOLERANCES == {"I1": 1e-4, "I2": 1e-12, "I3": 1e-4, "I4": 1e-3, "I5": 0.0, "I6": 1e-12, "R1": 1e-9, "kernel": 1e-10}
     assert ul.I3_FLOOR == 1e-12
@@ -175,7 +177,7 @@ def test_the_gap_rule_is_on_the_aggregate_and_removes_nothing():
 
 
 def test_ranks_and_elements_at_b_10000():
-    assert (ul.lower_rank(10_000), ul.upper_rank(10_000), ul.c3_low_rank(10_000), ul.c3_high_rank(10_000)) == (250, 9751, 125, 9876)
+    assert (ul.lower_rank(10_000), ul.upper_rank(10_000)) == (250, 9751) and not hasattr(ul, "c3_low_rank")
     values = torch.arange(1, 10_001, dtype=torch.float64)[torch.randperm(10_000, generator=torch.Generator().manual_seed(3))]
     defined = torch.ones(10_000, dtype=torch.bool)
     c1, c2, c3, c4 = (ul.claim_envelope(claim, values, defined) for claim in ul.CLAIMS)
@@ -183,25 +185,19 @@ def test_ranks_and_elements_at_b_10000():
     assert (c4["kind"], c4["rank"], c4["element"], c4["bound"]) == ("lower", 250, 249, 250.0)
     assert (c2["kind"], c2["rank"], c2["element"], c2["bound"]) == ("upper", 9751, 9750, 9751.0)
     assert c2["bound"] != c1["bound"]  # C2 is never computed from the lower tail
-    assert (c3["kind"], c3["ranks"], c3["elements"], c3["low"], c3["high"]) == ("two-sided", [125, 9876], [124, 9875], 125.0, 9876.0)
+    assert (c3["kind"], c3["rank"], c3["element"], c3["bound"]) == ("upper", 9751, 9750, 9751.0)  # design revision 4: C3 is an upper bound, like C2
+    assert c3["bound"] != c1["bound"]
 
 
-def test_undefined_values_count_against_the_envelope_and_the_stop_is_at_exactly_250_and_125():
+def test_undefined_values_count_against_the_envelope_and_the_stop_is_at_exactly_250_for_every_claim():
     values = torch.arange(1, 10_001, dtype=torch.float64)
-    assert ul.undefined_threshold("C1", 10_000) == ul.undefined_threshold("C2", 10_000) == ul.undefined_threshold("C4", 10_000) == 250
-    assert ul.undefined_threshold("C3", 10_000) == 125
+    assert [ul.undefined_threshold(claim, 10_000) for claim in ul.CLAIMS] == [250, 250, 250, 250]
     for count, degenerate in ((249, False), (250, True)):
         defined = torch.ones(10_000, dtype=torch.bool)
         defined[5000:5000 + count] = False
-        assert math.isinf(ul.claim_envelope("C1", values, defined)["bound"]) is degenerate
-        assert math.isinf(ul.claim_envelope("C2", values, defined)["bound"]) is degenerate
-        assert (count >= ul.undefined_threshold("C1", 10_000)) is degenerate
-    for count, degenerate in ((124, False), (125, True)):
-        defined = torch.ones(10_000, dtype=torch.bool)
-        defined[:count] = False
-        envelope = ul.claim_envelope("C3", values, defined)
-        assert math.isinf(envelope["low"]) is degenerate and math.isinf(envelope["high"]) is degenerate
-        assert (count >= ul.undefined_threshold("C3", 10_000)) is degenerate
+        for claim in ul.CLAIMS:
+            assert math.isinf(ul.claim_envelope(claim, values, defined)["bound"]) is degenerate
+            assert (count >= ul.undefined_threshold(claim, 10_000)) is degenerate
 
 
 def test_direction_checks_use_the_median_of_defined_draws_and_catch_a_reversed_tail():
@@ -234,11 +230,10 @@ def test_classify_precedence_and_every_boundary():
     assert ul.classify("C2", math.nextafter(0.10, 1.0), True, upper) == "GUARD_FAILURE"
     assert ul.classify("C2", 0.05, True, {"kind": "upper", "bound": 0.01}) == "ENVELOPE_ONLY_FAILURE"
     assert ul.classify("C2", 0.01, True, {"kind": "upper", "bound": 0.01}) == "PASS"
-    band = {"kind": "two-sided", "low": 0.05, "high": 0.95}
-    assert ul.classify("C3", 0.10, True, band) == "PASS" and ul.classify("C3", 0.90, True, band) == "PASS"
-    assert ul.classify("C3", math.nextafter(0.10, 0.0), True, band) == "GUARD_FAILURE"
-    assert ul.classify("C3", math.nextafter(0.90, 1.0), True, band) == "GUARD_FAILURE"
-    assert ul.classify("C3", 0.5, True, {"kind": "two-sided", "low": 0.6, "high": 0.8}) == "ENVELOPE_ONLY_FAILURE"
+    assert ul.classify("C3", 0.10, True, upper) == "PASS" and ul.classify("C3", -0.02, True, upper) == "PASS"  # a Shapley share may be negative
+    assert ul.classify("C3", math.nextafter(0.10, 1.0), True, upper) == "GUARD_FAILURE"
+    assert ul.classify("C3", 0.05, True, {"kind": "upper", "bound": 0.01}) == "ENVELOPE_ONLY_FAILURE"
+    assert ul.classify("C3", 0.01, True, {"kind": "upper", "bound": 0.01}) == "PASS"
     assert ul.classify("C4", 0.0, True, {"kind": "lower", "bound": -0.1}) == "GUARD_FAILURE"  # strict > 0
     assert ul.classify("C4", 5e-324, True, {"kind": "lower", "bound": -0.1}) == "PASS"
     assert ul.classify("C4", 0.05, True, {"kind": "lower", "bound": 0.08}) == "ENVELOPE_ONLY_FAILURE"
@@ -250,7 +245,7 @@ def test_classify_precedence_and_every_boundary():
 def test_guard_bound_is_recorded_only_where_the_guard_is_stricter():
     assert ul.guard_bound("C1", {"bound": 0.45}) and not ul.guard_bound("C1", {"bound": 0.8})
     assert ul.guard_bound("C2", {"bound": 0.2}) and not ul.guard_bound("C2", {"bound": 0.01})
-    assert ul.guard_bound("C3", {"low": 0.05, "high": 0.5}) and not ul.guard_bound("C3", {"low": 0.3, "high": 0.6})
+    assert ul.guard_bound("C3", {"bound": 0.2}) and not ul.guard_bound("C3", {"bound": 0.01})
     assert ul.guard_bound("C4", {"bound": -0.01}) and not ul.guard_bound("C4", {"bound": 0.05})
 
 
@@ -344,6 +339,10 @@ def test_the_new_chains_equal_the_committed_ones_bit_for_bit(pinned):
     for frame, state, word, token_id in _exposed_sample(inputs):
         ctx = ul.pair_context(progs, frame, state, inputs.pool.reference_ids[frame.template_id], token_id, word)
         s17 = state.state_017
+        assert ctx.rows16[1].p_c == ctx.rows16[2].p_c == frame.p_c  # design revision 4: the cue row is the cue position (017's wiring)
+        upstream_017 = progs.chain.upstream(progs.weights, ctx.rows16, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, token_id, frame.template_id, hp.LEVEL0)["dx3"]
+        reduced = ul.reduced_chain(progs.chain, ctx.rows16, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, frame.template_id, ctx.factors.delta_e)
+        assert set(upstream_017) == set(reduced) and all(torch.equal(upstream_017[p].double(), reduced[p]) for p in reduced)  # I5's reference: 017's own chain
         committed = hp.exact_chain(progs.programs, progs.lw, s17.x1_all, s17.x2_all, s17.x3_all, frame.p_c, frame.p_t, ctx.factors.delta_e)["dx3"]
         mine = ul.exact_chain_multi(progs.programs, progs.lw, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, {frame.p_c: ctx.factors.delta_e})
         assert set(committed) == set(mine) and all(torch.equal(committed[p], mine[p]) for p in committed)
@@ -368,6 +367,31 @@ def test_the_identity_gates_hold_on_exposed_pairs_and_t_is_null_in_cue_final_fra
         assert sse.shape == (32,) and count == 79.0 and m2 > 0.0
     assert worst["I1"] <= ul.TOLERANCES["I1"] and worst["I2"] <= ul.TOLERANCES["I2"] and worst["I3"] <= ul.TOLERANCES["I3"]
     assert worst["I4"] <= ul.TOLERANCES["I4"] and worst["I5"] == 0.0
+
+
+@pytest.mark.pythia_smoke
+def test_the_historical_comparator_reproduces_021s_recorded_level0_and_differs_only_in_coordinated_frames(pinned):
+    """Design revision 4: the Level 0 that 020/021 ran (rows through p_t) is kept as a descriptive comparator; it must
+    reproduce 021's digest-bound exposed Level-0 column, and equal the 017-wired empty coalition in cue-final frames."""
+    _, inputs, progs = pinned
+    path = ROOT / ul.EXPOSED_TABLE_021_RELATIVE_PATH
+    if not path.exists():
+        pytest.skip("Experiment 021's local exposed table is absent")
+    table = torch.load(path)
+    assert rc.tensor_digest(table["measured"]) == ul.INHERITED_021["exposed_measured_sha256"]
+    row = {(cue, frame): index for index, (cue, frame) in enumerate(zip(table["cues"], table["frames"]))}
+    worst, coordinated_gap = 0.0, 0.0
+    for frame, state, word, token_id in _exposed_sample(inputs, frames_per_template=2, cues_per_class=2):
+        ctx = ul.pair_context(progs, frame, state, inputs.pool.reference_ids[frame.template_id], token_id, word)
+        historical = ul.historical_level0(progs, ctx)
+        worst = max(worst, float((historical - table["level0"][row[(word, frame.frame_id)]].double()).abs().max()))
+        empty = ul.contrast_of(progs, state, ul.compose_dx3(progs, ctx, 0))
+        if frame.p_t == frame.p_c:
+            assert torch.equal(historical, empty)
+        else:
+            coordinated_gap = max(coordinated_gap, float((historical - empty).abs().max()))
+    assert worst <= ul.TOLERANCES["R1"], f"the comparator does not reproduce 021's Level 0: {worst:.3e}"
+    assert coordinated_gap > 1e-3  # the two wirings differ materially in coordinated frames
 
 
 @pytest.mark.pythia_smoke
@@ -583,7 +607,7 @@ def _synthetic_table(units, nouns=79, seed=0):
         for fi in range(f):
             sse[ci, fi], count[ci, fi], mean[ci, fi], m2[ci, fi] = ul.pair_cells(dc[ci, fi], dc_hat[ci, fi])
     gates = {name: torch.zeros(c, f, dtype=torch.float64) for name in ("I1", "I2", "I3", "I4", "I5")}
-    return ul.CalibrationTable(dc, dc_hat, sse, count, mean, m2, dc + residual, gates)
+    return ul.CalibrationTable(dc, dc_hat, sse, count, mean, m2, dc + residual, gates, dc_hat[:, :, 0].clone())
 
 
 def test_units_follow_the_frozen_order_and_the_draws_index_within_their_strata():
@@ -642,7 +666,7 @@ def test_a_planted_kernel_disagreement_is_a_cross_check_incident():
 
 def _claims(n, *, undefined=None, nonfinite=None, generator=None):
     generator = generator or torch.Generator().manual_seed(5)
-    centers = {"C1": 0.9, "C2": 0.02, "C3": 0.4, "C4": 0.15}
+    centers = {"C1": 0.9, "C2": 0.02, "C3": 0.01, "C4": 0.15}
     out = {}
     for population in ul.POPULATIONS:
         out[population] = {}
@@ -658,8 +682,8 @@ def _claims(n, *, undefined=None, nonfinite=None, generator=None):
     return out
 
 
-def test_the_undefined_stop_is_at_exactly_250_and_125_and_a_non_finite_interpretable_share_is_an_incident():
-    for key, count, stop in (("Y1/C1", 249, False), ("Y1/C1", 250, True), ("Y2/C2", 250, True), ("Y2/C4", 250, True), ("Y1/C3", 124, False), ("Y1/C3", 125, True)):
+def test_the_undefined_stop_is_at_exactly_250_and_a_non_finite_interpretable_share_is_an_incident():
+    for key, count, stop in (("Y1/C1", 249, False), ("Y1/C1", 250, True), ("Y2/C2", 250, True), ("Y2/C4", 250, True), ("Y1/C3", 249, False), ("Y1/C3", 250, True)):
         claims = _claims(10_000, undefined={key: count})
         ul.assert_finite_where_interpretable(claims)
         result = ul.calibration_stop(ul.undefined_counts(claims), 10_000)
@@ -714,7 +738,8 @@ def test_gate_maxima_are_located_and_enforced_at_the_frozen_tolerances():
 def _fake_021(tmp_path, monkeypatch, units, table, noun_keys):
     rows = [(word, frame.frame_id) for word, _, _ in units.cues for frame in units.frames]
     measured = torch.stack([table.dc[ci, fi] for ci in range(len(units.cues)) for fi in range(len(units.frames))])
-    exposed = {"cues": [word for word, _ in rows], "frames": [frame for _, frame in rows], "noun_keys": list(noun_keys), "measured": measured.clone()}
+    level0 = torch.stack([table.historical[ci, fi] for ci in range(len(units.cues)) for fi in range(len(units.frames))])
+    exposed = {"cues": [word for word, _ in rows], "frames": [frame for _, frame in rows], "noun_keys": list(noun_keys), "measured": measured.clone(), "level0": level0.clone()}
     (tmp_path / "outputs").mkdir(exist_ok=True)
     torch.save(exposed, tmp_path / "outputs" / "exposed-table.pt")
     record = {"experiment": "021", "table_sha256": {"measured": rc.tensor_digest(measured)}}
@@ -735,6 +760,7 @@ def test_r1_verifies_021s_record_and_table_before_comparing(tmp_path, monkeypatc
     _fake_021(tmp_path, monkeypatch, units, table, keys)
     result = ul.r1_gate(tmp_path, table, units, keys)
     assert result["passed"] and result["max_difference"] == 0.0 and result["n_pairs"] == len(units.cues) * len(units.frames)
+    assert result["historical_level0_vs_021_max_difference"] == 0.0  # recorded, never enforced
     table.dc[1, 2, 3] += 2e-9
     result = ul.r1_gate(tmp_path, table, units, keys)
     assert not result["passed"] and result["at"] == f"{units.cues[1][0]}|{units.frames[2].frame_id}" and result["max_difference"] == pytest.approx(2e-9, rel=1e-3)
@@ -772,7 +798,8 @@ def test_the_calibration_record_binds_the_frozen_constants_and_verifies():
     record, stop, _ = _calibration_record(units, table, 200)
     assert not stop["stop"]
     ul.verify_calibration_record(record, draws=200)
-    assert record["constants"]["ranks"] == {"lower": 5, "upper": 196, "c3_low": 3, "c3_high": 198}
+    assert record["constants"]["ranks"] == {"lower": 5, "upper": 196} and record["constants"]["undefined_stop"] == {claim: 5 for claim in ul.CLAIMS}
+    assert record["constants"]["wiring"] == ul.WIRING and record["descriptive_exposed"]["group/coordinated"]["historical_level0_020_wiring_r2"] is not None
     assert record["descriptive_exposed"]["group/cue_final"]["phi"]["T"] == 0.0 and record["descriptive_exposed"]["group/cue_final"]["interpretable"]
     ladder = record["descriptive_exposed"]["group/coordinated"]["ladder"]
     assert list(ladder) == ["Level 0", "R", "R+emb", "R+emb+Bv+Bp", "all"] and ladder["all"] > ladder["Level 0"]
@@ -845,25 +872,26 @@ def _fresh_population(generator, *, cue_final_scale=1.0, coordinated_r=1.0, noun
 
 def test_score_022_reaches_every_result_through_the_locked_envelopes_and_guards():
     generator = torch.Generator().manual_seed(9)
-    y1_measured, y1_tables = _fresh_population(generator, coordinated_r=4.0)  # Y1: the reductions hold a fair share of the coordinated gap
+    y1_measured, y1_tables = _fresh_population(generator)  # Y1: the reductions hold a small share of the coordinated gap
     y2_measured, y2_tables = _fresh_population(generator, cue_final_scale=1e-3, coordinated_r=40.0)  # Y2: no cue-final gap; R dominates the coordinated gap
     measured, tables = {"Y1": y1_measured, "Y2": y2_measured}, {"Y1": y1_tables, "Y2": y2_tables}
     lower = lambda bound: {"kind": "lower", "rank": 1, "element": 0, "bound": bound}  # noqa: E731
     upper = lambda bound: {"kind": "upper", "rank": 1, "element": 0, "bound": bound}  # noqa: E731
-    band = {"kind": "two-sided", "ranks": [1, 1], "elements": [0, 0], "low": -10.0, "high": 10.0}
-    envelopes = {"Y1/C1": lower(0.0), "Y1/C2": upper(-1.0), "Y1/C3": band, "Y1/C4": lower(10.0), "Y2/C1": lower(0.0), "Y2/C2": upper(1.0), "Y2/C3": band, "Y2/C4": lower(-10.0)}
+    envelopes = {"Y1/C1": lower(0.0), "Y1/C2": upper(-1.0), "Y1/C3": upper(10.0), "Y1/C4": lower(10.0), "Y2/C1": lower(0.0), "Y2/C2": upper(1.0), "Y2/C3": upper(10.0),
+                 "Y2/C4": lower(-10.0)}
     lock = {"conditions": {key: {"envelope": envelope, "guard": dict(ul.GUARDS[key.split("/")[1]])} for key, envelope in envelopes.items()}}
     scored = ul.score_022(measured, tables, lock)
     results = {key: entry["result"] for key, entry in scored["conditions"].items()}
     assert results == {"Y1/C1": "PASS", "Y1/C2": "ENVELOPE_ONLY_FAILURE", "Y1/C3": "PASS", "Y1/C4": "ENVELOPE_ONLY_FAILURE",
                        "Y2/C1": "NOT_INTERPRETABLE", "Y2/C2": "NOT_INTERPRETABLE", "Y2/C3": "GUARD_FAILURE", "Y2/C4": "PASS"}
     assert set(results.values()) == set(ul.RESULTS) and scored["aggregate_label"] is None
-    assert scored["conditions"]["Y2/C1"]["value"] is None and scored["conditions"]["Y2/C3"]["value"] > 0.9 and scored["conditions"]["Y2/C3"]["direction"]["position"] == "within"
+    assert scored["conditions"]["Y2/C1"]["value"] is None and scored["conditions"]["Y2/C3"]["value"] > 0.9 and scored["conditions"]["Y1/C3"]["value"] <= 0.10
+    assert all("direction" not in entry for entry in scored["conditions"].values())
     assert scored["conditions"]["Y2/C3"]["reading"].endswith(ul.SEMANTICS["guard_failure"]["C3"])
     assert scored["conditions"]["Y1/C2"]["reading"].endswith(ul.SEMANTICS["qualitative"]["C2"] + " still holds")
-    narrow = {**lock, "conditions": {**lock["conditions"], "Y1/C3": {**lock["conditions"]["Y1/C3"], "envelope": {**band, "low": 0.0, "high": 0.05}}}}
+    narrow = {**lock, "conditions": {**lock["conditions"], "Y1/C3": {**lock["conditions"]["Y1/C3"], "envelope": upper(-1.0)}}}
     rescored = ul.score_022(measured, tables, narrow)["conditions"]["Y1/C3"]
-    assert rescored["result"] == "ENVELOPE_ONLY_FAILURE" and rescored["direction"]["position"] == "above" and "matter more" in rescored["direction"]["reading"]
+    assert rescored["result"] == "ENVELOPE_ONLY_FAILURE" and rescored["reading"].endswith(ul.SEMANTICS["qualitative"]["C3"] + " still holds")
     assert scored["cross_check"]["n_exceeding"] == 0 and scored["cross_check"]["n_checked"] == 4 * 44 and max(scored["efficiency_I6"].values()) <= 1e-12
     shares = scored["games"]["Y1"]["cue_final"]["shares"]
     assert shares["T"] == 0.0 and abs(sum(shares.values()) - 1.0) < 1e-12  # the cue-final null player, and efficiency

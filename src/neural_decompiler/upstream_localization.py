@@ -109,16 +109,19 @@ CLAIM_GROUP = {"C1": "cue_final", "C2": "cue_final", "C3": "coordinated", "C4": 
 CLAIM_WORDING = {
     "C1": "block-0 attention dominates the cue-final gap",
     "C2": "the layer-1–2 reductions contribute little to the cue-final gap",
-    "C3": "the coordinated gap is split between layer 0 and the reductions",
+    "C3": "the layer-1–2 reductions contribute little to the coordinated gap",
     "C4": "block-0 cue→target attention contributes positively to the coordinated gap",
 }
 CLAIM_STATISTIC = {"C1": "share(Bv) + share(Bp), cue-final", "C2": "share(R), cue-final", "C3": "share(R), coordinated", "C4": "share(T), coordinated"}
 # Meaning guards (frozen by the design): they can only make a PASS harder.
 GUARD_C1_MIN = 0.50
 GUARD_C2_MAX = 0.10
-GUARD_C3_RANGE = (0.10, 0.90)
+GUARD_C3_MAX = 0.10
 GUARD_C4_EXCLUSIVE_MIN = 0.0
 GAP_MIN = 0.02  # the interpretability rule, on the full aggregate: SST > 0 and G ≥ 0.02
+# Design revision 4: the reduced layer-1–2 program is Experiment 017's chain with its layer-1/2 reference rows through
+# the cue position (as in 015–019); Experiment 020's rows through p_t are the defect of the 020/021 errata.
+WIRING = "017: layer-1/2 reference rows from the reference residuals at positions 0..p_c"
 # The four condition results, in precedence order.
 RESULTS = ("NOT_INTERPRETABLE", "GUARD_FAILURE", "ENVELOPE_ONLY_FAILURE", "PASS")
 
@@ -315,16 +318,6 @@ def upper_rank(draws: int) -> int:
     return int(draws) - lower_rank(draws) + 1
 
 
-def c3_low_rank(draws: int) -> int:
-    """⌈0.0125·B⌉: 125 at B = 10,000 (element [124])."""
-    return (125 * int(draws) + 9999) // 10000
-
-
-def c3_high_rank(draws: int) -> int:
-    """9876 at B = 10,000 (element [9875])."""
-    return int(draws) - c3_low_rank(draws) + 1
-
-
 def order_statistic(values: torch.Tensor, defined: torch.Tensor, rank: int, *, undefined_at: float) -> float:
     """``v₍rank₎`` of the ascending array, with undefined values placed at ``undefined_at`` (−∞ for a lower bound,
     +∞ for an upper bound, so they always count against the envelope)."""
@@ -333,8 +326,11 @@ def order_statistic(values: torch.Tensor, defined: torch.Tensor, rank: int, *, u
 
 
 def undefined_threshold(claim: str, draws: int) -> int:
-    """The calibration stop (design revision 3): at this many undefined values the claim's order statistic is infinite."""
-    return c3_low_rank(draws) if claim == "C3" else lower_rank(draws)
+    """The calibration stop: at this many undefined values the claim's order statistic is infinite (design revision 4:
+    every claim is one-sided, so ⌈0.025·B⌉ = 250 for all four)."""
+    if claim not in CLAIMS:
+        raise ValueError(f"unknown claim {claim}")
+    return lower_rank(draws)
 
 
 def claim_envelope(claim: str, values: torch.Tensor, defined: torch.Tensor) -> dict[str, Any]:
@@ -342,13 +338,9 @@ def claim_envelope(claim: str, values: torch.Tensor, defined: torch.Tensor) -> d
     if claim in ("C1", "C4"):
         rank = lower_rank(draws)
         return {"kind": "lower", "rank": rank, "element": rank - 1, "bound": order_statistic(values, defined, rank, undefined_at=-math.inf)}
-    if claim == "C2":
+    if claim in ("C2", "C3"):
         rank = upper_rank(draws)
         return {"kind": "upper", "rank": rank, "element": rank - 1, "bound": order_statistic(values, defined, rank, undefined_at=math.inf)}
-    if claim == "C3":
-        low, high = c3_low_rank(draws), c3_high_rank(draws)
-        return {"kind": "two-sided", "ranks": [low, high], "elements": [low - 1, high - 1],
-                "low": order_statistic(values, defined, low, undefined_at=-math.inf), "high": order_statistic(values, defined, high, undefined_at=math.inf)}
     raise ValueError(f"unknown claim {claim}")
 
 
@@ -362,17 +354,15 @@ def defined_median(values: torch.Tensor, defined: torch.Tensor) -> float | None:
 
 
 def direction_check(claim: str, envelope: Mapping[str, Any], values: torch.Tensor, defined: torch.Tensor) -> dict[str, Any]:
-    """A lower bound lies at or below the median of the defined draws, an upper bound at or above it, and C3's band
-    contains it. A violation means a tail was reversed: an implementation incident."""
+    """A lower bound lies at or below the median of the defined draws, an upper bound at or above it. A violation
+    means a tail was reversed: an implementation incident."""
     median = defined_median(values, defined)
-    if median is None:
+    if median is None or envelope["kind"] not in ("lower", "upper"):
         ok = False
     elif envelope["kind"] == "lower":
         ok = envelope["bound"] <= median
-    elif envelope["kind"] == "upper":
-        ok = envelope["bound"] >= median
     else:
-        ok = envelope["low"] <= median <= envelope["high"]
+        ok = envelope["bound"] >= median
     return {"ok": bool(ok), "median": median}
 
 
@@ -386,7 +376,7 @@ def meaning_guard(claim: str, value: float) -> bool:
     if claim == "C2":
         return value <= GUARD_C2_MAX
     if claim == "C3":
-        return GUARD_C3_RANGE[0] <= value <= GUARD_C3_RANGE[1]
+        return value <= GUARD_C3_MAX
     if claim == "C4":
         return value > GUARD_C4_EXCLUSIVE_MIN
     raise ValueError(f"unknown claim {claim}")
@@ -395,10 +385,8 @@ def meaning_guard(claim: str, value: float) -> bool:
 def within_envelope(claim: str, value: float, envelope: Mapping[str, Any]) -> bool:
     if claim in ("C1", "C4"):
         return value >= envelope["bound"]
-    if claim == "C2":
+    if claim in ("C2", "C3"):
         return value <= envelope["bound"]
-    if claim == "C3":
-        return envelope["low"] <= value <= envelope["high"]
     raise ValueError(f"unknown claim {claim}")
 
 
@@ -423,7 +411,7 @@ def guard_bound(claim: str, envelope: Mapping[str, Any]) -> bool:
     if claim == "C2":
         return envelope["bound"] > GUARD_C2_MAX
     if claim == "C3":
-        return envelope["low"] < GUARD_C3_RANGE[0] or envelope["high"] > GUARD_C3_RANGE[1]
+        return envelope["bound"] > GUARD_C3_MAX
     if claim == "C4":
         return envelope["bound"] <= GUARD_C4_EXCLUSIVE_MIN
     raise ValueError(f"unknown claim {claim}")
@@ -798,10 +786,33 @@ class PairContext:
         return sorted({self.frame.p_c, self.frame.p_t})
 
 
+def reference_rows_017(programs: Mapping[int, atp.LayerProgram], state: rd.FrameState020) -> dict[int, atp.ReferenceRow]:
+    """The layer-1/2 reference rows as Experiments 015–019 build them: from the reference residuals at positions
+    0..p_c, so that each row's cue row is the cue position (``atp.ReferenceRow`` takes the last residual as the cue).
+    The authoritative wiring of the reduced layer-1–2 program (design revision 4)."""
+    s17 = state.state_017
+    return atp.reference_rows(programs, s17.x1_all[: state.p_c + 1], s17.x2_all[: state.p_c + 1])
+
+
+def reference_rows_020(programs: Mapping[int, atp.LayerProgram], state: rd.FrameState020) -> dict[int, atp.ReferenceRow]:
+    """Experiment 020's construction, through p_t: in coordinated frames it puts the cue row at the target (the defect
+    recorded in the 020/021 errata). The descriptive historical comparator only; identical to 017's in cue-final frames."""
+    s17 = state.state_017
+    return atp.reference_rows(programs, s17.x1_all, s17.x2_all)
+
+
+def historical_level0(progs: ModelPrograms, ctx: "PairContext", rows_020: Mapping[int, atp.ReferenceRow] | None = None) -> torch.Tensor:
+    """``Δĉ`` of the Level 0 that Experiments 020/021 ran (the committed chain with 020's rows through p_t), fed the same
+    ``ΔE``: descriptive only, for the record's comparison with 020/021. Equal to the empty coalition in cue-final frames."""
+    s17 = ctx.state.state_017
+    rows = rows_020 if rows_020 is not None else reference_rows_020(progs.programs, ctx.state)
+    dx3 = reduced_chain(progs.chain, rows, s17.x1_all, s17.x2_all, ctx.frame.p_c, ctx.frame.p_t, ctx.frame.template_id, ctx.factors.delta_e)
+    return contrast_of(progs, ctx.state, dx3)
+
+
 def pair_context(progs: ModelPrograms, frame: pm.Frame, state: rd.FrameState020, reference_id: int, token_id: int, word: str,
                  rows16: Mapping[int, atp.ReferenceRow] | None = None) -> PairContext:
-    s17 = state.state_017
-    rows16 = rows16 if rows16 is not None else atp.reference_rows(progs.programs, s17.x1_all, s17.x2_all)
+    rows16 = rows16 if rows16 is not None else reference_rows_017(progs.programs, state)
     x0_all = reference_embeddings(progs.weights, frame, reference_id)
     return PairContext(frame, state, rows16, pair_factors(progs, x0_all, frame, token_id, reference_id), int(token_id), word)
 
@@ -1198,8 +1209,9 @@ class CalibrationTable:
     m2: torch.Tensor  # [C, F]
     ceiling: torch.Tensor  # [C, F, N]
     gates: dict[str, torch.Tensor]  # I1–I5, [C, F]
+    historical: torch.Tensor  # [C, F, N] Level 0 as 020/021 wired it (descriptive comparator; equal to dc_hat[..., 0, :] in cue-final frames)
 
-    TENSORS = ("dc", "dc_hat", "sse", "count", "mean", "m2", "ceiling")
+    TENSORS = ("dc", "dc_hat", "sse", "count", "mean", "m2", "ceiling", "historical")
 
     def cells(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         c, f = self.count.shape
@@ -1230,6 +1242,7 @@ def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenIn
     n_cues, n_frames, n_nouns = len(units.cues), len(units.frames), len(progs.scorable)
     dc = torch.empty(n_cues, n_frames, n_nouns, dtype=torch.float64)
     dc_hat = torch.empty(n_cues, n_frames, N_MASKS, n_nouns, dtype=torch.float64)
+    historical = torch.empty(n_cues, n_frames, n_nouns, dtype=torch.float64)
     sse = torch.empty(n_cues, n_frames, N_MASKS, dtype=torch.float64)
     count, mean, m2 = (torch.empty(n_cues, n_frames, dtype=torch.float64) for _ in range(3))
     ceiling = torch.empty(n_cues, n_frames, n_nouns, dtype=torch.float64)
@@ -1243,14 +1256,15 @@ def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenIn
         if before_frame is not None:
             before_frame(prompts)
         state = rd.state_from_locked(locked[frame.frame_id], frame)
-        s17 = state.state_017
-        rows16 = atp.reference_rows(progs.programs, s17.x1_all, s17.x2_all)
+        rows16 = reference_rows_017(progs.programs, state)
+        rows_020 = reference_rows_020(progs.programs, state) if frame.p_t != frame.p_c else None
         reference_id = int(inputs.pool.reference_ids[frame.template_id])
         for ci, (word, token_id, _) in enumerate(units.cues):
             measurement = measure_prompt(model, progs, frame, state, token_id, word)
             executed.append(prompts[ci])
             ctx = pair_context(progs, frame, state, reference_id, token_id, word, rows16)
             compositions, composed = pair_compositions(progs, ctx)
+            historical[ci, fi] = compositions[0] if rows_020 is None else historical_level0(progs, ctx, rows_020)
             values, ceiling_row = pair_gates(progs, ctx, compositions, composed, measurement)
             cell_sse, cell_count, cell_mean, cell_m2 = pair_cells(measurement["dc"], compositions)
             dc[ci, fi], dc_hat[ci, fi], sse[ci, fi], ceiling[ci, fi] = measurement["dc"], compositions, cell_sse, ceiling_row
@@ -1258,7 +1272,7 @@ def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenIn
             for name, value in values.items():
                 gates[name][ci, fi] = value
         say(f"  {frame.frame_id}: {n_cues} pool cues measured and composed ({fi + 1}/{n_frames})")
-    return CalibrationTable(dc, dc_hat, sse, count, mean, m2, ceiling, gates)
+    return CalibrationTable(dc, dc_hat, sse, count, mean, m2, ceiling, gates, historical)
 
 
 def gate_summary(gates: Mapping[str, torch.Tensor], units: CalibrationUnits) -> dict[str, dict[str, Any]]:
@@ -1316,8 +1330,10 @@ def r1_gate(root: Path, table: CalibrationTable, units: CalibrationUnits, noun_k
     position = int(torch.argmax(difference.reshape(-1)))
     ci, fi = divmod(position, len(units.frames))
     worst = float(difference.reshape(-1)[position])
+    historical = float((table.historical - exposed["level0"].double()[index]).abs().max())  # descriptive: the comparator is 020/021's Level 0
     return {"max_difference": worst, "at": f"{units.cues[ci][0]}|{units.frames[fi].frame_id}", "tolerance": TOLERANCES["R1"], "passed": bool(worst <= TOLERANCES["R1"]),
-            "n_pairs": len(units.cues) * len(units.frames), "exposed_measured_sha256": INHERITED_021["exposed_measured_sha256"]}
+            "n_pairs": len(units.cues) * len(units.frames), "exposed_measured_sha256": INHERITED_021["exposed_measured_sha256"],
+            "historical_level0_vs_021_max_difference": rc.json_safe(historical)}
 
 
 def draw_units(units: CalibrationUnits, draws: int) -> dict[str, Any]:
@@ -1505,8 +1521,15 @@ def game_summary(sse: torch.Tensor, sst: torch.Tensor) -> dict[str, Any]:
     return stats_summary(group_statistics(sse.reshape(1, N_MASKS), sst.reshape(1)))
 
 
+def flattened_r2(measured: torch.Tensor, predicted: torch.Tensor) -> float | None:
+    y, x = measured.double().reshape(-1), predicted.double().reshape(-1)
+    sst = float(((y - y.mean()) ** 2).sum())
+    return None if sst <= 0.0 else 1.0 - float(((y - x) ** 2).sum()) / sst
+
+
 def exposed_descriptives(table: CalibrationTable, units: CalibrationUnits) -> dict[str, Any]:
-    """The whole calibration pool (175 cues × 108 frames): per group and per template. Descriptive only."""
+    """The whole calibration pool (175 cues × 108 frames): per group and per template, the game and — as the
+    historical comparator — the flattened ``R²`` of the Level 0 that 020/021 ran. Descriptive only."""
     sse_flat, count_flat, mean_flat, m2_flat = table.cells()
     n_frames = len(units.frames)
     selections = {**{f"group/{group}": units.groups[group] for group in GROUPS},
@@ -1515,7 +1538,8 @@ def exposed_descriptives(table: CalibrationTable, units: CalibrationUnits) -> di
     for key, frames in selections.items():
         index = (torch.arange(len(units.cues)).unsqueeze(1) * n_frames + torch.tensor(frames, dtype=torch.int64).unsqueeze(0)).reshape(1, -1)
         sse, _, _, sst = group_sums(sse_flat, count_flat, mean_flat, m2_flat, index)
-        out[key] = game_summary(sse[0], sst[0])
+        chosen = torch.tensor(frames, dtype=torch.int64)
+        out[key] = {**game_summary(sse[0], sst[0]), "historical_level0_020_wiring_r2": rc.json_safe(flattened_r2(table.dc[:, chosen], table.historical[:, chosen]))}
     return out
 
 
@@ -1533,9 +1557,9 @@ def draw_arrays(kernel: Mapping[str, Any]) -> dict[str, torch.Tensor]:
 
 
 def record_constants(draws: int) -> dict[str, Any]:
-    return {"B": int(draws), "ranks": {"lower": lower_rank(draws), "upper": upper_rank(draws), "c3_low": c3_low_rank(draws), "c3_high": c3_high_rank(draws)},
+    return {"B": int(draws), "ranks": {"lower": lower_rank(draws), "upper": upper_rank(draws)}, "wiring": WIRING,
             "undefined_stop": {claim: undefined_threshold(claim, draws) for claim in CLAIMS},
-            "guards": {"C1_min": GUARD_C1_MIN, "C2_max": GUARD_C2_MAX, "C3_range": list(GUARD_C3_RANGE), "C4_exclusive_min": GUARD_C4_EXCLUSIVE_MIN}, "gap_min": GAP_MIN,
+            "guards": {"C1_min": GUARD_C1_MIN, "C2_max": GUARD_C2_MAX, "C3_max": GUARD_C3_MAX, "C4_exclusive_min": GUARD_C4_EXCLUSIVE_MIN}, "gap_min": GAP_MIN,
             "tolerances": dict(TOLERANCES), "i3_floor": I3_FLOOR, "cross_check_draws": CROSS_CHECK_DRAWS, "draw_tag": DRAW_TAG, "factors": list(FACTORS), "bits": dict(BIT),
             "shapley_weights": [str(weight) for weight in SHAPLEY_WEIGHTS], "results": list(RESULTS), "claims": {claim: {"group": CLAIM_GROUP[claim], "statistic": CLAIM_STATISTIC[claim],
                                                                                                                         "wording": CLAIM_WORDING[claim]} for claim in CLAIMS}}
@@ -1575,9 +1599,7 @@ def verify_calibration_record(record: Mapping[str, Any], draws: int | None = Non
         raise PhaseError("the calibration record carries a failed direction check")
     for population in POPULATIONS:
         for claim in CLAIMS:
-            envelope = record["envelopes"][population][claim]
-            bounds = [envelope["low"], envelope["high"]] if claim == "C3" else [envelope["bound"]]
-            if any(bound is None for bound in bounds):
+            if record["envelopes"][population][claim].get("bound") is None:
                 raise PhaseError(f"the calibration record's {population}/{claim} envelope is not finite")
 
 
@@ -1663,7 +1685,7 @@ def composition_tables(progs: ModelPrograms, units: TableUnits, states: Mapping[
             frame, token = units.frames[f], units.tokens[t]
             state = states[frame.frame_id]
             if frame.frame_id not in rows16:
-                rows16[frame.frame_id] = atp.reference_rows(progs.programs, state.state_017.x1_all, state.state_017.x2_all)
+                rows16[frame.frame_id] = reference_rows_017(progs.programs, state)
             ctx = pair_context(progs, frame, state, int(reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
             compositions, composed = pair_compositions(progs, ctx)
             out[row] = compositions[masks]
@@ -1703,7 +1725,7 @@ def verify_table_index(index: Mapping[str, Any], *, layout: Sequence[Mapping[str
 # ---------------------------------------------------------------------------
 # The lock (no forward pass): the eight condition definitions, the Y1 table companion, the Y2 specification.
 
-GUARDS = {"C1": {"min_inclusive": GUARD_C1_MIN}, "C2": {"max_inclusive": GUARD_C2_MAX}, "C3": {"range_inclusive": list(GUARD_C3_RANGE)}, "C4": {"min_exclusive": GUARD_C4_EXCLUSIVE_MIN}}
+GUARDS = {"C1": {"min_inclusive": GUARD_C1_MIN}, "C2": {"max_inclusive": GUARD_C2_MAX}, "C3": {"max_inclusive": GUARD_C3_MAX}, "C4": {"min_exclusive": GUARD_C4_EXCLUSIVE_MIN}}
 SEMANTICS = {
     "results": {
         "NOT_INTERPRETABLE": "the gap rule fails (G < 0.02 or SST = 0 on the full aggregate): localization is not interpretable; neither a pass nor a failure",
@@ -1715,13 +1737,13 @@ SEMANTICS = {
     "c4": "a PASS of C4 establishes a positive contribution of block-0 cue→target attention only, never a large or substantial one",
     "aggregate": "none: the eight condition results are the result, each reported and read on its own; Y1 and Y2 are never pooled; no all-pass requirement",
     "gap_rule": "evaluated on the condition's full group aggregate; it removes, re-weights or selects no pair, cue, frame or noun",
-    "cdf_percentile": "descriptive only; the frozen envelope decides; for the upper-bound C2 a high percentile lies toward the unfavorable upper tail",
+    "cdf_percentile": "descriptive only; the frozen envelope decides; for the upper bounds C2 and C3 a high percentile lies toward the unfavorable upper tail",
     "qualitative": {"C1": "block-0 attention dominates the cue-final gap", "C2": "the reductions contribute little to the cue-final gap",
-                    "C3": "the coordinated gap is split between layer 0 and the reductions", "C4": "block-0 cue→target attention contributes positively"},
-    "guard_failure": {"C1": "block-0 attention does not dominate the cue-final gap", "C2": "the reductions do not contribute little",
-                      "C3": "the coordinated error is not split, with one side below 10 %", "C4": "the block-0 cue→target attention does not contribute positively"},
-    "c3_direction": {"below": "below the band: the reductions matter less than in exposed-like sets", "within": "within the band",
-                     "above": "above the band: the reductions matter more than in exposed-like sets"},
+                    "C3": "the reductions contribute little to the coordinated gap", "C4": "block-0 cue→target attention contributes positively"},
+    "guard_failure": {"C1": "block-0 attention does not dominate the cue-final gap", "C2": "the reductions do not contribute little to the cue-final gap",
+                      "C3": "the reductions do not contribute little to the coordinated gap", "C4": "the block-0 cue→target attention does not contribute positively"},
+    "wiring": "R off is Experiment 017's reduced chain with its layer-1/2 reference rows through the cue position p_c (as validated in 017–019); Experiment "
+              "020's rows through p_t (the defect of the 020/021 errata) enter only the descriptive historical comparator",
     "not_shown": "a pass does not show that any corrected program would predict well (022 builds none; the full composition is the identity endpoint only), "
                  "nor which of 016/017's reductions carries σ_R",
     "incidents": "incidents carry no result",
@@ -1780,14 +1802,12 @@ def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, 
 
 
 def _format_envelope(envelope: Mapping[str, Any]) -> str:
-    if envelope["kind"] == "two-sided":
-        return f"[v₍{envelope['ranks'][0]}₎, v₍{envelope['ranks'][1]}₎] = [{envelope['low']:.6f}, {envelope['high']:.6f}]"
     sign = "≥" if envelope["kind"] == "lower" else "≤"
     return f"{sign} v₍{envelope['rank']}₎ = {envelope['bound']:.6f}"
 
 
 def _format_guard(claim: str) -> str:
-    return {"C1": f"s1 ≥ {GUARD_C1_MIN}", "C2": f"s2 ≤ {GUARD_C2_MAX}", "C3": f"{GUARD_C3_RANGE[0]} ≤ s3 ≤ {GUARD_C3_RANGE[1]}", "C4": f"s4 > {GUARD_C4_EXCLUSIVE_MIN}"}[claim]
+    return {"C1": f"s1 ≥ {GUARD_C1_MIN}", "C2": f"s2 ≤ {GUARD_C2_MAX}", "C3": f"s3 ≤ {GUARD_C3_MAX}", "C4": f"s4 > {GUARD_C4_EXCLUSIVE_MIN}"}[claim]
 
 
 def render_preregistration(lock: Mapping[str, Any]) -> str:
@@ -1809,7 +1829,7 @@ def render_preregistration(lock: Mapping[str, Any]) -> str:
     lines += [f"- `{name}`: {lock['semantics']['results'][name]}" for name in RESULTS]
     lines += ["", "An envelope-only failure keeps the qualitative statement; a guard failure refutes it for that population:", ""]
     lines += [f"- {claim}: kept — {lock['semantics']['qualitative'][claim]}; refuted — {lock['semantics']['guard_failure'][claim]}" for claim in CLAIMS]
-    lines += ["", f"- C3's direction is always reported: {lock['semantics']['c3_direction']['below']}; {lock['semantics']['c3_direction']['above']}.",
+    lines += ["", f"- Layers 1–2: {lock['semantics']['wiring']}.", f"- CDF percentile: {lock['semantics']['cdf_percentile']}.",
               f"- C4: {lock['semantics']['c4']}.", f"- Aggregate: {lock['semantics']['aggregate']}.", f"- Gap rule: {lock['semantics']['gap_rule']}.",
               f"- What a pass does not show: {lock['semantics']['not_shown']}.", ""]
     return "\n".join(lines)
@@ -2011,27 +2031,33 @@ def _changes(block: Mapping[str, torch.Tensor], row: int, name: str, frame: pm.F
 def target_gates(progs: ModelPrograms, confirmation: Confirmation022, measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]],
                  states: Mapping[str, Mapping[str, rd.FrameState020]]) -> dict[str, Any]:
     """I1–I4 on every target pair, from the saved measurements and a weight-only recomputation of its factors and
-    full composition (I4 against the scored table's full row); and, descriptively, block 0's head profile and the
-    ladder compositions' ``Δx3`` errors. I5 was enforced when the tables were composed (lock and stage 1)."""
+    full composition (I4 against the scored table's full row); and, descriptively, block 0's head profile, the
+    ladder compositions' ``Δx3`` errors, and the flattened ``R²`` of the historical comparator (the Level 0 that 020/021
+    ran) against that of the empty coalition. I5 was enforced when the tables were composed (lock and stage 1)."""
     gates = {name: {"max": 0.0, "at": ""} for name in ("I1", "I2", "I3", "I4")}
     profile: dict[str, Any] = {}
     ladder_errors: dict[str, Any] = {}
+    comparator: dict[str, Any] = {}
     for population, entry in measured.items():
         units = entry["units"]
         rows16: dict[str, Any] = {}
+        rows_020: dict[str, Any] = {}
         for group, pairs in units.pairs.items():
             block = entry["blocks"][group]
             masks = list(group_masks(group))
             full_row = masks.index(canonical_mask(FULL_MASK, group == "cue_final"))
             self_weight, value_norm, target_weight = [], [], []
+            historical = []
             errors = {f"{name}@{slot}": [] for name, _ in LADDER for slot in (("p_c",) if group == "cue_final" else ("p_c", "p_t"))}
             for row, (t, f) in enumerate(pairs):
                 frame, token = units.frames[f], units.tokens[t]
                 state = states[population][frame.frame_id]
                 if frame.frame_id not in rows16:
-                    rows16[frame.frame_id] = atp.reference_rows(progs.programs, state.state_017.x1_all, state.state_017.x2_all)
+                    rows16[frame.frame_id] = reference_rows_017(progs.programs, state)
+                    rows_020[frame.frame_id] = reference_rows_020(progs.programs, state)
                 ctx = pair_context(progs, frame, state, int(confirmation.reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
                 factors, where = ctx.factors, f"{population}|{token['word']}|{frame.frame_id}"
+                historical.append(historical_level0(progs, ctx, rows_020[frame.frame_id]))
                 dx1, dx3 = _changes(block, row, "dx1", frame), _changes(block, row, "dx3", frame)
                 i1 = float((factors.d_emb + factors.delta_e + factors.block0_pc.total - dx1[frame.p_c]).abs().max())
                 if factors.block0_pt is not None:
@@ -2054,7 +2080,11 @@ def target_gates(progs: ModelPrograms, confirmation: Confirmation022, measured: 
             profile[f"{population}/{group}"] = {"reference_self_weight_median": median(self_weight), "value_term_norm_median": median(value_norm),
                                                  "attention_pt_to_pc_median": median(target_weight)}
             ladder_errors[f"{population}/{group}"] = {name: {"median": float(torch.tensor(values).median()), "max": float(max(values))} for name, values in errors.items() if values}
-    return {"gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "block0_profile": rc.json_safe(profile), "dx3_relative_error": rc.json_safe(ladder_errors)}
+            if pairs:
+                comparator[f"{population}/{group}"] = {"level0_017_wiring_r2": flattened_r2(block["dc"], tables[population][group][:, 0]),
+                                                       "historical_level0_020_wiring_r2": flattened_r2(block["dc"], torch.stack(historical))}
+    return {"gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "block0_profile": rc.json_safe(profile), "dx3_relative_error": rc.json_safe(ladder_errors),
+            "historical_comparator": rc.json_safe(comparator)}
 
 
 def enforce_target_gates(gates: Mapping[str, Mapping[str, Any]]) -> None:
@@ -2121,11 +2151,6 @@ def score_022(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, tor
                                             "value": value, "envelope": condition["envelope"], "guard": condition["guard"], "gap": float(entry["gap"][0]),
                                             "sst_positive": bool(group_stats["sst_positive"][0]), "interpretable": interpretable, "result": result,
                                             "reading": condition_reading(claim, result)})
-            if claim == "C3" and value is not None:  # always reported: the share's position against the calibrated band
-                band = condition["envelope"]
-                position = "below" if value < band["low"] else "above" if value > band["high"] else "within"
-                conditions[key]["direction"] = {"position": position, "band": [band["low"], band["high"]], "reading": SEMANTICS["c3_direction"][position],
-                                                "reductions_share": value, "layer0_share": 1.0 - value}
     return {"conditions": conditions, "games": {population: {group: stats_summary(stats) for group, stats in entries.items()} for population, entries in games.items()},
             "cross_check": cross_check, "efficiency_I6": efficiency, "aggregate_label": None}
 
@@ -2238,9 +2263,10 @@ def assert_ledger_isolated(ledger: Sequence[str], forbidden: frozenset[str], wha
 
 def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Experiment 021's stored stage-2 measurements (digest-verified) with weight-only compositions of its cues in its
-    frames, through the same kernel. Checks I4 (the full composition against 021's stored ceiling), I5 (the empty one
-    against 021's stored Level 0) and I6; I1–I3 are unavailable, with no substitute. Numbers only, no result names;
-    it can affect no 022 floor, claim or label."""
+    frames, through the same kernel (the 017 wiring, design revision 4). Checks I4 (the full composition against 021's
+    stored ceiling), I5 (historical: the Level 0 as 020/021 wired it against 021's stored Level 0; the 017-wired empty
+    coalition differs from it in coordinated frames by design and is reported beside it) and I6; I1–I3 are
+    unavailable, with no substitute. Numbers only, no result names; it can affect no 022 floor, claim or label."""
     import dataclasses
     import json
 
@@ -2272,7 +2298,7 @@ def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log
     frames = {frame.frame_id: frame for frame in (*inputs.pool.frames, *confirmation_020.frames)}
     locked = {"Y1": inputs.closure["exploration"]["locked_states"], "Y2": state["confirmation"]["stage1"]["states"]}
     out: dict[str, Any] = {}
-    gates = {"I4": {"max": 0.0, "at": ""}, "I5": {"max": 0.0, "at": ""}}
+    gates = {"I4": {"max": 0.0, "at": ""}, "I5": {"max": 0.0, "at": ""}, "empty_017_vs_stored": {"max": 0.0, "at": ""}}
     efficiency: dict[str, float] = {}
     with torch.no_grad():
         for population in POPULATIONS:
@@ -2280,18 +2306,22 @@ def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log
             if list(table["noun_keys"]) != noun_keys:
                 raise PhaseError(f"Experiment 021's {population} table orders a different noun set")
             rows16: dict[str, Any] = {}
+            rows_020: dict[str, Any] = {}
             states: dict[str, rd.FrameState020] = {}
             by_group: dict[str, dict[str, list]] = {group: {"dc": [], "rows": []} for group in GROUPS}
             for i, (word, frame_id) in enumerate(zip(table["cues"], table["frames"])):
                 frame = frames[frame_id]
                 if frame_id not in states:
                     states[frame_id] = rd.state_from_locked(locked[population][frame_id], frame)
-                    rows16[frame_id] = atp.reference_rows(progs_021.programs, states[frame_id].state_017.x1_all, states[frame_id].state_017.x2_all)
+                    rows16[frame_id] = reference_rows_017(progs_021.programs, states[frame_id])
+                    rows_020[frame_id] = reference_rows_020(progs_021.programs, states[frame_id])
                 token = tokens[word]
                 ctx = pair_context(progs_021, frame, states[frame_id], int(inputs.pool.reference_ids[frame.template_id]), int(token["token_id"]), word, rows16[frame_id])
                 compositions, _ = pair_compositions(progs_021, ctx)
                 where = f"{population}|{word}|{frame_id}"
-                _worse(gates["I5"], float((compositions[0] - table["predicted"][i].double()).abs().max()), where)
+                stored_level0 = table["predicted"][i].double()
+                _worse(gates["I5"], float((historical_level0(progs_021, ctx, rows_020[frame_id]) - stored_level0).abs().max()), where)
+                _worse(gates["empty_017_vs_stored"], float((compositions[0] - stored_level0).abs().max()), where)
                 _worse(gates["I4"], float((compositions[FULL_MASK] - ceiling["predicted"][i].double()).abs().max()), where)
                 group = "coordinated" if frame.template_id == COORDINATED else "cue_final"
                 by_group[group]["dc"].append(table["measured"][i].double())
@@ -2315,7 +2345,9 @@ def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log
                                               "C4": share(games["coordinated"], ("T",))}}
             say(f"  {population}: {len(table['cues'])} of Experiment 021's pairs recomposed")
     checks = {"I4": {**rc.json_safe(gates["I4"]), "tolerance": TOLERANCES["I4"], "passed": gates["I4"]["max"] is not None and gates["I4"]["max"] <= TOLERANCES["I4"]},
-              "I5": {**rc.json_safe(gates["I5"]), "tolerance": TOLERANCES["I5"], "passed": gates["I5"]["max"] is not None and gates["I5"]["max"] <= TOLERANCES["I5"]},
+              "I5": {**rc.json_safe(gates["I5"]), "tolerance": TOLERANCES["I5"], "passed": gates["I5"]["max"] is not None and gates["I5"]["max"] <= TOLERANCES["I5"],
+                     "compared": "the historical Level 0 (020's rows through p_t) against 021's stored Level 0"},
+              "empty_017_vs_stored_level0": {**rc.json_safe(gates["empty_017_vs_stored"]), "descriptive": "the 017-wired empty coalition differs in coordinated frames by design"},
               "I6": {"max": max(efficiency.values()), "tolerance": TOLERANCES["I6"], "passed": max(efficiency.values()) <= TOLERANCES["I6"], "per_game": efficiency},
               **{name: "unavailable: Experiment 021 stored no Δx1 or Δx3 of its target pairs; no substitute" for name in ("I1", "I2", "I3")}}
     record = {"experiment": EXPERIMENT, "kind": "EXPLORATORY replication on Experiment 021's spent set, after the 022 report; numbers only, no result names; it can "
@@ -2392,15 +2424,10 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
             shown = "—" if not percentile else f"{_fmt(percentile.get('cdf_percentile'), 3)} ({percentile['defined']} / {percentile['undefined']})"
             lines.append(f"| {key} {entry['wording']} | {entry['statistic']} | {_fmt(entry['value'])} | {_format_envelope(entry['envelope'])} | {_format_guard(entry['claim'])} | "
                          f"{_fmt(entry['gap'])} | {shown} | **{entry['result']}** |")
-        lines += ["", "Readings (frozen, design revision 3):", ""]
+        lines += ["", f"Readings (frozen, design revision {state['design']['revision']}):", ""]
         lines += [f"- {key}: **{conditions[key]['result']}** — {conditions[key]['reading']}." for key in (f"{p}/{c}" for p in POPULATIONS for c in CLAIMS)]
-        for population in POPULATIONS:
-            direction = conditions.get(f"{population}/C3", {}).get("direction")
-            if direction:
-                lines.append(f"- C3 direction ({population}): s3 = {direction['reductions_share']:.4f} against the band [{direction['band'][0]:.4f}, {direction['band'][1]:.4f}]: "
-                             f"{direction['reading']} (layer-0 share {direction['layer0_share']:.4f}).")
-        lines += ["", "- The CDF percentile is descriptive only; the frozen envelope decides. For C2 (an upper bound) a high percentile lies toward the unfavorable upper tail.",
-                  f"- C4: {SEMANTICS['c4']}.", f"- {SEMANTICS['aggregate'][0].upper()}{SEMANTICS['aggregate'][1:]}.",
+        lines += ["", "- The CDF percentile is descriptive only; the frozen envelope decides. For C2 and C3 (upper bounds) a high percentile lies toward the unfavorable "
+                  "upper tail.", f"- Layers 1–2: {SEMANTICS['wiring']}.", f"- C4: {SEMANTICS['c4']}.", f"- {SEMANTICS['aggregate'][0].upper()}{SEMANTICS['aggregate'][1:]}.",
                   f"- What a pass does not show: {SEMANTICS['not_shown']}.", f"- {SEMANTICS['incidents'][0].upper()}{SEMANTICS['incidents'][1:]}."]
         lines += ["", "## Shapley values and shares", "", "| population / group | G | φ R | φ emb | φ Bv | φ Bp | φ T | σ R | σ emb | σ Bv | σ Bp | σ T | efficiency |",
                   "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -2427,6 +2454,9 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
         for key, errors in (descriptives.get("dx3_relative_error") or {}).items():
             lines.append(f"- Δx3 relative error {key}: " + ", ".join(f"{name} median {errors[name]['median']:.2e} max {errors[name]['max']:.2e}"
                                                                       for rung, _ in LADDER for name in (f"{rung}@p_c", f"{rung}@p_t") if name in errors))
+        for key, entry in (descriptives.get("historical_comparator") or {}).items():
+            lines.append(f"- Level 0 {key}: flattened R² {_fmt(entry.get('level0_017_wiring_r2'))} with 017's wiring (the empty coalition); historical comparator "
+                         f"(the Level 0 that 020/021 ran, rows through p_t) {_fmt(entry.get('historical_level0_020_wiring_r2'))}")
         for key, profile in (descriptives.get("block0_profile") or {}).items():
             lines.append(f"- Block-0 profile {key}: self-weight {profile['reference_self_weight_median']}; value-term norm {profile['value_term_norm_median']}; "
                          f"p_t→p_c {profile['attention_pt_to_pc_median']}")
