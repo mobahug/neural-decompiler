@@ -3,17 +3,21 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal.** Implement the approved Experiment 022 design (revision 2, commit `0f1009c`): a prospective localization of
+**Plan revision 2** (2026-09-23). This revision records the reviewer's decisions on the plan's questions Q1–Q10 and
+tracks design revision 3 (`b0c7382`). The earlier open-questions table is now the frozen decisions table below. Q3, Q5
+and Q7 change the implementation, and Q2 is the design's off-by-one correction. One clarification remains (R-1, at the
+end of the decisions).
+
+**Goal.** Implement the approved Experiment 022 design (revision 3, commit `b0c7382`): a prospective localization of
 the committed program's upstream `Δx3` error by an exact five-factor Shapley attribution, with four claims evaluated
 separately on Y1 (24 new cues × 108 exposed frames) and Y2 (24 new cues × 18 new frames). The floors are calibrated
 once on exposed data, and the eight condition results are reported individually.
 
-**Spec.** `docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md`, revision 2,
-`0f1009c`. **The spec wins over this plan.** Planning changes nothing scientific: not the factors, the compositions,
+**Spec.** `docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md`, revision 3,
+`b0c7382`. **The spec wins over this plan.** Planning changes nothing scientific: not the factors, the compositions,
 the value function, the claims, the guards, the order statistics, the gap rule, the populations, the candidate lists,
-the tolerances or the reporting semantics. Where the design is underspecified, or where it and the review instructions
-differ, this plan says so under *Open questions* and proposes a resolution for the reviewer. It never silently picks a
-scientific rule.
+the tolerances or the reporting semantics. Every place where the design was underspecified was put to the reviewer
+(Q1–Q10), and the decisions are frozen in the next section. The plan picks no scientific rule silently.
 
 **Architecture.** There is one new module, `src/neural_decompiler/upstream_localization.py` (imported as `ul`), and one
 runner, `experiments/022-upstream-error-localization/run.py`.
@@ -31,22 +35,61 @@ It adds only what the design adds:
 - the exact order-statistic envelopes, the four-way condition classification and the gap rule;
 - the freeze, the calibration, the lock, the confirmation scoring and the report.
 
-## Open questions (underspecified or conflicting; each needs a reviewer decision before the named task)
+## Review decisions on the plan's questions (2026-09-23; frozen for implementation)
 
-| # | where | what the design says | the issue | proposed resolution | blocks |
-|---|---|---|---|---|---|
-| Q1 | phase order | `freeze` precedes `calibrate`, and the calibration reads the committed confirmation file's class and template counts | The review instruction lists "freeze eligible confirmation cue/frame identities" under **lock**. | Follow the spec: `validate → freeze → calibrate → lock → confirm → report → replicate-021`. The lock binds the frozen file's digest. Moving the freeze into lock would mean the calibration strata come from the design's constants (6/6/6/6, 6/6/6) rather than the file; that is equivalent unless the freeze fails. | Task 4 |
-| Q2 | calibration stop | "If more than 250 values of a one-sided statistic, or more than 125 of C3's, are undefined … stops for review. This is not an incident." | **Off by one.** With undefined values placed at ∓∞, *exactly* 250 undefined values already make `v₍₂₅₀₎ = −∞` and `v₍₉₇₅₁₎ = +∞`, and exactly 125 make C3's bounds infinite. The review instruction also calls it "incident/stop". | Stop when the undefined count is **≥ 250** (one-sided) or **≥ 125** (C3). This is a stop for review, not an incident, per the spec. It needs approval as an erratum, because it changes the stated threshold by one. | Task 5 |
-| Q3 | gate I3 | "reproduces the measured `Δx3` at every changed position … relative 1e-4" | The norm is not named. The spike measured L2 over both positions combined. | Per position, `‖Δx̂3(p) − Δx3(p)‖₂ / ‖Δx3(p)‖₂ ≤ 1e-4`, plus the combined value recorded. A zero norm at a changed position is an incident (none was seen; the medians are 6.8–10.8). | Task 3 |
-| Q4 | gate R1 | re-measured exposed `Δc` equals 021's exposed table within 1e-9 | 022 captures a different site set (`RESID_PRE.L1/L3` + logits) from 020/021. Hooks only read, so the logits should be bitwise equal, but this is unverified; the spike stored `Δc` in float32 and cannot answer it. | Tier-C test on a sample of exposed pairs *before* `calibrate` (Task 3). If it is not exact, stop for review; the tolerance is not changed silently. | Task 5 |
-| Q5 | freeze exclusion | "every token of any committed confirmation file" | The file formats differ across 006–020. | Scan the 12 committed confirmation files (006, 009, 011–020) plus the 020 pool, its manifest and extension, conservatively: every cue token id and every frame text found. Record the files and their digests in the confirmation file. It never under-excludes; it may over-exclude. | Task 4 |
-| Q6 | draws | SHA index `…% n_s` | The unit order within a stratum is not restated in 022's spec. | Inherit 021's: cues by token id, frames by `frame_id`. | Task 5 |
-| Q7 | lock storage | "the Y1 composition tables (digested)" | 021 embedded its predictions in the committed lock (45 MB). 022's Y1 table is 2,592 pairs × 32 coalitions × 79 nouns: about 35 MB binary after canonicalization, far more as JSON. | The committed lock carries per-table digests and small summaries. The tables live under `outputs/experiment-022/` and are recomputed and digest-checked at `confirm` (I7) before any fresh prompt. | Task 6 |
-| Q8 | direction checks | "`F1 ≤ median(s1)` …" | "Median" over what? | The median of the *defined* values. The Q2 stop runs first. | Task 5 |
-| Q9 | report | "exposed-like percentile" | Not defined. | The share of the 10,000 draws with a defined value `≤` the fresh value, with the count of undefined draws beside it; the reading follows each claim's direction. | Task 6 |
-| Q10 | `replicate-021` | uses 021's stored stage-2 tables and stage-1 states; no prompt | 021 stored `Δc`, the Level-0 prediction and the ceiling `Δĉ`, but not `Δx1`/`Δx3`. So I1 and I3 cannot be checked without new prompts, which are not allowed. | The exploratory record checks I4 (full composition against 021's stored ceiling), I5 (empty composition against 021's stored Level 0) and I6; it states that I1 and I3 are unavailable. | Task 6 |
+- **Q1: freeze before calibrate.** The order follows the spec: `validate → freeze → calibrate → lock → confirm →
+  report → replicate-021`.
+  - `freeze` is tokenizer- and structure-only and uses no model output.
+  - `calibrate` may depend only on the frozen file's counts, classes and templates, never on a fresh outcome.
+  - `lock` binds the committed freeze artifact and its digest.
+- **Q2: the undefined-draw stop is at ≥ 250 (C1, C2, C4) and ≥ 125 (C3).** This is design revision 3. It is a pre-lock
+  calibration stop for review: not scientific evidence, not an incident, and never retried automatically.
+- **Q3: I3 is a per-position L2 relative error, matching the spike.** At each applicable changed position `p` (both
+  `p_c` and `p_t` in coordinated frames; `p_c` in cue-final frames), the frozen formula is:
 
-No other gap was found. Everything below implements the spec as written, with the proposed resolutions marked *(Q#)*.
+  `e_p = ‖Δx̂3(p) − Δx3(p)‖₂ / max(‖Δx3(p)‖₂, 1e-12)`.
+
+  The gate uses `max_p e_p` per pair, and its maximum over all pairs must be `≤ 1e-4`. No other norm may be chosen
+  later.
+- **Q4: R1 is checked against 021's table at 1e-9 before `calibrate`.** A pinned-model pre-calibration test compares
+  re-measured exposed `Δc` with 021's digest-bound exposed table at `1e-9`. On failure it stops for review. The
+  tolerance is never loosened.
+- **Q5: the exclusion set is extracted deterministically from structured data** (details in *Freeze*):
+  - the cue token ids (`tokens[*]["token_id"]`) and frame texts (`frames[*].text_template`) of every committed
+    confirmation file 006, 009, 011–020, each loaded by its own frozen loader, exactly as 021's `_base_inputs` chain
+    loads them;
+  - the 020 provenance pool's tokens, frames, reference ids and plural cues;
+  - the screening manifest and extension through `pm.load_inputs`.
+
+  No text search is used. The source list (paths and file sha256) and the extracted sets' sha256 are bound into the
+  confirmation file. Over-exclusion is allowed; under-exclusion is not.
+- **Q6: draw order is frozen as 021's.** Cues are ordered by token id and frames by `frame_id` within each stratum.
+- **Q7: the frozen table is a committed artifact.** The canonical locked Y1 composition table is committed as a
+  digest-bound companion to the lock (about 35 MB, binary; format under *Artifact schemas*). `confirm` reconstructs it
+  from the weights and the locked inputs before any fresh prompt, and requires **exact (bitwise) equality** with the
+  committed artifact (I7).
+- **Q8: direction checks use the median of the defined draws only.** Undefined counts are hard-gated separately (Q2).
+- **Q9: the report shows a `CDF percentile`.** It is the fraction of *defined* calibration draws `≤` the fresh value,
+  with the undefined count shown. It is labeled `CDF percentile`, and for the upper-bound C2 the report states that a
+  high percentile lies toward the unfavorable upper tail. It is descriptive only; the frozen envelope decides the
+  result.
+- **Q10: `replicate-021` checks only what 021 stored.** It checks the gates that can be rebuilt without new prompts:
+  - I4, the full composition against 021's stored ceiling `Δĉ`;
+  - I5, the empty composition against 021's stored Level-0 `Δĉ`;
+  - I6, efficiency.
+
+  I1–I3 are reported as unavailable, with no substitute. The record stays post-report and exploratory and cannot affect
+  any 022 result.
+
+**Remaining clarification, R-1 (it blocks nothing before Task 6; it needs the reviewer's confirmation).** Q7 speaks of
+the canonical locked "Y1/Y2" table, but under the design the **Y2** compositions cannot exist before `confirm`: they
+need each new frame's reference state, which only the stage-1 S1-REF capture provides. The plan therefore:
+- commits the **Y1** table with the lock;
+- writes the **Y2** table at stage 1 in the same binary format, with its digest in the stage-1 record, re-read and
+  re-verified at the barrier before any S2-TARGET prompt;
+- commits it (about 6 MB) as a closure evidence artifact after `confirm`, beside the committed digest record.
+
+No Y2 composition is computed or committed before stage 1.
 
 ## The five-factor game, made explicit (the reviewer's point)
 
@@ -156,7 +199,7 @@ compared with the kernel on the first 16 draws of each population and on the fre
   |---|---|
   | I1 | 1e-4 absolute |
   | I2 | 1e-12 |
-  | I3 | 1e-4 relative, per position *(Q3)* |
+  | I3 | `max_p ‖Δx̂3(p) − Δx3(p)‖₂ / max(‖Δx3(p)‖₂, 1e-12) ≤ 1e-4`, over the pair's applicable changed positions and then over all pairs *(Q3)* |
   | I4 | 1e-3 nats |
   | I5 | 0.0 |
   | I6 | `1e-12·max(1, \|G\|)` |
@@ -164,7 +207,11 @@ compared with the kernel on the first 16 draws of each population and on the fre
   | kernel/direct | 1e-10 on `\|k−d\|/max(1, \|d\|)` |
 
 - Draw index: `int.from_bytes(sha256(f"022|primary|{b}|{s}|{i}".encode("utf-8")).digest()[:8], "big") % n_s`, with
-  strata `cue/<class>` (slots 0–5) and `frame/<template>` (slots 0–5). Unit order within a stratum is 021's *(Q6)*.
+  strata `cue/<class>` (slots 0–5) and `frame/<template>` (slots 0–5). Within a stratum, cues are ordered by token id
+  and frames by `frame_id` *(Q6, frozen)*.
+- Calibration stop *(Q2, design revision 3)*: at **≥ 250** undefined values of C1, C2 or C4, or **≥ 125** of C3. It is
+  a stop for review, not an incident, and never automatically retried.
+- Report: `CDF percentile = #{defined draws ≤ fresh value} / #{defined draws}`, with the undefined count *(Q9)*.
 - Pools: `rc.production_pools(pool)` — cues 45/45/36/49, frames unscreened 14/14/14. The Y1-like frames are the 108
   exposed frames.
 - Candidate lists (cues and frames) and the structural rules, verbatim from the spec. Quotas: 6 per class, 6 per
@@ -206,9 +253,18 @@ compared with the kernel on the first 16 draws of each population and on the fre
   - `envelope(values, rank)` builds a lower view with undefined values at `−∞` and an upper view with undefined values
     at `+∞`, and takes ascending element `rank − 1` of the view that rank's direction uses;
   - `condition_envelopes(values)` covers C1 and C4 lower, C2 upper, and C3 low and high;
-  - `direction_checks`, and `undefined_counts` with the stop *(Q2)*.
+  - `direction_checks` (against the median of the defined draws, *Q8*), and `undefined_counts` with the stop at ≥ 250
+    or ≥ 125 *(Q2)*.
+- `i3_error(pred, measured, positions)` is the frozen Q3 formula; `cdf_percentile(values, fresh)` is the Q9 formula.
 - `classify(claim, value, interpretable, envelope)` returns one of the four results in precedence order. It is the only
   function that decides a result, both in the calibration's result rates and at `confirm`.
+
+**Exclusion and table files:**
+- `exclusion_sources(root)` lists the fixed sources *(Q5)*.
+- `extract_exclusion(sources)` returns the sorted cue ids and frame texts, each with its sha256. It uses only the frozen
+  loaders' structured fields: `tokens[*]["token_id"]`, `frames[*].text_template`, the pool's tokens and frames,
+  reference ids and plural cues, and `pm.load_inputs`.
+- `write_table_file`, `read_table_file` and `table_file_digest` handle the committed binary table format *(Q7)*.
 
 **Phase bodies:**
 - `freeze_confirmation(tokenizer, pool, sources)`;
@@ -225,7 +281,9 @@ record without that key (021's convention).
 1. **`experiments/022-upstream-error-localization/confirmation-v1.json`** — committed after `freeze`.
    - `experiment`, `schema_version`, `kind`, `design`.
    - `candidates` (verbatim lists) and `rules` (quotas, `p_c` ranges, the coordinated suffix rule).
-   - `exclusion`: sorted cue ids and frame texts, their sha256, and the scanned sources with file digests *(Q5)*.
+   - `exclusion` *(Q5)*: the sorted cue token ids and frame texts, and each set's sha256. `sources` gives, per source,
+     the loader (e.g. `cd.load_confirmation`, `ht.load_confirmation`, …, `rd.load_confirmation`, `rd.build_pool_020`,
+     `pm.load_inputs`), the path and the file sha256.
    - `tokenizer` (model id and revision).
    - `cues`: `word`, `token_id`, `class`, `candidate_rank`, for 24 cues.
    - `frames`: `frame_id`, `template_id`, `text_template`, `prefix_ids`, `suffix_ids`, `p_c`, `p_t`, `candidate_rank`,
@@ -261,13 +319,26 @@ record without that key (021's convention).
    - `design`; `protocol_code_commit`; the input digests; the module blobs.
    - The calibration record's file and content digests; the confirmation file digest.
    - The eight condition definitions: statistic, group, direction, envelope bounds, guard and result precedence.
-   - `y1_tables`: the digests of `Δĉ[2592, 32, 79]` (canonicalized), the per-pair Level-0 `Δx̂3`, and the factor
-     vectors.
+   - `y1_table`: the file sha256 and index sha256 of the committed companion below, plus digests of the per-pair
+     Level-0 `Δx̂3` and the factor vectors.
    - The reporting semantics (the three-way reading, C4's positive-contribution wording, and "no aggregate label").
    - `content_sha256`.
    - A human-readable `preregistration.md` renders the eight conditions with their envelopes and guards.
+
+   **Companion artifact** *(Q7)*, committed with the lock and bound to it by digest:
+   - `experiments/022-upstream-error-localization/locked-y1-table.f64`: raw IEEE-754 float64, little-endian, C order,
+     about 35 MB. It holds two contiguous blocks: cue-final `[1728 pairs, 16 canonical masks (T cleared), 79 nouns]`,
+     then coordinated `[864, 32, 79]`.
+   - `locked-y1-table.json`: the index, giving dtype, byte order, block offsets and shapes, the pair order (cue token
+     id, then `frame_id`, *Q6*), the mask order (ascending mask integers), the noun order (the 79 scorable exposed
+     `lexical_key`s), and the file's sha256.
+   - A deterministic byte writer and reader are used. `torch.save` is not used, because its zip container is not
+     guaranteed byte-stable.
 7. **Stage-1 record**, in the results state and digested: each new frame's reference state (020's `locked_state`
-   format), the descriptive validity verdicts, the `y2_tables` digests, and the stage-1 digest.
+   format), the descriptive validity verdicts, the Y2 table file's sha256 and index, and the stage-1 digest.
+   - The **Y2 table** is written at stage 1 to `outputs/experiment-022/y2-table.f64` plus its `.json` index, in the same
+     format (cue-final `[288, 16, 79]`, coordinated `[144, 32, 79]`, about 6 MB).
+   - It is re-read and re-verified at the barrier, and committed as closure evidence after `confirm` *(R-1)*.
 8. **`outputs/experiment-022/stage2-measurements.pt`** — per target pair: `Δc[79]`, `Δx1` and `Δx3` at the changed
    positions, and the ceiling `Δĉ`. Written with digests *before* any gate is enforced or anything is scored.
 9. **`outputs/experiment-022/report.md`** and **`replicate-021.json`/`.md`**. The latter is labeled exploratory and
@@ -285,7 +356,8 @@ record without that key (021's convention).
 
   It writes nothing.
 - **`freeze`** (tokenizer only; no model forward) *(Q1)*.
-  - Build the exclusion sets from the scanned sources *(Q5)*.
+  - Build the exclusion sets by the structured extraction `extract_exclusion(exclusion_sources(root))` *(Q5)*. The
+    sources and digests are recorded; a source that fails its own frozen digest check is an incident.
   - Walk each ordered cue list: take the first 6 single-token, leading-space, non-excluded entries per class.
   - Walk each ordered frame list: build each frame with the project's own `pm.Frame` construction (the same builder
     020's confirmation used). Take the first 6 per template that pass the checks: the text is new, the cue slot is one
@@ -305,8 +377,9 @@ record without that key (021's convention).
   6. After all pairs, write the table and the gate maxima to disk.
   7. Enforce I1–I5 and **R1** (`Δc` against 021's table, after verifying the table's digest).
   8. Build the draws, then the kernel statistics for Y1-like and Y2-like, then the direct cross-check.
-  9. Compute the undefined counts and apply the stop *(Q2)*; then the envelopes; then the direction checks (a violation
-     is an incident).
+  9. Compute the undefined counts and apply the stop at **≥ 250** (C1, C2, C4) or **≥ 125** (C3) *(Q2)*. Then compute
+     the envelopes, then the direction checks against the median of the defined draws *(Q8)*; a violation is an
+     incident.
   10. Compute the result rates, the joint rates and the summaries.
   11. Write the candidate record; the after-phase 020/021 re-check runs before the record is written.
   12. Stop for the floor review. The record is installed byte-identically and committed.
@@ -314,27 +387,35 @@ record without that key (021's convention).
   1. Verify the installed record (digest, constants, rows, inputs); no scientific path may have changed since the
      calibrate commit.
   2. Load the weights only.
-  3. For the 24 frozen cues × 108 exposed frames: build the factors and the canonical compositions, then the
-     `y1_tables`.
-  4. Recompute them a second time under the guard: they must be bitwise equal (provenance).
-  5. Write `candidate-lock.json` and `preregistration.md`. They are installed byte-identically and committed, then
-     reviewed independently and signed off.
+  3. For the 24 frozen cues × 108 exposed frames: build the factors and the canonical compositions. Write the Y1 table
+     to the byte format (`candidate-locked-y1-table.f64` plus its `.json` index).
+  4. Recompute them a second time under the guard: the bytes must be identical (provenance).
+  5. Write `candidate-lock.json` and `preregistration.md`. The lock, the markdown and the **table companion** are
+     installed byte-identically and committed together *(Q7)*, then reviewed independently and signed off.
 - **`confirm`** (once; no resume).
-  1. **Pre-checks:** validate the lock and the record; the ledger isolation holds; the runtime is unchanged; recompute
-     the `y1_tables` and require **I7** (digest equality) before any fresh prompt.
-  2. **Stage 1:** for each new frame, capture S1-REF with `rd.capture_frame_020` and run S1-VALIDITY (recorded
-     descriptively; it selects nothing). A structural failure of a capture is an incident. Compute the `y2_tables`
-     from the captured states, write the stage-1 record and digest, and re-read them at the **barrier**, which also
-     checks that the ledger holds no S2-TARGET key.
+  1. **Pre-checks**, before any fresh prompt:
+     - validate the lock and the record, including the committed table companion's file and index digests;
+     - the ledger isolation holds, and the runtime is unchanged;
+     - reconstruct the Y1 table from the weights and the locked inputs, and require **I7**: the reconstructed bytes
+       equal the committed companion exactly *(Q7)*.
+  2. **Stage 1:**
+     - For each new frame, capture S1-REF with `rd.capture_frame_020`, and run S1-VALIDITY (recorded descriptively; it
+       selects nothing). A structural failure of a capture is an incident.
+     - Compute the Y2 table from the captured states and write it in the byte format *(R-1)*.
+     - Write the stage-1 record and its digest.
+     - Re-read both at the **barrier**, and re-verify the table bytes and the stage-1 digest there. The barrier also
+       checks that the ledger holds no S2-TARGET key.
   3. **Stage 2:** run all 3,024 S2-TARGET prompts once each (the Y1 block, then the Y2 block), each capturing logits,
      `RESID_PRE.L1` and `RESID_PRE.L3`. Write `stage2-measurements.pt` and its digests.
-  4. **Gates:** enforce I1–I4 and I6. I5 holds by construction, and its tables were computed and checked at lock and in
-     stage 1.
+  4. **Gates:** enforce I1–I4 and I6, with I3 by the frozen per-position formula *(Q3)*. I5 holds by construction, and
+     its tables were computed and checked at lock and in stage 1.
   5. **Scoring:** build the group sums, then `group_statistics` (`D = 1`), then the direct check, then `s1`–`s4` for
      Y1 and Y2, then `classify` for each of the eight conditions.
   6. Write the results. An incident is recorded, then raised; the phase stays `running` and can never resume.
 - **`report`**. Headline: the 2 × 4 table. For each condition it shows the fresh statistic, the envelope (bound or
-  range, with its rank), the guard, `G`, the exposed-like percentile *(Q9)* and the result. Beside it:
+  range, with its rank), the guard, `G`, the **CDF percentile** with the undefined count *(Q9)*, and the result. For
+  C2, the report states that a high CDF percentile lies toward the unfavorable upper tail; the percentile is
+  descriptive and the envelope decides. Beside the table:
   - the Shapley values and shares per population and group, and the efficiency residual (I6);
   - C3's direction;
   - C4's wording, fixed to "contributes positively";
@@ -342,9 +423,12 @@ record without that key (021's convention).
     `Δx3` errors, block 0's head profile, and the validity verdicts.
 
   There is no aggregate label.
-- **`replicate-021`** (only after `report`). It reads 021's stage-1 states and stage-2 tables (digest-verified),
-  computes the 022 statistics with the same kernel, checks I4, I5 and I6 *(Q10)*, and writes a record labeled
-  exploratory, with numbers only and no result names.
+- **`replicate-021`** (only after `report`). It reads 021's stage-1 states and stage-2 tables (digest-verified) and
+  computes the 022 statistics with the same kernel. It checks only the gates that 021's stored data can rebuild —
+  I4, I5 and I6 *(Q10)* — and records I1–I3 as unavailable, with no substitute. It writes a record labeled
+  exploratory, with numbers only and no result names, that cannot affect any 022 result.
+- **Closure** (after `report`, when authorized). Commit the Y2 table companion as evidence *(R-1)*, together with the
+  usual README, report and extract.
 
 ## Ledger and isolation
 
@@ -393,12 +477,24 @@ These follow 021:
 - `group_sums` with multiplicities and two-pass pooling (a 1e4 offset test);
 - **the envelope indices:** C1 and C4 from `[249]`; **C2 from `[9750]` — a test fails if C2 uses `[249]`**; C3 from
   `[124]` and `[9875]`;
-- the undefined-value convention, the direction checks and the stop at the Q2 thresholds;
+- the undefined-value convention; the direction checks against the median of the defined draws *(Q8)*; the stop at
+  **exactly 250** undefined values (C1, C2, C4) and **exactly 125** (C3), with 249 and 124 proceeding *(Q2)*;
+- **the I3 formula** *(Q3)*: per position, the maximum over positions and pairs, the `1e-12` denominator floor, and a
+  cue-final pair checked at `p_c` only;
+- **the CDF percentile** *(Q9)*: defined draws only, ties counted as `≤`, the undefined count reported;
+- **the table byte format** *(Q7)*: a write/read round trip is bitwise; the digest is stable across two writes; a
+  single flipped bit fails validation;
 - **`classify`** at every boundary: exactly `0.50`, `0.10`, `0.90`, `0`, and exactly on each envelope bound (the
   inclusive `≥` and `≤`, the strict `> 0`), plus the precedence order;
 - the gap rule: exactly `0.02` counts as interpretable, `SST = 0` does not, and a mask of units is never altered;
 - golden values of the draw index for fixed `(b, s, i)`, and draw reproducibility;
-- the freeze on a stub tokenizer: quotas, a shortfall stop, exclusion, and the structural rules.
+- the freeze on a stub tokenizer: quotas, a shortfall stop, exclusion, and the structural rules;
+- **the structured exclusion** *(Q5)*, on stub loaders:
+  - every source's cue ids and frame texts are collected;
+  - a planted duplicate is excluded;
+  - a missing source is refused;
+  - the recorded source list and digests match;
+  - no text search is used (the extractor takes loader objects only).
 
 **Tier B** (runner on a fake-closed world, 021's pattern, with small B and patched constants):
 - every phase and refusal; the ledger and leakage plants;
@@ -407,12 +503,16 @@ These follow 021:
 - the four results reachable end to end;
 - `NOT_INTERPRETABLE` without unit removal;
 - lock tampering (floor, table digest, guard, semantics, design commit);
-- `replicate-021` refused before `report`.
+- a committed table companion whose bytes differ from the reconstruction, refused by I7 before any fresh prompt;
+- a tampered Y2 table caught at the barrier;
+- `replicate-021` refused before `report`, and reporting I1–I3 as unavailable.
 
 **Tier C** (the pinned model, `pythia_smoke`-style opt-in), on a handful of exposed pairs per template:
 - the bitwise equalities (`exact_chain_multi` against `hp.exact_chain`; `reduced_chain` against `rd.predicted_dx3`);
-- I1–I4 within tolerance;
-- the **R1 bitwise pre-check** *(Q4)*.
+- I1–I4 within tolerance, with I3 by the frozen formula;
+- the **R1 pre-calibration test** at `1e-9` against 021's digest-bound exposed table, on a sample of exposed pairs
+  across all three templates *(Q4)*. It must pass on the clean gated commit before `calibrate` is authorized. On
+  failure, stop for review; the tolerance is never loosened.
 
 `CURRENT_EXPERIMENT` becomes `"022"` when the runner test exists.
 
@@ -422,8 +522,8 @@ These follow 021:
 |---|---|---|---|
 | `freeze` | tokenizer only | seconds | about 40 KB committed |
 | `calibrate` | 18,900 forwards (about 20 min); about 403,000 coalition compositions (72 cue-final frames × 175 × 16 + 36 coordinated × 175 × 32, at about 15–20 ms each, about 2 h); draws, kernel and cross-check in minutes | about 2.5 h | table about 55 MB; draws about 3 MB; record about 1–2 MB committed |
-| `lock` | 2 × about 55,000 compositions (the second is the provenance recompute) | about 35 min | Y1 tables about 35 MB (local); lock under 1 MB committed |
-| `confirm` | I7 recompute (about 17 min); 36 stage-1 prompts; about 9,200 Y2 compositions (3 min); 3,024 forwards (about 4 min); scoring | about 25–30 min | stage-2 measurements about 55 MB; results state about 10 MB |
+| `lock` | 2 × about 55,000 compositions (the second is the provenance recompute) | about 35 min | **Y1 table companion about 35 MB, committed** *(Q7)*; lock under 1 MB committed |
+| `confirm` | I7 reconstruction (about 17 min); 36 stage-1 prompts; about 9,200 Y2 compositions (3 min); 3,024 forwards (about 4 min); scoring | about 25–30 min | Y2 table about 6 MB (committed at closure, *R-1*); stage-2 measurements about 55 MB (local); results state about 10 MB |
 
 Peak memory stays under about 2 GB. The machine should be on AC power with sleep blocked, as for 021.
 
@@ -434,8 +534,12 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 - **Add** `tests/test_upstream_localization.py` (tier A, plus marked tier-C cases) and
   `tests/test_experiment_022_runner.py` (tier B).
 - **Change** `tests/test_tiers.py` (`CURRENT_EXPERIMENT = "022"`) and `.gitignore` (`outputs/experiment-022/*`).
-- **Created later by the phases:** `confirmation-v1.json`, `calibration-v1.json`, `preregistration-lock.json` and
-  `preregistration.md`, each committed at its step.
+- **Created later by the phases**, each committed at its step:
+  - `confirmation-v1.json`;
+  - `calibration-v1.json`;
+  - `preregistration-lock.json`, `preregistration.md` and the Y1 table companion `locked-y1-table.f64` with its
+    `.json` index *(Q7)*;
+  - at closure, the Y2 table companion under `evidence/` *(R-1)*.
 - No frozen module is edited.
 
 ## Tasks (small reviewable commits; the checkboxes are for execution)
@@ -447,6 +551,7 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 **Task 2: pure core**
 - [ ] Masks and canonicalization; `group_sums`, `group_statistics` and `direct_group_statistics`.
 - [ ] The envelopes, direction checks, undefined convention, `classify` and the gap rule.
+- [ ] `i3_error`, `cdf_percentile` and the table byte format with its writer and reader.
 - [ ] Every tier-A test above.
 - [ ] Commit: "feat: experiment 022 Shapley kernel, envelopes and condition classification (pure core)".
 
@@ -456,7 +561,8 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 - [ ] Commit: "feat: experiment 022 block-0 decomposition and the 32-coalition composition".
 
 **Task 4: freeze**
-- [ ] The candidate lists, exclusion scan *(Q5)*, structural checks, manifest and file writer.
+- [ ] The candidate lists, the structured exclusion extraction through the frozen loaders *(Q5)*, the structural
+      checks, the manifest and the file writer.
 - [ ] Tests on a stub tokenizer and the real one.
 - [ ] Commit: "feat: experiment 022 tokenizer-only freeze of the new cues and frames".
 
@@ -486,8 +592,8 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 
 ## Stopping conditions
 
-- Stop after this plan for review; Q1–Q10 need decisions. Q2 changes a stated threshold by one and needs explicit
-  approval as a design erratum.
+- Q1–Q10 are decided, and Q2 is in design revision 3. Implementation (Tasks 1–7) may begin once the reviewer accepts
+  this plan revision. R-1, the Y2 table committed at closure, is needed only by Task 6.
 - During implementation, stop at the end of Task 7.
 - Stop before each scientific step.
 - Stop on any incident, and on any stop-for-review condition.
