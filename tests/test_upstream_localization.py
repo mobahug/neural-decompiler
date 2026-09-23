@@ -502,3 +502,281 @@ def test_a_tampered_confirmation_file_is_refused(tmp_path, monkeypatch):
     later = _stub_inputs(tokenizer, planted=(payload["cues"][0]["word"],))  # a unit that became used after the freeze
     with pytest.raises(ul.PhaseError):
         ul.load_confirmation_022(path, later)
+
+
+# ---------------------------------------------------------------------------
+# The calibration's statistics on synthetic tables (tier A at small sizes; the full-scale dry run is marked slow).
+# No model: the re-materialization loop itself is exercised by the runner tests on the fake world.
+
+import resource  # noqa: E402
+import sys  # noqa: E402
+import time  # noqa: E402
+
+from neural_decompiler import readout_calibration as rc  # noqa: E402,F811
+
+SIX = {"classes": {cls: 6 for cls in ul.CUE_CLASSES}, "templates": {template: 6 for template in ul.TEMPLATES}}
+
+
+def _synthetic_units(classes=(5, 4, 3, 6), frames_per_template=4, y2_per_template=3, counts=SIX):
+    cues_by_class = {cls: [(f"{cls[:3]}{i}", 1000 + 100 * c + (11 * i) % n) for i in range(n)] for c, (cls, n) in enumerate(zip(ul.CUE_CLASSES, classes))}
+    frames = [SimpleNamespace(frame_id=f"{template}-{k:02d}", template_id=template) for template in reversed(ul.TEMPLATES) for k in range(frames_per_template)]
+    y2 = {template: [f"{template}-{k:02d}" for k in reversed(range(frames_per_template - y2_per_template, frames_per_template))] for template in ul.TEMPLATES}
+    return ul.units_from(cues_by_class, frames, y2, counts)
+
+
+def _synthetic_table(units, nouns=79, seed=0):
+    """Measured Δc and 32 coalitions whose error shrinks as factors are switched on; T is absent from cue-final
+    frames, whose row m | T is the row of m (the canonical form)."""
+    generator = torch.Generator().manual_seed(seed)
+    c, f = len(units.cues), len(units.frames)
+    coordinated = torch.tensor([frame.template_id == ul.COORDINATED for frame in units.frames])
+    dc = torch.randn(c, f, nouns, generator=generator, dtype=torch.float64)
+    residual = 0.05 * torch.randn(c, f, nouns, generator=generator, dtype=torch.float64)
+    scale = {"R": 0.05, "emb": 0.03, "Bv": 0.3, "Bp": 0.2, "T": 0.25}
+    errors = {name: scale[name] * torch.randn(c, f, nouns, generator=generator, dtype=torch.float64) for name in ul.FACTORS}
+    errors["R"][:, coordinated] *= 6.0
+    dc_hat = torch.empty(c, f, 32, nouns, dtype=torch.float64)
+    for mask in range(32):
+        dc_hat[:, :, mask] = dc + residual
+        for name in ul.FACTORS:
+            if not mask & ul.BIT[name] and name != "T":
+                dc_hat[:, :, mask] += errors[name]
+        if not mask & ul.BIT["T"]:
+            dc_hat[:, coordinated, mask] += errors["T"][:, coordinated]
+    for mask in range(16):
+        dc_hat[:, ~coordinated, mask | 16] = dc_hat[:, ~coordinated, mask]
+    sse = torch.empty(c, f, 32, dtype=torch.float64)
+    count, mean, m2 = (torch.empty(c, f, dtype=torch.float64) for _ in range(3))
+    for ci in range(c):
+        for fi in range(f):
+            sse[ci, fi], count[ci, fi], mean[ci, fi], m2[ci, fi] = ul.pair_cells(dc[ci, fi], dc_hat[ci, fi])
+    gates = {name: torch.zeros(c, f, dtype=torch.float64) for name in ("I1", "I2", "I3", "I4", "I5")}
+    return ul.CalibrationTable(dc, dc_hat, sse, count, mean, m2, dc + residual, gates)
+
+
+def test_units_follow_the_frozen_order_and_the_draws_index_within_their_strata():
+    units = _synthetic_units()
+    assert [cls for _, _, cls in units.cues] == [cls for cls, n in zip(ul.CUE_CLASSES, (5, 4, 3, 6)) for _ in range(n)]
+    for cls in ul.CUE_CLASSES:
+        start, n = units.class_offsets[cls]
+        ids = [token_id for _, token_id, _ in units.cues[start:start + n]]
+        assert ids == sorted(ids)  # token-id order within the class (plan revision 2, Q6)
+    assert [frame.frame_id for frame in units.frames] == sorted(frame.frame_id for frame in units.frames)
+    assert all(units.frames[i].template_id == template for template, indices in units.y2_frames.items() for i in indices)
+    assert [units.frames[i].frame_id for i in units.y2_frames["cardinal"]] == ["cardinal-01", "cardinal-02", "cardinal-03"]  # by frame_id
+    assert sorted(units.groups["cue_final"] + units.groups["coordinated"]) == list(range(len(units.frames)))
+    draws = ul.draw_units(units, 40)
+    for cls in ul.CUE_CLASSES:
+        start, n = units.class_offsets[cls]
+        block = ul.CUE_CLASSES.index(cls) * 6
+        assert all(int(draws["cue_index"][b, block + i]) == start + ul.slot_index(b, f"cue/{cls}", i, n) for b in (0, 7, 39) for i in range(6))
+    for template in ul.TEMPLATES:
+        pool = units.y2_frames[template]
+        assert all(int(draws["frame_index"][template][b, i]) == pool[ul.slot_index(b, f"frame/{template}", i, len(pool))] for b in (0, 39) for i in range(6))
+    assert set(draws["digests"]) == set(units.sizes())
+
+
+def test_the_calibration_kernel_equals_the_direct_recomputation_with_duplicates_and_any_chunking():
+    units = _synthetic_units()
+    table = _synthetic_table(units)
+    draws = ul.draw_units(units, 30)
+    kernel = ul.kernel_statistics(table, units, draws, chunk=7)
+    again = ul.kernel_statistics(table, units, draws, chunk=1000)
+    for population in ul.POPULATIONS:
+        for group in ul.GROUPS:
+            assert all(torch.equal(kernel["stats"][population][group][key], again["stats"][population][group][key]) for key in ("v", "gap", "phi", "sst"))
+    check = ul.kernel_direct_check(table, units, draws, kernel, n_draws=30)
+    assert check["n_exceeding"] == 0 and check["max_difference"] <= 1e-10 and check["n_checked"] == 30 * 4 * (32 + 1 + 5 + 5 + 1)
+    cues, frames = ul.draw_pairs(units, draws, "Y2", "cue_final", 0)
+    assert cues.shape[0] == 24 * 12 and len(set(zip(cues.tolist(), frames.tolist()))) < 24 * 12  # duplicates are kept, with multiplicity
+    cues, frames = ul.draw_pairs(units, draws, "Y1", "coordinated", 0)
+    assert cues.shape[0] == 24 * len(units.groups["coordinated"])
+    assert max(ul.efficiency_maxima(kernel).values()) <= ul.TOLERANCES["I6"]
+    phi_t = kernel["stats"]["Y1"]["cue_final"]["phi"][:, 4]
+    assert torch.equal(phi_t, torch.zeros_like(phi_t))  # the cue-final null player, exactly
+
+
+def test_a_planted_kernel_disagreement_is_a_cross_check_incident():
+    units = _synthetic_units()
+    table = _synthetic_table(units)
+    draws = ul.draw_units(units, 5)
+    kernel = ul.kernel_statistics(table, units, draws)
+    cues, frames = ul.draw_pairs(units, draws, "Y2", "coordinated", 2)
+    table.dc_hat[cues[0], frames[0], 9] += 0.5  # the direct side now sees a different table
+    with pytest.raises(ul.CrossCheckError) as caught:
+        ul.kernel_direct_check(table, units, draws, kernel)
+    assert caught.value.details["n_exceeding"] > 0 and "coordinated" in caught.value.details["at"]
+
+
+def _claims(n, *, undefined=None, nonfinite=None, generator=None):
+    generator = generator or torch.Generator().manual_seed(5)
+    centers = {"C1": 0.9, "C2": 0.02, "C3": 0.4, "C4": 0.15}
+    out = {}
+    for population in ul.POPULATIONS:
+        out[population] = {}
+        for claim in ul.CLAIMS:
+            values = centers[claim] + 0.05 * torch.randn(n, generator=generator, dtype=torch.float64)
+            interpretable = torch.ones(n, dtype=torch.bool)
+            k = (undefined or {}).get(f"{population}/{claim}", 0)
+            interpretable[:k] = False
+            values[:k] = float("nan")
+            if nonfinite == f"{population}/{claim}":
+                values[n - 1] = float("inf")
+            out[population][claim] = {"value": values, "interpretable": interpretable, "gap": torch.full((n,), 0.1, dtype=torch.float64)}
+    return out
+
+
+def test_the_undefined_stop_is_at_exactly_250_and_125_and_a_non_finite_interpretable_share_is_an_incident():
+    for key, count, stop in (("Y1/C1", 249, False), ("Y1/C1", 250, True), ("Y2/C2", 250, True), ("Y2/C4", 250, True), ("Y1/C3", 124, False), ("Y1/C3", 125, True)):
+        claims = _claims(10_000, undefined={key: count})
+        ul.assert_finite_where_interpretable(claims)
+        result = ul.calibration_stop(ul.undefined_counts(claims), 10_000)
+        assert result["stop"] is stop and (key in result["offending"]) is stop and result["counts"][key.split("/")[0]][key.split("/")[1]] == count
+    with pytest.raises(ul.IncidentError, match="non-finite"):
+        ul.assert_finite_where_interpretable(_claims(1000, nonfinite="Y2/C3"))
+
+
+def test_envelopes_result_rates_and_a_reversed_tail(monkeypatch):
+    claims = _claims(1000, undefined={"Y1/C2": 10})
+    evaluated = ul.envelopes_and_rates(claims)
+    assert evaluated["envelopes"]["Y1"]["C2"]["kind"] == "upper" and evaluated["envelopes"]["Y1"]["C2"]["rank"] == ul.upper_rank(1000)
+    assert evaluated["summaries"]["Y1"]["C2"]["undefined"] == 10
+    for population in ul.POPULATIONS:
+        for claim in ul.CLAIMS:
+            rates = evaluated["result_rates"][population][claim]
+            assert set(rates) == set(ul.RESULTS) and abs(sum(rates.values()) - 1.0) < 1e-12
+    assert evaluated["result_rates"]["Y1"]["C2"]["NOT_INTERPRETABLE"] == 0.01
+    assert 0.0 <= evaluated["joint_rates"]["all_eight_pass"] <= min(evaluated["joint_rates"]["Y1_all_four_pass"], evaluated["joint_rates"]["Y2_all_four_pass"])
+    original = ul.claim_envelope
+
+    def reversed_c2(claim, values, defined):
+        envelope = original(claim, values, defined)
+        if claim == "C2":  # the classic slip: the upper bound taken from the lower tail
+            envelope = {**envelope, "bound": ul.order_statistic(values, defined, ul.lower_rank(int(values.shape[0])), undefined_at=math.inf)}
+        return envelope
+
+    monkeypatch.setattr(ul, "claim_envelope", reversed_c2)
+    with pytest.raises(ul.IncidentError, match="direction check"):
+        ul.envelopes_and_rates(_claims(1000))
+
+
+def test_gate_maxima_are_located_and_enforced_at_the_frozen_tolerances():
+    units = _synthetic_units()
+    shape = (len(units.cues), len(units.frames))
+    gates = {name: torch.zeros(shape, dtype=torch.float64) for name in ("I1", "I2", "I3", "I4", "I5")}
+    gates["I1"][2, 3] = 1e-4  # exactly at the tolerance passes
+    summary = ul.gate_summary(gates, units)
+    assert summary["I1"] == {"max": 1e-4, "at": f"{units.cues[2][0]}|{units.frames[3].frame_id}", "tolerance": 1e-4}
+    ul.enforce_gates(summary)
+    gates["I5"][0, 0] = 5e-324  # I5 is exact equality
+    with pytest.raises(ul.IncidentError, match="I5"):
+        ul.enforce_gates(ul.gate_summary(gates, units))
+    gates["I5"][0, 0] = 0.0
+    gates["I3"][1, 1] = float("nan")  # a missing value is never a pass
+    summary = ul.gate_summary(gates, units)
+    assert summary["I3"]["max"] is None
+    with pytest.raises(ul.IncidentError, match="I3"):
+        ul.enforce_gates(summary)
+
+
+def _fake_021(tmp_path, monkeypatch, units, table, noun_keys):
+    rows = [(word, frame.frame_id) for word, _, _ in units.cues for frame in units.frames]
+    measured = torch.stack([table.dc[ci, fi] for ci in range(len(units.cues)) for fi in range(len(units.frames))])
+    exposed = {"cues": [word for word, _ in rows], "frames": [frame for _, frame in rows], "noun_keys": list(noun_keys), "measured": measured.clone()}
+    (tmp_path / "outputs").mkdir(exist_ok=True)
+    torch.save(exposed, tmp_path / "outputs" / "exposed-table.pt")
+    record = {"experiment": "021", "table_sha256": {"measured": rc.tensor_digest(measured)}}
+    record["content_sha256"] = rc.content_digest(record)
+    (tmp_path / "calibration-021.json").write_text(pm.canonical_json(record) + "\n")
+    monkeypatch.setattr(ul, "CALIBRATION_021_RELATIVE_PATH", "calibration-021.json")
+    monkeypatch.setattr(ul, "EXPOSED_TABLE_021_RELATIVE_PATH", "outputs/exposed-table.pt")
+    monkeypatch.setitem(ul.INHERITED_021, "calibration_file_sha256", rc.file_sha256(tmp_path / "calibration-021.json"))
+    monkeypatch.setitem(ul.INHERITED_021, "calibration_content_sha256", record["content_sha256"])
+    monkeypatch.setitem(ul.INHERITED_021, "exposed_measured_sha256", record["table_sha256"]["measured"])
+    return exposed
+
+
+def test_r1_verifies_021s_record_and_table_before_comparing(tmp_path, monkeypatch):
+    units = _synthetic_units()
+    table = _synthetic_table(units, nouns=5)
+    keys = [f"noun{i}" for i in range(5)]
+    _fake_021(tmp_path, monkeypatch, units, table, keys)
+    result = ul.r1_gate(tmp_path, table, units, keys)
+    assert result["passed"] and result["max_difference"] == 0.0 and result["n_pairs"] == len(units.cues) * len(units.frames)
+    table.dc[1, 2, 3] += 2e-9
+    result = ul.r1_gate(tmp_path, table, units, keys)
+    assert not result["passed"] and result["at"] == f"{units.cues[1][0]}|{units.frames[2].frame_id}" and result["max_difference"] == pytest.approx(2e-9, rel=1e-3)
+    with pytest.raises(ul.IncidentError, match="noun"):
+        ul.r1_gate(tmp_path, table, units, list(reversed(keys)))
+    exposed = torch.load(tmp_path / "outputs" / "exposed-table.pt")
+    exposed["measured"][0, 0] += 1.0  # the local table is not the one 021's record digests
+    torch.save(exposed, tmp_path / "outputs" / "exposed-table.pt")
+    with pytest.raises(ul.IncidentError, match="local exposed table"):
+        ul.r1_gate(tmp_path, table, units, keys)
+    (tmp_path / "calibration-021.json").write_text("{}\n")
+    with pytest.raises(ul.IncidentError, match="committed calibration record"):
+        ul.r1_gate(tmp_path, table, units, keys)
+
+
+def _calibration_record(units, table, n_draws):
+    draws = ul.draw_units(units, n_draws)
+    kernel = ul.kernel_statistics(table, units, draws)
+    cross = ul.kernel_direct_check(table, units, draws, kernel)
+    ul.assert_finite_where_interpretable(kernel["claims"])
+    undefined = ul.undefined_counts(kernel["claims"])
+    stop = ul.calibration_stop(undefined, n_draws)
+    evaluated = ul.envelopes_and_rates(kernel["claims"])
+    arrays = ul.draw_arrays(kernel)
+    record = ul.calibration_record(run_id="run", protocol_code_commit="c" * 40, digests={"manifest": "m"}, units=units, confirmation_sha256="f" * 64,
+                                   gates=ul.gate_summary(table.gates, units), r1={"passed": True}, table_digests=table.digests(), draws=draws, cross_check=cross,
+                                   efficiency=ul.efficiency_maxima(kernel), undefined=undefined, evaluated=evaluated, descriptives=ul.exposed_descriptives(table, units),
+                                   array_digests={key: rc.tensor_digest(value) for key, value in arrays.items()}, n_draws=n_draws)
+    return record, stop, kernel
+
+
+def test_the_calibration_record_binds_the_frozen_constants_and_verifies():
+    units = _synthetic_units()
+    table = _synthetic_table(units)
+    record, stop, _ = _calibration_record(units, table, 200)
+    assert not stop["stop"]
+    ul.verify_calibration_record(record, draws=200)
+    assert record["constants"]["ranks"] == {"lower": 5, "upper": 196, "c3_low": 3, "c3_high": 198}
+    assert record["descriptive_exposed"]["group/cue_final"]["phi"]["T"] == 0.0 and record["descriptive_exposed"]["group/cue_final"]["interpretable"]
+    ladder = record["descriptive_exposed"]["group/coordinated"]["ladder"]
+    assert list(ladder) == ["Level 0", "R", "R+emb", "R+emb+Bv+Bp", "all"] and ladder["all"] > ladder["Level 0"]
+    with pytest.raises(ul.PhaseError, match="constants"):
+        ul.verify_calibration_record(record, draws=ul.B)
+    for mutate in (lambda r: r["constants"]["guards"].update(C1_min=0.4), lambda r: r["envelopes"]["Y2"].pop("C4"), lambda r: r["direction_checks"]["Y1"]["C1"].update(ok=False)):
+        changed = json.loads(pm.canonical_json(record))
+        mutate(changed)
+        changed["content_sha256"] = rc.content_digest(changed)
+        with pytest.raises(ul.PhaseError):
+            ul.verify_calibration_record(changed, draws=200)
+    stale = json.loads(pm.canonical_json(record))
+    stale["envelopes"]["Y1"]["C1"]["bound"] = 0.0
+    with pytest.raises(ul.PhaseError, match="digest"):
+        ul.verify_calibration_record(stale, draws=200)
+
+
+@pytest.mark.slow
+def test_a_full_scale_synthetic_calibration_dry_run_at_b_10000():
+    """Plan revision 2, Task 5: the draws, the kernel, the cross-check, the envelopes and the record at the real
+    pool sizes (175 cues 45/45/36/49 × 108 frames, 14 Y2-like frames per template, B = 10,000), with no model."""
+    started = time.perf_counter()
+    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    units = _synthetic_units(classes=(45, 45, 36, 49), frames_per_template=36, y2_per_template=14)
+    assert len(units.cues) == 175 and len(units.frames) == 108 and units.sizes() == {**{f"cue/{c}": n for c, n in zip(ul.CUE_CLASSES, (45, 45, 36, 49))},
+                                                                                     **{f"frame/{t}": 14 for t in ul.TEMPLATES}}
+    table = _synthetic_table(units)
+    built = time.perf_counter()
+    record, stop, kernel = _calibration_record(units, table, ul.B)
+    finished = time.perf_counter()
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    scale = 1 if sys.platform == "darwin" else 1024  # bytes on macOS, KiB on Linux
+    ul.verify_calibration_record(record)
+    assert not stop["stop"] and record["cross_check"]["n_exceeding"] == 0 and record["cross_check"]["n_checked"] == 16 * 4 * 44
+    assert kernel["stats"]["Y1"]["cue_final"]["v"].shape == (ul.B, 32) and kernel["stats"]["Y2"]["coordinated"]["phi"].shape == (ul.B, 5)
+    assert all(record["direction_checks"][p][c]["ok"] for p in ul.POPULATIONS for c in ul.CLAIMS)
+    print(f"\nfull-scale dry run: table {built - started:.1f} s, draws+kernel+check+envelopes+record {finished - built:.1f} s, "
+          f"peak RSS {peak * scale / 2**30:.2f} GiB (was {before * scale / 2**30:.2f} GiB)")
+    assert finished - built < 600 and peak * scale < 6 * 2**30

@@ -39,6 +39,7 @@ from neural_decompiler import models as models_module
 from neural_decompiler import plural_mechanism as pm
 from neural_decompiler import readout_calibration as rc
 from neural_decompiler import readout_decompilation as rd
+from neural_decompiler.behavior import validate_json_safe
 
 PhaseError = pm.PhaseError
 IncidentError = pm.IncidentError
@@ -1084,3 +1085,447 @@ def load_confirmation_022(path: Path, inputs: FrozenInputs) -> Confirmation022:
     if {int(token["token_id"]) for token in confirmation.tokens} & used_ids or {frame.text_template for frame in confirmation.frames} & used_texts:
         raise PhaseError("a new cue or frame was used by an earlier experiment")
     return confirmation
+
+
+
+# ---------------------------------------------------------------------------
+# The calibration (exposed only, once; Task 5).
+
+
+class CrossCheckError(IncidentError):
+    """The kernel disagreed with the direct recomputation beyond the implementation tolerance: an incident, with its
+    location. No floor exists yet, so nothing is written."""
+
+    def __init__(self, details: Mapping[str, Any]):
+        self.details = dict(details)
+        super().__init__(f"kernel/direct cross-check failed: {self.details.get('max_difference')} at {self.details.get('at')} above {TOLERANCES['kernel']:.0e} "
+                         f"({self.details.get('n_exceeding')} of {self.details.get('n_checked')} quantities exceed)")
+
+
+@dataclass(frozen=True)
+class CalibrationUnits:
+    """Experiment 021's provenance pools in the frozen unit order (plan revision 2, Q6).
+
+    ``cues`` is flat: the classes in ``CUE_CLASSES`` order, token id within a class; ``class_offsets[cls]`` is its
+    ``(start, count)``. The frame axis is the 108 exposed frames by ``frame_id``; ``y2_frames[template]`` are the
+    frame-axis indices of the 14 frames first confirmed in 017–019, by ``frame_id``; ``slots`` are the fresh set's
+    frozen counts per stratum."""
+
+    cues: tuple[tuple[str, int, str], ...]
+    class_offsets: Mapping[str, tuple[int, int]]
+    frames: tuple[Any, ...]
+    y2_frames: Mapping[str, tuple[int, ...]]
+    groups: Mapping[str, tuple[int, ...]]
+    slots: Mapping[str, int]
+
+    def sizes(self) -> dict[str, int]:
+        return {**{f"cue/{cls}": self.class_offsets[cls][1] for cls in CUE_CLASSES}, **{f"frame/{template}": len(self.y2_frames[template]) for template in TEMPLATES}}
+
+    def to_json(self) -> dict[str, Any]:
+        return {"cues": [[word, token_id, cls] for word, token_id, cls in self.cues], "class_offsets": {cls: list(entry) for cls, entry in self.class_offsets.items()},
+                "frames": [frame.frame_id for frame in self.frames], "y2_frames": {template: [self.frames[i].frame_id for i in indices] for template, indices in self.y2_frames.items()},
+                "groups": {group: len(indices) for group, indices in self.groups.items()}, "slots": dict(self.slots), "strata_sizes": self.sizes()}
+
+
+def units_from(cues_by_class: Mapping[str, Sequence[tuple[str, int]]], frames: Sequence[Any], y2_frame_ids: Mapping[str, Sequence[str]],
+               counts: Mapping[str, Mapping[str, int]]) -> CalibrationUnits:
+    cues: list[tuple[str, int, str]] = []
+    offsets: dict[str, tuple[int, int]] = {}
+    for cls in CUE_CLASSES:
+        members = sorted(cues_by_class[cls], key=lambda entry: int(entry[1]))
+        offsets[cls] = (len(cues), len(members))
+        cues += [(str(word), int(token_id), cls) for word, token_id in members]
+    ordered = tuple(sorted(frames, key=lambda frame: frame.frame_id))
+    position = {frame.frame_id: index for index, frame in enumerate(ordered)}
+    y2 = {template: tuple(position[frame_id] for frame_id in sorted(y2_frame_ids[template])) for template in TEMPLATES}
+    if any(ordered[i].template_id != template for template, indices in y2.items() for i in indices):
+        raise PhaseError("a Y2-like frame is not of its stratum's template")
+    groups = {"cue_final": tuple(i for i, frame in enumerate(ordered) if frame.template_id != COORDINATED),
+              "coordinated": tuple(i for i, frame in enumerate(ordered) if frame.template_id == COORDINATED)}
+    slots = {**{f"cue/{cls}": int(counts["classes"][cls]) for cls in CUE_CLASSES}, **{f"frame/{template}": int(counts["templates"][template]) for template in TEMPLATES}}
+    return CalibrationUnits(tuple(cues), offsets, ordered, y2, groups, slots)
+
+
+def calibration_units(pool: Any, counts: Mapping[str, Mapping[str, int]]) -> CalibrationUnits:
+    """``counts`` are the committed confirmation file's class and template counts: the only thing the calibration
+    reads from it (plan revision 2, Q1)."""
+    pools = rc.production_pools(pool)
+    return units_from(pools.cues, pool.frames, pools.frames_unscreened, counts)
+
+
+@dataclass
+class CalibrationTable:
+    """The re-materialized exposed pairs, ``[C, F, …]`` in the units' order."""
+
+    dc: torch.Tensor  # [C, F, N] measured Δc
+    dc_hat: torch.Tensor  # [C, F, 32, N] every coalition; in a cue-final frame the row of m | T is the row of m
+    sse: torch.Tensor  # [C, F, 32]
+    count: torch.Tensor  # [C, F]
+    mean: torch.Tensor  # [C, F]
+    m2: torch.Tensor  # [C, F]
+    ceiling: torch.Tensor  # [C, F, N]
+    gates: dict[str, torch.Tensor]  # I1–I5, [C, F]
+
+    TENSORS = ("dc", "dc_hat", "sse", "count", "mean", "m2", "ceiling")
+
+    def cells(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        c, f = self.count.shape
+        return self.sse.reshape(c * f, N_MASKS), self.count.reshape(-1), self.mean.reshape(-1), self.m2.reshape(-1)
+
+    def digests(self) -> dict[str, str]:
+        return {**{name: rc.tensor_digest(getattr(self, name)) for name in self.TENSORS}, **{f"gate_{name}": rc.tensor_digest(values) for name, values in sorted(self.gates.items())}}
+
+    def saved(self, units: CalibrationUnits, noun_keys: Sequence[str]) -> dict[str, Any]:
+        return {"cues": [word for word, _, _ in units.cues], "token_ids": [token_id for _, token_id, _ in units.cues], "classes": [cls for _, _, cls in units.cues],
+                "frames": [frame.frame_id for frame in units.frames], "templates": [frame.template_id for frame in units.frames], "noun_keys": list(noun_keys),
+                **{name: getattr(self, name) for name in self.TENSORS}, "gates": dict(self.gates)}
+
+
+def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenInputs, units: CalibrationUnits, *, forbidden_keys: frozenset[str],
+                              log: Callable[[str], None] | None = None, executed: list[pm.Prompt] | None = None) -> CalibrationTable:
+    """One forward per exposed pair (175 pool cues × 108 exposed frames) against Experiment 020's locked reference
+    states. A frame's keys are checked before any of its prompts runs: every key in 020's ledger, none in
+    ``forbidden_keys`` (the 022 manifest and 020's confirmation set). Then the factors, the canonical compositions,
+    the pair cells, the ceiling and I1–I5. Every executed prompt is appended to ``executed`` the moment it runs.
+    Nothing is enforced here: the caller writes the gate maxima first."""
+    say = log or (lambda message: None)
+    executed = executed if executed is not None else []
+    ledger = inputs.closure["ledger"]
+    locked = inputs.closure["exploration"]["locked_states"]
+    n_cues, n_frames, n_nouns = len(units.cues), len(units.frames), len(progs.scorable)
+    dc = torch.empty(n_cues, n_frames, n_nouns, dtype=torch.float64)
+    dc_hat = torch.empty(n_cues, n_frames, N_MASKS, n_nouns, dtype=torch.float64)
+    sse = torch.empty(n_cues, n_frames, N_MASKS, dtype=torch.float64)
+    count, mean, m2 = (torch.empty(n_cues, n_frames, dtype=torch.float64) for _ in range(3))
+    ceiling = torch.empty(n_cues, n_frames, n_nouns, dtype=torch.float64)
+    gates = {name: torch.full((n_cues, n_frames), math.nan, dtype=torch.float64) for name in ("I1", "I2", "I3", "I4", "I5")}
+    for fi, frame in enumerate(units.frames):
+        prompts = [pm.Prompt(frame, token_id, word) for word, token_id, _ in units.cues]
+        foreign = [prompt.key for prompt in prompts if prompt.key not in ledger]
+        forbidden = [prompt.key for prompt in prompts if prompt.key in forbidden_keys]
+        if forbidden or foreign:
+            raise IncidentError(f"{frame.frame_id}: {len(forbidden)} manifest keys {forbidden[:2]} and {len(foreign)} keys outside Experiment 020's ledger {foreign[:2]}; none of this frame ran")
+        state = rd.state_from_locked(locked[frame.frame_id], frame)
+        s17 = state.state_017
+        rows16 = atp.reference_rows(progs.programs, s17.x1_all, s17.x2_all)
+        reference_id = int(inputs.pool.reference_ids[frame.template_id])
+        for ci, (word, token_id, _) in enumerate(units.cues):
+            measurement = measure_prompt(model, progs, frame, state, token_id, word)
+            executed.append(prompts[ci])
+            ctx = pair_context(progs, frame, state, reference_id, token_id, word, rows16)
+            compositions, composed = pair_compositions(progs, ctx)
+            values, ceiling_row = pair_gates(progs, ctx, compositions, composed, measurement)
+            cell_sse, cell_count, cell_mean, cell_m2 = pair_cells(measurement["dc"], compositions)
+            dc[ci, fi], dc_hat[ci, fi], sse[ci, fi], ceiling[ci, fi] = measurement["dc"], compositions, cell_sse, ceiling_row
+            count[ci, fi], mean[ci, fi], m2[ci, fi] = cell_count, cell_mean, cell_m2
+            for name, value in values.items():
+                gates[name][ci, fi] = value
+        say(f"  {frame.frame_id}: {n_cues} pool cues measured and composed ({fi + 1}/{n_frames})")
+    return CalibrationTable(dc, dc_hat, sse, count, mean, m2, ceiling, gates)
+
+
+def gate_summary(gates: Mapping[str, torch.Tensor], units: CalibrationUnits) -> dict[str, dict[str, Any]]:
+    """Per gate: the maximum over every pair (``None`` when a value is missing or not finite) and where it is."""
+    out = {}
+    for name, values in sorted(gates.items()):
+        flat = values.reshape(-1)
+        bad = ~torch.isfinite(flat)
+        position = int(bad.nonzero()[0]) if bool(bad.any()) else int(torch.argmax(flat))
+        ci, fi = divmod(position, int(values.shape[1]))
+        out[name] = {"max": None if bool(bad.any()) else float(flat[position]), "at": f"{units.cues[ci][0]}|{units.frames[fi].frame_id}", "tolerance": TOLERANCES[name]}
+    return out
+
+
+def enforce_gates(summary: Mapping[str, Mapping[str, Any]], names: Sequence[str] = ("I1", "I2", "I3", "I4", "I5")) -> None:
+    for name in names:
+        entry = summary.get(name) or {}
+        value = entry.get("max")
+        if value is None or not value <= TOLERANCES[name]:
+            raise IncidentError(f"identity gate {name} failed: {value} at {entry.get('at')} against the frozen tolerance {TOLERANCES[name]:.0e}")
+
+
+def assert_measurements_finite(table: CalibrationTable) -> None:
+    for name in ("dc", "ceiling", "dc_hat", "sse", "m2"):
+        if not bool(torch.isfinite(getattr(table, name)).all()):
+            raise IncidentError(f"a missing or non-finite value in the calibration table's {name}")
+
+
+def r1_gate(root: Path, table: CalibrationTable, units: CalibrationUnits, noun_keys: Sequence[str]) -> dict[str, Any]:
+    """The re-measured exposed ``Δc`` against Experiment 021's digest-bound exposed table (plan revision 2, Q4):
+    021's committed record (file and content digests) and the measured-table digest it records are verified before
+    the local table is read, and the local table's digest before any value is compared."""
+    import json
+
+    record_path = root / CALIBRATION_021_RELATIVE_PATH
+    if rc.file_sha256(record_path) != INHERITED_021["calibration_file_sha256"]:
+        raise IncidentError("Experiment 021's committed calibration record is not the frozen file")
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    if record.get("content_sha256") != INHERITED_021["calibration_content_sha256"] or record.get("table_sha256", {}).get("measured") != INHERITED_021["exposed_measured_sha256"]:
+        raise IncidentError("Experiment 021's calibration record does not bind the frozen exposed table")
+    table_path = root / EXPOSED_TABLE_021_RELATIVE_PATH
+    if not table_path.exists():
+        raise IncidentError(f"{EXPOSED_TABLE_021_RELATIVE_PATH} is missing; R1 cannot be evaluated")
+    exposed = torch.load(table_path)
+    if rc.tensor_digest(exposed["measured"]) != INHERITED_021["exposed_measured_sha256"]:
+        raise IncidentError("Experiment 021's local exposed table is not the one its record digests")
+    if list(exposed["noun_keys"]) != list(noun_keys):
+        raise IncidentError("Experiment 021's exposed table orders a different noun set")
+    row = {(cue, frame): index for index, (cue, frame) in enumerate(zip(exposed["cues"], exposed["frames"]))}
+    missing = [(word, frame.frame_id) for word, _, _ in units.cues for frame in units.frames if (word, frame.frame_id) not in row]
+    if missing:
+        raise IncidentError(f"Experiment 021's exposed table has no row for {missing[:2]}")
+    index = torch.tensor([[row[(word, frame.frame_id)] for frame in units.frames] for word, _, _ in units.cues], dtype=torch.int64)
+    difference = (table.dc - exposed["measured"].double()[index]).abs().amax(dim=-1)
+    position = int(torch.argmax(difference.reshape(-1)))
+    ci, fi = divmod(position, len(units.frames))
+    worst = float(difference.reshape(-1)[position])
+    return {"max_difference": worst, "at": f"{units.cues[ci][0]}|{units.frames[fi].frame_id}", "tolerance": TOLERANCES["R1"], "passed": bool(worst <= TOLERANCES["R1"]),
+            "n_pairs": len(units.cues) * len(units.frames), "exposed_measured_sha256": INHERITED_021["exposed_measured_sha256"]}
+
+
+def draw_units(units: CalibrationUnits, draws: int) -> dict[str, Any]:
+    """The SHA-indexed draws: ``cue_index [B, 24]`` (global cue indices, the class blocks in ``CUE_CLASSES`` order) and
+    per template ``frame_index [B, 6]`` (frame-axis indices of Y2-like frames); the index digests go into the record."""
+    indices = draw_indices(units.sizes(), units.slots, draws)
+    cue_index = torch.cat([indices[f"cue/{cls}"] + units.class_offsets[cls][0] for cls in CUE_CLASSES], dim=1)
+    frame_index = {template: torch.tensor(units.y2_frames[template], dtype=torch.int64)[indices[f"frame/{template}"]] for template in TEMPLATES}
+    return {"cue_index": cue_index, "frame_index": frame_index, "digests": {stratum: rc.tensor_digest(value) for stratum, value in sorted(indices.items())}}
+
+
+def _y2_group_frames(frame_index: Mapping[str, torch.Tensor], group: str) -> torch.Tensor:
+    if group == "cue_final":
+        return torch.cat([frame_index[template] for template in TEMPLATES if template != COORDINATED], dim=1)
+    return frame_index[COORDINATED]
+
+
+def _chunks(total: int, size: int):
+    for start in range(0, total, size):
+        yield start, min(total, start + size)
+
+
+def kernel_statistics(table: CalibrationTable, units: CalibrationUnits, draws: Mapping[str, Any], *, chunk: int = 500) -> dict[str, Any]:
+    """Every draw's games through the one kernel. Y1-like: the drawn cues × all exposed frames of the group (pairs
+    to per-cue cells, cells to the draw, by ``group_sums``); Y2-like: the drawn cues × the drawn frames of the group
+    (pairs to the draw). Duplicates count with multiplicity."""
+    sse_flat, count_flat, mean_flat, m2_flat = table.cells()
+    n_frames = len(units.frames)
+    cue_index = draws["cue_index"]
+    n_draws = int(cue_index.shape[0])
+    stats: dict[str, dict[str, dict[str, torch.Tensor]]] = {"Y1": {}, "Y2": {}}
+    for group in GROUPS:
+        frames = torch.tensor(units.groups[group], dtype=torch.int64)
+        per_cue = torch.arange(len(units.cues)).unsqueeze(1) * n_frames + frames.unsqueeze(0)
+        cells = group_sums(sse_flat, count_flat, mean_flat, m2_flat, per_cue)
+        sse, _, _, sst = group_sums(*cells, cue_index)
+        stats["Y1"][group] = {**group_statistics(sse, sst), "sst": sst}
+        group_frames = _y2_group_frames(draws["frame_index"], group)
+        parts = []
+        for start, stop in _chunks(n_draws, chunk):
+            pair_index = (cue_index[start:stop].unsqueeze(2) * n_frames + group_frames[start:stop].unsqueeze(1)).reshape(stop - start, -1)
+            sse, _, _, sst = group_sums(sse_flat, count_flat, mean_flat, m2_flat, pair_index)
+            parts.append({**group_statistics(sse, sst), "sst": sst})
+        stats["Y2"][group] = {key: torch.cat([part[key] for part in parts]) for key in parts[0]}
+    claims = {population: claim_statistics(stats[population]["cue_final"], stats[population]["coordinated"]) for population in POPULATIONS}
+    return {"stats": stats, "claims": claims}
+
+
+def draw_pairs(units: CalibrationUnits, draws: Mapping[str, Any], population: str, group: str, b: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """The materialized pairs ``(cue index, frame index)`` of draw ``b``, every duplicate repeated."""
+    cues = draws["cue_index"][b]
+    frames = torch.tensor(units.groups[group], dtype=torch.int64) if population == "Y1" else _y2_group_frames(draws["frame_index"], group)[b]
+    return cues.repeat_interleave(frames.shape[0]), frames.repeat(cues.shape[0])
+
+
+def kernel_direct_check(table: CalibrationTable, units: CalibrationUnits, draws: Mapping[str, Any], kernel: Mapping[str, Any], *, n_draws: int | None = None) -> dict[str, Any]:
+    """The kernel against the direct recomputation from the materialized pairs (flattened two-pass ``R²``, the
+    permutation formula) on the first draws of each population and group: every coalition's value, the gap, the
+    Shapley values, the shares and the interpretability flag. Raises ``CrossCheckError`` above the tolerance."""
+    count = min(CROSS_CHECK_DRAWS if n_draws is None else int(n_draws), int(draws["cue_index"].shape[0]))
+    worst: dict[str, Any] = {"max_difference": -1.0}
+    first: dict[str, Any] | None = None
+    checked = exceeding = 0
+    for population in POPULATIONS:
+        for group in GROUPS:
+            stats = kernel["stats"][population][group]
+            for b in range(count):
+                cues, frames = draw_pairs(units, draws, population, group, b)
+                direct = direct_group_statistics(table.dc[cues, frames], table.dc_hat[cues, frames])
+                positive = bool(stats["sst_positive"][b])
+                interpretable = bool(stats["interpretable"][b])
+                quantities = [(f"v[{mask}]", float(stats["v"][b, mask]) if positive else None, direct["v"][mask]) for mask in range(N_MASKS)]
+                quantities.append(("gap", float(stats["gap"][b]) if positive else None, direct["gap"]))
+                quantities += [(f"phi[{name}]", float(stats["phi"][b, i]) if positive else None, None if direct["phi"] is None else direct["phi"][i]) for i, name in enumerate(FACTORS)]
+                quantities += [(f"share[{name}]", float(stats["shares"][b, i]) if interpretable else None, None if direct["shares"] is None else direct["shares"][i])
+                               for i, name in enumerate(FACTORS)]
+                quantities.append(("interpretable", 0.0 if interpretable == bool(direct["interpretable"]) else math.inf, 0.0))
+                for name, k, d in quantities:
+                    difference = agreement(k, d)
+                    checked += 1
+                    location = {"population": population, "group": group, "draw": b, "quantity": name, "kernel": k, "direct": d}
+                    if difference > worst["max_difference"]:
+                        worst = {"max_difference": difference, **location}
+                    if not difference <= TOLERANCES["kernel"]:
+                        exceeding += 1
+                        first = first or {"max_difference": difference, **location}
+    result = rc.json_safe({**worst, "at": f"{worst.get('population')}/{worst.get('group')}/draw {worst.get('draw')}/{worst.get('quantity')}", "tolerance": TOLERANCES["kernel"],
+                           "scale": rc.AGREEMENT_SCALE, "draws_per_population_and_group": count, "n_checked": checked, "n_exceeding": exceeding, "first_exceeding": first})
+    if exceeding:
+        raise CrossCheckError(result)
+    return result
+
+
+def efficiency_maxima(kernel: Mapping[str, Any]) -> dict[str, float]:
+    """I6 over every draw's games: ``|Σφ − G| / max(1, |G|)``."""
+    return {f"{population}/{group}": float(kernel["stats"][population][group]["efficiency"].max()) for population in POPULATIONS for group in GROUPS}
+
+
+def enforce_efficiency(maxima: Mapping[str, float]) -> None:
+    for key, value in maxima.items():
+        if not value <= TOLERANCES["I6"]:
+            raise IncidentError(f"Shapley efficiency I6 failed on {key}: {value} above {TOLERANCES['I6']:.0e}")
+
+
+def assert_finite_where_interpretable(claims: Mapping[str, Mapping[str, Mapping[str, torch.Tensor]]]) -> None:
+    """A non-finite share where the gap rule holds is an implementation incident, never an undefined draw."""
+    for population in POPULATIONS:
+        for claim in CLAIMS:
+            entry = claims[population][claim]
+            bad = entry["interpretable"] & ~torch.isfinite(entry["value"])
+            if bool(bad.any()):
+                raise IncidentError(f"{population}/{claim}: {int(bad.sum())} non-finite shares where the gap rule holds")
+
+
+def undefined_counts(claims: Mapping[str, Mapping[str, Mapping[str, torch.Tensor]]]) -> dict[str, dict[str, int]]:
+    return {population: {claim: int((~claims[population][claim]["interpretable"]).sum()) for claim in CLAIMS} for population in POPULATIONS}
+
+
+def calibration_stop(counts: Mapping[str, Mapping[str, int]], draws: int) -> dict[str, Any]:
+    """Design revision 3: 250 or more undefined values of C1, C2 or C4 (125 or more of C3) would make the order
+    statistic infinite; the calibration then writes no floor table and stops for review (not an incident, never
+    retried automatically)."""
+    offending = {f"{population}/{claim}": count for population, entries in counts.items() for claim, count in entries.items() if count >= undefined_threshold(claim, draws)}
+    return {"stop": bool(offending), "offending": offending, "thresholds": {claim: undefined_threshold(claim, draws) for claim in CLAIMS}, "counts": {k: dict(v) for k, v in counts.items()}}
+
+
+def envelopes_and_rates(claims: Mapping[str, Mapping[str, Mapping[str, torch.Tensor]]]) -> dict[str, Any]:
+    """Per population and claim: the envelope by the exact order statistics; the direction check against the median
+    of the defined draws (a violation is an incident, before anything is written); the guard-bound flag; a summary;
+    and the rate of each result over the draws, decided by ``classify``. Then the descriptive joint rates."""
+    out: dict[str, Any] = {"envelopes": {}, "direction_checks": {}, "guard_bound": {}, "summaries": {}, "result_rates": {}}
+    passes: dict[str, torch.Tensor] = {}
+    for population in POPULATIONS:
+        for key in out:
+            out[key][population] = {}
+        population_pass = torch.ones(int(claims[population][CLAIMS[0]]["value"].shape[0]), dtype=torch.bool)
+        for claim in CLAIMS:
+            entry = claims[population][claim]
+            values = entry["value"].double()
+            defined = entry["interpretable"].clone()
+            envelope = claim_envelope(claim, values, defined)
+            check = direction_check(claim, envelope, values, defined)
+            if not check["ok"]:
+                raise IncidentError(f"{population}/{claim}: the direction check failed ({envelope}, median of the defined draws {check['median']}); a tail was reversed")
+            results = [classify(claim, float(values[b]) if bool(defined[b]) else None, bool(defined[b]), envelope) for b in range(int(values.shape[0]))]
+            population_pass &= torch.tensor([result == "PASS" for result in results], dtype=torch.bool)
+            kept = torch.sort(values[defined]).values
+            n = int(kept.shape[0])
+            out["envelopes"][population][claim] = rc.json_safe(envelope)
+            out["direction_checks"][population][claim] = rc.json_safe(check)
+            out["guard_bound"][population][claim] = guard_bound(claim, envelope)
+            out["summaries"][population][claim] = rc.json_safe({"median": check["median"], "min": float(kept[0]) if n else None, "max": float(kept[-1]) if n else None,
+                                                                "defined": n, "undefined": int(values.shape[0]) - n})
+            out["result_rates"][population][claim] = {name: results.count(name) / len(results) for name in RESULTS}
+        passes[population] = population_pass
+    out["joint_rates"] = {"Y1_all_four_pass": float(passes["Y1"].double().mean()), "Y2_all_four_pass": float(passes["Y2"].double().mean()),
+                          "all_eight_pass": float((passes["Y1"] & passes["Y2"]).double().mean()), "descriptive_only": True}
+    return out
+
+
+LADDER = (("Level 0", 0), ("R", BIT["R"]), ("R+emb", BIT["R"] | BIT["emb"]), ("R+emb+Bv+Bp", BIT["R"] | BIT["emb"] | BIT["Bv"] | BIT["Bp"]), ("all", FULL_MASK))
+INPUTS_ONLY_MASK = FULL_MASK & ~BIT["R"]  # the complete layer-0 input with the reduced layers 1–2 (a number only, never a corrected program)
+
+
+def game_summary(sse: torch.Tensor, sst: torch.Tensor) -> dict[str, Any]:
+    """One aggregate's game, descriptively: the ladder in the spike's order, the ``R``-only and inputs-only values,
+    every coalition's value, the gap, the Shapley values and the shares."""
+    stats = group_statistics(sse.reshape(1, N_MASKS), sst.reshape(1))
+    interpretable = bool(stats["interpretable"][0])
+    return rc.json_safe({"ladder": {name: float(stats["v"][0, mask]) for name, mask in LADDER}, "r_only": float(stats["v"][0, BIT["R"]]),
+                         "inputs_only": float(stats["v"][0, INPUTS_ONLY_MASK]), "v": [float(value) for value in stats["v"][0]], "gap": float(stats["gap"][0]),
+                         "phi": {name: float(stats["phi"][0, i]) for i, name in enumerate(FACTORS)},
+                         "shares": {name: float(stats["shares"][0, i]) for i, name in enumerate(FACTORS)} if interpretable else None,
+                         "interpretable": interpretable, "efficiency": float(stats["efficiency"][0])})
+
+
+def exposed_descriptives(table: CalibrationTable, units: CalibrationUnits) -> dict[str, Any]:
+    """The whole calibration pool (175 cues × 108 frames): per group and per template. Descriptive only."""
+    sse_flat, count_flat, mean_flat, m2_flat = table.cells()
+    n_frames = len(units.frames)
+    selections = {**{f"group/{group}": units.groups[group] for group in GROUPS},
+                  **{f"template/{template}": tuple(i for i, frame in enumerate(units.frames) if frame.template_id == template) for template in TEMPLATES}}
+    out = {}
+    for key, frames in selections.items():
+        index = (torch.arange(len(units.cues)).unsqueeze(1) * n_frames + torch.tensor(frames, dtype=torch.int64).unsqueeze(0)).reshape(1, -1)
+        sse, _, _, sst = group_sums(sse_flat, count_flat, mean_flat, m2_flat, index)
+        out[key] = game_summary(sse[0], sst[0])
+    return out
+
+
+def draw_arrays(kernel: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    arrays: dict[str, torch.Tensor] = {}
+    for population in POPULATIONS:
+        for group in GROUPS:
+            stats = kernel["stats"][population][group]
+            for name in ("phi", "gap", "sst"):
+                arrays[f"{population}/{group}/{name}"] = stats[name]
+            arrays[f"{population}/{group}/interpretable"] = stats["interpretable"].to(torch.int64)
+        for claim in CLAIMS:
+            arrays[f"{population}/{claim}"] = kernel["claims"][population][claim]["value"]
+    return arrays
+
+
+def record_constants(draws: int) -> dict[str, Any]:
+    return {"B": int(draws), "ranks": {"lower": lower_rank(draws), "upper": upper_rank(draws), "c3_low": c3_low_rank(draws), "c3_high": c3_high_rank(draws)},
+            "undefined_stop": {claim: undefined_threshold(claim, draws) for claim in CLAIMS},
+            "guards": {"C1_min": GUARD_C1_MIN, "C2_max": GUARD_C2_MAX, "C3_range": list(GUARD_C3_RANGE), "C4_exclusive_min": GUARD_C4_EXCLUSIVE_MIN}, "gap_min": GAP_MIN,
+            "tolerances": dict(TOLERANCES), "i3_floor": I3_FLOOR, "cross_check_draws": CROSS_CHECK_DRAWS, "draw_tag": DRAW_TAG, "factors": list(FACTORS), "bits": dict(BIT),
+            "shapley_weights": [str(weight) for weight in SHAPLEY_WEIGHTS], "results": list(RESULTS), "claims": {claim: {"group": CLAIM_GROUP[claim], "statistic": CLAIM_STATISTIC[claim],
+                                                                                                                        "wording": CLAIM_WORDING[claim]} for claim in CLAIMS}}
+
+
+def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], units: CalibrationUnits, confirmation_sha256: str,
+                       gates: Mapping[str, Any], r1: Mapping[str, Any], table_digests: Mapping[str, str], draws: Mapping[str, Any], cross_check: Mapping[str, Any],
+                       efficiency: Mapping[str, float], undefined: Mapping[str, Any], evaluated: Mapping[str, Any], descriptives: Mapping[str, Any],
+                       array_digests: Mapping[str, str], n_draws: int = B) -> dict[str, Any]:
+    record = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "exposed-only calibration record (design revision 3)", "design": dict(DESIGN), "plan": dict(PLAN),
+        "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
+        "confirmation_022_sha256": confirmation_sha256, "constants": record_constants(n_draws), "pools": units.to_json(),
+        "rematerialization": {"n_pairs": len(units.cues) * len(units.frames), "gates": dict(gates), "r1": dict(r1), "table_sha256": dict(table_digests)},
+        "draws": {"B": int(n_draws), "index_sha256": dict(draws["digests"]), "strata_sizes": units.sizes(), "slots": dict(units.slots)},
+        "cross_check": dict(cross_check), "efficiency_I6": dict(efficiency), "undefined_counts": dict(undefined), **dict(evaluated),
+        "descriptive_exposed": dict(descriptives), "draw_arrays_sha256": dict(array_digests),
+    }
+    validate_json_safe(record)
+    record["content_sha256"] = rc.content_digest(record)
+    return record
+
+
+def verify_calibration_record(record: Mapping[str, Any], draws: int = B) -> None:
+    """The installed record: its digest, the frozen constants, design, plan and module blobs, and exactly the eight
+    envelopes with passing direction checks."""
+    if record.get("experiment") != EXPERIMENT or record.get("content_sha256") != rc.content_digest(record):
+        raise PhaseError("the calibration record's content digest does not verify")
+    if record.get("constants") != record_constants(draws) or record.get("design") != dict(DESIGN) or record.get("plan") != dict(PLAN) or record.get("module_blobs") != dict(FROZEN_BLOBS):
+        raise PhaseError("the calibration record was computed under different frozen constants, design, plan or modules")
+    for key in ("envelopes", "direction_checks", "result_rates", "guard_bound"):
+        if set(record.get(key, {})) != set(POPULATIONS) or any(set(record[key][population]) != set(CLAIMS) for population in POPULATIONS):
+            raise PhaseError(f"the calibration record does not hold exactly the eight {key}")
+    if not all(record["direction_checks"][population][claim]["ok"] for population in POPULATIONS for claim in CLAIMS):
+        raise PhaseError("the calibration record carries a failed direction check")
+    for population in POPULATIONS:
+        for claim in CLAIMS:
+            envelope = record["envelopes"][population][claim]
+            bounds = [envelope["low"], envelope["high"]] if claim == "C3" else [envelope["bound"]]
+            if any(bound is None for bound in bounds):
+                raise PhaseError(f"the calibration record's {population}/{claim} envelope is not finite")
