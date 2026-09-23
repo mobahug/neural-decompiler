@@ -49,14 +49,132 @@ HF_HUB_OFFLINE=1 uv run python experiments/021-corrected-readout-confirmation/ru
   with the downstream ceiling, the Y3 row from the measured scorability, the scoring through the one pass predicate.
 - `report` renders `outputs/experiment-021/report.md`, verifying the per-row draw values against the record.
 
-## Status — 2026-09-23: implemented and independently reviewed, not run
+## Status — 2026-09-23: complete; outcome `CONTRAST_PREDICTED_TOKENS | CONTRAST_NOT_PREDICTED_FRAMES_CONDITIONAL | NOUN_READOUT_FIXED`
 
-Tasks 1–4 of the plan are done: `src/neural_decompiler/readout_calibration.py`, the runner, 23 unit tests
-(`tests/test_readout_calibration.py`, tier A, ≈ 12 s) and 18 runner tests on a fake-closed Experiment 020 world
-(`tests/test_experiment_021_runner.py`, tier B, ≈ 7 min, `CURRENT_EXPERIMENT = "021"`). `validate` passes on the real
-inputs. A full-scale run of the calibration on a synthetic table (B = 10,000, the real pool sizes, no model) takes
-≈ 6 min and ≈ 0.9 GB, with the kernel agreeing with 020's direct statistics to 2.2e-16. No Experiment 021 model run
-has happened; `calibrate` waits for the implementation review.
+Tasks 1–4 of the plan were implemented and independently reviewed twice (no blocker; the notes below):
+`src/neural_decompiler/readout_calibration.py`, the runner, 23 unit tests (`tests/test_readout_calibration.py`, tier A)
+and 18 runner tests on a fake-closed Experiment 020 world (`tests/test_experiment_021_runner.py`, tier B); tier C
+passed on the clean `c49c16d` (438 tests). Each scientific phase then ran exactly once, with a review gate between
+phases:
+
+- **`calibrate`** at `c49c16d` (run `9725893f39907cbd`; 09:50:45–11:02:47 UTC; CPU, float32, 4 threads — the runtime
+  and dependency versions of Experiment 020's explore; no incident). It re-executed exactly 020's 30,132 exposed ledger
+  keys: the 108 re-captured reference states and the template bases matched 020's records exactly (drift 0.0,
+  tolerance 1e-9); every identity maximum was bitwise equal to 020's (readout 5.23e-3, logit 3.26e-3, Level 1 4.59e-3
+  against 7e-3, additive 4.11e-6, reference component sum 1.24e-6, inherited 017 0); the reproduction gate over
+  30,024 pairs × 79 nouns was exactly 0.0 (tolerance 1e-9); the validity screen kept all 14/14/14 primary frames (none
+  of the 108 exposed frames invalid; precondition ≥ 6); and the kernel agreed with 020's direct statistics to 1.64e-15
+  over 2,384 row-draws (worst at Y2 `5/3/6`, draw 3, `frame_mean_r2`; tolerance 1e-10). The record was installed
+  byte-identical as [`calibration-v1.json`](calibration-v1.json) (file sha256 `240e0345…`, content `f939a84d…`) and
+  committed alone (`ad22671`); the floor review passed.
+- **`lock`** at `ad22671` (11:31–11:34 UTC), with no forward pass: weights only; the 2,592 Y1 rows (24 fresh cues ×
+  108 exposed frames, each with the predicted `Δĉ` of 79 exposed and 24 fresh nouns) recomputed under the
+  capture-disabling guard with a provenance difference of exactly 0.0; the ledger unchanged. The lock (content
+  `5491611e…`, file `56eecfa1…`) and [`predictions.md`](predictions.md) (`ceed61b1…`) were installed byte-identical
+  and committed alone (`b7e8861`). An independent read-only lock review — which re-derived all 149 floors from the
+  digest-bound draw values with zero mismatches, reproduced the lock rows at 0.0 and found that `validate_lock` refuses
+  every tampering it tried — passed with notes (below), and the reviewer authorized the single confirmation.
+- **`confirm`** at `b7e8861` (12:19:33–12:24:44 UTC, exit 0, no incident). Before any fresh prompt the lock was
+  validated and its rows reproduced with difference 0.0. **Stage 1** ran only the 18 S1-REF and 18 S1-VALIDITY prompts:
+  all 18 fresh frames were valid (head informative; cue effect 78–79 of 79 against 72 required; plural head change
+  1.14–3.08), so the valid-frame composition is 6/6/6 and the Y2 floor row `6/6/6`; the stage-1 digest (`8af7c000…`)
+  and the row-selection digest (`fda5f936…`) were re-verified from disk at the barrier, where the stage-1 rows also
+  reproduced at 0.0 and no stage-2 target was in the ledger. **Stage 2** ran the 2,592 Y1 pairs and the 432 pairs of
+  the fresh cues in the 18 fresh frames; every measurement reached disk with its digests before the identities were
+  enforced (stage 1 / stage 2 maxima: readout 4.17e-3 / 3.73e-3, logit 2.41e-3 / 3.00e-3, Level 1 1.55e-3 / 3.10e-3
+  against 7e-3, additive 1.04e-6 / 1.35e-6; reference contrast 2.95e-3, reference component sum 8.71e-7, inherited
+  017 0). All 24 fresh nouns were scorable, so the Y3 row is `8/8/8`. The kernel agreed with the direct statistics on
+  the fresh tables to 2.2e-16, and Experiment 020's closure verified again after the phase. Ledger after confirm:
+  33,192 prompt keys — 020's 30,132 plus all 3,060 manifest keys (18 + 18 + 3,024) — and 80 noun keys; the runner now
+  refuses every phase.
+
+The final report is copied verbatim to [`evidence/final-report-2026-09-23.md`](evidence/final-report-2026-09-23.md)
+and the confirmed record to
+[`evidence/confirmation-record-2026-09-23.json`](evidence/confirmation-record-2026-09-23.json) (content sha256
+`678714b0ee1257b0a87438ca15b0ae5ec46c1222ef6aae5f7d78335eb4960793`; the 18 stage-1 reference states are kept as their
+digests and the 432 stage-1 prediction rows as one digest). The gitignored results state it is extracted from has file
+sha256 `8caf2a026cdb0b8f831a82abc7b90393ed33ec82399c56ec1eb70dbecfd3b73e` and state digest
+`80b9b654e256106ccf19bef3cbd58f641567f6e8009916cb6cea0085880cbb85`. Experiment 021 is closed; nothing is amended or
+rerun.
+
+### Result
+
+Pass predicates (frozen): an `R²`-type condition passes iff its value is finite, `> 0` and `≥` the floor; an error-type
+condition iff it is finite and `≤` the floor. "Clamped" marks a floor whose raw 2.5 % tail over the 10,000 exposed-like
+draws was negative and was raised to 0.0 by the zero-skill clamp; the percentile is the share of those draws that the
+fresh value meets or beats.
+
+| outcome | statistic | fresh | floor | result | clamped | raw tail | draw median | percentile |
+|---|---|---|---|---|---|---|---|---|
+| Y1 | `token_mean_r2` | 0.016018 | 0.0 | pass | yes | −1.170348 | −0.1451 | 65.7 % |
+| Y1 | `pair_mean_r2` | 0.342111 | 0.0 | pass | yes | −0.004181 | 0.2388 | 77.2 % |
+| Y1 | `cue_mae_k80` | 0.762002 | 1.025830 | pass | no | = floor | 0.8770 | 99.2 % |
+| Y1 | `pooled_mae` | 0.647807 | 0.797678 | pass | no | = floor | 0.7268 | 98.8 % |
+| Y2 | `frame_mean_r2` | 0.280706 | 0.0 | pass | yes | −1.247695 | 0.2642 | 51.6 % |
+| Y2 | `frame_r2_k75` | 0.449572 | 0.0 | pass | yes | −1.032826 | −0.0605 | 92.9 % |
+| Y2 | `cue_final_r2` | 0.844526 | 0.742235 | pass | no | = floor | 0.8170 | 82.2 % |
+| Y2 | `coordinated_r2` | −0.153795 | 0.0 | **fail** | yes | −1.283415 | −0.1066 | 45.8 % |
+| Y3 | `noun_median_r2` | 0.446696 | 0.255338 | pass | no | = floor | 0.4259 | 59.7 % |
+| Y3 | `noun_r2_k90` | 0.285857 | 0.035628 | pass | no | = floor | 0.2579 | 60.1 % |
+| Y3 | `noun_slope_dev_k90` | 0.158791 | 0.224024 | pass | no | = floor | 0.1696 | 73.6 % |
+| Y3 | `noun_bias_k90` | 0.493891 | 0.767312 | pass | no | = floor | 0.6017 | 92.8 % |
+
+- **Y1 — fresh cues in the exposed frames (24 cues × 108 frames, 2,592 pairs, 79 exposed nouns):
+  `CONTRAST_PREDICTED_TOKENS`.** Precondition met (24 scored cues, 108 frames). All four conditions pass, the two
+  clamp-bound `R²` conditions with positive skill; the token-mean margin is small (0.016), on a condition that
+  exposed-like sets met only 35.8 % of the time. End-to-end Level-0 flattened `R²` 0.6167 (descriptively: cardinal
+  0.837, quantifier 0.840, coordinated-adjective −0.014).
+- **Y2 — fresh cues in the 18 fresh frames (432 pairs): `CONTRAST_NOT_PREDICTED_FRAMES_CONDITIONAL`.** Precondition
+  met (18 valid frames, 6 of them coordinated). Three of four conditions pass (`frame_r2_k75` at the 92.9th percentile
+  of the exposed-like draws); the label comes solely from `coordinated_r2` = −0.1538 against its clamped floor 0.0.
+  Flattened `R²` 0.5797 (descriptively: cardinal 0.843, quantifier 0.823, coordinated-adjective −0.154).
+- **Y3 — fresh nouns over the Y1 pairs (24 nouns, 8/8/8): `NOUN_READOUT_FIXED`.** All four conditions pass (none has a
+  clamped floor), at the 59.7th–92.8th percentiles; per-noun `R²` median 0.447, lowest `cavity` 0.251.
+- **Ceiling and comparators.** Fed the measured `Δx3`, the same readout program reaches flattened `R²` 0.9683 on Y1
+  (75.6th percentile of its row's draws) and 0.9652 on Y2 (37.3rd). Of the unexplained variance, 0.352 of 0.383 (Y1)
+  and 0.385 of 0.420 (Y2) is inherited from the upstream prediction of `Δx3`, and 0.032 / 0.035 is downstream. The 020
+  comparators keep their standing: without the layer-5 heads 0.4848 / 0.4781, template-base MLPs 0.5115 / 0.4838,
+  `ΔT` only −0.5382 / −0.2027, rank-1 nouns (fresh-noun `R²`) 0.2000 / 0.2158. The joint diagnostic (fresh cues ×
+  fresh frames × fresh nouns, no threshold) reaches 0.5858.
+- **Calibration context.** On the committed floors, exposed-like pseudo-confirmation sets pass Y1 35.5 %, Y2 (row
+  `6/6/6`) 25.3 % and Y3 92.3 % of the time, and all three together 16.6 %: the zero-skill clamp binds for Y1's two
+  `R²` conditions, for Y2's `frame_mean_r2` and `coordinated_r2` in all 64 rows and for `frame_r2_k75` in 63 of 64.
+  Design revision 3 anticipated and froze this; the rates are reported, never used to move a floor.
+
+### Interpretation (agreed at the floor and lock reviews; the design file is not edited)
+
+With the clamp binding, Y1 and Y2 test two things at once: that the fresh set lies within the exposed-like envelope,
+and that the program has positive absolute skill on it. A pass therefore establishes both. A failed condition whose
+floor is clamped to 0.0 establishes only that **positive predictive skill was not established under that criterion**;
+it is evidence of a generalization gap only if the fresh value also falls below the raw calibration tail. The "Reading"
+paragraph of the design's "Outcomes" section says that any negative label means a generalization gap beyond sampling
+variability; that is too strong for failures caused only by the clamp, and for them it is superseded here. Y2's single
+failure is of this kind: `coordinated_r2` = −0.154 sits at the 45.8th percentile of the exposed-like draws (median
+−0.107), far above the raw tail −1.283, so no fresh-specific degradation is shown. A failure on an unclamped condition,
+or below its raw tail, would be reported as a genuine negative; none occurred.
+
+What this settles and what it does not. Stated at its safe strength: the decoded downstream program — blocks 3–5,
+`LN_final` and the fixed noun read, driven by the committed Experiment 011/012/017 chain — prospectively predicts the
+model's own singular-versus-plural logit contrast for 24 never-executed cues in the 108 exposed frames on every Y1
+criterion, and for 24 never-inspected nouns on every Y3 criterion: the fixed unembedding read generalizes to new nouns
+of all three rule classes. In 18 new frames, conditional on each frame's stage-1 reference state, three of four
+criteria pass; in the coordinated-adjective frames the program's absolute skill is not positive — nor was it on
+exposed-like data — so the coordinated template remains the weak part of the account, now measured prospectively.
+The ceiling locates the remaining error: given the measured `Δx3` the readout is nearly exact (0.97), and most of the
+gap between Level 0 and the ceiling is the inherited upstream prediction of `Δx3`. This is not a claim of good
+prediction everywhere (the floors are relative to the program's own exposed performance, and the token-mean margin is
+small), nor that a frame's state is predicted from its text, nor anything about behaviour beyond `Δc` at `p_t`.
+Limits: one checkpoint, three templates, four cue classes, three noun rule classes, 18 new frames. Claim
+[C002](../../research/claims/C002-count-cued-noun-number-circuit.md) is unchanged (`LOCALIZED`); this design names no
+claim transition.
+
+### Review notes carried forward
+
+- The runner's report prints a clamped floor as `0.0000` without its clamp flag or raw tail; the table above adds both.
+- `confirm` has no resume path by design (an interruption would have used up the protocol version); it ran straight
+  through. A fresh Level-1 error above 7e-3 would have been an incident with no label; the maximum was 3.10e-3.
+- `outputs/experiment-021/` (gitignored) holds the results state, the draw values, the exposed table and the stage-2
+  tables; the committed extract carries their digests.
 
 ### Implementation notes (from the independent implementation review; nothing scientific changed)
 
