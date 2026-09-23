@@ -10,6 +10,12 @@ corrected block-5 parallel-residual implementation materially changed the expose
 preregistered outcome floors had been based. No lock was written, no confirmation prompt was executed, and no
 Y1/Y2/Y3 label is assigned. See [Closure](#closure--2026-09-22).
 
+**Post-closure erratum (2026-09-23).** In coordinated-adjective frames this program's Level 0 builds the layer-1/2
+reference rows through `p_t` instead of the cue position `p_c` used by the chain validated in 017–019, which changes the
+computation (exposed coordinated `Δc` `R²` −0.146 as wired here against 0.555 as 017 wired it). The coordinated Level-0
+descriptives below describe that wiring; the ceiling, the cue-final values and every recorded number stand unchanged.
+See [the erratum](evidence/erratum-2026-09-23-coordinated-reference-rows.md).
+
 ## Question
 
 Given the change entering the post-`L03` readout path as the already-decoded chain *predicts* it (Experiments

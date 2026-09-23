@@ -10,6 +10,13 @@ The Experiment 020 question — does the decoded mechanism predict the model's o
 for unseen cues, unseen frames and unseen nouns — with the same program, model, populations, procedure, labels and
 untouched confirmation set, and floors from a preregistered exposed-only calibration.
 
+**Post-closure erratum (2026-09-23).** Experiment 020's program, tested here unchanged, builds the coordinated-frame
+layer-1/2 reference rows through `p_t` instead of the cue position `p_c` used by the chain validated in 017–019. The
+frozen results, labels, floors and digests below are unchanged and remain a valid test of that program:
+`CONTRAST_PREDICTED_TOKENS`, `NOUN_READOUT_FIXED` and the ceiling stand, but the single coordinated Y2 failure must not
+be read as evidence about the correctly wired 017 upstream chain; it is plausibly explained by the wiring defect. See
+[the erratum](evidence/erratum-2026-09-23-coordinated-reference-rows.md).
+
 ## Inputs
 
 - The program: `src/neural_decompiler/readout_decompilation.py` exactly as at `ce3766b` (git blob `caa73b40…`),
