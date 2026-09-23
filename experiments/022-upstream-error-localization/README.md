@@ -71,6 +71,14 @@ The lock binds the Y2 table's construction, byte format, factor and unit orders 
 the new frames' stage-1 reference states and therefore exist only at stage 1. The scientific freeze of the Y2 table is
 the stage-1 barrier. After a successful confirmation it is committed as closure evidence (archival only).
 
+## Storage and runtime (estimates on this machine)
+
+- `calibrate` ≈ 2 h (18,900 forwards and about 403,000 coalition compositions); `outputs/experiment-022/calibration-table.pt`
+  holds every coalition's `Δĉ` of every pair (`[175, 108, 32, 79]` float64, ≈ 0.4 GB) so that any draw can be
+  recomputed from disk; the draws ≈ 3 MB; peak memory ≈ 1.5 GB.
+- `lock` ≈ 35 min (the Y1 table twice); the committed companion ≈ 35 MB.
+- `confirm` ≈ 30 min (I7 ≈ 17 min, stage 1, the Y2 table ≈ 6 MB, 3,024 forwards, the gates, the scoring).
+
 ## Status — 2026-09-23: implemented (Tasks 1–6); not run
 
 Nothing has been frozen, calibrated, locked or confirmed. The next steps, each only when authorized: the

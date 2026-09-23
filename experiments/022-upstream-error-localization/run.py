@@ -357,8 +357,12 @@ class Runner:
                 model = self.model_loader(PYTHIA_70M)
                 progs = ul.ModelPrograms.from_model(model, inputs)
                 noun_keys = [progs.nouns.nouns[index].lexical_key for index in progs.scorable]
+                def before_frame(prompts) -> None:  # a frame's keys reach the ledger on disk before any of them runs
+                    pm.record_execution(state, prompts, inputs.pool.nouns)
+                    self._write(state)
+
                 try:
-                    table = ul.calibration_rematerialize(model, progs, inputs, units, forbidden_keys=forbidden, log=self.log, executed=executed)
+                    table = ul.calibration_rematerialize(model, progs, inputs, units, forbidden_keys=forbidden, log=self.log, executed=executed, before_frame=before_frame)
                 finally:
                     pm.record_execution(state, executed, inputs.pool.nouns)
                     self._write(state)

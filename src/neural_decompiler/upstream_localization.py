@@ -1215,12 +1215,14 @@ class CalibrationTable:
 
 
 def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenInputs, units: CalibrationUnits, *, forbidden_keys: frozenset[str],
-                              log: Callable[[str], None] | None = None, executed: list[pm.Prompt] | None = None) -> CalibrationTable:
+                              log: Callable[[str], None] | None = None, executed: list[pm.Prompt] | None = None,
+                              before_frame: Callable[[Sequence[pm.Prompt]], None] | None = None) -> CalibrationTable:
     """One forward per exposed pair (175 pool cues × 108 exposed frames) against Experiment 020's locked reference
     states. A frame's keys are checked before any of its prompts runs: every key in 020's ledger, none in
-    ``forbidden_keys`` (the 022 manifest and 020's confirmation set). Then the factors, the canonical compositions,
-    the pair cells, the ceiling and I1–I5. Every executed prompt is appended to ``executed`` the moment it runs.
-    Nothing is enforced here: the caller writes the gate maxima first."""
+    ``forbidden_keys`` (the 022 manifest and 020's confirmation set); ``before_frame`` then receives them (the runner
+    records them in the ledger on disk before they run). Then the factors, the canonical compositions, the pair
+    cells, the ceiling and I1–I5. Every executed prompt is appended to ``executed`` the moment it runs. Nothing is
+    enforced here: the caller writes the gate maxima first."""
     say = log or (lambda message: None)
     executed = executed if executed is not None else []
     ledger = inputs.closure["ledger"]
@@ -1238,6 +1240,8 @@ def calibration_rematerialize(model: Any, progs: ModelPrograms, inputs: FrozenIn
         forbidden = [prompt.key for prompt in prompts if prompt.key in forbidden_keys]
         if forbidden or foreign:
             raise IncidentError(f"{frame.frame_id}: {len(forbidden)} manifest keys {forbidden[:2]} and {len(foreign)} keys outside Experiment 020's ledger {foreign[:2]}; none of this frame ran")
+        if before_frame is not None:
+            before_frame(prompts)
         state = rd.state_from_locked(locked[frame.frame_id], frame)
         s17 = state.state_017
         rows16 = atp.reference_rows(progs.programs, s17.x1_all, s17.x2_all)
@@ -2242,8 +2246,11 @@ def replicate_021(root: Path, progs: ModelPrograms, inputs: FrozenInputs, *, log
 
     say = log or (lambda message: None)
     results_path = root / RESULTS_021_RELATIVE_PATH
-    if not results_path.exists() or rc.file_sha256(results_path) != INHERITED_021["results_file_sha256"]:
-        raise PhaseError("Experiment 021's results state is missing or not the closed file")
+    missing = [relative for relative in (RESULTS_021_RELATIVE_PATH, STAGE2_021_RELATIVE_PATH, EXTRACT_021_RELATIVE_PATH) if not (root / relative).exists()]
+    if missing:
+        raise PhaseError(f"Experiment 021's spent-set artifacts are missing: {missing}; the replication reads them, verified, or does not run")
+    if rc.file_sha256(results_path) != INHERITED_021["results_file_sha256"]:
+        raise PhaseError("Experiment 021's results state is not the closed file")
     state = rd.load_results_state(results_path)
     if state["state_sha256"] != INHERITED_021["results_state_sha256"] or (state.get("phases", {}).get("confirm") or {}).get("status") != "complete":
         raise PhaseError("Experiment 021's results state is not its completed, closed confirmation")

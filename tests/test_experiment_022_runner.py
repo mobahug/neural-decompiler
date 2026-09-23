@@ -349,7 +349,28 @@ def test_a_planted_manifest_cue_is_refused_before_its_frame_runs(world, frozen, 
     spy = ExecutionSpy(monkeypatch)
     runner, logs = make_runner(root, world)
     assert runner.calibrate() == 2 and "manifest keys" in logs[-1]
-    assert not spy.counts  # the first frame's keys were refused before any of its prompts ran
+    assert not spy.counts and not _state(runner)["executed_prompt_keys"]  # refused before any of the first frame's prompts ran or was recorded
+
+
+def test_calibrate_records_each_frames_keys_before_they_run(world, frozen, sandbox, monkeypatch):
+    root = sandbox(frozen)
+    runner, logs = make_runner(root, world)
+    original = ul.measure_prompt
+    seen: list[bool] = []
+
+    def checking(model, progs, frame, state, token_id, word):
+        seen.append(pm.Prompt(frame, token_id, word).key in set(rd.load_results_state(runner.results_path)["executed_prompt_keys"]))
+        if len(seen) == 3:
+            raise KeyboardInterrupt  # a hard stop mid-frame: the frame's keys are already on disk
+        return original(model, progs, frame, state, token_id, word)
+
+    monkeypatch.setattr(ul, "measure_prompt", checking)
+    with pytest.raises(KeyboardInterrupt):
+        runner.calibrate()
+    state = _state(runner)
+    first = sorted(world["fake"][1].frames, key=lambda frame: frame.frame_id)[0]
+    assert seen == [True, True, True] and {pm.Prompt(first, token_id, word).key for word, token_id in FAKE_CUES} <= set(state["executed_prompt_keys"])
+    assert state["calibration"]["incidents"][-1]["type"] == "KeyboardInterrupt"
 
 
 def test_the_undefined_draw_stop_writes_no_floor_and_is_never_retried(world, frozen, sandbox, monkeypatch):
