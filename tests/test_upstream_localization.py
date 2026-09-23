@@ -296,3 +296,93 @@ def test_the_draw_index_has_golden_values_and_is_reproducible():
     second = ul.draw_indices({"cue/quantity": 45, "frame/cardinal": 14}, {"cue/quantity": 6, "frame/cardinal": 6}, 50)
     assert all(torch.equal(first[key], second[key]) for key in first) and first["cue/quantity"].shape == (50, 6)
     assert int(first["cue/quantity"].max()) < 45 and int(first["frame/cardinal"].max()) < 14
+
+
+# ---------------------------------------------------------------------------
+# The pinned model (tier C; opt-in): exposed pairs only — the new chains against the committed ones, I1–I5, the
+# cue-final null player on real compositions, and the R1 pre-calibration check against Experiment 021's table.
+
+import os  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from neural_decompiler import head_pattern as hp  # noqa: E402
+from neural_decompiler import readout_calibration as rc  # noqa: E402
+from neural_decompiler import readout_decompilation as rd  # noqa: E402
+
+ROOT = Path(__file__).parents[1]
+
+
+@pytest.fixture(scope="module")
+def pinned():
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    from neural_decompiler.models import PYTHIA_70M, load_model, seed_runtime
+
+    inputs = ul.load_frozen_inputs(ROOT)
+    seed_runtime(rd.RUNTIME_SEED, PYTHIA_70M.deterministic_algorithms)
+    model = load_model(PYTHIA_70M)
+    return model, inputs, ul.ModelPrograms.from_model(model, inputs)
+
+
+def _exposed_sample(inputs, frames_per_template=2, cues_per_class=2):
+    """A few exposed pairs of every template (all in Experiment 020's ledger): frames by frame_id, pool cues by class."""
+    pools = rc.production_pools(inputs.pool)
+    cues = [entry for members in pools.cues.values() for entry in members[:cues_per_class]]
+    frames = []
+    for template in ul.TEMPLATES:
+        frames += sorted((frame for frame in inputs.pool.frames if frame.template_id == template), key=lambda frame: frame.frame_id)[:frames_per_template]
+    locked = inputs.closure["exploration"]["locked_states"]
+    for frame in frames:
+        state = rd.state_from_locked(locked[frame.frame_id], frame)
+        for word, token_id in cues:
+            yield frame, state, word, int(token_id)
+
+
+@pytest.mark.pythia_smoke
+def test_the_new_chains_equal_the_committed_ones_bit_for_bit(pinned):
+    _, inputs, progs = pinned
+    for frame, state, word, token_id in _exposed_sample(inputs):
+        ctx = ul.pair_context(progs, frame, state, inputs.pool.reference_ids[frame.template_id], token_id, word)
+        s17 = state.state_017
+        committed = hp.exact_chain(progs.programs, progs.lw, s17.x1_all, s17.x2_all, s17.x3_all, frame.p_c, frame.p_t, ctx.factors.delta_e)["dx3"]
+        mine = ul.exact_chain_multi(progs.programs, progs.lw, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, {frame.p_c: ctx.factors.delta_e})
+        assert set(committed) == set(mine) and all(torch.equal(committed[p], mine[p]) for p in committed)
+        level0 = rd.predicted_dx3(progs.chain, progs.weights, state, ctx.rows16, token_id, frame.template_id)
+        reduced = ul.reduced_chain(progs.chain, ctx.rows16, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, frame.template_id, ctx.factors.delta_e)
+        assert set(level0) == set(reduced) and all(torch.equal(level0[p], reduced[p]) for p in level0)  # I5, exactly
+
+
+@pytest.mark.pythia_smoke
+def test_the_identity_gates_hold_on_exposed_pairs_and_t_is_null_in_cue_final_frames(pinned):
+    model, inputs, progs = pinned
+    worst = {"I1": 0.0, "I2": 0.0, "I3": 0.0, "I4": 0.0, "I5": 0.0}
+    for frame, state, word, token_id in _exposed_sample(inputs, frames_per_template=1, cues_per_class=2):
+        ctx = ul.pair_context(progs, frame, state, inputs.pool.reference_ids[frame.template_id], token_id, word)
+        table, composed = ul.pair_compositions(progs, ctx)
+        measurement = ul.measure_prompt(model, progs, frame, state, token_id, word)
+        gates, ceiling = ul.pair_gates(progs, ctx, table, composed, measurement)
+        worst = {name: max(worst[name], gates[name]) for name in worst}
+        if ctx.cue_final:
+            assert all(torch.equal(table[mask | 16], table[mask]) for mask in range(16))
+        sse, count, mean, m2 = ul.pair_cells(measurement["dc"], table)
+        assert sse.shape == (32,) and count == 79.0 and m2 > 0.0
+    assert worst["I1"] <= ul.TOLERANCES["I1"] and worst["I2"] <= ul.TOLERANCES["I2"] and worst["I3"] <= ul.TOLERANCES["I3"]
+    assert worst["I4"] <= ul.TOLERANCES["I4"] and worst["I5"] == 0.0
+
+
+@pytest.mark.pythia_smoke
+def test_r1_the_remeasured_exposed_dc_reproduces_021s_table_at_1e_9(pinned):
+    """The pre-calibration check (plan revision 2, Q4): 022's capture site set must reproduce Experiment 021's
+    digest-bound exposed measurements. A failure stops for review; the tolerance is never loosened."""
+    model, inputs, progs = pinned
+    path = ROOT / ul.EXPOSED_TABLE_021_RELATIVE_PATH
+    if not path.exists():
+        pytest.skip("Experiment 021's local exposed table is absent")
+    table = torch.load(path)
+    assert rc.tensor_digest(table["measured"]) == ul.INHERITED_021["exposed_measured_sha256"]
+    row = {(cue, frame): index for index, (cue, frame) in enumerate(zip(table["cues"], table["frames"]))}
+    worst = 0.0
+    for frame, state, word, token_id in _exposed_sample(inputs, frames_per_template=2, cues_per_class=2):
+        measurement = ul.measure_prompt(model, progs, frame, state, token_id, word)
+        worst = max(worst, float((measurement["dc"] - table["measured"][row[(word, frame.frame_id)]]).abs().max()))
+    assert worst <= ul.TOLERANCES["R1"], f"R1 pre-check failed: {worst:.3e}"

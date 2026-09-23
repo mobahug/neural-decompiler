@@ -502,3 +502,390 @@ def draw_indices(sizes: Mapping[str, int], slots: Mapping[str, int], draws: int)
     ``frame_id``)."""
     return {stratum: torch.tensor([[slot_index(b, stratum, i, n) for i in range(slots[stratum])] for b in range(draws)], dtype=torch.int64)
             for stratum, n in sizes.items()}
+
+
+# ---------------------------------------------------------------------------
+# The frozen input chain (Experiment 020's, exactly as Experiment 021's runner loads it; no model).
+
+LOCK_011_REQUIRED_KEYS = ("axes_vectors", "read_weight", "sigma_T", "denominators", "confirmation_011_sha256", "content_sha256")
+LOCK_012_REQUIRED_KEYS = ("axes_vectors", "read_weight", "sigma_T", "base_states", "defined_templates", "confirmation_012_sha256", "lock_011_sha256", "content_sha256")
+LOCK_017_REQUIRED_KEYS = ("locked_states", "bases_3", "confirmation_017_sha256", "lock_016_sha256", "content_sha256")
+
+
+def load_lock(path: Path, experiment: str) -> dict[str, Any]:
+    import json
+
+    lock = json.loads(Path(path).read_text(encoding="utf-8"))
+    unsigned = {key: value for key, value in lock.items() if key != "content_sha256"}
+    if lock.get("experiment") != experiment or lock.get("content_sha256") != pm.sha256_text(pm.canonical_json(unsigned)):
+        raise PhaseError(f"the Experiment {experiment} lock's content digest does not verify")
+    return lock
+
+
+@dataclass
+class FrozenInputs:
+    """Everything the program reads that no phase of 022 may change: the pool, the locks, Experiment 020's
+    confirmation set (its manifest keys are forbidden before 022's confirm, never executed), its closure (the
+    locked exposed states and the exposed ledger), the confirmation objects of 006–020 (for the freeze's exclusion)
+    and every digest."""
+
+    pool: Any
+    lock_011: Mapping[str, Any]
+    lock_012: Mapping[str, Any]
+    lock_017: Mapping[str, Any]
+    confirmation_020: Any
+    closure: Mapping[str, Any]
+    digests: dict[str, str]
+    confirmations: dict[str, Any]  # "006", "009", "011", …, "020" -> the frozen loader's object
+    manifest: Any
+    extension: Any
+
+
+def load_frozen_inputs(root: Path, *, lock_011_loader: Callable[[Path], Mapping[str, Any]] | None = None,
+                       lock_012_loader: Callable[[Path], Mapping[str, Any]] | None = None, lock_017_loader: Callable[[Path], Mapping[str, Any]] | None = None,
+                       tracked: Callable[[Path], bool] = lambda path: True) -> FrozenInputs:
+    """Experiment 020's input chain, unchanged (the same loaders, checks and order as Experiment 021's runner)."""
+    from neural_decompiler import attention_paths as ap
+    from neural_decompiler import block_concentration as bc
+    from neural_decompiler import block_routing as br
+    from neural_decompiler import cue_decompilation as cd
+    from neural_decompiler import neuron_feature as nf
+    from neural_decompiler import supervised_subspace as ss
+
+    lock_011_loader = lock_011_loader or (lambda path: load_lock(path, "011"))
+    lock_012_loader = lock_012_loader or (lambda path: load_lock(path, "012"))
+    lock_017_loader = lock_017_loader or (lambda path: load_lock(path, "017"))
+    manifest, manifest_sha256, extension = pm.load_inputs(root)
+    c006 = cd.load_confirmation(root / cd.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension)
+    if c006.content_sha256 != ss.INHERITED_CONFIRMATION_SHA256:
+        raise PhaseError("the Experiment 006 confirmation set digest is not the frozen constant")
+    c009 = ht.load_confirmation(root / ht.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, c006)
+    c011 = er.load_confirmation(root / er.CONFIRMATION_RELATIVE_PATH, manifest, manifest_sha256, extension, c006, c009)
+    for relative in (cd.CONFIRMATION_RELATIVE_PATH, ht.CONFIRMATION_RELATIVE_PATH, er.CONFIRMATION_RELATIVE_PATH, rd.EXPERIMENT_011_LOCK_PATH, lc.CONFIRMATION_RELATIVE_PATH,
+                     rd.EXPERIMENT_012_LOCK_PATH, hp.EXPERIMENT_013_CONFIRMATION_PATH, hp.EXPERIMENT_014_CONFIRMATION_PATH, hp.EXPERIMENT_015_CONFIRMATION_PATH,
+                     hp.EXPERIMENT_016_CONFIRMATION_PATH, bc.EXPERIMENT_017_CONFIRMATION_PATH, rd.EXPERIMENT_017_LOCK_PATH, br.EXPERIMENT_018_CONFIRMATION_PATH,
+                     rd.EXPERIMENT_019_CONFIRMATION_PATH, rd.CONFIRMATION_RELATIVE_PATH, rc.CLOSURE_020_RELATIVE_PATH, rc.EXTRACT_020_RELATIVE_PATH):
+        if not (root / relative).exists() or not tracked(root / relative):
+            raise PhaseError(f"{relative} must exist and be tracked and committed")
+    digests = {"manifest": manifest_sha256, "extension": extension.content_sha256, "confirmation_006": c006.content_sha256, "confirmation_009": c009.content_sha256,
+               "confirmation_011": c011.content_sha256}
+    lock_011 = lock_011_loader(root / rd.EXPERIMENT_011_LOCK_PATH)
+    if any(key not in lock_011 for key in LOCK_011_REQUIRED_KEYS) or lock_011["confirmation_011_sha256"] != c011.content_sha256:
+        raise PhaseError("the Experiment 011 lock does not carry the locked axes and read weight for the frozen 011 confirmation set")
+    digests["lock_011"] = lock_011["content_sha256"]
+    pool_012 = lc.build_pool_012(manifest, extension, c006, c009, c011)
+    c012 = lc.load_confirmation(root / lc.CONFIRMATION_RELATIVE_PATH, pool_012, digests)
+    digests["confirmation_012"] = c012.content_sha256
+    lock_012 = lock_012_loader(root / rd.EXPERIMENT_012_LOCK_PATH)
+    if any(key not in lock_012 for key in LOCK_012_REQUIRED_KEYS) or lock_012["confirmation_012_sha256"] != c012.content_sha256 or lock_012["lock_011_sha256"] != lock_011["content_sha256"]:
+        raise PhaseError("the Experiment 012 lock does not carry the locked bases for the frozen 012 confirmation set and the 011 lock")
+    digests["lock_012"] = lock_012["content_sha256"]
+    c013 = ap.load_confirmation(root / hp.EXPERIMENT_013_CONFIRMATION_PATH, ap.build_pool_013(manifest, extension, c006, c009, c011, c012), digests)
+    digests["confirmation_013"] = c013.content_sha256
+    c014 = nf.load_confirmation(root / hp.EXPERIMENT_014_CONFIRMATION_PATH, nf.build_pool_014(manifest, extension, c006, c009, c011, c012, c013), digests)
+    digests["confirmation_014"] = c014.content_sha256
+    c015 = atp.load_confirmation(root / hp.EXPERIMENT_015_CONFIRMATION_PATH, atp.build_pool_015(manifest, extension, c006, c009, c011, c012, c013, c014), digests)
+    digests["confirmation_015"] = c015.content_sha256
+    c016 = fch.load_confirmation(root / hp.EXPERIMENT_016_CONFIRMATION_PATH, fch.build_pool_016(manifest, extension, c006, c009, c011, c012, c013, c014, c015), digests)
+    digests["confirmation_016"] = c016.content_sha256
+    pool_017 = hp.build_pool_017(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016)
+    c017 = hp.load_confirmation(root / bc.EXPERIMENT_017_CONFIRMATION_PATH, pool_017, digests)
+    digests["confirmation_017"] = c017.content_sha256
+    lock_017 = lock_017_loader(root / rd.EXPERIMENT_017_LOCK_PATH)
+    if any(key not in lock_017 for key in LOCK_017_REQUIRED_KEYS) or lock_017["confirmation_017_sha256"] != c017.content_sha256:
+        raise PhaseError("the Experiment 017 lock does not carry the locked layer-3 bases for the frozen 017 confirmation set")
+    digests["lock_017"] = lock_017["content_sha256"]
+    rc.assert_lock_digests(digests)
+    pool_018 = bc.build_pool_018(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016, c017)
+    c018 = bc.load_confirmation(root / br.EXPERIMENT_018_CONFIRMATION_PATH, pool_018, digests)
+    digests["confirmation_018"] = c018.content_sha256
+    pool_019 = br.build_pool_019(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016, c017, c018)
+    c019 = br.load_confirmation(root / rd.EXPERIMENT_019_CONFIRMATION_PATH, pool_019, digests)
+    digests["confirmation_019"] = c019.content_sha256
+    pool = rd.build_pool_020(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016, c017, c018, c019)
+    rc.assert_program_blob()
+    confirmation_020 = rd.load_confirmation(root / rd.CONFIRMATION_RELATIVE_PATH, pool, digests)
+    closure = rc.verify_020_closure(root, confirmation_020)
+    digests = dict(digests) | dict(closure["digests"])
+    confirmations = {"006": c006, "009": c009, "011": c011, "012": c012, "013": c013, "014": c014, "015": c015, "016": c016, "017": c017, "018": c018, "019": c019,
+                     "020": confirmation_020}
+    return FrozenInputs(pool, lock_011, lock_012, lock_017, confirmation_020, closure, digests, confirmations, manifest, extension)
+
+
+# ---------------------------------------------------------------------------
+# The model-side objects shared by every pair.
+
+
+@dataclass
+class ModelPrograms:
+    """The weights and the programs derived from them once per phase: layers 1–3 (the upstream chain and its exact
+    counterpart), layer 0 (block 0's attention), the frozen readout, the committed 017 chain and the noun read."""
+
+    weights: pm.Weights
+    lw: lc.LayerWeights
+    programs: Mapping[int, atp.LayerProgram]
+    program0: atp.LayerProgram
+    readout: rd.ReadoutProgram
+    chain: hp.HeadChainModel
+    nouns: rd.NounSet
+    scorable: list[int]
+    head: Any = None
+    axis_T: Any = None
+
+    @classmethod
+    def from_model(cls, model: Any, inputs: FrozenInputs) -> "ModelPrograms":
+        weights = pm.Weights.from_model(model)
+        lw = lc.LayerWeights.from_model(model, layers=rd.PROGRAM_LAYERS)
+        programs = {layer: atp.LayerProgram.from_model(model, layer) for layer in rd.PROGRAM_LAYERS}
+        program0 = atp.LayerProgram.from_model(model, 0)
+        readout = rd.ReadoutProgram.from_model(model)
+        chain = rd.chain_from_locks(inputs.lock_011, inputs.lock_012, inputs.lock_017, lw, programs, inputs.pool)
+        nouns = rd.NounSet.build(weights, inputs.pool.nouns, [])  # no fresh noun anywhere in 022
+        axis_vector = torch.tensor(inputs.lock_011["axes_vectors"]["T"], dtype=torch.float64)
+        axis_T = pm.SiteAxis("T", torch.zeros_like(axis_vector), axis_vector, float(inputs.lock_011["sigma_T"]))
+        return cls(weights, lw, programs, program0, readout, chain, nouns, list(nouns.exposed_scorable), ht.HeadWeights.from_model(model), axis_T)
+
+
+# ---------------------------------------------------------------------------
+# Block 0 and the factors.
+
+
+@dataclass(frozen=True)
+class Block0Terms:
+    total: torch.Tensor  # ΔA0(q): block 0's attention output change at query q
+    value: torch.Tensor  # the reference row carrying the cue key's changed value (017's F, at block 0)
+    pattern: torch.Tensor  # total − value: the changed row carrying the new values (017's Π, at block 0)
+    weight_to_cue: torch.Tensor  # [heads] the reference attention from q to p_c
+    per_head_value_norm: torch.Tensor  # [heads]
+
+
+def reference_embeddings(weights: pm.Weights, frame: pm.Frame, reference_id: int) -> list[torch.Tensor]:
+    """The reference prompt's embedding rows (Pythia adds no positional embedding; rotary position enters inside
+    attention)."""
+    return [weights.W_E[int(token)].double() for token in frame.prompt_ids(int(reference_id))]
+
+
+def block0_terms(program0: atp.LayerProgram, x0_all: Sequence[torch.Tensor], p_c: int, q: int, d_emb: torch.Tensor) -> Block0Terms:
+    """Block 0's exact attention program at the reference prefix with the embedding at ``p_c`` changed by ``d_emb``:
+    the query is recomputed only when ``q = p_c``; the key and value at ``p_c`` always."""
+    rr = atp.ReferenceRow(program0, [x.double() for x in x0_all[: q + 1]])
+    normed_pc = program0.normalize(x0_all[p_c].double() + d_emb.double())
+    rows, values = hp._row_and_values(program0, rr, normed_pc if q == p_c else None, {p_c: normed_pc})
+    out_new, out_ref = program0.output(values), program0.output(rr.values)
+    per_head = rr.A_ref[:, p_c].unsqueeze(-1) * (out_new[:, p_c] - out_ref[:, p_c])
+    value = per_head.sum(dim=0)
+    total = hp._attention_output(program0, rows, values) - rr.output_ref
+    return Block0Terms(total, value, total - value, rr.A_ref[:, p_c].clone(), per_head.norm(dim=-1))
+
+
+@dataclass(frozen=True)
+class Factors:
+    delta_e: torch.Tensor  # the committed cue input: MLP₀(LN₂(W_E[cue])) − MLP₀(LN₂(W_E[ref]))
+    d_emb: torch.Tensor  # W_E[cue] − W_E[ref]
+    value_pc: torch.Tensor
+    pattern_pc: torch.Tensor
+    attn_pt: torch.Tensor | None  # ΔA0(p_t), coordinated frames only
+    block0_pc: Block0Terms
+    block0_pt: Block0Terms | None
+
+
+def pair_factors(progs: ModelPrograms, x0_all: Sequence[torch.Tensor], frame: pm.Frame, token_id: int, reference_id: int) -> Factors:
+    delta_e = progs.chain.fcm.read.encoding_delta(progs.weights, int(token_id), frame.template_id).double()
+    d_emb = progs.weights.W_E[int(token_id)].double() - progs.weights.W_E[int(reference_id)].double()
+    b_pc = block0_terms(progs.program0, x0_all, frame.p_c, frame.p_c, d_emb)
+    b_pt = block0_terms(progs.program0, x0_all, frame.p_c, frame.p_t, d_emb) if frame.p_t != frame.p_c else None
+    return Factors(delta_e, d_emb, b_pc.value, b_pc.pattern, None if b_pt is None else b_pt.total, b_pc, b_pt)
+
+
+# ---------------------------------------------------------------------------
+# Layers 1–2: the exact program at several input positions, and the committed reduced program with its input replaced.
+
+
+def exact_chain_multi(programs: Mapping[int, atp.LayerProgram], lw: lc.LayerWeights, x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor],
+                      p_c: int, p_t: int, dx1: Mapping[int, torch.Tensor]) -> dict[int, torch.Tensor]:
+    """Experiment 017's ``exact_chain`` loop over a layer-1 input change at any of the changed positions; with an input
+    at ``p_c`` only it is ``hp.exact_chain(...)["dx3"]`` bit for bit (a test pins it)."""
+    positions = sorted({p_c, p_t})
+    residuals = {1: [x.double() for x in x1_all], 2: [x.double() for x in x2_all]}
+    dx: dict[int, dict[int, torch.Tensor]] = {1: {pos: d.double() for pos, d in dx1.items()}}
+    for layer in hp.UPSTREAM_LAYERS:
+        program, xs = programs[layer], residuals[layer]
+        normed = {pos: program.normalize(xs[pos] + d) for pos, d in dx[layer].items()}
+        following: dict[int, torch.Tensor] = {}
+        for pos in positions:
+            rr = atp.ReferenceRow(program, xs[: pos + 1])
+            rows, values = hp._row_and_values(program, rr, normed.get(pos), {k: n for k, n in normed.items() if k <= pos})
+            d_in = dx[layer].get(pos)
+            change = hp._attention_output(program, rows, values) - rr.output_ref
+            if d_in is not None:
+                change = change + d_in + lw.delta_out(layer, xs[pos], d_in)
+            following[pos] = change
+        dx[layer + 1] = following
+    return dx[hp.HEAD_LAYER]
+
+
+def reduced_chain(chain: hp.HeadChainModel, rows16: Mapping[int, atp.ReferenceRow], x1_all: Sequence[torch.Tensor], x2_all: Sequence[torch.Tensor],
+                  p_c: int, p_t: int, template: str, u_pc: torch.Tensor, u_pt: torch.Tensor | None = None) -> dict[int, torch.Tensor]:
+    """``HeadChainModel.upstream`` at ``LEVEL0`` (016's ``LEVEL0F`` channels at ``p_c``, channel D at the frame's
+    operating point, the exact one-step propagation to ``p_t``) with its cue input replaced by ``u_pc``; a nonzero
+    ``u_pt`` enters layer 1 at ``p_t`` exactly. With ``u_pc = ΔE`` and no ``u_pt`` it is ``rd.predicted_dx3`` bit for bit
+    (identity I5)."""
+    fcm, channels = chain.fcm, fch.LEVEL0F
+    x1, x2 = x1_all[p_c].double(), x2_all[p_c].double()
+    xb1, xb2 = (base.double() for base in fcm.bases_012[template])
+    delta_e = u_pc.double()
+    one = fcm.layer_rows(1, rows16[1], xb1, x1, delta_e, channels)
+    d1 = fcm.lw.delta_out(1, x1, delta_e)
+    out1 = rows16[1].output_change(one["row"], one["v_pc"])
+    dx2_pc = delta_e + d1 + out1
+    two = fcm.layer_rows(2, rows16[2], xb2, x2, dx2_pc, channels)
+    out2_pc = rows16[2].output_change(two["row"], two["v_pc"])
+    dx3 = {p_c: dx2_pc + out2_pc + fcm.lw.delta_out(2, x2, dx2_pc)}
+    if p_t != p_c:
+        program1, program2 = fcm.programs[1], fcm.programs[2]
+        rr1 = atp.ReferenceRow(program1, [x.double() for x in x1_all[: p_t + 1]])
+        keys = {p_c: program1.normalize(x1 + delta_e)}
+        query = None
+        if u_pt is not None:
+            keys[p_t] = program1.normalize(x1_all[p_t].double() + u_pt.double())
+            query = keys[p_t]
+        rows1, values1 = hp._row_and_values(program1, rr1, query, keys)
+        dx2_pt = hp._attention_output(program1, rows1, values1) - rr1.output_ref
+        if u_pt is not None:
+            dx2_pt = dx2_pt + u_pt.double() + fcm.lw.delta_out(1, x1_all[p_t].double(), u_pt.double())
+        rr2 = atp.ReferenceRow(program2, [x.double() for x in x2_all[: p_t + 1]])
+        x2_pt = x2_all[p_t].double()
+        normed2 = {p_c: program2.normalize(x2 + dx2_pc), p_t: program2.normalize(x2_pt + dx2_pt)}
+        rows2, values2 = hp._row_and_values(program2, rr2, normed2[p_t], normed2)
+        dx3[p_t] = dx2_pt + (hp._attention_output(program2, rows2, values2) - rr2.output_ref) + fcm.lw.delta_out(2, x2_pt, dx2_pt)
+    return dx3
+
+
+# ---------------------------------------------------------------------------
+# The canonical 32-coalition composition.
+
+
+@dataclass
+class PairContext:
+    frame: pm.Frame
+    state: rd.FrameState020
+    rows16: Mapping[int, atp.ReferenceRow]
+    factors: Factors
+    token_id: int
+    word: str
+
+    @property
+    def cue_final(self) -> bool:
+        return self.frame.p_t == self.frame.p_c
+
+    @property
+    def positions(self) -> list[int]:
+        return sorted({self.frame.p_c, self.frame.p_t})
+
+
+def pair_context(progs: ModelPrograms, frame: pm.Frame, state: rd.FrameState020, reference_id: int, token_id: int, word: str,
+                 rows16: Mapping[int, atp.ReferenceRow] | None = None) -> PairContext:
+    s17 = state.state_017
+    rows16 = rows16 if rows16 is not None else atp.reference_rows(progs.programs, s17.x1_all, s17.x2_all)
+    x0_all = reference_embeddings(progs.weights, frame, reference_id)
+    return PairContext(frame, state, rows16, pair_factors(progs, x0_all, frame, token_id, reference_id), int(token_id), word)
+
+
+def composition_inputs(factors: Factors, mask: int, cue_final: bool) -> tuple[torch.Tensor, torch.Tensor | None]:
+    """``u_pc = ΔE + [emb]·Δemb + [Bv]·V + [Bp]·P`` (added in that fixed order) and ``u_pt = [T]·ΔA0(p_t)``; the empty
+    coalition's input is ``ΔE`` itself, bit for bit."""
+    mask = canonical_mask(mask, cue_final)
+    u_pc = factors.delta_e
+    if mask & BIT["emb"]:
+        u_pc = u_pc + factors.d_emb
+    if mask & BIT["Bv"]:
+        u_pc = u_pc + factors.value_pc
+    if mask & BIT["Bp"]:
+        u_pc = u_pc + factors.pattern_pc
+    u_pt = factors.attn_pt if (mask & BIT["T"] and not cue_final) else None
+    return u_pc, u_pt
+
+
+def compose_dx3(progs: ModelPrograms, ctx: PairContext, mask: int) -> dict[int, torch.Tensor]:
+    mask = canonical_mask(mask, ctx.cue_final)
+    u_pc, u_pt = composition_inputs(ctx.factors, mask, ctx.cue_final)
+    s17 = ctx.state.state_017
+    p_c, p_t = ctx.frame.p_c, ctx.frame.p_t
+    if mask & BIT["R"]:
+        dx1 = {p_c: u_pc}
+        if u_pt is not None:
+            dx1[p_t] = u_pt
+        return exact_chain_multi(progs.programs, progs.lw, s17.x1_all, s17.x2_all, p_c, p_t, dx1)
+    return reduced_chain(progs.chain, ctx.rows16, s17.x1_all, s17.x2_all, p_c, p_t, ctx.frame.template_id, u_pc, u_pt)
+
+
+def contrast_of(progs: ModelPrograms, state: rd.FrameState020, dx3: Mapping[int, torch.Tensor]) -> torch.Tensor:
+    """The frozen downstream readout of a ``Δx3``: 020's blocks 3–5, ``LN_final`` and the noun read (79 nouns)."""
+    return progs.readout.contrast(state, progs.readout.blocks_3_to_5(state, dict(dx3))["dh6"], progs.nouns)[progs.scorable]
+
+
+def pair_compositions(progs: ModelPrograms, ctx: PairContext) -> tuple[torch.Tensor, dict[int, dict[int, torch.Tensor]]]:
+    """``Δĉ`` of every coalition, ``[32, N]``: each canonical coalition is computed once, so in a cue-final frame the
+    row of ``m | T`` is the very tensor of ``m``. Also returns the ``Δx̂3`` of the empty and the full coalition."""
+    rows: dict[int, torch.Tensor] = {}
+    kept: dict[int, dict[int, torch.Tensor]] = {}
+    for mask in range(N_MASKS):
+        canon = canonical_mask(mask, ctx.cue_final)
+        if canon in rows:
+            continue
+        dx3 = compose_dx3(progs, ctx, canon)
+        if canon in (0, canonical_mask(FULL_MASK, ctx.cue_final)):
+            kept[canon] = dx3
+        rows[canon] = contrast_of(progs, ctx.state, dx3)
+    table = torch.stack([rows[canonical_mask(mask, ctx.cue_final)] for mask in range(N_MASKS)])
+    return table, {"empty": kept[0], "full": kept[canonical_mask(FULL_MASK, ctx.cue_final)]}
+
+
+def pair_cells(dc_measured: torch.Tensor, compositions: torch.Tensor) -> tuple[torch.Tensor, float, float, float]:
+    """One pair's cell for the kernel: ``SSE[32]`` and the two-pass moments ``(count, mean, M2)`` of the measured
+    ``Δc`` over the 79 nouns."""
+    y = dc_measured.double()
+    sse = ((y.unsqueeze(0) - compositions.double()) ** 2).sum(dim=-1)
+    mean = float(y.mean())
+    m2 = float(((y - mean) ** 2).sum())
+    return sse, float(y.shape[0]), mean, m2
+
+
+# ---------------------------------------------------------------------------
+# One measured prompt, and the pair's gates.
+
+
+def measured_sites(frame: pm.Frame) -> list[tuple[str, int]]:
+    positions = sorted({frame.p_c, frame.p_t})
+    return [("RESID_PRE.L1", position) for position in positions] + [(f"RESID_PRE.L{hp.HEAD_LAYER}", position) for position in positions]
+
+
+def measure_prompt(model: Any, progs: ModelPrograms, frame: pm.Frame, state: rd.FrameState020, token_id: int, word: str) -> dict[str, Any]:
+    """One forward of the real cue prompt: the measured ``Δc`` (79 nouns, against the state's reference contrasts, as
+    020 measured it), ``Δx1`` and ``Δx3`` at the changed positions."""
+    run = pm.capture_prompt(model, pm.Prompt(frame, int(token_id), word), measured_sites(frame))
+    positions = sorted({frame.p_c, frame.p_t})
+    s17 = state.state_017
+    dx1 = {position: run.vector(("RESID_PRE.L1", position)).double() - s17.x1_all[position].double() for position in positions}
+    dx3 = {position: run.vector((f"RESID_PRE.L{hp.HEAD_LAYER}", position)).double() - state.x3_all[position].double() for position in positions}
+    dc = (progs.nouns.contrasts(run.logits) - state.c_ref)[progs.scorable]
+    return {"dc": dc.double(), "dx1": dx1, "dx3": dx3}
+
+
+def pair_gates(progs: ModelPrograms, ctx: PairContext, compositions: torch.Tensor, composed: Mapping[str, Mapping[int, torch.Tensor]],
+               measurement: Mapping[str, Any]) -> tuple[dict[str, float], torch.Tensor]:
+    """I1–I5 on one pair, and the ceiling ``Δĉ`` (the frozen readout fed the measured ``Δx3``)."""
+    f, frame = ctx.factors, ctx.frame
+    dx1 = measurement["dx1"]
+    i1 = float((f.d_emb + f.delta_e + f.block0_pc.total - dx1[frame.p_c]).abs().max())
+    if f.block0_pt is not None:
+        i1 = max(i1, float((f.block0_pt.total - dx1[frame.p_t]).abs().max()))
+    i2 = float((f.value_pc + f.pattern_pc - f.block0_pc.total).abs().max())
+    i3 = i3_error(composed["full"], measurement["dx3"])
+    ceiling = contrast_of(progs, ctx.state, measurement["dx3"])
+    i4 = float((compositions[FULL_MASK] - ceiling).abs().max())
+    level0 = rd.predicted_dx3(progs.chain, progs.weights, ctx.state, ctx.rows16, ctx.token_id, frame.template_id)
+    i5 = max(float((composed["empty"][position] - level0[position]).abs().max()) for position in level0)
+    if set(level0) != set(composed["empty"]):
+        i5 = math.inf
+    return {"I1": i1, "I2": i2, "I3": i3, "I4": i4, "I5": i5}, ceiling
