@@ -386,3 +386,119 @@ def test_r1_the_remeasured_exposed_dc_reproduces_021s_table_at_1e_9(pinned):
         measurement = ul.measure_prompt(model, progs, frame, state, token_id, word)
         worst = max(worst, float((measurement["dc"] - table["measured"][row[(word, frame.frame_id)]]).abs().max()))
     assert worst <= ul.TOLERANCES["R1"], f"R1 pre-check failed: {worst:.3e}"
+
+
+# ---------------------------------------------------------------------------
+# The freeze on a stub tokenizer and a stub frozen world (tier A; the real freeze is a later, authorized phase).
+
+import json  # noqa: E402
+import re  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
+
+from neural_decompiler import plural_mechanism as pm  # noqa: E402
+
+
+class StubTokenizer:
+    """Whitespace pieces (with their leading space) mapped to ids; a few words split in two."""
+
+    SPLIT = {" thou": (" th", "ou")}
+
+    def __init__(self):
+        self.vocab: dict[str, int] = {}
+        self.pieces: dict[int, str] = {}
+
+    def id(self, piece: str) -> int:
+        if piece not in self.vocab:
+            self.vocab[piece] = 1000 + len(self.vocab)
+            self.pieces[self.vocab[piece]] = piece
+        return self.vocab[piece]
+
+    def encode(self, text, add_special_tokens=False):
+        out = []
+        for piece in re.findall(r" ?[^ ]+", text):
+            out += [self.id(part) for part in self.SPLIT.get(piece, (piece,))]
+        return out
+
+    def decode(self, ids):
+        return "".join(self.pieces[int(i)] for i in ids)
+
+
+def _stub_inputs(tokenizer, *, used_words=("alternate",), used_texts=("The studio makes {cue}",), planted=()):
+    one, two, each, several = (tokenizer.id(" one"), tokenizer.id(" two"), tokenizer.id(" each"), tokenizer.id(" several"))
+    cue_ids = {"cardinal": {"sg": one, "pl": two}, "quantifier": {"sg": each, "pl": several}, "coordinated-adjective": {"sg": one, "pl": two}}
+    texts = {"cardinal": "The display contains {cue}", "quantifier": "The catalog lists {cue}", "coordinated-adjective": "Mira and Noah packed {cue} bright"}
+    frames = tuple(pm._build_new_frame(tokenizer, template, text, cue_ids[template], f"{template}-1") for template, text in texts.items())
+    frames = tuple(pm.Frame(f.template_id, f.frame_id, f.prefix_ids, f.suffix_ids, f.cue_ids, f.text_template, origin="manifest") for f in frames)
+    names = {one: "one", two: "two", each: "each", several: "several"}
+    tokens = tuple((word, tokenizer.id(" " + word)) for word in used_words)
+    pool = SimpleNamespace(tokens=tokens + tuple((name, token_id) for token_id, name in names.items()), frames=frames,
+                           frame_origin={frame.frame_id: "manifest" for frame in frames}, reference_ids={"cardinal": one, "quantifier": each, "coordinated-adjective": one},
+                           plural_cue={"cardinal": "two", "quantifier": "several", "coordinated-adjective": "two"}, token_id=lambda name: {v: k for k, v in names.items()}[name])
+    used_frame = pm._build_new_frame(tokenizer, "cardinal", used_texts[0], cue_ids["cardinal"], "cardinal-used-1") if used_texts else None
+    confirmation = SimpleNamespace(tokens=tuple({"word": w, "token_id": tokenizer.id(" " + w)} for w in planted), frames=(used_frame,) if used_frame else (), content_sha256="c" * 64)
+    extension = SimpleNamespace(original_frames=frames, new_frames=(), cue_words=(), reference_cue_ids={}, content_sha256="e" * 64)
+    return ul.FrozenInputs(pool, {}, {}, {}, None, {}, {}, {"019": confirmation}, None, extension)
+
+
+def test_the_freeze_takes_the_first_eligible_entries_and_records_every_rejection():
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer, planted=("wild",))
+    payload = ul.freeze_payload(tokenizer, inputs, model={"model_id": "stub", "revision": "x"})
+    words = {cls: [entry["word"] for entry in payload["cues"] if entry["class"] == cls] for cls in ul.CUE_CANDIDATES}
+    assert words["determiner-like"] == ["random", "standard", "regular", "normal", "common", "general"]  # alternate already used
+    assert words["possessive-or-pronoun"] == ["yourself", "themselves", "ones", "others", "naught", "whatsoever"]  # thou is two tokens here
+    assert words["adjective"] == ["square", "brave", "calm", "eager", "fierce", "humble"]  # wild planted in a confirmation
+    reasons = {(entry["candidate"], entry["reason"].split(" ")[0]) for entry in payload["rejected"]}
+    assert ("alternate", "token") in reasons and ("wild", "token") in reasons and ("thou", "2") in reasons
+    assert ("The studio makes {cue}", "text") in reasons
+    cardinal = [entry for entry in payload["frames"] if entry["template_id"] == "cardinal"]
+    assert [entry["frame_id"] for entry in cardinal] == [f"cardinal-022-{k}" for k in range(1, 7)] and cardinal[1]["text_template"] == "The market trades {cue}"
+    coordinated = [entry for entry in payload["frames"] if entry["template_id"] == "coordinated-adjective"]
+    assert all(entry["p_t"] == entry["p_c"] + 1 and 4 <= entry["p_c"] <= 7 for entry in coordinated)
+    confirmation = ul.confirmation_from_payload(payload, inputs.pool)
+    manifest = confirmation.manifest()
+    assert len(manifest["S1-REF"]) == 18 and len(manifest["S1-VALIDITY"]) == 18
+    assert len(manifest["S2-TARGET"]["Y1"]) == 24 * len(inputs.pool.frames) and len(manifest["S2-TARGET"]["Y2"]) == 24 * 18
+    assert payload["counts"] == {"classes": {cls: 6 for cls in ul.CUE_CANDIDATES}, "templates": {template: 6 for template in ul.FRAME_CANDIDATES}}
+
+
+def test_a_shortfall_writes_nothing_and_stops_for_review():
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer, used_words=("yourself", "themselves"))  # thou splits: ones, others, naught, whatsoever remain
+    with pytest.raises(ul.FreezeShortfall, match="possessive-or-pronoun"):
+        ul.freeze_payload(tokenizer, inputs)
+
+
+def test_the_exclusion_is_structured_and_covers_every_source():
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer, planted=("bulk",))
+    exclusion = ul.extract_exclusion(inputs)
+    assert tokenizer.id(" bulk") in exclusion["cue_token_ids"] and tokenizer.id(" alternate") in exclusion["cue_token_ids"]
+    assert tokenizer.id(" two") in exclusion["cue_token_ids"]  # a frame's own plural cue
+    assert "The studio makes {cue}" in exclusion["frame_texts"] and "The display contains {cue}" in exclusion["frame_texts"]
+    assert [entry["source"] for entry in exclusion["sources"]] == ["pool-020", "confirmation-019", "extension"]
+    assert exclusion["cue_token_ids_sha256"] == pm.sha256_text(pm.canonical_json(exclusion["cue_token_ids"]))
+
+
+def test_a_tampered_confirmation_file_is_refused(tmp_path, monkeypatch):
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer)
+    payload = ul.freeze_payload(tokenizer, inputs)
+    path = tmp_path / "confirmation-v1.json"
+    path.write_text(pm.canonical_json(payload) + "\n")
+    assert len(ul.load_confirmation_022(path, inputs).tokens) == 24
+    for mutate in (lambda p: p["cues"][0].update(word="other"), lambda p: p["manifest"]["S1-REF"].pop(), lambda p: p.update(counts={})):
+        changed = json.loads(path.read_text())
+        mutate(changed)
+        changed["content_sha256"] = pm.sha256_text(pm.canonical_json({k: v for k, v in changed.items() if k != "content_sha256"}))
+        (tmp_path / "bad.json").write_text(pm.canonical_json(changed) + "\n")
+        with pytest.raises(ul.PhaseError):
+            ul.load_confirmation_022(tmp_path / "bad.json", inputs)
+    stale = json.loads(path.read_text())
+    stale["content_sha256"] = "0" * 64
+    (tmp_path / "stale.json").write_text(pm.canonical_json(stale) + "\n")
+    with pytest.raises(ul.PhaseError, match="digest"):
+        ul.load_confirmation_022(tmp_path / "stale.json", inputs)
+    later = _stub_inputs(tokenizer, planted=(payload["cues"][0]["word"],))  # a unit that became used after the freeze
+    with pytest.raises(ul.PhaseError):
+        ul.load_confirmation_022(path, later)

@@ -889,3 +889,198 @@ def pair_gates(progs: ModelPrograms, ctx: PairContext, compositions: torch.Tenso
     if set(level0) != set(composed["empty"]):
         i5 = math.inf
     return {"I1": i1, "I2": i2, "I3": i3, "I4": i4, "I5": i5}, ceiling
+
+
+# ---------------------------------------------------------------------------
+# The freeze: tokenizer only, structural rules only; no model output (Task 4).
+
+CONFIRMATION_SCHEMA_VERSION = 1
+COORDINATED = pm.COORDINATED_TEMPLATE
+
+
+class FreezeShortfall(RuntimeError):
+    """A class or template yields fewer than its quota: the freeze writes nothing and stops for review (not an
+    incident)."""
+
+
+def extract_exclusion(inputs: FrozenInputs) -> dict[str, Any]:
+    """Every cue token id and frame text any earlier experiment froze or executed, read from structured fields only
+    (plan revision 2, Q5): the frozen loaders' ``tokens[*]["token_id"]`` and ``frames[*]`` of the 006–020
+    confirmations, the 020 provenance pool (tokens, frames, reference and plural cues), and the screening manifest's
+    extension (frames and cue words). Over-exclusion is allowed; under-exclusion is not."""
+    pool = inputs.pool
+    cue_ids: set[int] = {int(token_id) for _, token_id in pool.tokens}
+    cue_ids |= {int(token_id) for token_id in pool.reference_ids.values()}
+    cue_ids |= {int(pool.token_id(name)) for name in pool.plural_cue.values()}
+    frames: list[pm.Frame] = list(pool.frames)
+    sources = [{"source": "pool-020", "loader": "rd.build_pool_020", "tokens": len(pool.tokens), "frames": len(pool.frames)}]
+    for key, confirmation in sorted(inputs.confirmations.items()):
+        cue_ids |= {int(token["token_id"]) for token in confirmation.tokens}
+        frames += list(confirmation.frames)
+        sources.append({"source": f"confirmation-{key}", "content_sha256": confirmation.content_sha256, "tokens": len(confirmation.tokens), "frames": len(confirmation.frames)})
+    extension = inputs.extension
+    frames += list(extension.original_frames) + list(extension.new_frames)
+    cue_ids |= {int(token_id) for _, token_id in extension.cue_words} | {int(token_id) for token_id in extension.reference_cue_ids.values()}
+    sources.append({"source": "extension", "content_sha256": extension.content_sha256, "frames": len(extension.original_frames) + len(extension.new_frames),
+                    "tokens": len(extension.cue_words)})
+    for frame in frames:
+        cue_ids |= {int(token_id) for token_id in frame.cue_ids.values()}
+    texts = sorted({frame.text_template for frame in frames})
+    ids = sorted(cue_ids)
+    return {"cue_token_ids": ids, "cue_token_ids_sha256": pm.sha256_text(pm.canonical_json(ids)), "frame_texts": texts,
+            "frame_texts_sha256": pm.sha256_text(pm.canonical_json(texts)), "sources": sources}
+
+
+def freeze_payload(tokenizer: Any, inputs: FrozenInputs, *, model: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """The first eligible entries of the frozen ordered lists (design revision 3). A cue is eligible when it is a
+    single token with a leading space and its id is new; a frame when its text is new and the project's own frame
+    builder accepts it with ``p_c`` in its template's exposed range (coordinated: one adjective token, so
+    ``p_t = p_c + 1``). Frame ids are ``<template>-022-<k>``. A shortfall writes nothing (``FreezeShortfall``)."""
+    exclusion = extract_exclusion(inputs)
+    excluded_ids, excluded_texts = set(exclusion["cue_token_ids"]), set(exclusion["frame_texts"])
+    cues: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    for cls, words in CUE_CANDIDATES.items():
+        taken = 0
+        for rank, word in enumerate(words):
+            if taken == CUE_QUOTA:
+                break
+            ids = pm._encode(tokenizer, " " + word)
+            if len(ids) != 1:
+                rejected.append({"kind": "cue", "class": cls, "candidate": word, "rank": rank, "reason": f"{len(ids)} tokens with a leading space"})
+                continue
+            if ids[0] in excluded_ids or ids[0] in {entry["token_id"] for entry in cues}:
+                rejected.append({"kind": "cue", "class": cls, "candidate": word, "rank": rank, "reason": f"token id {ids[0]} already used"})
+                continue
+            cues.append({"word": word, "token_id": int(ids[0]), "class": cls, "candidate_rank": rank})
+            taken += 1
+        if taken < CUE_QUOTA:
+            raise FreezeShortfall(f"cue class {cls}: {taken} eligible of {CUE_QUOTA}")
+    pool = inputs.pool
+    cue_ids_by_template = {frame.template_id: dict(frame.cue_ids) for frame in pool.frames if pool.frame_origin[frame.frame_id] == "manifest"}
+    frames: list[dict[str, Any]] = []
+    for template, texts in FRAME_CANDIDATES.items():
+        taken = 0
+        for rank, text in enumerate(texts):
+            if taken == FRAME_QUOTA:
+                break
+            if text in excluded_texts or text in {entry["text_template"] for entry in frames}:
+                rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": "text already used"})
+                continue
+            frame_id = f"{template}-{FRAME_ID_TAG}-{taken + 1}"
+            try:
+                frame = pm._build_new_frame(tokenizer, template, text, cue_ids_by_template[template], frame_id)
+            except ValueError as error:
+                rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": str(error)})
+                continue
+            low, high = P_C_RANGE[template]
+            if not low <= frame.p_c <= high:
+                rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": f"p_c {frame.p_c} outside {low}–{high}"})
+                continue
+            if (template == COORDINATED) != (frame.p_t == frame.p_c + 1):
+                rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": f"p_t {frame.p_t} against p_c {frame.p_c}"})
+                continue
+            frames.append({**frame.to_dict(), "candidate_rank": rank})
+            taken += 1
+        if taken < FRAME_QUOTA:
+            raise FreezeShortfall(f"template {template}: {taken} structurally eligible of {FRAME_QUOTA}")
+    payload = {
+        "experiment": EXPERIMENT, "schema_version": CONFIRMATION_SCHEMA_VERSION,
+        "kind": "the new cues and frames of Experiment 022, frozen from the tokenizer and structural rules alone; no model output",
+        "design": dict(DESIGN), "plan": dict(PLAN),
+        "model": dict(model or {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision}),
+        "candidates": {"cues": {cls: list(words) for cls, words in CUE_CANDIDATES.items()}, "frames": {template: list(texts) for template, texts in FRAME_CANDIDATES.items()}},
+        "rules": {"cue_quota": CUE_QUOTA, "frame_quota": FRAME_QUOTA, "p_c_range": {template: list(bounds) for template, bounds in P_C_RANGE.items()},
+                  "cue": "a single token with a leading space whose id no earlier experiment used", "frame": "a new text accepted by pm._build_new_frame; coordinated: one adjective token"},
+        "exclusion": exclusion, "reference_cue_ids": {template: int(token_id) for template, token_id in pool.reference_ids.items()},
+        "exposed_frame_ids": [frame.frame_id for frame in pool.frames],
+        "cues": cues, "frames": frames, "rejected": rejected,
+        "counts": {"classes": {cls: sum(1 for entry in cues if entry["class"] == cls) for cls in CUE_CANDIDATES},
+                   "templates": {template: sum(1 for entry in frames if entry["template_id"] == template) for template in FRAME_CANDIDATES}},
+    }
+    payload["manifest"] = confirmation_from_payload(payload, pool, verify=False).manifest()
+    payload["content_sha256"] = pm.sha256_text(pm.canonical_json({key: value for key, value in payload.items() if key != "content_sha256"}))
+    return payload
+
+
+@dataclass(frozen=True)
+class Confirmation022:
+    reference_ids: Mapping[str, int]
+    frames: tuple[pm.Frame, ...]  # the 18 new frames
+    exposed_frames: tuple[pm.Frame, ...]  # the 108 exposed frames, in the pool's order
+    tokens: tuple[dict[str, Any], ...]  # the 24 new cues: word, token_id, class
+    content_sha256: str
+
+    def reference_prompt(self, frame: pm.Frame) -> pm.Prompt:
+        return pm.Prompt(frame, int(self.reference_ids[frame.template_id]), "ref")
+
+    def validity_prompt(self, frame: pm.Frame) -> pm.Prompt:
+        return pm.Prompt(frame, int(frame.cue_ids["pl"]), "pl")
+
+    @property
+    def stage1_prompts(self) -> tuple[pm.Prompt, ...]:
+        return tuple(self.reference_prompt(frame) for frame in self.frames) + tuple(self.validity_prompt(frame) for frame in self.frames)
+
+    @property
+    def y1_prompts(self) -> tuple[pm.Prompt, ...]:
+        return tuple(pm.Prompt(frame, int(token["token_id"]), token["word"]) for frame in self.exposed_frames for token in self.tokens)
+
+    @property
+    def y2_prompts(self) -> tuple[pm.Prompt, ...]:
+        return tuple(pm.Prompt(frame, int(token["token_id"]), token["word"]) for frame in self.frames for token in self.tokens)
+
+    @property
+    def target_prompts(self) -> tuple[pm.Prompt, ...]:
+        return self.y1_prompts + self.y2_prompts
+
+    @property
+    def all_prompts(self) -> tuple[pm.Prompt, ...]:
+        return self.stage1_prompts + self.target_prompts
+
+    def manifest(self) -> dict[str, Any]:
+        return {"S1-REF": sorted(self.reference_prompt(frame).key for frame in self.frames), "S1-VALIDITY": sorted(self.validity_prompt(frame).key for frame in self.frames),
+                "S2-TARGET": {"Y1": sorted(prompt.key for prompt in self.y1_prompts), "Y2": sorted(prompt.key for prompt in self.y2_prompts)}}
+
+    def manifest_keys(self) -> frozenset[str]:
+        return frozenset(prompt.key for prompt in self.all_prompts)
+
+    def counts(self) -> dict[str, dict[str, int]]:
+        return {"classes": {cls: sum(1 for token in self.tokens if token["class"] == cls) for cls in CUE_CANDIDATES},
+                "templates": {template: sum(1 for frame in self.frames if frame.template_id == template) for template in FRAME_CANDIDATES}}
+
+
+def confirmation_from_payload(payload: Mapping[str, Any], pool: Any, *, verify: bool = True) -> Confirmation022:
+    frames = tuple(pm.Frame(entry["template_id"], entry["frame_id"], tuple(entry["prefix_ids"]), tuple(entry["suffix_ids"]), entry["cue_ids"], entry["text_template"],
+                            origin="extension") for entry in payload["frames"])
+    tokens = tuple({"word": entry["word"], "token_id": int(entry["token_id"]), "class": entry["class"]} for entry in payload["cues"])
+    confirmation = Confirmation022(dict(pool.reference_ids), frames, tuple(pool.frames), tokens, str(payload.get("content_sha256", "")))
+    if verify:
+        if payload.get("experiment") != EXPERIMENT or payload.get("schema_version") != CONFIRMATION_SCHEMA_VERSION:
+            raise PhaseError("not an Experiment 022 confirmation file")
+        if payload["content_sha256"] != pm.sha256_text(pm.canonical_json({key: value for key, value in payload.items() if key != "content_sha256"})):
+            raise PhaseError("the confirmation file's content digest does not verify")
+        if payload["manifest"] != confirmation.manifest():
+            raise PhaseError("the confirmation file's manifest is not the one its cues and frames define")
+        if confirmation.counts() != {"classes": {cls: CUE_QUOTA for cls in CUE_CANDIDATES}, "templates": {template: FRAME_QUOTA for template in FRAME_CANDIDATES}}:
+            raise PhaseError(f"the confirmation file's composition is not 6/6/6/6 cues and 6/6/6 frames: {confirmation.counts()}")
+        if payload.get("counts") != confirmation.counts():
+            raise PhaseError("the confirmation file's recorded counts are not those of its cues and frames (the calibration reads these counts)")
+        if payload["exposed_frame_ids"] != [frame.frame_id for frame in pool.frames] or dict(payload["reference_cue_ids"]) != {k: int(v) for k, v in pool.reference_ids.items()}:
+            raise PhaseError("the confirmation file names a different exposed pool")
+    return confirmation
+
+
+def load_confirmation_022(path: Path, inputs: FrozenInputs) -> Confirmation022:
+    """The committed freeze artifact, verified: digest, manifest, composition, and no overlap with anything used
+    before (re-extracted from the frozen inputs now)."""
+    import json
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    confirmation = confirmation_from_payload(payload, inputs.pool)
+    exclusion = extract_exclusion(inputs)
+    if payload["exclusion"]["cue_token_ids_sha256"] != exclusion["cue_token_ids_sha256"] or payload["exclusion"]["frame_texts_sha256"] != exclusion["frame_texts_sha256"]:
+        raise PhaseError("the exclusion sets recorded at the freeze differ from those of the frozen inputs now")
+    used_ids, used_texts = set(exclusion["cue_token_ids"]), set(exclusion["frame_texts"])
+    if {int(token["token_id"]) for token in confirmation.tokens} & used_ids or {frame.text_template for frame in confirmation.frames} & used_texts:
+        raise PhaseError("a new cue or frame was used by an earlier experiment")
+    return confirmation
