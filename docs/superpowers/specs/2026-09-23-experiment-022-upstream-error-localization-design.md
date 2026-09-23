@@ -1,25 +1,40 @@
-# Experiment 022: Prospective Localization of the Upstream `Δx3` Error — Omitted Block-0 Attention in the Cue State, and the Coordinated Layer-1–2 Reductions
+# Experiment 022: Prospective Localization of the Upstream `Δx3` Error — Omitted Block-0 Attention in the Cue State and the Cue→Target Copy
 
 **Date:** 2026-09-23
 
-**Status:** Revision 3. This is one correction to the approved revision 2 (`0f1009c`), found while writing the
-implementation plan and approved on its review.
+**Status:** Revision 4. The independent implementation review of revision 3 found a computational defect inherited
+from Experiment 020 (recorded in the post-closure errata of Experiments 020 and 021). In coordinated-adjective frames,
+020's Level-0 program built the committed chain's layer-1/2 reference rows through `p_t` instead of through the cue
+position `p_c`, as the chain validated in 017–019 does. Revision 3's reduced program carried that defect, and so did
+its factor `R` in coordinated frames, its coordinated spike numbers and its claim C3. The reviewer chose to test the
+chain as 017 validated it. Revision 4 makes these changes:
 
-The calibration stop now triggers at **250 or more** undefined values of a one-sided statistic (C1, C2, C4), and at
-**125 or more** of C3's. Revision 2 said "more than 250" and "more than 125". Under the frozen ±∞ convention, exactly
-250 undefined values already make `v₍₂₅₀₎ = −∞` and `v₍₉₇₅₁₎ = +∞`, and exactly 125 make C3's bounds infinite.
+- **Wiring.** The reduced layer-1–2 program (`R` off) is Experiment 017's chain with its layer-1/2 reference rows
+  built from the reference residuals at positions 0..`p_c`. Identity I5 holds against 017's own
+  `HeadChainModel.upstream`, wired this way. Experiment 020's wiring is kept only as a descriptive historical
+  comparator.
+- **Spike.** Recomputed on revision 3's samples, weights only, with measured `Δc` from Experiment 021's digest-bound
+  exposed table and no prompt. Under 020's wiring the recomputation reproduces revision 3's numbers exactly. Under
+  017's wiring the coordinated reductions carry 0.5 % of the gap, not 44 %.
+- **C3 replaced.** Revision 3's C3, "the coordinated gap is split between layer 0 and the reductions", is withdrawn:
+  its premise was the defect. The new C3 is that the layer-1–2 reductions contribute little to the coordinated gap
+  (`σ_R ≤ 0.10`), an upper bound like C2. C1, C2 and C4 are unchanged.
+- **Consequences.** Every claim is now one-sided, so the calibration stop is 250 or more undefined values for all
+  four claims. C3's direction report, relative to a two-sided band, is dropped.
 
-Nothing else changes. Revision 2 had made the review's precision changes to revision 1 (`2b20db3`): exact tail
-directions, C4's wording, the gap rule as per-condition interpretability, eight individually reported conditions, and
-validity selecting nothing. They are listed in the revision history.
+Nothing else changes:
+- the factors, and the compositions apart from the wiring of `R` off;
+- the value function and the populations;
+- the fresh-unit lists and the freeze rule;
+- the calibration pools, draws and floor rule;
+- the other claims and their guards, and the gates' tolerances;
+- the four-way results and the Y2-table procedure (plan revision 2, R-1).
 
-Nothing is implemented: no Experiment 022 directory, code, results state, confirmation file, calibration record, lock
-or model run exists. This document freezes the question, the
-attribution, the four claims, the identity gates, the fresh-unit candidate lists and their freeze rule, the calibration
-procedure and the floor rule. **No floor has been computed, and no fresh unit has been frozen or executed.** The only
-numbers quoted are Experiments 020/021's committed results and an exploratory spike on the exposed pool (below). The
-spike ran scratch scripts that are not part of the repository, and it executed only prompt keys already in Experiment
-020's exposed ledger.
+Revision 3's implementation exists (pushed at `566c21d`) and is patched to revision 4 through plan revision 3.
+**No confirmation unit has been frozen; nothing has been calibrated, locked or confirmed; and no fresh prompt has
+run.** The only numbers quoted are Experiments 020/021's committed results and the exposed spike below. The spike's
+scratch scripts are not part of the repository, and it executed only prompt keys already in Experiment 020's exposed
+ledger.
 
 **Kind:** Prospective, zero-parameter localization. It tests where the committed program's upstream error comes from.
 It builds no corrected program, fits nothing, and changes no inherited object.
@@ -32,6 +47,11 @@ and 0.5797 in fresh frames. Fed the *measured* `Δx3`, the same downstream reado
 unexplained variance, 0.352 of 0.383 (Y1) and 0.385 of 0.420 (Y2) was inherited from the upstream prediction of `Δx3`;
 Experiment 020 had found the same split on exposed data. The downstream readout is decoded almost exactly. The open
 problem is the upstream prediction of `Δx3`.
+
+A post-closure erratum (2026-09-23) qualifies this for coordinated frames. Experiment 020's program built the committed
+chain's layer-1/2 reference rows through `p_t` rather than through `p_c`, unlike the chain validated in 017–019. On
+exposed coordinated pairs that wiring alone lowers the Level-0 `Δc` `R²` from 0.555 to −0.146 (36 frames × 175 cues).
+Experiment 022 tests the chain as 017 validated it.
 
 ## What `Δx3` is, and where its error can come from
 
@@ -47,7 +67,8 @@ The upstream program is the committed Experiment 017 chain, `HeadChainModel.upst
 the Experiment 011/012/017 locks. It takes a cue input `ΔE` at `p_c` and passes it through:
 
 - Experiment 016's Level 0-F layer-1 and layer-2 rows at `p_c` (template-base normalization, the frame's operands and
-  scale);
+  scale). The reference rows come from the reference residuals at positions 0..`p_c`, as in 015–019; Experiment 020
+  built them through `p_t` (the errata);
 - block 1's MLP at the frame's operating point, and block 2's MLP (channel D);
 - in coordinated frames, the exact one-step propagation to `p_t`, which assumes `x1(p_t)` is unchanged.
 
@@ -65,27 +86,44 @@ relative (median 3.1e-6, 4,320 pairs). The composition with every factor include
 `Δc` to at most 3.6e-5 nats. Every quantity below is an exact, weight-only function of the frame's reference prefix and
 the cue's token id, so the gap decomposes exactly.
 
+**Recomputation for revision 4.** The ladder and the attribution below were recomputed on revision 3's samples with the
+reduced program wired as in 017. The recomputation used weights only and executed no prompt. Measured `Δc` came from
+Experiment 021's digest-bound exposed table, which reproduces the spike's forward passes. Two checks:
+- Run with Experiment 020's wiring, the same computation reproduces revision 3's published numbers exactly.
+- The two wirings agree bit for bit in cue-final frames.
+
 **Ladder** (flattened `Δc` `R²`; 108 exposed frames × 40 exposed cues = 4,320 pairs; order-dependent, descriptive):
 
 | step | all | cardinal | quantifier | coordinated |
 |---|---|---|---|---|
-| Level 0 (the committed chain) | 0.719 | 0.879 | 0.883 | 0.324 |
+| Level 0 (the committed chain, wired as in 017) | 0.837 | 0.879 | 0.883 | 0.721 |
 | exact layers 1–2, same E-patch input | 0.838 | 0.880 | 0.883 | 0.723 |
 | + the embedding change at `p_c` | 0.850 | 0.889 | 0.890 | 0.742 |
 | + block-0 attention at `p_c` (= the measured `Δx1(p_c)`) | 0.959 | 0.981 | 0.972 | 0.915 |
 | + block-0 attention at `p_t` (= the measured `Δx3`) | 0.978 | 0.981 | 0.972 | 0.979 |
-| the committed reduced layers 1–2, fed the full input | — | 0.981 | 0.972 | 0.849 |
+| *historical comparator:* Level 0 as Experiment 020 wired it | 0.719 | 0.879 | 0.883 | 0.324 |
 
 **Order-free attribution** (exact Shapley values of the gap between Level 0 and the ceiling; 108 frames × 14 exposed
 cues = 1,512 pairs; the factors are defined below):
 
-| share of the gap | cue-final (gap 0.104) | coordinated (gap 0.982) |
-|---|---|---|
-| `Bv`, block-0 value term at `p_c` | 0.586 | 0.318 |
-| `Bp`, block-0 pattern term at `p_c` | 0.350 | 0.079 |
-| `T`, block-0 attention into `p_t` | — | 0.155 |
-| `emb`, embedding change at `p_c` | 0.063 | 0.004 |
-| `R`, layer-1–2 reductions | 0.001 | 0.444 |
+| | cue-final | coordinated (017's wiring) | coordinated, revision 3 (020's wiring) |
+|---|---|---|---|
+| `v(∅)` (Level 0) → `v(all)` | 0.873 → 0.976 | 0.696 → 0.971 | −0.010 → 0.971 |
+| gap `G` | 0.104 | 0.275 | 0.982 |
+| `Bv`, block-0 value term at `p_c` | 0.586 | 0.549 | 0.318 |
+| `Bp`, block-0 pattern term at `p_c` | 0.350 | 0.115 | 0.079 |
+| `T`, block-0 attention into `p_t` | — | 0.347 | 0.155 |
+| `emb`, embedding change at `p_c` | 0.063 | −0.016 | 0.004 |
+| `R`, layer-1–2 reductions | 0.001 | 0.005 | 0.444 |
+| the reduced layers 1–2 fed the complete layer-0 input (`v`) | 0.976 | 0.971 | 0.760 |
+
+Wired as in 017, the reductions carry almost none of the gap in either group. Fed the complete layer-0 input, the
+reduced layers 1–2 match the exact program: 0.976 and 0.971 against 0.976 and 0.971. What remains is layer-0 state
+construction:
+- **Cue-final frames:** block-0 attention at the cue position, value term 0.59 and pattern term 0.35.
+  - Per template: cardinal (gap 0.120) value 0.62, pattern 0.32; quantifier (gap 0.096) value 0.55, pattern 0.39.
+- **Coordinated frames:** the same terms (value 0.55, pattern 0.11), plus block 0's copy from the cue into the target
+  position (0.35).
 
 **Supporting facts:**
 - Median norms: `ΔE` 7.7, embedding change 0.95, value term about 4.0, pattern term about 2.4, block-0 change at `p_t`
@@ -94,11 +132,10 @@ cues = 1,512 pairs; the factors are defined below):
   `H02`, `H05` and `H07`.
 - The copy into `p_t` comes from heads that attend back to the cue: `L00.H05` (0.60 of its attention on `p_c`), `H06`
   and `H01`.
-- In coordinated frames, substituting the measured `Δx3` at `p_c` alone lifts Level 0 from −0.01 to 0.886; at `p_t`
-  alone, to 0.317.
-- Every cue class recovers (cue-final 0.94–0.995, coordinated 0.95–0.995). Experiment 020's worst cues were this
-  omission:
-  `whole` goes from −0.66 to 0.92 once block-0 attention at `p_c` is included, and `last` from −0.50 to 0.89.
+- Every cue class recovers under the full composition (cue-final 0.94–0.995, coordinated 0.95–0.995).
+- Revision 3's measured-`Δx3` substitutions (coordinated Level 0 from −0.01 to 0.886 with the measured `Δx3` at `p_c`
+  alone, 0.317 at `p_t` alone) and its per-cue Level-0 values (`whole` −0.66, `last` −0.50) used Experiment 020's
+  wiring. They are not recomputed. They describe the historical comparator, not the chain under test.
 
 The spike chose the claims' directions and meaning guards below. It sets no floor: every floor comes from the frozen
 calibration, and the spike's values are quoted only as context.
@@ -109,9 +146,10 @@ Does the spike's localization generalize, prospectively, to new cues and new fra
 
 - **Cue-final (H-CF).** The dominant remaining upstream error is omitted block-0 attention in the cue-state
   construction — its value and pattern terms at `p_c` — and the layer-1–2 reductions contribute little.
-- **Coordinated (H-CO).** The error is distributed across incomplete layer-0 state construction — including the block-0
-  copy pathway from the cue into the target position — and the reduced layer-1–2 computation. It is **not** claimed
-  that all coordinated error originates in layer 0.
+- **Coordinated (H-CO).** The remaining upstream error is also incomplete layer-0 state construction: block-0 attention
+  at `p_c` and the block-0 copy pathway from the cue into the target position. The layer-1–2 reductions, wired as in
+  017, contribute little. Revision 3's reading, an error split between layer 0 and the reductions, rested on
+  Experiment 020's wiring defect and is withdrawn.
 
 The operative reading of each claim is 021's: *does the fresh population's attribution lie within the envelope of
 exposed-like sets of the same size and composition, and does it keep the claim's qualitative meaning?*
@@ -135,7 +173,9 @@ rotary position enters inside attention.
   Experiment 017's `Π` term, applied at block 0.
 - `T`: the block-0 attention change at `p_t`, `ΔA0(p_t)`, in coordinated frames. It is a null factor in cue-final
   frames, where `p_t = p_c`.
-- `R`: the layer-1–2 program — the committed reduced program (factor off) or the exact weight-only program (factor on).
+- `R`: the layer-1–2 program. With the factor off it is the committed reduced program; with the factor on, the exact
+  weight-only program. The reduced program is Experiment 017's chain with its layer-1/2 reference rows built from the
+  reference residuals at positions 0..`p_c`, as validated in 015–019 (revision 4; the errata of 020/021).
 
 By GPT-NeoX's parallel residual, `Δx1(p_c) = Δemb + ΔE + ΔA0(p_c)` and, for `p_t ≠ p_c`, `Δx1(p_t) = ΔA0(p_t)`, exactly.
 
@@ -148,14 +188,18 @@ For every subset `S` of `{R, emb, Bv, Bp, T}` (32 subsets; 16 distinct ones in c
 - **Layers 1–2:**
   - With `R ∈ S`: the exact weight-only program at the frame's reference state. This is Experiment 017's `exact_chain`
     with inputs at both changed positions; with an input at `p_c` only, it equals `exact_chain` bit for bit.
-  - Without `R`: the committed reduced program, `HeadChainModel.upstream` at `LEVEL0`, with its cue input replaced by
-    `u(p_c)`. A nonzero `u(p_t)` enters the one-step propagation's layer 1 at `p_t` exactly: the query, key and value
+  - Without `R`: the committed reduced program, `HeadChainModel.upstream` at `LEVEL0`, with its layer-1/2 reference
+    rows through `p_c` (017's wiring) and its cue input replaced by `u(p_c)`. A nonzero `u(p_t)` enters the one-step propagation's layer 1 at `p_t` exactly: the query, key and value
     at `p_t`, and block 1's MLP at `x1(p_t) + u(p_t)`.
 - **Output:** `Δx̂3^S` at `p_c` and `p_t` goes through the frozen downstream readout program (020's
   `ReadoutProgram.blocks_3_to_5`, `LN_final`, the weight-only read), giving `Δĉ^S` for the 79 scorable exposed nouns.
 
-**Endpoints.** The empty subset is the committed Level 0 exactly (identity I5). The full subset is the exact layers-0–2
-program, which reproduces the measured `Δx3` (I3); its `Δĉ` is the downstream ceiling (I4).
+**Endpoints.**
+- **Empty subset:** exactly the Level 0 of 017's chain, wired as in 017 (identity I5). In coordinated frames it differs
+  from the Level 0 that Experiments 020 and 021 ran, whose rows ran through `p_t` (their errata). That Level 0 is
+  recorded only as a descriptive historical comparator.
+- **Full subset:** the exact layers-0–2 program. It reproduces the measured `Δx3` (I3), and its `Δĉ` is the
+  downstream ceiling (I4).
 
 ### Value function, Shapley values, shares
 
@@ -184,7 +228,7 @@ Finer localization inside `R` (which of 016/017's reductions) is out of scope; i
 | I2 | `V(p_c) + P(p_c) = ΔA0(p_c)` (algebra) | 1e-12 | — |
 | I3 | the full composition's `Δx̂3` reproduces the measured `Δx3` at every changed position | relative 1e-4 | 8.5e-6 |
 | I4 | the full composition's `Δĉ` equals the ceiling's (the downstream program fed the measured `Δx3`) | max abs 1e-3 nats | 3.6e-5 |
-| I5 | the empty composition equals the committed Level 0 `Δx̂3` (017's chain) | exactly 0.0 | 0.0 |
+| I5 | the empty composition equals the Level 0 `Δx̂3` of 017's chain, `HeadChainModel.upstream(LEVEL0)` with the layer-1/2 reference rows through `p_c` | exactly 0.0 | 0.0 |
 | I6 | Shapley efficiency: `Σ_f φ_f = G` | 1e-12 · max(1, \|G\|) | — |
 | I7 | lock tables reproduced at confirm before any fresh prompt runs | digest equality | — |
 | R1 | calibration: the re-measured exposed `Δc` reproduces 021's digest-bound exposed table | max abs 1e-9 | — |
@@ -265,8 +309,8 @@ before `calibrate`. The calibration reads only its class and template counts.
 |---|---|---|---|---|---|---|
 | **C1** block-0 attention dominates the cue-final gap | cue-final | `s1 = σ_Bv + σ_Bp` | lower bound | `s1 ≥ F1`, `F1 = v₍₂₅₀₎` (2.5 % lower tail) | `s1 ≥ 0.50` | 0.936 |
 | **C2** the layer-1–2 reductions contribute little to the cue-final gap | cue-final | `s2 = σ_R` | upper bound | `s2 ≤ F2`, `F2 = v₍₉₇₅₁₎` (2.5 % upper tail: the 250th largest, about the 97.5th percentile) | `s2 ≤ 0.10` | 0.001 |
-| **C3** the coordinated gap is split between layer 0 and the reductions | coordinated | `s3 = σ_R` (so `1 − s3` is the layer-0 share, including `T`) | two-sided | `F3lo ≤ s3 ≤ F3hi`, `F3lo = v₍₁₂₅₎`, `F3hi = v₍₉₈₇₆₎` (1.25 % in each tail) | `0.10 ≤ s3 ≤ 0.90` | 0.444 |
-| **C4** block-0 cue→target attention contributes positively to the coordinated gap | coordinated | `s4 = σ_T` | lower bound | `s4 ≥ F4`, `F4 = v₍₂₅₀₎` (2.5 % lower tail) | `s4 > 0` | 0.155 |
+| **C3** the layer-1–2 reductions contribute little to the coordinated gap | coordinated | `s3 = σ_R` | upper bound | `s3 ≤ F3`, `F3 = v₍₉₇₅₁₎` (2.5 % upper tail) | `s3 ≤ 0.10` | 0.005 |
+| **C4** block-0 cue→target attention contributes positively to the coordinated gap | coordinated | `s4 = σ_T` | lower bound | `s4 ≥ F4`, `F4 = v₍₂₅₀₎` (2.5 % lower tail) | `s4 > 0` | 0.347 |
 
 C4's guard, `s4 > 0`, establishes a **positive** contribution only. It does not establish a large or substantial one,
 and no result of C4 is described that way; the calibrated envelope carries the quantitative comparison.
@@ -280,16 +324,13 @@ Undefined values (defined below) are placed at `−∞` when a lower bound is co
 computed, so they always count against the envelope.
 
 - **Lower bounds (C1, C4):** `F = v₍₂₅₀₎`, element `[249]`. At most 249 values lie strictly below it.
-- **Upper bound (C2):** `F = v₍₉₇₅₁₎ = v₍₁₀₀₀₀ − 250 + 1₎`, element `[9750]`. This is the 250th largest; at most 249
-  values lie strictly above it. It is **never** `v₍₂₅₀₎`.
-- **Two-sided (C3):**
-  - `F3lo = v₍₁₂₅₎`, element `[124]`;
-  - `F3hi = v₍₉₈₇₆₎ = v₍₁₀₀₀₀ − 125 + 1₎`, element `[9875]`.
+- **Upper bounds (C2, C3):** `F = v₍₉₇₅₁₎ = v₍₁₀₀₀₀ − 250 + 1₎`, element `[9750]`. This is the 250th largest; at
+  most 249 values lie strictly above it. It is **never** `v₍₂₅₀₎`.
 
 Each claim therefore has α = 0.025 in its own direction. Full float64 precision; nothing is rounded.
 
 **Direction checks** (frozen for the implementation): `F1 ≤ median(s1)`, `F4 ≤ median(s4)`, `F2 ≥ median(s2)`, and
-`F3lo ≤ median(s3) ≤ F3hi`. A violation means a tail was reversed; it is an implementation incident, and no floor table
+`F3 ≥ median(s3)`. A violation means a tail was reversed; it is an implementation incident, and no floor table
 is written.
 
 ### Condition results (frozen)
@@ -364,7 +405,7 @@ materialized draw, at `|k − d| / max(1, |d|) ≤ 1e-10`. This is implementatio
 | C1 | `F1 = v₍₂₅₀₎` |
 | C4 | `F4 = v₍₂₅₀₎` |
 | C2 | `F2 = v₍₉₇₅₁₎` (the upper tail, never `v₍₂₅₀₎`) |
-| C3 | `[v₍₁₂₅₎, v₍₉₈₇₆₎]` |
+| C3 | `F3 = v₍₉₇₅₁₎` (the upper tail, never `v₍₂₅₀₎`) |
 
 The direction checks run before anything is written. The meaning guards are separate predicates, not floors.
 
@@ -374,10 +415,9 @@ The direction checks run before anything is written. The meaning guards are sepa
 - Descriptively, the share of draws in which all four conditions of a population pass, and in which all eight do.
 - The medians and the tails, and which claims are guard-bound.
 
-**Calibration stop.** The stop triggers if **250 or more** values of a one-sided statistic (C1, C2, C4), or **125 or
-more** of C3's, are undefined. Under the frozen ±∞ convention, such an envelope would be infinite:
-- exactly 250 undefined values already make `v₍₂₅₀₎ = −∞` for C1 and C4, and `v₍₉₇₅₁₎ = +∞` for C2;
-- exactly 125 make `v₍₁₂₅₎ = −∞` and `v₍₉₈₇₆₎ = +∞` for C3.
+**Calibration stop.** The stop triggers if **250 or more** values of any claim's statistic are undefined; under
+revision 4 all four claims are one-sided. Under the frozen ±∞ convention, exactly 250 undefined values already make
+`v₍₂₅₀₎ = −∞` for C1 and C4, and `v₍₉₇₅₁₎ = +∞` for C2 and C3.
 
 `calibrate` then writes no floor table and stops for review. This is a pre-lock calibration stop for review. It is not
 scientific evidence, not an incident, and it is never retried automatically.
@@ -394,6 +434,10 @@ procedure).
 - `Δx3` relative error by composition and position.
 - Block 0's head profile: reference self-weights, per-head value-term norms, and the attention from `p_t` to `p_c`.
 - The new frames' validity verdicts.
+- **The historical comparator.** This is the Level 0 that Experiments 020 and 021 ran, with the layer-1/2 reference
+  rows through `p_t`. It is reported on the calibration pool, with its maximum difference from 021's recorded exposed
+  Level 0, and on the fresh populations: its flattened `R²` beside the 017-wired empty coalition's. It is descriptive
+  only and enters no game, floor or result.
 - After `report`, a separately labeled **exploratory replication on Experiment 021's spent set**. It uses 021's stored
   stage-2 measurements, digest-verified, and weight-only compositions, with no new prompt. It can change no floor,
   claim, threshold or label, and it is reported as exploratory.
@@ -434,19 +478,17 @@ conditions came out.
   The spike's localization generalized at that claim on that population.
 - **`ENVELOPE_ONLY_FAILURE`.** The meaning guard holds, but the share is outside the calibrated envelope. The fresh
   population's share differs from exposed-like sets beyond sampling variability, but the qualitative statement still
-  holds: dominant (C1), little (C2), split (C3), positive (C4). It is reported as a quantitative shift, never as a
+  holds: dominant (C1), little (C2, C3), positive (C4). It is reported as a quantitative shift, never as a
   refutation of the qualitative localization. For example, if C2's share leaves its tight envelope but stays `≤ 0.10`,
   the report says the reductions' share shifted relative to exposed-like sets and that "the reductions contribute
   little" still holds.
 - **`GUARD_FAILURE`.** The preregistered qualitative claim fails for that population:
   - C1: block-0 attention does not dominate the cue-final gap;
-  - C2: the reductions do not contribute little;
-  - C3: the coordinated error is not split, with one side below 10 %;
+  - C2: the reductions do not contribute little to the cue-final gap;
+  - C3: the reductions do not contribute little to the coordinated gap;
   - C4: the block-0 cue→target attention does not contribute positively.
 - **`NOT_INTERPRETABLE`.** Localization is not interpretable on that population's group because too little
   Level-0→ceiling gap remains. It is not a pass or a failure, and no example was removed to reach it.
-- **C3's direction** is always reported: below the band means the reductions matter less than in exposed-like sets;
-  above it, more.
 - **C4** never supports "substantial" or "large" wording; its qualitative content is a positive contribution.
 - **Incidents** carry no result.
 - **What a pass does not show.** It does not show that any corrected program would predict well: 022 builds none; the
@@ -458,7 +500,8 @@ conditions came out.
   chosen because `Δc` is what the project explains; `Δx3` errors are diagnostics.
 - The value/pattern split is definitional — the reference row against the row change, as in Experiment 017's `F`/`Π` —
   and is stated as such.
-- `R` lumps every 016/017 reduction together.
+- `R` lumps every 016/017 reduction together, wired as in 017. Experiment 020's wiring enters only the historical
+  comparator.
 - One checkpoint, three templates, four cue classes, 18 new frames, 79 exposed nouns.
 
 ## Review record
@@ -502,6 +545,23 @@ stays a pre-lock stop for review. This is revision 3. The review's other decisio
 recorded in the plan: the freeze before calibrate, the I3 norm, the R1 pre-check, the exclusion extraction, the draw
 order, the committed lock table, the median, the percentile, and the replication gates.
 
+**Implementation review of revision 3 and the decision (2026-09-23).** The independent implementation review found
+that Experiment 020's Level-0 program built the coordinated-frame layer-1/2 reference rows through `p_t` rather than
+through the cue position `p_c` validated in 017–019. A weight-only exposed diagnostic measured the effect:
+- coordinated Level-0 `Δc` `R²` of −0.146 as 020 wired it, against 0.555 as 017 wired it (36 frames × 175 cues);
+- `σ_R` of 0.415 against 0.003 (1,152 coordinated pairs).
+
+The reviewer accepted the block and chose to test the chain as 017 validated it:
+- errata for 020 and 021, with their frozen results unchanged;
+- 017's wiring as the authoritative reduced computation;
+- revision 3's C3 withdrawn and replaced, after the exposed spike was recomputed;
+- the 020 wiring kept only as a descriptive comparator.
+
+This supersedes one requirement from the review of the original spike: that 022 must not claim that all coordinated
+error lies in layer 0. That requirement rested on the defective wiring's 44 % reductions share. The new C3 claims only
+that the correctly wired reductions contribute little (`σ_R ≤ 0.10`). C4 separately claims that the copy pathway
+contributes positively. This is revision 4.
+
 ## Implementation boundary (for the plan, after approval)
 
 - **New module** `src/neural_decompiler/upstream_localization.py`:
@@ -515,14 +575,14 @@ order, the committed lock table, the median, the percentile, and the replication
 - **Frozen modules.** `readout_decompilation.py` (blob `caa73b40…`), `readout_calibration.py` (021's, at its closure
   blob) and the 011–019 modules are called and never edited, with blob checks as in 021.
 - **Tests:**
-  - the new chains equal `hp.exact_chain` and `HeadChainModel.upstream` bit for bit when only `ΔE` is supplied;
+  - the new chains equal `hp.exact_chain` and `HeadChainModel.upstream` bit for bit when only `ΔE` is supplied, the
+    reduced chain wired as in 017 (its cue row at `p_c`); the historical comparator reproduces 021's exposed Level 0;
   - the decomposition identity on the pinned model;
   - Shapley efficiency and permutation invariance;
   - the floor rule's exact order statistics: `F1`, `F4` from element `[249]` of the ascending array; `F2` from element
-    `[9750]` (a test fails if C2 takes `[249]`); C3 from elements `[124]` and `[9875]`;
+    `[9750]` (a test fails if C2 takes `[249]`), and so does `F3` (revision 4);
   - the direction checks and the undefined-value convention;
-  - the calibration stop at exactly 250 undefined values (C1, C2, C4) and exactly 125 (C3), with 249 and 124
-    proceeding;
+  - the calibration stop at exactly 250 undefined values for every claim, with 249 proceeding;
   - the four-way condition result (`NOT_INTERPRETABLE`, `GUARD_FAILURE`, `ENVELOPE_ONLY_FAILURE`, `PASS`) at every
     boundary: exactly `0.50`, `0.10`, `0.90` and `0`, and exactly on each envelope bound;
   - that the gap rule removes no unit;
@@ -531,11 +591,9 @@ order, the committed lock table, the median, the percentile, and the replication
 
 ## Stopping condition
 
-Stop after this revision. After approval, the sequence is:
+Stop after this revision, plan revision 3 and the implementation patch, for review. After approval, the sequence is:
 
-1. The plan.
-2. Implementation, with tier B tests.
-3. An independent review, then tier C on the clean gated commit.
+1. Tier C on the clean gated commit.
 4. `freeze` (tokenizer only), then commit.
 5. `calibrate` once, then install and commit the record; **stop for the floor review**.
 6. `lock` (no forward pass), then commit; the independent lock review and the sign-off.
@@ -557,7 +615,17 @@ Stop after this revision. After approval, the sequence is:
   - **Results.** The Y1/Y2 aggregate labels are replaced by eight individual condition results (`PASS`,
     `ENVELOPE_ONLY_FAILURE`, `GUARD_FAILURE`, `NOT_INTERPRETABLE`), with no pooling and no all-pass requirement.
   - **Validity.** Stated to select nothing.
-- Revision 3 (2026-09-23): the calibration stop's threshold is corrected from "more than 250" and "more than 125" to
-  "250 or more" (C1, C2, C4) and "125 or more" (C3). Exactly those counts already make the order statistic infinite
-  under the ±∞ convention. It stays a pre-lock stop for review: not evidence, not an incident, never retried
+- Revision 3 (2026-09-23, `b0c7382`): the calibration stop's threshold is corrected from "more than 250" and "more than
+  125" to "250 or more" (C1, C2, C4) and "125 or more" (C3). Exactly those counts already make the order statistic
+  infinite under the ±∞ convention. It stays a pre-lock stop for review: not evidence, not an incident, never retried
   automatically. Nothing else changes.
+- Revision 4 (2026-09-23): after the implementation review of revision 3.
+  - **Wiring.** The reduced layer-1–2 program is Experiment 017's chain wired as in 017 (layer-1/2 reference rows
+    through `p_c`), and I5 holds against it. Experiment 020's wiring, the defect recorded in the 020/021 errata, is kept
+    only as a descriptive historical comparator.
+  - **Spike.** Recomputed (exposed, weights only, no prompt).
+  - **C3.** Replaced by "the layer-1–2 reductions contribute little to the coordinated gap" (`s3 = σ_R ≤ F3 = v₍₉₇₅₁₎`,
+    guard `≤ 0.10`).
+  - **Stop and direction.** The calibration stop is 250 or more undefined values for every claim, and C3's direction
+    report is dropped.
+  - **Unchanged:** C1, C2 and C4, and everything else.
