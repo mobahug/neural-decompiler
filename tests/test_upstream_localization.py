@@ -437,7 +437,9 @@ def _stub_inputs(tokenizer, *, used_words=("alternate",), used_texts=("The studi
     used_frame = pm._build_new_frame(tokenizer, "cardinal", used_texts[0], cue_ids["cardinal"], "cardinal-used-1") if used_texts else None
     confirmation = SimpleNamespace(tokens=tuple({"word": w, "token_id": tokenizer.id(" " + w)} for w in planted), frames=(used_frame,) if used_frame else (), content_sha256="c" * 64)
     extension = SimpleNamespace(original_frames=frames, new_frames=(), cue_words=(), reference_cue_ids={}, content_sha256="e" * 64)
-    return ul.FrozenInputs(pool, {}, {}, {}, None, {}, {}, {"019": confirmation}, None, extension)
+    confirmations = {key: SimpleNamespace(tokens=(), frames=(), content_sha256=key * 16) for key in ul.EXCLUSION_CONFIRMATIONS}
+    confirmations["019"] = confirmation
+    return ul.FrozenInputs(pool, {}, {}, {}, None, {}, {}, confirmations, None, extension)
 
 
 def test_the_freeze_takes_the_first_eligible_entries_and_records_every_rejection():
@@ -476,8 +478,11 @@ def test_the_exclusion_is_structured_and_covers_every_source():
     assert tokenizer.id(" bulk") in exclusion["cue_token_ids"] and tokenizer.id(" alternate") in exclusion["cue_token_ids"]
     assert tokenizer.id(" two") in exclusion["cue_token_ids"]  # a frame's own plural cue
     assert "The studio makes {cue}" in exclusion["frame_texts"] and "The display contains {cue}" in exclusion["frame_texts"]
-    assert [entry["source"] for entry in exclusion["sources"]] == ["pool-020", "confirmation-019", "extension"]
+    assert [entry["source"] for entry in exclusion["sources"]] == ["pool-020", *(f"confirmation-{key}" for key in ul.EXCLUSION_CONFIRMATIONS), "extension"]
     assert exclusion["cue_token_ids_sha256"] == pm.sha256_text(pm.canonical_json(exclusion["cue_token_ids"]))
+    del inputs.confirmations["013"]
+    with pytest.raises(ul.PhaseError, match="missing"):
+        ul.extract_exclusion(inputs)
 
 
 def test_a_tampered_confirmation_file_is_refused(tmp_path, monkeypatch):
@@ -502,6 +507,33 @@ def test_a_tampered_confirmation_file_is_refused(tmp_path, monkeypatch):
     later = _stub_inputs(tokenizer, planted=(payload["cues"][0]["word"],))  # a unit that became used after the freeze
     with pytest.raises(ul.PhaseError):
         ul.load_confirmation_022(path, later)
+
+
+@pytest.mark.pythia_smoke
+def test_the_real_tokenizer_freeze_takes_the_designs_expected_units_and_writes_nothing():
+    """Plan Task 4: the tokenizer-only freeze with the real tokenizer and the real exclusion sources, in memory only
+    (nothing is written; the freeze phase itself is the later, authorized step). The picks must be the ones design
+    revision 3 documents from its tokenizer-only pre-check; every source carries its loader, paths and file digests."""
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    from transformers import AutoTokenizer
+
+    from neural_decompiler.models import PYTHIA_70M
+
+    tokenizer = AutoTokenizer.from_pretrained(PYTHIA_70M.model_id, revision=PYTHIA_70M.revision, local_files_only=True)
+    target = ROOT / ul.CONFIRMATION_RELATIVE_PATH
+    existed = target.exists()
+    payload = ul.freeze_payload(tokenizer, ul.load_frozen_inputs(ROOT))
+    assert target.exists() == existed
+    expected = {"determiner-like": ["alternate", "random", "standard", "regular", "normal", "common"], "quantity": ["bulk", "spare", "dense", "lengthy", "lots", "loads"],
+                "possessive-or-pronoun": ["thou", "yourself", "themselves", "ones", "others", "naught"], "adjective": ["square", "wild", "brave", "calm", "eager", "fierce"]}
+    assert {cls: [entry["word"] for entry in payload["cues"] if entry["class"] == cls] for cls in ul.CUE_CANDIDATES} == expected
+    assert {template: [entry["text_template"] for entry in payload["frames"] if entry["template_id"] == template] for template in ul.FRAME_CANDIDATES} == \
+        {template: list(texts[:6]) for template, texts in ul.FRAME_CANDIDATES.items()}
+    assert all(entry["p_t"] == entry["p_c"] + (1 if entry["template_id"] == ul.COORDINATED else 0) for entry in payload["frames"])
+    sources = payload["exclusion"]["sources"]
+    assert [entry["source"] for entry in sources] == ["pool-020", *(f"confirmation-{key}" for key in ul.EXCLUSION_CONFIRMATIONS), "extension"]
+    assert all(file["file_sha256"] and len(file["file_sha256"]) == 64 for entry in sources for file in entry["files"]) and all(entry["loader"] for entry in sources)
 
 
 # ---------------------------------------------------------------------------

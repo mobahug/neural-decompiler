@@ -21,7 +21,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -540,6 +540,11 @@ class FrozenInputs:
     confirmations: dict[str, Any]  # "006", "009", "011", …, "020" -> the frozen loader's object
     manifest: Any
     extension: Any
+    root: Path | None = None
+    sources: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)  # exclusion source -> {"loader", "paths"}
+
+
+EXCLUSION_CONFIRMATIONS = ("006", "009", "011", "012", "013", "014", "015", "016", "017", "018", "019", "020")
 
 
 def load_frozen_inputs(root: Path, *, lock_011_loader: Callable[[Path], Mapping[str, Any]] | None = None,
@@ -610,7 +615,16 @@ def load_frozen_inputs(root: Path, *, lock_011_loader: Callable[[Path], Mapping[
     digests = dict(digests) | dict(closure["digests"])
     confirmations = {"006": c006, "009": c009, "011": c011, "012": c012, "013": c013, "014": c014, "015": c015, "016": c016, "017": c017, "018": c018, "019": c019,
                      "020": confirmation_020}
-    return FrozenInputs(pool, lock_011, lock_012, lock_017, confirmation_020, closure, digests, confirmations, manifest, extension)
+    loaders = {"006": ("cd.load_confirmation", cd.CONFIRMATION_RELATIVE_PATH), "009": ("ht.load_confirmation", ht.CONFIRMATION_RELATIVE_PATH),
+               "011": ("er.load_confirmation", er.CONFIRMATION_RELATIVE_PATH), "012": ("lc.load_confirmation", lc.CONFIRMATION_RELATIVE_PATH),
+               "013": ("ap.load_confirmation", hp.EXPERIMENT_013_CONFIRMATION_PATH), "014": ("nf.load_confirmation", hp.EXPERIMENT_014_CONFIRMATION_PATH),
+               "015": ("atp.load_confirmation", hp.EXPERIMENT_015_CONFIRMATION_PATH), "016": ("fch.load_confirmation", hp.EXPERIMENT_016_CONFIRMATION_PATH),
+               "017": ("hp.load_confirmation", bc.EXPERIMENT_017_CONFIRMATION_PATH), "018": ("bc.load_confirmation", br.EXPERIMENT_018_CONFIRMATION_PATH),
+               "019": ("br.load_confirmation", rd.EXPERIMENT_019_CONFIRMATION_PATH), "020": ("rd.load_confirmation", rd.CONFIRMATION_RELATIVE_PATH)}
+    sources = {f"confirmation-{key}": {"loader": loader, "paths": [str(relative)]} for key, (loader, relative) in loaders.items()}
+    sources["pool-020"] = {"loader": "rd.build_pool_020", "paths": []}
+    sources["extension"] = {"loader": "pm.load_inputs", "paths": [pm.MANIFEST_RELATIVE_PATH, pm.EXTENSION_RELATIVE_PATH]}
+    return FrozenInputs(pool, lock_011, lock_012, lock_017, confirmation_020, closure, digests, confirmations, manifest, extension, Path(root), sources)
 
 
 # ---------------------------------------------------------------------------
@@ -909,20 +923,37 @@ def extract_exclusion(inputs: FrozenInputs) -> dict[str, Any]:
     (plan revision 2, Q5): the frozen loaders' ``tokens[*]["token_id"]`` and ``frames[*]`` of the 006–020
     confirmations, the 020 provenance pool (tokens, frames, reference and plural cues), and the screening manifest's
     extension (frames and cue words). Over-exclusion is allowed; under-exclusion is not."""
+    missing = [key for key in EXCLUSION_CONFIRMATIONS if key not in inputs.confirmations]
+    if missing:
+        raise PhaseError(f"exclusion sources are missing: confirmations {missing}; the freeze refuses an incomplete exclusion")
+
+    def provenance(source: str) -> dict[str, Any]:
+        entry = dict(inputs.sources.get(source) or {"loader": None, "paths": []})
+        files = []
+        for relative in entry.get("paths", []):
+            if inputs.root is None:
+                files.append({"path": relative, "file_sha256": None})
+                continue
+            if not (inputs.root / relative).exists():
+                raise PhaseError(f"exclusion source {relative} is missing")
+            files.append({"path": relative, "file_sha256": rc.file_sha256(inputs.root / relative)})
+        return {"source": source, "loader": entry.get("loader"), "files": files}
+
     pool = inputs.pool
     cue_ids: set[int] = {int(token_id) for _, token_id in pool.tokens}
     cue_ids |= {int(token_id) for token_id in pool.reference_ids.values()}
     cue_ids |= {int(pool.token_id(name)) for name in pool.plural_cue.values()}
     frames: list[pm.Frame] = list(pool.frames)
-    sources = [{"source": "pool-020", "loader": "rd.build_pool_020", "tokens": len(pool.tokens), "frames": len(pool.frames)}]
-    for key, confirmation in sorted(inputs.confirmations.items()):
+    sources = [{**provenance("pool-020"), "tokens": len(pool.tokens), "frames": len(pool.frames)}]
+    for key in EXCLUSION_CONFIRMATIONS:
+        confirmation = inputs.confirmations[key]
         cue_ids |= {int(token["token_id"]) for token in confirmation.tokens}
         frames += list(confirmation.frames)
-        sources.append({"source": f"confirmation-{key}", "content_sha256": confirmation.content_sha256, "tokens": len(confirmation.tokens), "frames": len(confirmation.frames)})
+        sources.append({**provenance(f"confirmation-{key}"), "content_sha256": confirmation.content_sha256, "tokens": len(confirmation.tokens), "frames": len(confirmation.frames)})
     extension = inputs.extension
     frames += list(extension.original_frames) + list(extension.new_frames)
     cue_ids |= {int(token_id) for _, token_id in extension.cue_words} | {int(token_id) for token_id in extension.reference_cue_ids.values()}
-    sources.append({"source": "extension", "content_sha256": extension.content_sha256, "frames": len(extension.original_frames) + len(extension.new_frames),
+    sources.append({**provenance("extension"), "content_sha256": extension.content_sha256, "frames": len(extension.original_frames) + len(extension.new_frames),
                     "tokens": len(extension.cue_words)})
     for frame in frames:
         cue_ids |= {int(token_id) for token_id in frame.cue_ids.values()}
@@ -978,7 +1009,7 @@ def freeze_payload(tokenizer: Any, inputs: FrozenInputs, *, model: Mapping[str, 
             if not low <= frame.p_c <= high:
                 rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": f"p_c {frame.p_c} outside {low}–{high}"})
                 continue
-            if (template == COORDINATED) != (frame.p_t == frame.p_c + 1):
+            if frame.p_t != frame.p_c + (1 if template == COORDINATED else 0):  # coordinated: one adjective token; cue-final: the cue is the target
                 rejected.append({"kind": "frame", "template": template, "candidate": text, "rank": rank, "reason": f"p_t {frame.p_t} against p_c {frame.p_c}"})
                 continue
             frames.append({**frame.to_dict(), "candidate_rank": rank})
@@ -1081,6 +1112,8 @@ def load_confirmation_022(path: Path, inputs: FrozenInputs) -> Confirmation022:
     exclusion = extract_exclusion(inputs)
     if payload["exclusion"]["cue_token_ids_sha256"] != exclusion["cue_token_ids_sha256"] or payload["exclusion"]["frame_texts_sha256"] != exclusion["frame_texts_sha256"]:
         raise PhaseError("the exclusion sets recorded at the freeze differ from those of the frozen inputs now")
+    if payload["exclusion"]["sources"] != exclusion["sources"]:
+        raise PhaseError("the exclusion sources (loaders, paths, file digests) recorded at the freeze differ from those of the frozen inputs now")
     used_ids, used_texts = set(exclusion["cue_token_ids"]), set(exclusion["frame_texts"])
     if {int(token["token_id"]) for token in confirmation.tokens} & used_ids or {frame.text_template for frame in confirmation.frames} & used_texts:
         raise PhaseError("a new cue or frame was used by an earlier experiment")
