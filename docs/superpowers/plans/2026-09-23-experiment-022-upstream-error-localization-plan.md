@@ -3,18 +3,58 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Plan revision 2** (2026-09-23). This revision records the reviewer's decisions on the plan's questions Q1–Q10 and
-tracks design revision 3 (`b0c7382`). The earlier open-questions table is now the frozen decisions table below. Q3, Q5
-and Q7 change the implementation, and Q2 is the design's off-by-one correction. One clarification remains (R-1, at the
-end of the decisions).
+**Plan revision 3** (2026-09-23). It tracks design revision 4 (`219cdc5`). The independent implementation review of
+the revision-2 implementation found that Experiment 020's Level-0 program built the coordinated-frame layer-1/2
+reference rows through `p_t` rather than through the cue position `p_c`. The 020/021 errata record that defect. The
+reviewer chose to test the chain as 017 validated it. This revision changes six things, listed under
+*Revision 3 changes* below:
+- the wiring of the reduced layer-1–2 program;
+- identity I5's reference;
+- claim C3, which becomes an upper bound;
+- the calibration stop, now the same for every claim;
+- a descriptive historical comparator;
+- replicate-021's I5.
 
-**Goal.** Implement the approved Experiment 022 design (revision 3, commit `b0c7382`): a prospective localization of
-the committed program's upstream `Δx3` error by an exact five-factor Shapley attribution, with four claims evaluated
-separately on Y1 (24 new cues × 108 exposed frames) and Y2 (24 new cues × 18 new frames). The floors are calibrated
-once on exposed data, and the eight condition results are reported individually.
+Every decision of plan revision 2 (Q1–Q10, R-1) stands, except where this revision names a change.
 
-**Spec.** `docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md`, revision 3,
-`b0c7382`. **The spec wins over this plan.** Planning changes nothing scientific: not the factors, the compositions,
+**Goal.** Implement the approved Experiment 022 design (revision 4, commit `219cdc5`): a prospective localization of
+the committed chain's upstream `Δx3` error by an exact five-factor Shapley attribution. The chain is wired as 017
+validated it. Four claims are evaluated separately on Y1 (24 new cues × 108 exposed frames) and on Y2 (24 new cues ×
+18 new frames). The floors are calibrated once on exposed data, and the eight condition results are reported
+individually.
+
+## Revision 3 changes (design revision 4)
+
+1. **Wiring.** `ul.reference_rows_017(programs, state)` builds the layer-1/2 reference rows from the locked residuals at
+   positions 0..`p_c`. `atp.ReferenceRow` takes the last residual as the cue row, so the cue row is `p_c`, as in 015–019.
+   It is the default of `pair_context` and is used by the calibration loop, `composition_tables` (Y1 at lock, Y2 at
+   stage 1), `target_gates` and `replicate_021`. No other composition code changes: `reduced_chain`,
+   `exact_chain_multi`, the factors and the readout are as before.
+2. **I5.** The empty coalition must equal, bit for bit, `rd.predicted_dx3` fed the 017 rows. This is 017's own
+   `HeadChainModel.upstream(LEVEL0)` so wired. A pinned-model test checks both equalities and that the rows' cue row
+   is `p_c`.
+3. **C3.** "The layer-1–2 reductions contribute little to the coordinated gap": `s3 = σ_R` (coordinated), an upper
+   bound `F3 = v₍₉₇₅₁₎` (element `[9750]`, as for C2), with guard `s3 ≤ 0.10` (`GUARD_C3_MAX`). The following are
+   removed: the two-sided band, `c3_low_rank`/`c3_high_rank`, C3's direction report, and the `c3_direction` semantics.
+   `SEMANTICS` gains the new readings of C3 and a `wiring` statement.
+4. **The calibration stop** is `≥ 250` undefined values for every claim (`undefined_threshold` = `lower_rank`).
+5. **The historical comparator.** `ul.reference_rows_020` and `ul.historical_level0` give the Level 0 that 020/021 ran
+   (rows through `p_t`). It is descriptive only:
+   - The calibration table carries it per exposed pair (`historical`, equal to the empty coalition in cue-final frames).
+   - R1's record adds its maximum difference from 021's exposed Level-0 column (`historical_level0_vs_021_max_difference`).
+     It is recorded and never enforced; a pinned-model test requires it `≤ 1e-9`.
+   - The exposed descriptives add its flattened `R²` per group and template.
+   - `target_gates` reports it beside the 017-wired empty coalition's `R²` on the fresh populations, and the report
+     prints both.
+6. **replicate-021's I5** now compares the historical comparator with 021's stored Level 0; that is the identity 021's
+   data can check. The 017-wired empty coalition differs in coordinated frames by design and is reported beside it,
+   descriptively. I4 and I6 are unchanged; I1–I3 stay unavailable.
+
+The constants `DESIGN` and `PLAN` name design revision 4 and plan revision 3. The design's commit is `219cdc5`; the plan
+revision's commit is recorded by the implementation patch, which follows it.
+
+**Spec.** `docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md`, revision 4,
+`219cdc5`. **The spec wins over this plan.** Planning changes nothing scientific: not the factors, the compositions,
 the value function, the claims, the guards, the order statistics, the gap rule, the populations, the candidate lists,
 the tolerances or the reporting semantics. Every place where the design was underspecified was put to the reviewer
 (Q1–Q10), and the decisions are frozen in the next section. The plan picks no scientific rule silently.
@@ -42,7 +82,7 @@ It adds only what the design adds:
   - `freeze` is tokenizer- and structure-only and uses no model output.
   - `calibrate` may depend only on the frozen file's counts, classes and templates, never on a fresh outcome.
   - `lock` binds the committed freeze artifact and its digest.
-- **Q2: the undefined-draw stop is at ≥ 250 (C1, C2, C4) and ≥ 125 (C3).** This is design revision 3. It is a pre-lock
+- **Q2: the undefined-draw stop is at ≥ 250 (C1, C2, C4) and ≥ 125 (C3); since plan revision 3, ≥ 250 for every claim.** This is design revision 3 (revision 4 for C3). It is a pre-lock
   calibration stop for review: not scientific evidence, not an incident, and never retried automatically.
 - **Q3: I3 is a per-position L2 relative error, matching the spike.** At each applicable changed position `p` (both
   `p_c` and `p_t` in coordinated frames; `p_c` in cue-final frames), the frozen formula is:
@@ -75,7 +115,8 @@ It adds only what the design adds:
   result.
 - **Q10: `replicate-021` checks only what 021 stored.** It checks the gates that can be rebuilt without new prompts:
   - I4, the full composition against 021's stored ceiling `Δĉ`;
-  - I5, the empty composition against 021's stored Level-0 `Δĉ`;
+  - I5, against 021's stored Level-0 `Δĉ`. Since plan revision 3 this is the historical comparator (020's wiring); the
+    017-wired empty composition is reported beside it;
   - I6, efficiency.
 
   I1–I3 are reported as unavailable, with no substitute. The record stays post-report and exploratory and cannot affect
@@ -99,8 +140,9 @@ coalition is a mask `m ∈ {0, …, 31}`; `|m|` is its popcount.
 **Pair composition.** For a pair `p` (cue `t`, frame `f`, reference `r`, positions `p_c`, `p_t`):
 - `u_pc(m) = ΔE + [m∋emb]·Δemb + [m∋Bv]·V(p_c) + [m∋Bp]·P(p_c)`.
 - `u_pt(m) = [m∋T]·ΔA0(p_t)` if `p_t ≠ p_c`. In cue-final frames there is **no `p_t` input at all**; see below.
-- `Δx̂3(m)` = the exact layers-1–2 program on `{p_c: u_pc(m)} (∪ {p_t: u_pt(m)})` if `m ∋ R`; otherwise the reduced
-  program with the same inputs.
+- `Δx̂3(m)` = the exact layers-1–2 program on `{p_c: u_pc(m)} (∪ {p_t: u_pt(m)})` if `m ∋ R`. Otherwise it is the
+  reduced program with the same inputs, wired as in 017, with its layer-1/2 reference rows through `p_c` (plan
+  revision 3).
 - `Δĉ(m)` = the frozen downstream readout of `Δx̂3(m)`, over the 79 scorable exposed nouns.
 
 **Cue-final frames: `T` as a null player, represented without an inconsistent game.**
@@ -189,9 +231,9 @@ compared with the kernel on the first 16 draws of each population and on the fre
 ## Constants (copied from revision 2; a tier-A test pins every one)
 
 - `DESIGN = {"path": …, "revision": 2, "commit": "0f1009c"}`; `B = 10_000`; `CROSS_CHECK_DRAWS = 16`.
-- Order statistics: `LOWER_RANK = 250` (element `[249]`); `UPPER_RANK = 9751` (element `[9750]`); `C3_LOW_RANK = 125`
-  (element `[124]`); `C3_HIGH_RANK = 9876` (element `[9875]`).
-- Guards: C1 `≥ 0.50`; C2 `≤ 0.10`; C3 `0.10 ≤ s ≤ 0.90`; C4 `> 0`.
+- Order statistics: `LOWER_RANK = 250` (element `[249]`) for C1 and C4; `UPPER_RANK = 9751` (element `[9750]`) for C2
+  and, since plan revision 3, C3.
+- Guards: C1 `≥ 0.50`; C2 `≤ 0.10`; C3 `≤ 0.10` (plan revision 3); C4 `> 0`.
 - Gap rule: `GAP_MIN = 0.02`, and `SST > 0`.
 - Tolerances:
 
@@ -209,8 +251,8 @@ compared with the kernel on the first 16 draws of each population and on the fre
 - Draw index: `int.from_bytes(sha256(f"022|primary|{b}|{s}|{i}".encode("utf-8")).digest()[:8], "big") % n_s`, with
   strata `cue/<class>` (slots 0–5) and `frame/<template>` (slots 0–5). Within a stratum, cues are ordered by token id
   and frames by `frame_id` *(Q6, frozen)*.
-- Calibration stop *(Q2, design revision 3)*: at **≥ 250** undefined values of C1, C2 or C4, or **≥ 125** of C3. It is
-  a stop for review, not an incident, and never automatically retried.
+- Calibration stop *(Q2, design revisions 3–4)*: at **≥ 250** undefined values of any claim's statistic. Since design
+  revision 4 every claim is one-sided. It is a stop for review, not an incident, and never automatically retried.
 - Report: `CDF percentile = #{defined draws ≤ fresh value} / #{defined draws}`, with the undefined count *(Q9)*.
 - Pools: `rc.production_pools(pool)` — cues 45/45/36/49, frames unscreened 14/14/14. The Y1-like frames are the 108
   exposed frames.
@@ -252,9 +294,9 @@ compared with the kernel on the first 16 draws of each population and on the fre
 - Envelopes:
   - `envelope(values, rank)` builds a lower view with undefined values at `−∞` and an upper view with undefined values
     at `+∞`, and takes ascending element `rank − 1` of the view that rank's direction uses;
-  - `condition_envelopes(values)` covers C1 and C4 lower, C2 upper, and C3 low and high;
+  - `condition_envelopes(values)` covers C1 and C4 lower and C2 upper; C3 was two-sided (low and high) and is upper since plan revision 3;
   - `direction_checks` (against the median of the defined draws, *Q8*), and `undefined_counts` with the stop at ≥ 250
-    or ≥ 125 *(Q2)*.
+    or ≥ 125 *(Q2; ≥ 250 for every claim since plan revision 3)*.
 - `i3_error(pred, measured, positions)` is the frozen Q3 formula; `cdf_percentile(values, fresh)` is the Q9 formula.
 - `classify(claim, value, interpretable, envelope)` returns one of the four results in precedence order. It is the only
   function that decides a result, both in the calibration's result rates and at `confirm`.
@@ -377,7 +419,7 @@ record without that key (021's convention).
   6. After all pairs, write the table and the gate maxima to disk.
   7. Enforce I1–I5 and **R1** (`Δc` against 021's table, after verifying the table's digest).
   8. Build the draws, then the kernel statistics for Y1-like and Y2-like, then the direct cross-check.
-  9. Compute the undefined counts and apply the stop at **≥ 250** (C1, C2, C4) or **≥ 125** (C3) *(Q2)*. Then compute
+  9. Compute the undefined counts and apply the stop at **≥ 250** for every claim *(Q2; plan revision 3)*. Then compute
      the envelopes, then the direction checks against the median of the defined draws *(Q8)*; a violation is an
      incident.
   10. Compute the result rates, the joint rates and the summaries.
@@ -475,16 +517,15 @@ These follow 021:
   values (1e-12) with `φ_T == 0.0` exactly; permutation invariance; closed-form games (additive, pure-interaction,
   identical players); kernel against the direct permutation formula on random games;
 - `group_sums` with multiplicities and two-pass pooling (a 1e4 offset test);
-- **the envelope indices:** C1 and C4 from `[249]`; **C2 from `[9750]` — a test fails if C2 uses `[249]`**; C3 from
-  `[124]` and `[9875]`;
+- **the envelope indices:** C1 and C4 from `[249]`; **C2 and C3 from `[9750]` — a test fails if either uses `[249]`**;
 - the undefined-value convention; the direction checks against the median of the defined draws *(Q8)*; the stop at
-  **exactly 250** undefined values (C1, C2, C4) and **exactly 125** (C3), with 249 and 124 proceeding *(Q2)*;
+  **exactly 250** undefined values for every claim, with 249 proceeding *(Q2, plan revision 3)*;
 - **the I3 formula** *(Q3)*: per position, the maximum over positions and pairs, the `1e-12` denominator floor, and a
   cue-final pair checked at `p_c` only;
 - **the CDF percentile** *(Q9)*: defined draws only, ties counted as `≤`, the undefined count reported;
 - **the table byte format** *(Q7)*: a write/read round trip is bitwise; the digest is stable across two writes; a
   single flipped bit fails validation;
-- **`classify`** at every boundary: exactly `0.50`, `0.10`, `0.90`, `0`, and exactly on each envelope bound (the
+- **`classify`** at every boundary: exactly `0.50`, `0.10` (C2 and C3), `0`, and exactly on each envelope bound (the
   inclusive `≥` and `≤`, the strict `> 0`), plus the precedence order;
 - the gap rule: exactly `0.02` counts as interpretable, `SST = 0` does not, and a mask of units is never altered;
 - golden values of the draw index for fixed `(b, s, i)`, and draw reproducibility;
@@ -508,7 +549,10 @@ These follow 021:
 - `replicate-021` refused before `report`, and reporting I1–I3 as unavailable.
 
 **Tier C** (the pinned model, `pythia_smoke`-style opt-in), on a handful of exposed pairs per template:
-- the bitwise equalities (`exact_chain_multi` against `hp.exact_chain`; `reduced_chain` against `rd.predicted_dx3`);
+- the bitwise equalities: `exact_chain_multi` against `hp.exact_chain`; `reduced_chain` against `rd.predicted_dx3` and
+  017's `HeadChainModel.upstream`, with the 017 rows (their cue row `p_c`, plan revision 3);
+- the historical comparator reproduces 021's exposed Level-0 column at `1e-9`, equals the empty coalition in cue-final
+  frames, and differs from it in coordinated frames (plan revision 3);
 - I1–I4 within tolerance, with I3 by the frozen formula;
 - the **R1 pre-calibration test** at `1e-9` against 021's digest-bound exposed table, on a sample of exposed pairs
   across all three templates *(Q4)*. It must pass on the clean gated commit before `calibrate` is authorized. On
@@ -582,6 +626,15 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 - [ ] An independent implementation and data-flow review against the spec; fixes in separate commits.
 - [ ] Tier B, then tier C on the clean gated commit. **Stop.**
 
+**Task 8: the design-revision-4 patch (plan revision 3)**
+- [x] Post-closure errata for 020 and 021 (`2320345`). Their frozen results, labels, digests and reports are unchanged.
+- [x] The exposed spike, recomputed weights-only under both wirings (the design's tables); design revision 4 (`219cdc5`).
+- [ ] This plan revision.
+- [ ] The implementation patch: the wiring, I5's reference, C3 as an upper bound, the stop at 250 for every claim,
+      the historical comparator, replicate-021's I5, the constants, and tests in tiers A, B and C.
+- [ ] An exposed-only, weights-only check that the patched production path reproduces the design's revision-4 spike
+      numbers. **Stop for review.**
+
 **Then the scientific sequence, each step only when authorized:**
 1. `freeze`, then commit.
 2. `calibrate` once, then install and commit the record; **stop for the floor review**.
@@ -592,8 +645,8 @@ Peak memory stays under about 2 GB. The machine should be on AC power with sleep
 
 ## Stopping conditions
 
-- Q1–Q10 are decided, and Q2 is in design revision 3. Implementation (Tasks 1–7) may begin once the reviewer accepts
-  this plan revision. R-1, the Y2 table committed at closure, is needed only by Task 6.
+- Q1–Q10 and R-1 are decided. Tasks 1–7 are implemented. Task 8 (design revision 4) stops for review before any
+  scientific step.
 - During implementation, stop at the end of Task 7.
 - Stop before each scientific step.
 - Stop on any incident, and on any stop-for-review condition.
