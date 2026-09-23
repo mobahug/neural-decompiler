@@ -64,6 +64,9 @@ EXTRACT_020_SHA256 = "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b801
 RESULTS_020_FILE_SHA256 = "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00"
 RESULTS_020_STATE_SHA256 = "2e5485dccb39c018eb02ee8d0a3086004399690a4dfd9c114008f057b23bf8f5"
 CONFIRMATION_020_SHA256 = "e098e2b44a1702d2b35c20db2ce111358897ea867996024c3e51a79f379c309d"
+LOCK_DIGESTS = {"lock_011": "769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b",  # the inherited objects, read verbatim
+                "lock_012": "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb",
+                "lock_017": "b4fc9014ade7d21d2cd2e5be391ce6234e46fb46887880c0c4d03517d411ed72"}
 
 # The draws and the floor rule.
 B = 10_000  # base draws
@@ -91,7 +94,7 @@ EXPECTED_COHORT_SIZES = (19, 20)
 RECONSTRUCTION_TOLERANCE = 1e-9  # the reproduction gate, every numeric leaf
 LOCKED_STATE_TOLERANCE = 1e-9  # the environment check: a re-captured reference state against 020's (013–019 constant)
 MIN_SCREENED_FRAMES_PER_TEMPLATE = 6  # the calibration precondition
-STATISTIC_AGREEMENT_TOLERANCE = 1e-10  # the kernel against 020's direct statistics
+STATISTIC_AGREEMENT_TOLERANCE = 1e-10  # the kernel against 020's direct statistics, on |kernel − direct| / max(1, |direct|)
 CROSS_CHECK_DRAWS = 16  # base draws of every row checked against the direct statistics inside calibrate
 
 Y1_STATISTICS = ("token_mean_r2", "pair_mean_r2", "cue_mae_k80", "pooled_mae")
@@ -111,8 +114,10 @@ class CrossCheckError(pm.IncidentError):
 
     def __init__(self, details: Mapping[str, Any]):
         self.details = dict(details)
-        super().__init__(f"kernel/direct cross-check failed: {self.details['max_difference']:.3e} above {STATISTIC_AGREEMENT_TOLERANCE:.0e} "
-                         f"at {self.details['outcome']} row {self.details['row']} draw {self.details['draw']} statistic {self.details['statistic']}")
+        difference = self.details["max_difference"]
+        super().__init__(f"kernel/direct cross-check failed: {'undefined on one side' if difference is None else f'{difference:.3e}'} above {STATISTIC_AGREEMENT_TOLERANCE:.0e} "
+                         f"at {self.details['outcome']} row {self.details['row']} draw {self.details['draw']} statistic {self.details['statistic']} "
+                         f"({self.details['n_exceeding']} of {self.details['n_checked']} row-draws exceed)")
 
 
 def tail_index(draws: int) -> int:
@@ -143,6 +148,17 @@ def tensor_digest(tensor: torch.Tensor) -> str:
     kind = "<i8" if array.dtype in (torch.int64, torch.int32) else "<f8"
     data = array.numpy().astype(kind, copy=False).tobytes()
     return hashlib.sha256(json.dumps(list(array.shape)).encode("ascii") + b"|" + kind.encode("ascii") + b"|" + data).hexdigest()
+
+
+def json_safe(value: Any) -> Any:
+    """A record fit for the results state: every non-finite float becomes ``None`` (an incident must always be writable)."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, Mapping):
+        return {key: json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    return value
 
 
 # ---------------------------------------------------------------------------
@@ -386,7 +402,7 @@ def _assert_keys(keys: Sequence[str], ledger: frozenset[str], manifest: frozense
 
 
 def rematerialize(model: Any, pool: Any, *, lock_011: Mapping[str, Any], lock_012: Mapping[str, Any], lock_017: Mapping[str, Any], exploration_020: Mapping[str, Any],
-                  ledger_020: frozenset[str], manifest_keys: frozenset[str], log: Callable[[str], None] | None = None,
+                  ledger_020: frozenset[str], manifest_keys: frozenset[str], confirmation: rd.Confirmation020, log: Callable[[str], None] | None = None,
                   executed: list[pm.Prompt] | None = None) -> tuple[ExposedTable, dict[str, Any]]:
     """Experiment 020's two exploration loops, with its own functions in its own order, on exactly its ledger keys.
 
@@ -407,8 +423,7 @@ def rematerialize(model: Any, pool: Any, *, lock_011: Mapping[str, Any], lock_01
     program = rd.ReadoutProgram.from_model(model)
     axis_T = pm.SiteAxis("T", torch.zeros_like(torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)), torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64), float(lock_011["sigma_T"]))
     nouns = rd.NounSet.build(weights, pool.nouns, [])
-    if nouns.fresh:
-        raise pm.IncidentError("the calibration noun set carries a fresh noun")
+    rd.assert_explore_nouns(nouns, confirmation)  # 020's own computation-time freshness guard
     executed = executed if executed is not None else []
     reference_prompts = [pool.reference_prompt(frame) for frame in pool.frames]
     _assert_keys([prompt.key for prompt in reference_prompts], ledger_020, manifest_keys, "reference captures")
@@ -426,7 +441,9 @@ def rematerialize(model: Any, pool: Any, *, lock_011: Mapping[str, Any], lock_01
             drift = candidate
     bases_now = _bases_to_json(rd.template_bases_020(states, pool.frames))
     base_drift = _difference(bases_now, exploration_020["template_bases"], "template_bases")
-    environment = {"max_state_drift": drift[0], "at": drift[1], "max_template_base_drift": base_drift[0], "template_base_at": base_drift[1], "tolerance": LOCKED_STATE_TOLERANCE}
+    environment = {"max_state_drift": drift[0] if math.isfinite(drift[0]) else None, "at": drift[1], "structural_state_mismatch": not math.isfinite(drift[0]),
+                   "max_template_base_drift": base_drift[0] if math.isfinite(base_drift[0]) else None, "template_base_at": base_drift[1],
+                   "structural_template_base_mismatch": not math.isfinite(base_drift[0]), "tolerance": LOCKED_STATE_TOLERANCE}
     if not (drift[0] <= LOCKED_STATE_TOLERANCE and base_drift[0] <= LOCKED_STATE_TOLERANCE):
         raise EnvironmentIncident(environment, executed)
     say(f"environment check: states {drift[0]:.1e}, template bases {base_drift[0]:.1e} (tolerance {LOCKED_STATE_TOLERANCE:.0e})")
@@ -478,8 +495,8 @@ class EnvironmentIncident(pm.IncidentError):
     def __init__(self, environment: Mapping[str, Any], executed: Sequence[pm.Prompt]):
         self.environment = dict(environment)
         self.executed = list(executed)
-        super().__init__(f"environment check failed: state drift {environment['max_state_drift']:.3e} at {environment['at']}, template-base drift "
-                         f"{environment['max_template_base_drift']:.3e}, above the frozen tolerance {LOCKED_STATE_TOLERANCE:.0e}")
+        super().__init__(f"environment check failed: state drift {environment['max_state_drift']} at {environment['at']}, template-base drift "
+                         f"{environment['max_template_base_drift']} at {environment['template_base_at']} (None: a structural mismatch), above the frozen tolerance {LOCKED_STATE_TOLERANCE:.0e}")
 
 
 def reproduction_gate(table: ExposedTable, exploration_020: Mapping[str, Any]) -> dict[str, Any]:
@@ -525,7 +542,10 @@ def screen_precondition(pools: CalibrationPools) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# The statistics kernel: sufficient sums, vectorized over draws. One implementation for the draws and for confirm.
+# The statistics kernel: per-group moments, vectorized over draws. One implementation for the draws and for confirm.
+# Every sum of squared deviations is a two-pass sum inside a group, combined across groups with the pooled-variance
+# identity Σ M2ᵢ + Σ nᵢ (x̄ᵢ − x̄)² — never the one-pass Σy² − (Σy)²/n, whose cancellation is the only realistic way
+# the kernel could drift from Experiment 020's own two-pass ``_r2``.
 
 
 def _nan_where(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -536,12 +556,18 @@ def _r2_rows(y: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
     """``R²`` along the last dimension (020's ``_r2`` per row); NaN where the measured variance is zero."""
     sst = ((y - y.mean(dim=-1, keepdim=True)) ** 2).sum(dim=-1)
     sse = ((y - x) ** 2).sum(dim=-1)
-    return _nan_where(1.0 - sse / torch.where(sst > 0, sst, torch.ones_like(sst)), ~(sst > 0))
+    return _r2_moments(sse, sst)
 
 
-def _r2_sums(sse: torch.Tensor, sy: torch.Tensor, syy: torch.Tensor, count: Any) -> torch.Tensor:
-    sst = syy - sy * sy / count
-    return _nan_where(1.0 - sse / torch.where(sst > 0, sst, torch.ones_like(sst)), ~(sst > 0))
+def _r2_moments(sse: torch.Tensor, m2: torch.Tensor) -> torch.Tensor:
+    return _nan_where(1.0 - sse / torch.where(m2 > 0, m2, torch.ones_like(m2)), ~(m2 > 0))
+
+
+def _combine(counts: torch.Tensor, means: torch.Tensor, m2: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Pooled count, mean and centered sum of squares of groups along the last dimension."""
+    total = counts.sum(dim=-1)
+    grand = (counts * means).sum(dim=-1) / total
+    return total, grand, m2.sum(dim=-1) + (counts * (means - grand.unsqueeze(-1)) ** 2).sum(dim=-1)
 
 
 def _kth(values: torch.Tensor, k: int, *, largest: bool) -> torch.Tensor:
@@ -570,16 +596,17 @@ class CueSums:
     token_x: torch.Tensor
     mae: torch.Tensor
     ae_sum: torch.Tensor
-    pm_sy: torch.Tensor
-    pm_syy: torch.Tensor
-    pm_sse: torch.Tensor
-    flat: Mapping[str, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]  # column -> (Σy, Σy², Σ(y − x)²)
+    pm_mean: torch.Tensor  # the cue's pair noun-means: their mean,
+    pm_m2: torch.Tensor  # their centered sum of squares,
+    pm_sse: torch.Tensor  # and Σ(ȳ − x̄)² against the predicted pair means
+    flat: Mapping[str, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]  # column -> (mean y, centered Σ y over pairs × nouns, Σ(y − x)²)
 
 
 def cue_sums(table: rd.ScoringTable, cues: Sequence[str], *, columns: Mapping[str, torch.Tensor] | None = None) -> CueSums:
     groups = table.by("cue")
     y_all, x_all = table.measured.double(), table.predicted.double()
-    fields: dict[str, list[float]] = {name: [] for name in ("n_pairs", "token_y", "token_x", "mae", "ae_sum", "pm_sy", "pm_syy", "pm_sse")}
+    names = ("n_pairs", "token_y", "token_x", "mae", "ae_sum", "pm_mean", "pm_m2", "pm_sse")
+    fields: dict[str, list[float]] = {name: [] for name in names}
     flat: dict[str, list[list[float]]] = {name: [[], [], []] for name in (columns or {})}
     for cue in cues:
         if cue not in groups:
@@ -589,26 +616,27 @@ def cue_sums(table: rd.ScoringTable, cues: Sequence[str], *, columns: Mapping[st
         error = y - x
         ybar, xbar = y.mean(dim=1), x.mean(dim=1)
         for name, value in (("n_pairs", len(rows)), ("token_y", float(y.mean())), ("token_x", float(x.mean())), ("mae", float(error.abs().mean())), ("ae_sum", float(error.abs().sum())),
-                            ("pm_sy", float(ybar.sum())), ("pm_syy", float((ybar * ybar).sum())), ("pm_sse", float(((ybar - xbar) ** 2).sum()))):
+                            ("pm_mean", float(ybar.mean())), ("pm_m2", float(((ybar - ybar.mean()) ** 2).sum())), ("pm_sse", float(((ybar - xbar) ** 2).sum()))):
             fields[name].append(float(value))
         for name, predicted in (columns or {}).items():
             z = predicted.double()[rows]
-            flat[name][0].append(float(y.sum())); flat[name][1].append(float((y * y).sum())); flat[name][2].append(float(((y - z) ** 2).sum()))
+            flat[name][0].append(float(y.mean())); flat[name][1].append(float(((y - y.mean()) ** 2).sum())); flat[name][2].append(float(((y - z) ** 2).sum()))
     tensor = lambda values: torch.tensor(values, dtype=torch.float64)  # noqa: E731
-    return CueSums(tuple(cues), int(y_all.shape[1]), *(tensor(fields[name]) for name in ("n_pairs", "token_y", "token_x", "mae", "ae_sum", "pm_sy", "pm_syy", "pm_sse")),
-                   {name: tuple(tensor(part) for part in parts) for name, parts in flat.items()})
+    return CueSums(tuple(cues), int(y_all.shape[1]), *(tensor(fields[name]) for name in names), {name: tuple(tensor(part) for part in parts) for name, parts in flat.items()})
 
 
 def y1_statistics(sums: CueSums, cue_index: torch.Tensor) -> dict[str, torch.Tensor]:
     """S1–S4 for every row of ``cue_index`` ([draws, cues] of positions in ``sums.cues``; duplicates are units)."""
     n = int(cue_index.shape[1])
-    n_pairs = sums.n_pairs[cue_index].sum(dim=1)
+    counts = sums.n_pairs[cue_index]
+    _, _, pm_m2 = _combine(counts, sums.pm_mean[cue_index], sums.pm_m2[cue_index])
     out = {"token_mean_r2": _r2_rows(sums.token_y[cue_index], sums.token_x[cue_index]),
-           "pair_mean_r2": _r2_sums(sums.pm_sse[cue_index].sum(dim=1), sums.pm_sy[cue_index].sum(dim=1), sums.pm_syy[cue_index].sum(dim=1), n_pairs),
+           "pair_mean_r2": _r2_moments(sums.pm_sse[cue_index].sum(dim=1), pm_m2),
            "cue_mae_k80": _kth(sums.mae[cue_index], k_of(SHARES["cue"], n), largest=False),
-           "pooled_mae": sums.ae_sum[cue_index].sum(dim=1) / (n_pairs * sums.n_nouns)}
-    for name, (sy, syy, se2) in sums.flat.items():
-        out[f"flattened_r2:{name}"] = _r2_sums(se2[cue_index].sum(dim=1), sy[cue_index].sum(dim=1), syy[cue_index].sum(dim=1), n_pairs * sums.n_nouns)
+           "pooled_mae": sums.ae_sum[cue_index].sum(dim=1) / (counts.sum(dim=1) * sums.n_nouns)}
+    for name, (mean_y, m2_y, se2) in sums.flat.items():
+        _, _, m2 = _combine(counts * sums.n_nouns, mean_y[cue_index], m2_y[cue_index])
+        out[f"flattened_r2:{name}"] = _r2_moments(se2[cue_index].sum(dim=1), m2)
     return out
 
 
@@ -620,9 +648,9 @@ class GridSums:
     frames: tuple[str, ...]
     templates: tuple[str, ...]  # per frame
     n_nouns: int
-    sy: torch.Tensor  # [cues, frames]
-    syy: torch.Tensor
-    sx: torch.Tensor
+    mean_y: torch.Tensor  # [cues, frames]
+    m2_y: torch.Tensor
+    mean_x: torch.Tensor
     se2: torch.Tensor
     flat_se2: Mapping[str, torch.Tensor]
 
@@ -635,35 +663,40 @@ def grid_sums(table: rd.ScoringTable, cues: Sequence[str], frames: Sequence[str]
     except KeyError as error:
         raise PhaseError(f"the table holds no pair {error.args[0]}") from None
     y, x = table.measured.double()[rows], table.predicted.double()[rows]  # [cues, frames, nouns]
+    mean_y = y.mean(dim=-1)
     flat = {name: ((y - predicted.double()[rows]) ** 2).sum(dim=-1) for name, predicted in (columns or {}).items()}
-    return GridSums(tuple(cues), tuple(frames), tuple(template_of[frame] for frame in frames), int(y.shape[-1]), y.sum(dim=-1), (y * y).sum(dim=-1), x.sum(dim=-1),
-                    ((y - x) ** 2).sum(dim=-1), flat)
+    return GridSums(tuple(cues), tuple(frames), tuple(template_of[frame] for frame in frames), int(y.shape[-1]), mean_y, ((y - mean_y.unsqueeze(-1)) ** 2).sum(dim=-1),
+                    x.mean(dim=-1), ((y - x) ** 2).sum(dim=-1), flat)
 
 
 def y2_slot_sums(grid: GridSums, cue_index: torch.Tensor, frame_index: torch.Tensor) -> dict[str, Any]:
-    """Per draw and frame slot: the sums over the draw's cues ([draws, frame slots])."""
-    gather = lambda values: values[cue_index[:, :, None], frame_index[:, None, :]].sum(dim=1)  # noqa: E731
-    out: dict[str, Any] = {"sy": gather(grid.sy), "syy": gather(grid.syy), "sx": gather(grid.sx), "se2": gather(grid.se2), "count": float(cue_index.shape[1] * grid.n_nouns)}
+    """Per draw and frame slot, pooled over the draw's cues ([draws, frame slots])."""
+    gather = lambda values: values[cue_index[:, :, None], frame_index[:, None, :]].transpose(1, 2)  # noqa: E731  [draws, frame slots, cues]
+    mean_y = gather(grid.mean_y)
+    count, pooled_mean, pooled_m2 = _combine(torch.full_like(mean_y, float(grid.n_nouns)), mean_y, gather(grid.m2_y))
+    out: dict[str, Any] = {"count": count, "mean_y": pooled_mean, "m2": pooled_m2, "mean_x": gather(grid.mean_x).mean(dim=-1), "se2": gather(grid.se2).sum(dim=-1)}
     for name, values in grid.flat_se2.items():
-        out[f"se2:{name}"] = gather(values)
+        out[f"se2:{name}"] = gather(values).sum(dim=-1)
     return out
 
 
 def y2_statistics(slots: Mapping[str, Any], columns: Sequence[int], column_templates: Sequence[str]) -> dict[str, torch.Tensor]:
     """S5–S8 on the selected frame slots; ``column_templates`` names each selected slot's template."""
     cols = torch.tensor(list(columns), dtype=torch.int64)
-    sy, syy, sx, se2, count = slots["sy"][:, cols], slots["syy"][:, cols], slots["sx"][:, cols], slots["se2"][:, cols], slots["count"]
+    count, mean_y, m2, mean_x, se2 = (slots[key][:, cols] for key in ("count", "mean_y", "m2", "mean_x", "se2"))
     n = len(columns)
-    out = {"frame_mean_r2": _r2_rows(sy / count, sx / count), "frame_r2_k75": _kth(_r2_sums(se2, sy, syy, count), k_of(SHARES["frame"], n), largest=True)}
+    out = {"frame_mean_r2": _r2_rows(mean_y, mean_x), "frame_r2_k75": _kth(_r2_moments(se2, m2), k_of(SHARES["frame"], n), largest=True)}
     for name, keep in (("cue_final_r2", lambda template: template != pm.COORDINATED_TEMPLATE), ("coordinated_r2", lambda template: template == pm.COORDINATED_TEMPLATE)):
         subset = [position for position, template in enumerate(column_templates) if keep(template)]
         if subset:
             part = torch.tensor(subset, dtype=torch.int64)
-            out[name] = _r2_sums(se2[:, part].sum(dim=1), sy[:, part].sum(dim=1), syy[:, part].sum(dim=1), count * len(subset))
+            _, _, pooled = _combine(count[:, part], mean_y[:, part], m2[:, part])
+            out[name] = _r2_moments(se2[:, part].sum(dim=1), pooled)
         else:
-            out[name] = torch.full((sy.shape[0],), math.nan, dtype=torch.float64)
+            out[name] = torch.full((mean_y.shape[0],), math.nan, dtype=torch.float64)
+    _, _, pooled_all = _combine(count, mean_y, m2)
     for key in [key for key in slots if key.startswith("se2:")]:
-        out[f"flattened_r2:{key[4:]}"] = _r2_sums(slots[key][:, cols].sum(dim=1), sy.sum(dim=1), syy.sum(dim=1), count * n)
+        out[f"flattened_r2:{key[4:]}"] = _r2_moments(slots[key][:, cols].sum(dim=1), pooled_all)
     return out
 
 
@@ -673,35 +706,40 @@ class NounCueSums:
 
     nouns: tuple[str, ...]
     cues: tuple[str, ...]
-    sy: torch.Tensor  # [nouns, cues]
-    syy: torch.Tensor
-    sx: torch.Tensor
-    sxy: torch.Tensor
+    count: torch.Tensor  # [nouns, cues]
+    mean_y: torch.Tensor
+    m2_y: torch.Tensor
     se2: torch.Tensor
-    count: torch.Tensor
+    sxy: torch.Tensor
+    syy: torch.Tensor
+    sd: torch.Tensor  # Σ(x − y)
 
 
 def noun_cue_sums(table: rd.ScoringTable, cues: Sequence[str], nouns: Sequence[str]) -> NounCueSums:
     groups = table.by("cue")
     position = {key: index for index, key in enumerate(table.noun_keys)}
     columns = torch.tensor([position[key] for key in nouns], dtype=torch.int64)
-    parts: dict[str, list[torch.Tensor]] = {name: [] for name in ("sy", "syy", "sx", "sxy", "se2", "count")}
+    names = ("count", "mean_y", "m2_y", "se2", "sxy", "syy", "sd")
+    parts: dict[str, list[torch.Tensor]] = {name: [] for name in names}
     for cue in cues:
         if cue not in groups:
             raise PhaseError(f"the table holds no pair of the cue {cue}")
         rows = groups[cue]
         y, x = table.measured.double()[rows][:, columns], table.predicted.double()[rows][:, columns]
-        parts["sy"].append(y.sum(dim=0)); parts["syy"].append((y * y).sum(dim=0)); parts["sx"].append(x.sum(dim=0)); parts["sxy"].append((x * y).sum(dim=0))
-        parts["se2"].append(((y - x) ** 2).sum(dim=0)); parts["count"].append(torch.full((len(nouns),), float(len(rows)), dtype=torch.float64))
-    return NounCueSums(tuple(nouns), tuple(cues), *(torch.stack(parts[name], dim=1) for name in ("sy", "syy", "sx", "sxy", "se2", "count")))
+        mean_y = y.mean(dim=0)
+        for name, value in (("count", torch.full((len(nouns),), float(len(rows)), dtype=torch.float64)), ("mean_y", mean_y), ("m2_y", ((y - mean_y) ** 2).sum(dim=0)),
+                            ("se2", ((y - x) ** 2).sum(dim=0)), ("sxy", (x * y).sum(dim=0)), ("syy", (y * y).sum(dim=0)), ("sd", (x - y).sum(dim=0))):
+            parts[name].append(value)
+    return NounCueSums(tuple(nouns), tuple(cues), *(torch.stack(parts[name], dim=1) for name in names))
 
 
 def y3_slot_statistics(sums: NounCueSums, noun_index: torch.Tensor, cue_index: torch.Tensor) -> dict[str, torch.Tensor]:
-    """Per draw and noun slot, over the draw's cues: ``R²``, slope and bias ([draws, noun slots])."""
-    gather = lambda values: values[noun_index[:, :, None], cue_index[:, None, :]].sum(dim=2)  # noqa: E731
-    sy, syy, sx, sxy, se2, count = (gather(values) for values in (sums.sy, sums.syy, sums.sx, sums.sxy, sums.se2, sums.count))
-    slope = _nan_where(sxy / torch.where(syy > 0, syy, torch.ones_like(syy)), ~(syy > 0))
-    return {"r2": _r2_sums(se2, sy, syy, count), "slope": slope, "bias": (sx - sy) / count}
+    """Per draw and noun slot, pooled over the draw's cues: ``R²``, slope and bias ([draws, noun slots])."""
+    gather = lambda values: values[noun_index[:, :, None], cue_index[:, None, :]]  # noqa: E731  [draws, noun slots, cues]
+    count, _, m2 = _combine(gather(sums.count), gather(sums.mean_y), gather(sums.m2_y))
+    syy = gather(sums.syy).sum(dim=-1)
+    slope = _nan_where(gather(sums.sxy).sum(dim=-1) / torch.where(syy > 0, syy, torch.ones_like(syy)), ~(syy > 0))
+    return {"r2": _r2_moments(gather(sums.se2).sum(dim=-1), m2), "slope": slope, "bias": gather(sums.sd).sum(dim=-1) / count}
 
 
 def y3_statistics(slot_statistics: Mapping[str, torch.Tensor], columns: Sequence[int]) -> dict[str, torch.Tensor]:
@@ -780,14 +818,16 @@ def direct_y3(table: rd.ScoringTable, cue_units: Sequence[str], noun_units: Sequ
 
 
 def agreement(kernel: Mapping[str, float | None], direct: Mapping[str, float | None]) -> tuple[float, str]:
-    """The largest kernel/direct difference over the statistics and its name; one side undefined is ∞."""
+    """The largest kernel/direct difference over the statistics and its name, as |kernel − direct| / max(1, |direct|):
+    absolute for well-conditioned values, relative where a statistic is itself ill-conditioned (an ``R²`` far below
+    zero amplifies float reassociation by its own magnitude). One side undefined is ∞."""
     worst_value, worst_name = -1.0, ""
     for name, value in direct.items():
         other = kernel.get(name)
         if value is None or other is None:
             difference = 0.0 if value is None and other is None else math.inf
         else:
-            difference = abs(float(value) - float(other))
+            difference = abs(float(value) - float(other)) / max(1.0, abs(float(value)))
         if difference > worst_value:
             worst_value, worst_name = difference, name
     return max(worst_value, 0.0), worst_name
@@ -955,7 +995,8 @@ def cross_check(inputs: KernelInputs, draws: Mapping[str, Any], statistics: Mapp
     """
     count = min(CROSS_CHECK_DRAWS if n_draws is None else n_draws, int(draws["cue"].shape[0]))
     worst: dict[str, Any] = {"max_difference": -1.0}
-    checked = 0
+    first: dict[str, Any] | None = None
+    checked = exceeding = 0
     plan = [("Y1", ())] + [("Y2", composition) for composition in rows.get("Y2", ())] + [("Y3", composition) for composition in rows.get("Y3", ())]
     for outcome, composition in plan:
         key = row_key(composition)
@@ -974,8 +1015,13 @@ def cross_check(inputs: KernelInputs, draws: Mapping[str, Any], statistics: Mapp
             if difference > worst["max_difference"]:
                 worst = {"max_difference": difference, **location}
             if not difference <= STATISTIC_AGREEMENT_TOLERANCE:
-                raise CrossCheckError({"max_difference": difference if math.isfinite(difference) else float("inf"), **location, "n_checked": checked})
-    return {**worst, "tolerance": STATISTIC_AGREEMENT_TOLERANCE, "draws_per_row": count, "n_checked": checked}
+                exceeding += 1
+                first = first or {"max_difference": difference, **location}
+    result = json_safe({**worst, "tolerance": STATISTIC_AGREEMENT_TOLERANCE, "scale": "|kernel - direct| / max(1, |direct|)", "draws_per_row": count, "n_checked": checked,
+                        "n_exceeding": exceeding, "first_exceeding": first})
+    if exceeding:
+        raise CrossCheckError(result)  # the worst location, recorded; nothing after this point runs, no floor exists
+    return result
 
 
 def _row_entry(outcome: str, composition: Sequence[int], statistics: Mapping[str, torch.Tensor]) -> tuple[dict[str, Any], dict[str, list[float | None]], list[bool]]:
@@ -1067,7 +1113,7 @@ def run_calibration(table: ExposedTable, pools: CalibrationPools, *, log: Callab
     checked = cross_check(inputs, primary, statistics, rows)  # raises before any floor exists
     say(f"kernel/direct cross-check: max difference {checked['max_difference']:.1e} over {checked['n_checked']} row-draws")
     record_rows: dict[str, list[dict[str, Any]]] = {"Y1": [], "Y2": [], "Y3": []}
-    arrays: dict[str, dict[str, torch.Tensor]] = {"Y1": {}, "Y2": {}, "Y3": {}}
+    arrays: dict[str, dict[str, torch.Tensor]] = {"Y1": {}, "Y2": {}, "Y3": {}}  # plus "ceiling:Y1" / "ceiling:Y2": [draws, (level 0, ceiling)]
     full_values: dict[str, dict[str, list[float | None]]] = {}
     full_joint: dict[str, list[bool]] = {}
     for outcome in ("Y1", "Y2", "Y3"):
@@ -1075,7 +1121,10 @@ def run_calibration(table: ExposedTable, pools: CalibrationPools, *, log: Callab
             key = row_key(composition)
             entry, values, per_draw = _row_entry(outcome, composition, statistics[outcome]["all" if outcome == "Y1" else key])
             record_rows[outcome].append(entry)
-            arrays[outcome][key] = torch.stack([statistics[outcome]["all" if outcome == "Y1" else key][name] for name in STATISTICS[outcome]], dim=1)
+            row_values = statistics[outcome]["all" if outcome == "Y1" else key]
+            arrays[outcome][key] = torch.stack([row_values[name] for name in STATISTICS[outcome]], dim=1)
+            if "flattened_r2:ceiling" in row_values:  # the downstream ceiling's distribution, for placing the fresh ceiling
+                arrays.setdefault(f"ceiling:{outcome}", {})[key] = torch.stack([row_values["flattened_r2:level0"], row_values["flattened_r2:ceiling"]], dim=1)
             if tuple(composition) == FULL_ROWS[outcome]:
                 full_values[outcome], full_joint[outcome] = values, per_draw
     joint_all = sum(1 for b in range(total) if full_joint["Y1"][b] and full_joint["Y2"][b] and full_joint["Y3"][b]) / total
@@ -1140,6 +1189,10 @@ def floor_tables(record: Mapping[str, Any]) -> dict[str, Any]:
 def verify_calibration_record(record: Mapping[str, Any]) -> None:
     if record.get("experiment") != "021" or record.get("content_sha256") != content_digest(record):
         raise PhaseError("the calibration record's content digest does not verify")
+    constants = record["constants"]
+    expected = {"B": B, "tail_index": tail_index(B), "alpha_per_mille": ALPHA_PER_MILLE, "shares": dict(SHARES), "slots": dict(SLOTS), "kinds": dict(KIND)}
+    if {key: constants.get(key) for key in expected} != expected or record.get("program_blob_sha1") != PROGRAM_BLOB_SHA1 or record.get("design") != dict(DESIGN):
+        raise PhaseError("the calibration record was computed under different frozen constants, program or design")
     if len(record["rows"]["Y1"]) != 1 or [entry["key"] for entry in record["rows"]["Y2"]] != [row_key(c) for c in y2_rows()] or [entry["key"] for entry in record["rows"]["Y3"]] != [row_key(c) for c in y3_rows()]:
         raise PhaseError("the calibration record does not hold exactly the admissible rows")
 
@@ -1204,9 +1257,10 @@ def select_y3_row(measured_fresh: torch.Tensor, nouns: Sequence[pm.Noun], tables
 
 
 def stage_two_021(model: Any, pool: Any, confirmation: rd.Confirmation020, lock: Mapping[str, Any], lock_011: Mapping[str, Any], lock_012: Mapping[str, Any],
-                  lock_017: Mapping[str, Any], stage1: Mapping[str, Any], *, log: Any = None) -> dict[str, Any]:
+                  lock_017: Mapping[str, Any], stage1: Mapping[str, Any], *, log: Any = None, enforce: bool = True) -> dict[str, Any]:
     """Experiment 020's stage 2 (``rd.stage_two``), the same calls in the same order, additionally keeping the
-    ceiling: the same program fed each target pair's *measured* ``Δx3``, from the same single measurement."""
+    ceiling: the same program fed each target pair's *measured* ``Δx3``, from the same single measurement. With
+    ``enforce=False`` the identity maxima are returned unenforced, so the caller can persist the measurements first."""
     say = log or (lambda message: None)
     weights = pm.Weights.from_model(model)
     head = ht.HeadWeights.from_model(model)  # noqa: F841 — as in rd.stage_two
@@ -1245,7 +1299,8 @@ def stage_two_021(model: Any, pool: Any, confirmation: rd.Confirmation020, lock:
                 block["no_l5"].append(torch.tensor(row["dc_no_l5_heads"], dtype=torch.float64)); block["base"].append(torch.tensor(row["dc_template_base"], dtype=torch.float64)); block["dT"].append(float(row["dT"]))
                 block["ceiling"].append(rd.ceiling_prediction(program, state, nouns, measurement.dx3)[exposed_index])
         say(f"  {name}: {len(blocks[name]['cues'])} pairs measured")
-    rd.enforce_all(identities)
+    if enforce:
+        rd.enforce_all(identities)
     tables = {}
     for name in ("Y1", "Y2"):
         block = blocks[name]
@@ -1464,7 +1519,7 @@ def render_predictions(lock: Mapping[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 # The results state and the phase rules.
 
-DIGEST_KEYS = (*rd.CONFIRMATION_DIGEST_KEYS, "confirmation_020", "closure_020", "extract_020", "results_020_file", "results_020_state")
+DIGEST_KEYS = (*rd.CONFIRMATION_DIGEST_KEYS, "lock_011", "lock_012", "lock_017", "confirmation_020", "closure_020", "extract_020", "results_020_file", "results_020_state")
 
 
 def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> dict[str, Any]:
@@ -1490,8 +1545,10 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
     status = {name: entry["status"] for name, entry in state["phases"].items()}
     calibration = state.get("calibration") or {}
     if phase == "calibrate":
-        if status["calibrate"] == "running" and not calibration.get("record_sha256"):
-            return  # resumable after an interruption or a recorded incident; the runner refuses the incident's own commit
+        if status["calibrate"] == "running" and calibration.get("incidents") and not calibration.get("record_sha256"):
+            return  # resumable only after a recorded incident; the runner refuses every commit that carries one
+        if status["calibrate"] == "running":
+            raise PhaseError("calibrate is running without a recorded incident, or its record is already written; it cannot resume")
         if status["calibrate"] != "not_started":
             raise PhaseError(f"calibrate is {status['calibrate']}; the calibration runs once in this protocol version")
     elif phase == "lock":
@@ -1526,11 +1583,12 @@ def percentile_of(value: float | None, values: Sequence[float | None], kind: str
     if value is None or not math.isfinite(value):
         return None
     if kind == "r2":
-        return sum(1 for other in values if other is not None and other <= value) / len(values)
+        return sum(1 for other in values if other is None or other <= value) / len(values)  # an undefined draw is the worst
     return sum(1 for other in values if other is None or other >= value) / len(values)
 
 
-def render_report(state: Mapping[str, Any], draw_values: Mapping[str, Mapping[str, Sequence[Sequence[float | None]]]] | None = None) -> str:
+def render_report(state: Mapping[str, Any], draw_values: Mapping[str, Mapping[str, Sequence[Sequence[float | None]]]] | None = None,
+                  record: Mapping[str, Any] | None = None) -> str:
     f = lambda value, digits=4: "n/a" if value is None else (f"{value:.{digits}f}" if isinstance(value, float) else str(value))  # noqa: E731
     lines = ["# Experiment 021 Report", "", f"- Run ID: `{state['run_id']}`", f"- Confirmation set: `{state['confirmation_020_sha256']}` (Experiment 020's, read in place)",
              f"- Program blob: `{state['program_blob_sha1']}`; protocol/code commit at calibrate: `{state['protocol_code_commit']}`", "", "## Phases", ""]
@@ -1563,16 +1621,23 @@ def render_report(state: Mapping[str, Any], draw_values: Mapping[str, Mapping[st
             lines.append(f"- {outcome}: **{entry['label']}**; row {entry.get('row', 'all')}; precondition {entry.get('precondition')}")
             if entry.get("values"):
                 floors = entry.get("floors") or {}
+                key = entry.get("row") or "all"
+                row_entry = next((row for row in (record or {}).get("rows", {}).get(outcome, []) if row["key"] == key), None)
                 for name in STATISTICS[outcome]:
                     percentile = None
-                    key = entry.get("row") or "all"
                     if draw_values and key in draw_values.get(outcome, {}):
                         column = [row[STATISTICS[outcome].index(name)] for row in draw_values[outcome][key]]
                         percentile = percentile_of(entry["values"][name], column, KIND[name])
-                    lines.append(f"  - {name}: fresh {f(entry['values'][name])} against floor {f(floors.get(name))} ({KIND[name]}) → {'pass' if entry['conditions'][name] else 'fail'}"
-                                 + (f"; percentile among exposed-like draws {f(percentile, 3)}" if percentile is not None else ""))
+                    median = row_entry["summary"][name]["median"] if row_entry else None
+                    lines.append(f"  - {name}: fresh {f(entry['values'][name])} against floor {f(floors.get(name))} ({KIND[name]}) → {'pass' if entry['conditions'][name] else 'fail'}; "
+                                 f"exposed-like draw median {f(median)}" + (f", fresh percentile among the draws {f(percentile, 3)}" if percentile is not None else ""))
         for name, entry in confirmation.get("ceiling", {}).items():
-            lines.append(f"- {name} ceiling (measured Δx₃): flattened R² {f(entry['flattened_r2'])} against Level 0 {f(entry['level0_flattened_r2'])}; split {entry['error_split']}")
+            key = "all" if name == "Y1" else confirmation[name].get("row")
+            placed = None
+            if draw_values and key in draw_values.get(f"ceiling:{name}", {}):
+                placed = percentile_of(entry["flattened_r2"], [row[1] for row in draw_values[f"ceiling:{name}"][key]], "r2")
+            lines.append(f"- {name} ceiling (measured Δx₃): flattened R² {f(entry['flattened_r2'])} against Level 0 {f(entry['level0_flattened_r2'])}; split {entry['error_split']}"
+                         + (f"; the fresh ceiling's percentile among the row's exposed-like draws {f(placed, 3)}" if placed is not None else ""))
         for name, entry in confirmation.get("comparators", {}).items():
             lines.append(f"- {name} comparators: " + ", ".join(f"{key} {f(value.get('flattened_r2', value.get('fresh_noun_r2')))} ({value['standing']})" for key, value in sorted(entry.items())))
         if confirmation.get("joint_fresh_nouns"):

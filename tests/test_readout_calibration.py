@@ -365,7 +365,8 @@ def test_the_y2_row_comes_from_the_validity_verdicts_alone():
 
     selection = rc.select_y2_row(frames({"cardinal": 6, "quantifier": 5, "coordinated-adjective": 4}), tables)
     assert selection["composition"] == [6, 5, 4] and selection["row"] == "6/5/4" and selection["floors"] == tables["Y2"]["6/5/4"] and len(selection["valid_frames"]) == 15
-    for valid in ({"cardinal": 6, "quantifier": 5, "coordinated-adjective": 0}, {"cardinal": 4, "quantifier": 4, "coordinated-adjective": 3}, {"cardinal": 3, "quantifier": 4, "coordinated-adjective": 4}):
+    for valid in ({"cardinal": 6, "quantifier": 5, "coordinated-adjective": 0}, {"cardinal": 4, "quantifier": 4, "coordinated-adjective": 3}, {"cardinal": 3, "quantifier": 4, "coordinated-adjective": 4},
+                  {"cardinal": 6, "quantifier": 6, "coordinated-adjective": 3}):  # the last: 15 valid frames, failing on the coordinated clause alone
         failed = rc.select_y2_row(frames(valid), tables)
         assert failed["precondition"]["ok"] is False and failed["row"] is None and failed["floors"] is None
     stage1 = {"frames": {k: dict(v) for k, v in frames({"cardinal": 6, "quantifier": 6, "coordinated-adjective": 6}).items()}, "digest": "d" * 64}
@@ -450,6 +451,12 @@ def test_every_label_branch_through_the_one_predicate(monkeypatch):
     assert scored(_floor_tables())["Y3"]["label"] == rd.OUTCOME_Y3[2]
 
 
+def test_json_safety_and_the_descriptive_percentile():
+    assert rc.json_safe({"a": [1.0, math.inf, {"b": math.nan}], "c": -math.inf, "d": "x"}) == {"a": [1.0, None, {"b": None}], "c": None, "d": "x"}
+    assert rc.percentile_of(0.5, [None, 0.2, 0.6, 0.5], "r2") == 0.75  # an undefined draw ranks as the worst
+    assert rc.percentile_of(0.5, [None, 0.2, 0.6, 0.5], "error") == 0.75 and rc.percentile_of(None, [0.1], "r2") is None
+
+
 def test_calibration_pass_rates_use_the_one_predicate(monkeypatch):
     calls = []
     original = rc.passes
@@ -512,24 +519,48 @@ def test_the_calibration_record_on_a_synthetic_table(monkeypatch, frozen):
     assert record["content_sha256"] == rc.content_digest(record)
     rd.assert_fresh_nouns_absent(record, confirmation)  # nothing of a fresh noun, and the index arrays only as digests
     assert "local" not in json.dumps(record["draws"]) and set(record["draws"]["index_digests"]) == {f"cue/{c}" for c in rc.CUE_CLASSES} | {f"frame/{t}" for t in rc.Y2_AXES} | {f"noun/{r}" for r in rc.RULE_CLASSES}
-    rc.verify_calibration_record(record)
+    rc.verify_calibration_record(record)  # computed and verified under the same constants (B patched to 40 here)
+    monkeypatch.setattr(rc, "B", 10_000)
+    with pytest.raises(rd.PhaseError, match="frozen constants"):  # a record from other constants is refused
+        rc.verify_calibration_record(record)
+    monkeypatch.setattr(rc, "B", 40)
+    tampered = dict(record, program_blob_sha1="0" * 40)
+    tampered["content_sha256"] = rc.content_digest(tampered)
+    with pytest.raises(rd.PhaseError, match="program"):
+        rc.verify_calibration_record(tampered)
     tables = rc.floor_tables(record)
     assert set(tables["Y2"]) == {rc.row_key(row) for row in rc.y2_rows()} and set(tables["Y3"]) == {rc.row_key(row) for row in rc.y3_rows()}
 
 
-def test_a_failing_cross_check_stops_before_any_floor_with_its_location(monkeypatch):
+def test_a_failing_cross_check_stops_before_any_floor_with_its_worst_location(monkeypatch):
     monkeypatch.setattr(rc, "B", 40)
     monkeypatch.setattr(rc, "CROSS_CHECK_DRAWS", 2)
     table, pools = synthetic_table(seed=4)
     original = rc.direct_y2
-    monkeypatch.setattr(rc, "direct_y2", lambda *args, **kwargs: {**original(*args, **kwargs), "frame_r2_k75": -5.0})
+    target = rc.row_key(rc.y2_rows()[5])
+    calls = {"n": 0}
+
+    def planted(*args, **kwargs):
+        calls["n"] += 1
+        values = original(*args, **kwargs)
+        return {**values, "frame_r2_k75": values["frame_r2_k75"] + (7.0 if calls["n"] == 2 * 5 + 2 else 1e-3)}  # every Y2 row off by 1e-3; row 5, draw 1 by 7
+
+    monkeypatch.setattr(rc, "direct_y2", planted)
     floors_computed = []
     monkeypatch.setattr(rc, "tail_floor", lambda *args, **kwargs: floors_computed.append(1))
     with pytest.raises(rc.CrossCheckError) as caught:
         rc.run_calibration(table, pools)
     details = caught.value.details
-    assert details["outcome"] == "Y2" and details["statistic"] == "frame_r2_k75" and details["draw"] == 0 and details["row"] == rc.row_key(rc.y2_rows()[0])
-    assert details["direct"] == -5.0 and details["max_difference"] > rc.STATISTIC_AGREEMENT_TOLERANCE and not floors_computed
+    assert details["outcome"] == "Y2" and details["statistic"] == "frame_r2_k75" and details["row"] == target and details["draw"] == 1  # the maximum, not the first
+    assert details["max_difference"] == pytest.approx(7.0 / max(1.0, abs(details["direct"])), rel=1e-6) and details["n_exceeding"] == 2 * len(rc.y2_rows())
+    assert details["first_exceeding"]["row"] == rc.row_key(rc.y2_rows()[0]) and details["first_exceeding"]["draw"] == 0 and details["n_checked"] == 2 * (1 + 64 + 84)
+    assert not floors_computed  # the whole check ran, and still no floor exists
+    json.dumps(details, allow_nan=False)
+    monkeypatch.setattr(rc, "direct_y2", lambda *args, **kwargs: {**original(*args, **kwargs), "cue_final_r2": None})  # undefined on one side only
+    with pytest.raises(rc.CrossCheckError) as caught:
+        rc.run_calibration(table, pools)
+    assert caught.value.details["max_difference"] is None and "undefined on one side" in str(caught.value)
+    json.dumps(caught.value.details, allow_nan=False)
 
 
 def test_the_calibration_precondition_needs_six_screened_frames_per_template():

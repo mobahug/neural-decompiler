@@ -161,6 +161,10 @@ class Runner:
     def draws_path(self) -> Path:
         return self.output_dir / "draw-values.pt"
 
+    @property
+    def stage2_path(self) -> Path:
+        return self.output_dir / "stage2-tables.pt"
+
     # -- inputs ---------------------------------------------------------------
 
     def _base_inputs(self):
@@ -182,12 +186,14 @@ class Runner:
         lock_011 = self.lock_011_loader(self.root / rd.EXPERIMENT_011_LOCK_PATH)
         if any(key not in lock_011 for key in LOCK_011_REQUIRED_KEYS) or lock_011["confirmation_011_sha256"] != c011.content_sha256:
             raise rd.PhaseError("the Experiment 011 lock does not carry the locked axes and read weight for the frozen 011 confirmation set")
+        digests["lock_011"] = lock_011["content_sha256"]
         pool_012 = lc.build_pool_012(manifest, extension, c006, c009, c011)
         c012 = lc.load_confirmation(self.root / lc.CONFIRMATION_RELATIVE_PATH, pool_012, digests)
         digests["confirmation_012"] = c012.content_sha256
         lock_012 = self.lock_012_loader(self.root / rd.EXPERIMENT_012_LOCK_PATH)
         if any(key not in lock_012 for key in LOCK_012_REQUIRED_KEYS) or lock_012["confirmation_012_sha256"] != c012.content_sha256 or lock_012["lock_011_sha256"] != lock_011["content_sha256"]:
             raise rd.PhaseError("the Experiment 012 lock does not carry the locked bases for the frozen 012 confirmation set and the 011 lock")
+        digests["lock_012"] = lock_012["content_sha256"]
         c013 = ap.load_confirmation(self.root / hp.EXPERIMENT_013_CONFIRMATION_PATH, ap.build_pool_013(manifest, extension, c006, c009, c011, c012), digests)
         digests["confirmation_013"] = c013.content_sha256
         c014 = nf.load_confirmation(self.root / hp.EXPERIMENT_014_CONFIRMATION_PATH, nf.build_pool_014(manifest, extension, c006, c009, c011, c012, c013), digests)
@@ -202,6 +208,9 @@ class Runner:
         lock_017 = self.lock_017_loader(self.root / rd.EXPERIMENT_017_LOCK_PATH)
         if any(key not in lock_017 for key in LOCK_017_REQUIRED_KEYS) or lock_017["confirmation_017_sha256"] != c017.content_sha256:
             raise rd.PhaseError("the Experiment 017 lock does not carry the locked layer-3 bases for the frozen 017 confirmation set")
+        digests["lock_017"] = lock_017["content_sha256"]
+        if {key: digests[key] for key in rc.LOCK_DIGESTS} != rc.LOCK_DIGESTS:
+            raise rd.PhaseError(f"the inherited 011/012/017 locks are not the frozen ones: {[key for key in rc.LOCK_DIGESTS if digests[key] != rc.LOCK_DIGESTS[key]]}")
         pool_018 = bc.build_pool_018(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016, c017)
         c018 = bc.load_confirmation(self.root / br.EXPERIMENT_018_CONFIRMATION_PATH, pool_018, digests)
         digests["confirmation_018"] = c018.content_sha256
@@ -261,12 +270,24 @@ class Runner:
     def _write(self, state: Mapping[str, Any]) -> str:
         return rd.write_results_state(self.results_path, state)
 
-    def _record_incident(self, state: dict[str, Any], phase: str, error: Exception) -> None:
-        entry = {"message": str(error), "at": pm.utc_now(), "phase": phase, "commit": self._provenance()["protocol_code_commit"]}
+    def _recheck_020(self, confirmation) -> dict[str, Any]:
+        """Experiment 020's closure, extract and results state, verified again after a phase (or an incident)."""
+        try:
+            rc.verify_020_closure(self.root, confirmation)
+        except Exception as error:  # recorded, never allowed to hide the incident being recorded
+            return {"ok": False, "message": str(error)}
+        return {"ok": True}
+
+    def _record_incident(self, state: dict[str, Any], phase: str, error: BaseException, confirmation=None) -> None:
+        entry = {"message": str(error) or type(error).__name__, "type": type(error).__name__, "at": pm.utc_now(), "phase": phase,
+                 "commit": self._provenance()["protocol_code_commit"]}
+        if confirmation is not None:
+            entry["closure_020_recheck"] = self._recheck_020(confirmation)
         if phase == "calibrate":
+            state["calibration"] = rc.json_safe(state["calibration"])
             state["calibration"].setdefault("incidents", []).append(entry)
         else:
-            state["confirmation"] = {**(state.get("confirmation") or {}), "incident": entry}
+            state["confirmation"] = rc.json_safe({**(state.get("confirmation") or {}), "incident": entry})
         self._write(state)
         self.log(f"INCIDENT ({phase}): {error}")
 
@@ -285,7 +306,7 @@ class Runner:
         state = self._state_for("calibrate", digests)
         commit = self._provenance()["protocol_code_commit"]
         incidents = state["calibration"].get("incidents", [])
-        if incidents and incidents[-1]["commit"] == commit:
+        if any(entry["commit"] == commit for entry in incidents):
             raise rd.PhaseError("a calibrate incident is recorded at this commit; a committed fix is required before calibrate runs again")
         runtime = self._check_runtime(closure)
         rc.assert_no_manifest_key(closure["state"]["executed_prompt_keys"], confirmation, "Experiment 020's ledger")
@@ -309,7 +330,7 @@ class Runner:
                 try:
                     manifest_keys = frozenset(prompt.key for prompt in confirmation.all_prompts)
                     table, context = rc.rematerialize(model, pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, exploration_020=closure["exploration"],
-                                                      ledger_020=closure["ledger"], manifest_keys=manifest_keys, log=self.log, executed=executed)
+                                                      ledger_020=closure["ledger"], manifest_keys=manifest_keys, confirmation=confirmation, log=self.log, executed=executed)
                 finally:
                     pm.record_execution(state, executed, pool.nouns)
                     self._write(state)
@@ -350,29 +371,30 @@ class Runner:
                 text = pm.canonical_json(record) + "\n"
                 self.candidate_calibration_path.write_text(text, encoding="utf-8")
                 calibration.update({"record_sha256": pm.sha256_text(text), "record_content_sha256": record["content_sha256"], "candidate_path": str(self.candidate_calibration_path),
-                                    "cross_check": result["body"]["cross_check"],
+                                    "draw_arrays_sha256": array_digests, "cross_check": result["body"]["cross_check"],
                                     "record_summary": {"rows": {outcome: len(entries) for outcome, entries in record["rows"].items()},
                                                        "clamped": {outcome: sorted({name for entry in entries for name, flag in entry["clamped"].items() if flag}) for outcome, entries in record["rows"].items()},
                                                        "joint_pass_rate_all_outcomes": record["full_rows"]["joint_pass_rate_all_outcomes"]}})
+                self._write(state)  # the record's digest reaches disk with the record
+                rc.verify_020_closure(self.root, confirmation)  # Experiment 020's files are unchanged by this phase
+                rd.assert_fresh_nouns_absent(state["calibration"], confirmation)
             except rc.CrossCheckError as error:
                 calibration["cross_check"] = error.details
-                self._record_incident(state, "calibrate", error)
+                self._record_incident(state, "calibrate", error, confirmation)
                 return 2
             except rc.EnvironmentIncident as error:
                 calibration["environment"] = error.environment
-                self._record_incident(state, "calibrate", error)
+                self._record_incident(state, "calibrate", error, confirmation)
                 return 2
             except pm.IncidentError as error:
-                self._record_incident(state, "calibrate", error)
+                self._record_incident(state, "calibrate", error, confirmation)
                 return 2
-            except Exception as error:
-                self._record_incident(state, "calibrate", error)
+            except BaseException as error:  # a protocol failure or an interruption: recorded, then raised
+                self._record_incident(state, "calibrate", error, confirmation)
                 raise
         finally:
             del model
             gc.collect()
-        rc.verify_020_closure(self.root, confirmation)  # Experiment 020's files are unchanged by this phase
-        rd.assert_fresh_nouns_absent(state["calibration"], confirmation)
         state["phases"]["calibrate"] = {**state["phases"]["calibrate"], "status": "complete", "completed_at": pm.utc_now()}
         digest = self._write(state)
         self.log(f"calibrate complete: candidate record {self.candidate_calibration_path} (sha256 {calibration['record_sha256']}); results sha256 {digest}. "
@@ -425,6 +447,7 @@ class Runner:
         if scientific:
             raise rd.PhaseError(f"scientific paths changed since calibrate: {scientific}; lock must be written at the calibrated protocol")
         record, record_sha = self._installed_record(state)
+        self._check_runtime(closure)  # the locked rows must reproduce exactly at confirm, on 020's runtime
         weights, lw, programs, bias_sum = self._weights_only()
         rows, nouns = self._prediction_rows(weights, lw, programs, closure["exploration"], lock_011, lock_012, lock_017, confirmation, pool, bias_sum=bias_sum)
         with pytest_free_guard():  # the provenance invariant, executed rather than asserted
@@ -439,6 +462,9 @@ class Runner:
         candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
         predictions_text = rc.render_predictions(lock)
         predictions_path.write_text(predictions_text, encoding="utf-8")
+        recheck = self._recheck_020(confirmation)
+        if not recheck["ok"]:
+            raise rd.PhaseError(f"Experiment 020's closure no longer verifies after lock: {recheck['message']}")
         state["lock"] = {"candidate_path": str(candidate_path), "predictions_path": str(predictions_path), "content_sha256": lock["content_sha256"], "provenance_difference": provenance,
                          "predictions_sha256": pm.sha256_text(predictions_text), "written_at": pm.utc_now(), "n_rows": len(rows), "n_nouns": len(noun_keys),
                          "calibration_content_sha256": record["content_sha256"]}
@@ -497,16 +523,29 @@ class Runner:
                 targets = tuple(confirmation.exposed_frame_prompts) + tuple(prompt for prompt in confirmation.token_prompts if prompt.frame.frame_id in valid)
                 pm.record_execution(state, targets, pool.nouns)
                 self._write(state)
-                measured = rc.stage_two_021(model, pool, confirmation, lock, lock_011, lock_012, lock_017, state["confirmation"]["stage1"], log=self.log)
+                measured = rc.stage_two_021(model, pool, confirmation, lock, lock_011, lock_012, lock_017, state["confirmation"]["stage1"], log=self.log, enforce=False)
+                saved = {name: {part: ({"cues": list(value.cues), "frames": list(value.frames), "templates": list(value.templates), "noun_keys": list(value.noun_keys),
+                                        "measured": value.measured, "predicted": value.predicted} if isinstance(value, rd.ScoringTable) else value)
+                                for part, value in entry.items()} for name, entry in measured["tables"].items()}
+                torch.save(saved, self.stage2_path)
+                state["confirmation"]["stage2"] = {"path": str(self.stage2_path), "identities": rc.json_safe(measured["identities"]),
+                                                   "tables_sha256": {name: {part: {key: rc.tensor_digest(value[key]) for key in ("measured", "predicted")} if isinstance(value, dict) else
+                                                                           (rc.tensor_digest(value) if isinstance(value, torch.Tensor) else None) for part, value in entry.items()}
+                                                                     for name, entry in saved.items()}}
+                self._write(state)  # every fresh measurement is on disk before any check or score can stop the phase
+                rd.enforce_all(measured["identities"])
                 results = rc.score_021(state["confirmation"]["stage1"], measured, lock)
                 results["identities"] = measured["identities"]
                 results["noun_keys"] = measured["noun_keys"]
                 results["fresh_noun_keys"] = measured["fresh_noun_keys"]
+                recheck = self._recheck_020(confirmation)
+                if not recheck["ok"]:
+                    raise pm.IncidentError(f"Experiment 020's closure no longer verifies after confirm: {recheck['message']}")
             except pm.IncidentError as error:
-                self._record_incident(state, "confirm", error)
+                self._record_incident(state, "confirm", error, confirmation)
                 return 2
-            except Exception as error:
-                self._record_incident(state, "confirm", error)
+            except BaseException as error:  # a protocol failure or an interruption: recorded, then raised
+                self._record_incident(state, "confirm", error, confirmation)
                 raise
         finally:
             del model
@@ -539,7 +578,10 @@ class Runner:
         state = rd.load_results_state(self.results_path)
         rc.assert_phase_allowed("report", state)
         self.report_path.parent.mkdir(parents=True, exist_ok=True)
-        self.report_path.write_text(rc.render_report(state, self._draw_values(state)), encoding="utf-8")
+        record_path = self.root / rc.CALIBRATION_RELATIVE_PATH
+        source = record_path if record_path.exists() else self.candidate_calibration_path
+        record = json.loads(source.read_text(encoding="utf-8")) if source.exists() else None
+        self.report_path.write_text(rc.render_report(state, self._draw_values(state), record), encoding="utf-8")
         self.log(f"report written to {self.report_path}")
         return 0
 

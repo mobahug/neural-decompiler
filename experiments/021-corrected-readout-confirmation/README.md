@@ -49,9 +49,35 @@ HF_HUB_OFFLINE=1 uv run python experiments/021-corrected-readout-confirmation/ru
   with the downstream ceiling, the Y3 row from the measured scorability, the scoring through the one pass predicate.
 - `report` renders `outputs/experiment-021/report.md`, verifying the per-row draw values against the record.
 
-## Status — 2026-09-23: implemented, not run
+## Status — 2026-09-23: implemented and independently reviewed, not run
 
-Tasks 1–3 of the plan are implemented: `src/neural_decompiler/readout_calibration.py`, the runner, 19 unit tests
-(`tests/test_readout_calibration.py`, tier A) and 12 runner tests on a fake-closed Experiment 020 world
-(`tests/test_experiment_021_runner.py`, tier B, `CURRENT_EXPERIMENT = "021"`). `validate` passes on the real inputs.
-No Experiment 021 model run has happened; `calibrate` waits for the implementation review.
+Tasks 1–4 of the plan are done: `src/neural_decompiler/readout_calibration.py`, the runner, 20 unit tests
+(`tests/test_readout_calibration.py`, tier A, ≈ 11 s) and 16 runner tests on a fake-closed Experiment 020 world
+(`tests/test_experiment_021_runner.py`, tier B, ≈ 5 min, `CURRENT_EXPERIMENT = "021"`). `validate` passes on the real
+inputs. A full-scale run of the calibration on a synthetic table (B = 10,000, the real pool sizes, no model) takes
+≈ 6 min and ≈ 0.9 GB, with the kernel agreeing with 020's direct statistics to 2.2e-16. No Experiment 021 model run
+has happened; `calibrate` waits for the implementation review.
+
+### Implementation notes (from the independent implementation review; nothing scientific changed)
+
+The review found no blocker. Its should-fix and minor items are all in the code:
+
+- Incident records are always writable: a non-finite value (a one-sided undefined statistic, a structural mismatch)
+  is stored as `null`; the kernel/direct cross-check completes every row-draw and records the **worst** location with
+  the first one and the count, then stops — before any floor or candidate record exists.
+- The kernel pools every sum of squared deviations from per-group two-pass moments (Σ M2ᵢ + Σ nᵢ(x̄ᵢ − x̄)²), never
+  from Σy² − (Σy)²/n. The implementation-only agreement guard is applied to |kernel − direct| / max(1, |direct|) ≤
+  1e-10: absolute for well-conditioned values, relative where a statistic is itself ill-conditioned (a frame-mean
+  `R²` of −16,539 on a synthetic draw with four near-identical frame means differed by 2.2e-9 absolute, 1.3e-13
+  relative — float reassociation, not a formula difference).
+- `calibrate` resumes only after a recorded incident and never at a commit that carries one; an interruption is
+  recorded as an incident; the candidate record's digest reaches the state as the record is written; the after-phase
+  re-check of Experiment 020's files runs inside the incident handling of `calibrate`, at the end of `lock` and
+  `confirm`, and in every incident record.
+- `lock` checks the runtime and thread count against 020's explore record, so the locked rows reproduce at `confirm`.
+- `confirm` writes every stage-2 measurement (with digests) and the identity maxima to disk before enforcing the
+  identities or scoring, so no failure after stage 2 can lose a fresh measurement.
+- The 011/012/017 lock digests (`769bfeac…`, `830abc3b…`, `b4fc9014…`) are asserted and recorded; the calibration
+  record's constants, program blob and design are verified before `lock` uses it; `rematerialize` calls 020's own
+  `assert_explore_nouns`; the report prints each fresh value's exposed draw median and percentile and places the fresh
+  ceiling within its row's distribution.

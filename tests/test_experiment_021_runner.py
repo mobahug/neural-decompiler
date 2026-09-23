@@ -91,6 +91,7 @@ def sandbox(closed_world, fake_world, tmp_path, monkeypatch):
                                 (rd, "MIN_VALID_COORDINATED_FRAMES", 1), (rc, "B", 40), (rc, "CROSS_CHECK_DRAWS", 2), (rc, "MIN_SCREENED_FRAMES_PER_TEMPLATE", 1)):
         monkeypatch.setattr(module, name, value)
     monkeypatch.setattr(rc, "production_pools", _fake_pools)
+    monkeypatch.setattr(rc, "LOCK_DIGESTS", {"lock_011": fake_world[3]["content_sha256"], "lock_012": fake_world[4]["content_sha256"], "lock_017": fake_world[5]["content_sha256"]})
     real_validity = rd.frame_validity
     monkeypatch.setattr(rd, "frame_validity", lambda *args, **kwargs: {**real_validity(*args, **kwargs), "valid": True})  # a random-weight fake's verdicts carry no meaning
     return world, fake_world, state_020
@@ -179,10 +180,16 @@ def test_calibrate_reexecutes_exactly_020s_ledger_and_writes_the_record(sandbox,
     assert runner.report() == 0 and "Calibration (exposed only)" in runner.report_path.read_text()
 
 
-def test_calibrate_refuses_a_version_mismatch_and_a_failed_contract(sandbox):
+def test_calibrate_refuses_a_version_or_thread_mismatch_and_a_failed_contract(sandbox, monkeypatch):
     runner, logs = make_runner(sandbox, versions=lambda: {"torch": "other"})
     with pytest.raises(rd.PhaseError, match="versions"):
         runner.calibrate()
+    real_runtime = runner_module.runtime_record
+    monkeypatch.setattr(runner_module, "runtime_record", lambda spec: {**real_runtime(spec), "torch_num_threads": 999})
+    runner, logs = make_runner(sandbox)
+    with pytest.raises(rd.PhaseError, match="runtime"):
+        runner.calibrate()
+    monkeypatch.setattr(runner_module, "runtime_record", real_runtime)
     runner, logs = make_runner(sandbox, contract_runner=lambda: {"passed": False})
     assert runner.calibrate() == 1 and "A0 contract" in logs[-1]
 
@@ -267,6 +274,54 @@ def test_an_incident_blocks_its_commit_and_a_committed_fix_resumes(sandbox, monk
         runner.lock()
 
 
+def test_an_interruption_is_recorded_and_a_running_phase_without_an_incident_never_resumes(sandbox, monkeypatch):
+    runner, logs = make_runner(sandbox)
+    with pytest.MonkeyPatch.context() as guard:
+        guard.setattr(rd, "capture_frame_020", lambda *args, **kwargs: (_ for _ in ()).throw(KeyboardInterrupt()))
+        with pytest.raises(KeyboardInterrupt):
+            runner.calibrate()
+    state = rd.load_results_state(runner.results_path)
+    assert state["calibration"]["incidents"][-1]["type"] == "KeyboardInterrupt" and state["calibration"]["incidents"][-1]["closure_020_recheck"] == {"ok": True}
+    with pytest.raises(rd.PhaseError, match="incident"):
+        runner.calibrate()  # the interruption's own commit is blocked
+    state["calibration"]["incidents"] = []
+    rd.write_results_state(runner.results_path, {key: value for key, value in state.items() if key != "state_sha256"})
+    runner.git_state = lambda: {"commit": COMMIT_B, "dirty": False}
+    with pytest.raises(rd.PhaseError, match="without a recorded incident"):
+        runner.calibrate()
+
+
+def test_a_cross_check_failure_through_calibrate_is_persisted_with_its_location_and_nothing_follows(sandbox, monkeypatch):
+    original = rc.direct_y1
+    monkeypatch.setattr(rc, "direct_y1", lambda *args, **kwargs: {**original(*args, **kwargs), "token_mean_r2": None})  # undefined on one side: a non-finite difference
+    runner, logs = make_runner(sandbox)
+    assert runner.calibrate() == 2
+    state = rd.load_results_state(runner.results_path)
+    details = state["calibration"]["cross_check"]
+    assert details["outcome"] == "Y1" and details["statistic"] == "token_mean_r2" and details["row"] == "all" and details["max_difference"] is None and details["n_exceeding"] >= 1
+    assert state["calibration"]["incidents"][-1]["type"] == "CrossCheckError" and state["phases"]["calibrate"]["status"] == "running"
+    assert not runner.candidate_calibration_path.exists() and not runner.draws_path.exists() and "record_sha256" not in state["calibration"]
+    with pytest.raises(rd.PhaseError, match="incident"):
+        runner.calibrate()
+
+
+def test_a_structural_environment_mismatch_is_an_incident_with_a_writable_record(sandbox, monkeypatch):
+    world, fake, state_020 = sandbox
+    planted = json.loads(json.dumps(state_020))
+    frame_id = sorted(planted["exploration"]["locked_states"])[0]
+    del planted["exploration"]["locked_states"][frame_id]["rows5"]
+    _reclose(world, planted, monkeypatch, fake)
+    spy = ExecutionSpy(monkeypatch)
+    runner, logs = make_runner(sandbox)
+    assert runner.calibrate() == 2
+    state = rd.load_results_state(runner.results_path)
+    environment = state["calibration"]["environment"]
+    assert environment["structural_state_mismatch"] is True and environment["max_state_drift"] is None and frame_id in environment["at"]
+    assert state["calibration"]["incidents"][-1]["type"] == "EnvironmentIncident" and "gate" not in state["calibration"]
+    references = {fake[1].reference_prompt(frame).key for frame in fake[1].frames}
+    assert set(spy.counts) == references and all(count == 1 for count in spy.counts.values())  # the references only: no cue prompt ran
+
+
 @pytest.fixture
 def calibrated(sandbox):
     runner, logs = make_runner(sandbox)
@@ -304,6 +359,11 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
     with pytest.raises(rd.PhaseError, match="scientific paths"):
         runner.lock()
     runner.changed_paths = lambda commit: [rc.CALIBRATION_RELATIVE_PATH, f"{rc.EXPERIMENT_DIR}/README.md"]
+    real_runtime = runner_module.runtime_record
+    monkeypatch.setattr(runner_module, "runtime_record", lambda spec: {**real_runtime(spec), "torch_num_threads": 999})
+    with pytest.raises(rd.PhaseError, match="runtime"):
+        runner.lock()
+    monkeypatch.setattr(runner_module, "runtime_record", real_runtime)
     lock = _lock(runner)
     record = json.loads((runner.root / rc.CALIBRATION_RELATIVE_PATH).read_text())
     confirmation = runner._inputs()[4]
@@ -324,6 +384,9 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
                          record=record, record_file_sha256=rc.file_sha256(runner.root / rc.CALIBRATION_RELATIVE_PATH), predictions_text=(runner.root / rc.PREDICTIONS_RELATIVE_PATH).read_text(),
                          git_state={"dirty": False}, tracked=True, changed_paths=[])
     runner.changed_paths = lambda commit: [rc.LOCK_RELATIVE_PATH, rc.PREDICTIONS_RELATIVE_PATH]
+    invalid_fresh = {"cardinal-020-1", "coordinated-adjective-020-1", "coordinated-adjective-020-2"}
+    permissive = rd.frame_validity
+    monkeypatch.setattr(rd, "frame_validity", lambda program, state, *args, **kwargs: {**permissive(program, state, *args, **kwargs), "valid": state.frame.frame_id not in invalid_fresh})
     spy = ExecutionSpy(monkeypatch)
     seen = {"stage": None, "stage1_keys": [], "at_stage_two": None}
     original_stage_one, original_stage_two = rd.stage_one, rc.stage_two_021
@@ -352,8 +415,13 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
     results = state["confirmation"]
     assert state["phases"]["confirm"]["status"] == "complete" and state["phases"]["confirm"]["lock_predictions_reproduced_max_difference"] == 0.0
     assert state["phases"]["confirm"]["stage1_rows_reproduced_max_difference"] == 0.0
+    stage2 = results["stage2"]
+    saved = torch.load(stage2["path"])
+    assert rc.tensor_digest(saved["Y1"]["exposed"]["measured"]) == stage2["tables_sha256"]["Y1"]["exposed"]["measured"] and set(stage2["identities"]) >= {"readout", "level1"}
     selection = results["stage1"]["y2_selection"]
-    assert selection == seen["at_stage_two"]["selection"] and results["Y2"]["row"] == selection["row"] and results["Y2"]["floors"] == lock["floor_tables"]["Y2"].get(selection["row"])
+    assert selection["composition"] == [5, 6, 4] and selection["row"] == "5/6/4" and set(selection["valid_frames"]).isdisjoint(invalid_fresh)
+    assert selection == seen["at_stage_two"]["selection"] and results["Y2"]["row"] == "5/6/4" and results["Y2"]["floors"] == lock["floor_tables"]["Y2"]["5/6/4"]
+    assert results["Y2"]["values"] is not None and len(results["Y2"]["statistics_020"]["per_frame"]) == 15
     assert results["Y3"]["row"] is None or results["Y3"]["floors"] == lock["floor_tables"]["Y3"][results["Y3"]["row"]]
     labels = results["outcome"]["labels"]
     assert labels[0] in rd.OUTCOME_Y1 and labels[1] in rd.OUTCOME_Y2 and labels[2] in rd.OUTCOME_Y3
@@ -362,6 +430,7 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
     executed_targets = [key for key in spy.counts if key in set(classes["S2-TARGET"])]
     assert executed_targets and all(spy.counts[key] == 1 for key in executed_targets)
     invalid = [frame_id for frame_id, entry in results["stage1"]["frames"].items() if not entry["valid"]]
+    assert set(invalid) == invalid_fresh
     for frame in confirmation.frames:
         keys = {pm.Prompt(frame, int(token["token_id"]), token["word"]).key for token in confirmation.tokens}
         assert (keys <= set(state["executed_prompt_keys"])) is (frame.frame_id not in invalid)
@@ -370,12 +439,33 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
     assert runner.report() == 0
     report = runner.report_path.read_text()
     assert "Experiment 021 Report" in report and "stage 2" in report and "Interpretation limit" in report
+    assert "exposed-like draw median" in report and "fresh percentile among the draws" in report and "percentile among the row's exposed-like draws" in report
     arrays = torch.load(runner.draws_path)
     first_key = sorted(arrays["Y2"])[0]
     arrays["Y2"][first_key] = arrays["Y2"][first_key] + 1e-9
     torch.save(arrays, runner.draws_path)
     with pytest.raises(rd.PhaseError, match="draw values"):
         runner.report()
+
+
+def test_a_failure_after_stage_two_keeps_every_fresh_measurement_on_disk(calibrated, sandbox, monkeypatch):
+    runner, logs = calibrated
+    _install_record(runner)
+    runner.changed_paths = lambda commit: [rc.CALIBRATION_RELATIVE_PATH]
+    _lock(runner)
+    _install_lock(runner)
+    runner.changed_paths = lambda commit: [rc.LOCK_RELATIVE_PATH, rc.PREDICTIONS_RELATIVE_PATH, rc.CALIBRATION_RELATIVE_PATH]
+    monkeypatch.setattr(rc, "score_021", lambda *args, **kwargs: (_ for _ in ()).throw(pm.IncidentError("synthetic scoring failure")))
+    assert runner.confirm() == 2
+    state = rd.load_results_state(runner.results_path)
+    stage2 = state["confirmation"]["stage2"]
+    saved = torch.load(stage2["path"])
+    for block in ("Y1", "Y2"):
+        for part in ("exposed", "fresh", "ceiling"):
+            if saved[block][part] is not None:
+                assert rc.tensor_digest(saved[block][part]["measured"]) == stage2["tables_sha256"][block][part]["measured"]
+    assert saved["Y1"]["exposed"]["measured"].shape[0] == len(state["confirmation"]["tokens_meta"]) * 108
+    assert state["confirmation"]["incident"]["message"] == "synthetic scoring failure" and state["confirmation"]["incident"]["closure_020_recheck"] == {"ok": True}
 
 
 def test_the_barrier_refuses_a_y2_row_that_the_reread_verdicts_do_not_select(calibrated, sandbox, monkeypatch):
@@ -443,7 +533,7 @@ def test_the_rematerialization_calls_020s_functions_in_020s_order_and_checks_the
     ledger = frozenset(state["executed_prompt_keys"])
     manifest_keys = frozenset(prompt.key for prompt in confirmation.all_prompts)
     table, context = rc.rematerialize(make_fake_model(), pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, exploration_020=json.loads(pm.canonical_json(exploration)),
-                                      ledger_020=ledger, manifest_keys=manifest_keys)
+                                      ledger_020=ledger, manifest_keys=manifest_keys, confirmation=confirmation)
     assert calls == order_020 and {prompt.key for prompt in context["executed"]} == ledger
     assert rc.reproduction_gate(table, json.loads(pm.canonical_json(exploration)))["max_difference"] == 0.0
     # the environment check runs between the loops: a planted drift stops the phase before any cue prompt
@@ -453,7 +543,8 @@ def test_the_rematerialization_calls_020s_functions_in_020s_order_and_checks_the
         plant(planted)
         calls[:] = []
         with pytest.raises(rc.EnvironmentIncident) as caught:
-            rc.rematerialize(make_fake_model(), pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, exploration_020=planted, ledger_020=ledger, manifest_keys=manifest_keys)
+            rc.rematerialize(make_fake_model(), pool, lock_011=lock_011, lock_012=lock_012, lock_017=lock_017, exploration_020=planted, ledger_020=ledger, manifest_keys=manifest_keys,
+                             confirmation=confirmation)
         assert not any(call[0] == "measure_pair" for call in calls) and len(caught.value.executed) == len(pool.frames)
 
 
