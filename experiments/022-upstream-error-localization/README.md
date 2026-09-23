@@ -2,15 +2,32 @@
 
 Implements the design
 [`docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md`](../../docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md)
-(revision 3, `b0c7382`) through the plan
+(revision 4, `219cdc5`) through the plan
 [`docs/superpowers/plans/2026-09-23-experiment-022-upstream-error-localization-plan.md`](../../docs/superpowers/plans/2026-09-23-experiment-022-upstream-error-localization-plan.md)
-(revision 2, `fb26a23`, with the reviewer's R-1 clarification on the Y2 table).
+(revision 3, `e6d8299`; the R-1 clarification on the Y2 table stands).
 
-The question: where does the committed program's upstream `Δx3` prediction lose the Level-0-to-ceiling `Δc` gap left
-by Experiments 020 and 021? An exact five-factor Shapley attribution over the layer-1–2 reductions (`R`), the
-embedding change (`emb`), block 0's value and pattern terms at the cue position (`Bv`, `Bp`) and block 0's change at the
-target position (`T`, coordinated frames), with four claims (C1–C4) evaluated separately on Y1 (24 new cues × the 108
-exposed frames) and Y2 (24 new cues × 18 new frames). Eight condition results, no aggregate label.
+The question is where the committed upstream `Δx3` prediction loses the gap between Level 0 and the `Δc` ceiling. The
+committed prediction is the Experiment 017 chain, wired as 017 validated it. The method is an exact five-factor Shapley
+attribution over:
+- the layer-1–2 reductions (`R`);
+- the embedding change (`emb`);
+- block 0's value and pattern terms at the cue position (`Bv`, `Bp`);
+- block 0's change at the target position (`T`, coordinated frames only).
+
+Four claims are evaluated separately on Y1 (24 new cues × the 108 exposed frames) and on Y2 (24 new cues × 18 new
+frames):
+- **C1:** block-0 attention dominates the cue-final gap;
+- **C2:** the reductions contribute little to the cue-final gap;
+- **C3:** the reductions contribute little to the coordinated gap;
+- **C4:** block-0 cue→target attention contributes positively to the coordinated gap.
+
+That gives eight condition results and no aggregate label.
+
+**The wiring (design revision 4).** The reduced layer-1–2 program builds its layer-1/2 reference rows through the cue
+position `p_c`, as in 015–019. Experiment 020 built them through `p_t`: the defect recorded in the post-closure errata
+of 020 and 021. That Level 0 is kept only as a descriptive historical comparator. The claims were rewritten after the
+exposed spike was recomputed with the corrected wiring. Revision 3's C3 ("the coordinated gap is split") rested on the
+defect and was withdrawn.
 
 ## Inputs
 
@@ -79,8 +96,17 @@ the stage-1 barrier. After a successful confirmation it is committed as closure 
 - `lock` ≈ 35 min (the Y1 table twice); the committed companion ≈ 35 MB.
 - `confirm` ≈ 30 min (I7 ≈ 17 min, stage 1, the Y2 table ≈ 6 MB, 3,024 forwards, the gates, the scoring).
 
-## Status — 2026-09-23: implemented (Tasks 1–6); not run
+## Status — 2026-09-23: implemented to design revision 4; not run
 
-Nothing has been frozen, calibrated, locked or confirmed. The next steps, each only when authorized: the
-implementation review; tier C on the clean commit; `freeze` (then commit); `calibrate` once (then install, commit and
-the floor review); `lock` (then install, commit and the lock review); `confirm` once; `report`; closure.
+- **Tasks 1–7.** Implemented and independently reviewed; findings 2–10 fixed (`8f061c1` … `566c21d`).
+- **Task 8.** Finding 1 led to the errata, design revision 4, plan revision 3 and the patch.
+- **Not run.** Nothing has been frozen, calibrated, locked or confirmed.
+- **Next steps, each only when authorized:**
+  1. the review of the revision-4 patch;
+  2. tier C on the clean commit;
+  3. `freeze`, then commit;
+  4. `calibrate` once, then install, commit and the floor review;
+  5. `lock`, then install, commit and the lock review;
+  6. `confirm` once;
+  7. `report`;
+  8. closure.

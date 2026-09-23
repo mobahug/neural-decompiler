@@ -1,11 +1,13 @@
 """Experiment 022: prospective localization of the upstream ``Δx3`` error.
 
-Implements design revision 3 (``b0c7382``) through implementation plan revision 2 (``fb26a23``). The committed
-program's upstream prediction of ``Δx3`` (the Experiment 017 chain at ``LEVEL0``, fed the Experiment 005/011 E-patch
-``ΔE``) is compared with the exact weight-only layers-0–2 program through an exact five-factor Shapley attribution of
-the Level-0-to-ceiling ``Δc`` gap. The factors are, as bits of a coalition mask:
+Implements design revision 4 (``219cdc5``) through implementation plan revision 3 (``e6d8299``). The committed upstream
+prediction of ``Δx3`` (the Experiment 017 chain at ``LEVEL0``, wired as 017 validated it — layer-1/2 reference rows
+through the cue position — and fed the Experiment 005/011 E-patch ``ΔE``) is compared with the exact weight-only
+layers-0–2 program through an exact five-factor Shapley attribution of the Level-0-to-ceiling ``Δc`` gap. Experiment
+020's wiring (rows through ``p_t``; the 020/021 errata) survives only as a descriptive historical comparator. The
+factors are, as bits of a coalition mask:
 
-    R   = 1   layers 1–2: the committed reduced program (off) or the exact program (on)
+    R   = 1   layers 1–2: the committed reduced program, wired as in 017 (off), or the exact program (on)
     emb = 2   the embedding's own change at ``p_c``
     Bv  = 4   block 0's attention value term at ``p_c`` (the reference row carrying the cue key's changed value)
     Bp  = 8   block 0's attention pattern term at ``p_c`` (the changed row carrying the new values)
@@ -55,8 +57,8 @@ LOCK_RELATIVE_PATH = f"{EXPERIMENT_DIR}/preregistration-lock.json"
 PREREGISTRATION_RELATIVE_PATH = f"{EXPERIMENT_DIR}/preregistration.md"
 Y1_TABLE_RELATIVE_PATH = f"{EXPERIMENT_DIR}/locked-y1-table.f64"
 Y1_TABLE_INDEX_RELATIVE_PATH = f"{EXPERIMENT_DIR}/locked-y1-table.json"
-DESIGN = {"path": "docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md", "revision": 3, "commit": "b0c7382"}
-PLAN = {"path": "docs/superpowers/plans/2026-09-23-experiment-022-upstream-error-localization-plan.md", "revision": 2, "commit": "fb26a23"}
+DESIGN = {"path": "docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md", "revision": 4, "commit": "219cdc5"}
+PLAN = {"path": "docs/superpowers/plans/2026-09-23-experiment-022-upstream-error-localization-plan.md", "revision": 3, "commit": "e6d8299"}
 
 # The frozen modules, by git blob (computed without git: sha1(b"blob <len>\0" + bytes)).
 FROZEN_BLOBS = {
@@ -1751,7 +1753,7 @@ SEMANTICS = {
 
 
 def condition_reading(claim: str, result: str) -> str:
-    """The frozen interpretation of one condition's result (design revision 3, "Interpretation")."""
+    """The frozen interpretation of one condition's result (design revision 4, "Interpretation")."""
     if result == "ENVELOPE_ONLY_FAILURE":
         return f"{SEMANTICS['results'][result]}: {SEMANTICS['qualitative'][claim]} still holds"
     if result == "GUARD_FAILURE":

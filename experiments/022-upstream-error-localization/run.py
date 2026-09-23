@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Experiment 022 through isolated phases (design revision 3, ``b0c7382``; plan revision 2, ``fb26a23``).
+"""Run Experiment 022 through isolated phases (design revision 4, ``219cdc5``; plan revision 3, ``e6d8299``).
 
 ``validate`` checks the frozen inputs, the pinned module blobs, Experiment 020's closure, Experiment 021's committed
 calibration record and local exposed table, and — once they exist — the confirmation file and the results state,

@@ -18,8 +18,8 @@ from neural_decompiler import upstream_localization as ul
 
 
 def test_constants_are_the_frozen_design():
-    assert ul.DESIGN == {"path": "docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md", "revision": 3, "commit": "b0c7382"}
-    assert ul.PLAN["revision"] == 2 and ul.PLAN["commit"] == "fb26a23"
+    assert ul.DESIGN == {"path": "docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md", "revision": 4, "commit": "219cdc5"}
+    assert ul.PLAN["revision"] == 3 and ul.PLAN["commit"] == "e6d8299"
     assert ul.FACTORS == ("R", "emb", "Bv", "Bp", "T") and ul.BIT == {"R": 1, "emb": 2, "Bv": 4, "Bp": 8, "T": 16}
     assert ul.N_MASKS == 32 and ul.FULL_MASK == 31 and ul.CUE_FINAL_MASKS == tuple(range(16)) and ul.CUE_FINAL_FULL_MASK == 15
     assert ul.SHAPLEY_WEIGHTS == (Fraction(1, 5), Fraction(1, 20), Fraction(1, 30), Fraction(1, 20), Fraction(1, 5))
