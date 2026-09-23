@@ -826,7 +826,12 @@ def test_score_022_reaches_every_result_through_the_locked_envelopes_and_guards(
     assert results == {"Y1/C1": "PASS", "Y1/C2": "ENVELOPE_ONLY_FAILURE", "Y1/C3": "PASS", "Y1/C4": "ENVELOPE_ONLY_FAILURE",
                        "Y2/C1": "NOT_INTERPRETABLE", "Y2/C2": "NOT_INTERPRETABLE", "Y2/C3": "GUARD_FAILURE", "Y2/C4": "PASS"}
     assert set(results.values()) == set(ul.RESULTS) and scored["aggregate_label"] is None
-    assert scored["conditions"]["Y2/C1"]["value"] is None and scored["conditions"]["Y2/C3"]["value"] > 0.9 and scored["conditions"]["Y2/C3"]["direction"]["larger"].startswith("the layer-1")
+    assert scored["conditions"]["Y2/C1"]["value"] is None and scored["conditions"]["Y2/C3"]["value"] > 0.9 and scored["conditions"]["Y2/C3"]["direction"]["position"] == "within"
+    assert scored["conditions"]["Y2/C3"]["reading"].endswith(ul.SEMANTICS["guard_failure"]["C3"])
+    assert scored["conditions"]["Y1/C2"]["reading"].endswith(ul.SEMANTICS["qualitative"]["C2"] + " still holds")
+    narrow = {**lock, "conditions": {**lock["conditions"], "Y1/C3": {**lock["conditions"]["Y1/C3"], "envelope": {**band, "low": 0.0, "high": 0.05}}}}
+    rescored = ul.score_022(measured, tables, narrow)["conditions"]["Y1/C3"]
+    assert rescored["result"] == "ENVELOPE_ONLY_FAILURE" and rescored["direction"]["position"] == "above" and "matter more" in rescored["direction"]["reading"]
     assert scored["cross_check"]["n_exceeding"] == 0 and scored["cross_check"]["n_checked"] == 4 * 44 and max(scored["efficiency_I6"].values()) <= 1e-12
     shares = scored["games"]["Y1"]["cue_final"]["shares"]
     assert shares["T"] == 0.0 and abs(sum(shares.values()) - 1.0) < 1e-12  # the cue-final null player, and efficiency

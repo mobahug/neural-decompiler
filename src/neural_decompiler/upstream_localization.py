@@ -1679,7 +1679,25 @@ SEMANTICS = {
     "aggregate": "none: the eight condition results are the result, each reported and read on its own; Y1 and Y2 are never pooled; no all-pass requirement",
     "gap_rule": "evaluated on the condition's full group aggregate; it removes, re-weights or selects no pair, cue, frame or noun",
     "cdf_percentile": "descriptive only; the frozen envelope decides; for the upper-bound C2 a high percentile lies toward the unfavorable upper tail",
+    "qualitative": {"C1": "block-0 attention dominates the cue-final gap", "C2": "the reductions contribute little to the cue-final gap",
+                    "C3": "the coordinated gap is split between layer 0 and the reductions", "C4": "block-0 cue→target attention contributes positively"},
+    "guard_failure": {"C1": "block-0 attention does not dominate the cue-final gap", "C2": "the reductions do not contribute little",
+                      "C3": "the coordinated error is not split, with one side below 10 %", "C4": "the block-0 cue→target attention does not contribute positively"},
+    "c3_direction": {"below": "below the band: the reductions matter less than in exposed-like sets", "within": "within the band",
+                     "above": "above the band: the reductions matter more than in exposed-like sets"},
+    "not_shown": "a pass does not show that any corrected program would predict well (022 builds none; the full composition is the identity endpoint only), "
+                 "nor which of 016/017's reductions carries σ_R",
+    "incidents": "incidents carry no result",
 }
+
+
+def condition_reading(claim: str, result: str) -> str:
+    """The frozen interpretation of one condition's result (design revision 3, "Interpretation")."""
+    if result == "ENVELOPE_ONLY_FAILURE":
+        return f"{SEMANTICS['results'][result]}: {SEMANTICS['qualitative'][claim]} still holds"
+    if result == "GUARD_FAILURE":
+        return f"{SEMANTICS['results'][result]}: {SEMANTICS['guard_failure'][claim]}"
+    return SEMANTICS["results"][result]
 
 
 def lock_conditions(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -1752,7 +1770,11 @@ def render_preregistration(lock: Mapping[str, Any]) -> str:
                      f"{'yes' if condition['guard_bound'] else 'no'} |")
     lines += ["", "Each condition has exactly one result, decided in the order NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS:", ""]
     lines += [f"- `{name}`: {lock['semantics']['results'][name]}" for name in RESULTS]
-    lines += ["", f"- C4: {lock['semantics']['c4']}.", f"- Aggregate: {lock['semantics']['aggregate']}.", f"- Gap rule: {lock['semantics']['gap_rule']}.", ""]
+    lines += ["", "An envelope-only failure keeps the qualitative statement; a guard failure refutes it for that population:", ""]
+    lines += [f"- {claim}: kept — {lock['semantics']['qualitative'][claim]}; refuted — {lock['semantics']['guard_failure'][claim]}" for claim in CLAIMS]
+    lines += ["", f"- C3's direction is always reported: {lock['semantics']['c3_direction']['below']}; {lock['semantics']['c3_direction']['above']}.",
+              f"- C4: {lock['semantics']['c4']}.", f"- Aggregate: {lock['semantics']['aggregate']}.", f"- Gap rule: {lock['semantics']['gap_rule']}.",
+              f"- What a pass does not show: {lock['semantics']['not_shown']}.", ""]
     return "\n".join(lines)
 
 
@@ -2060,9 +2082,13 @@ def score_022(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, tor
             group_stats = games[population][CLAIM_GROUP[claim]]
             conditions[key] = rc.json_safe({"population": population, "claim": claim, "group": CLAIM_GROUP[claim], "statistic": CLAIM_STATISTIC[claim], "wording": CLAIM_WORDING[claim],
                                             "value": value, "envelope": condition["envelope"], "guard": condition["guard"], "gap": float(entry["gap"][0]),
-                                            "sst_positive": bool(group_stats["sst_positive"][0]), "interpretable": interpretable, "result": result})
-            if claim == "C3" and value is not None:
-                conditions[key]["direction"] = {"reductions_share": value, "layer0_share": 1.0 - value, "larger": "the layer-1–2 reductions" if value > 0.5 else "layer 0" if value < 0.5 else "neither"}
+                                            "sst_positive": bool(group_stats["sst_positive"][0]), "interpretable": interpretable, "result": result,
+                                            "reading": condition_reading(claim, result)})
+            if claim == "C3" and value is not None:  # always reported: the share's position against the calibrated band
+                band = condition["envelope"]
+                position = "below" if value < band["low"] else "above" if value > band["high"] else "within"
+                conditions[key]["direction"] = {"position": position, "band": [band["low"], band["high"]], "reading": SEMANTICS["c3_direction"][position],
+                                                "reductions_share": value, "layer0_share": 1.0 - value}
     return {"conditions": conditions, "games": {population: {group: stats_summary(stats) for group, stats in entries.items()} for population, entries in games.items()},
             "cross_check": cross_check, "efficiency_I6": efficiency, "aggregate_label": None}
 
@@ -2326,12 +2352,16 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
             shown = "—" if not percentile else f"{_fmt(percentile.get('cdf_percentile'), 3)} ({percentile['defined']} / {percentile['undefined']})"
             lines.append(f"| {key} {entry['wording']} | {entry['statistic']} | {_fmt(entry['value'])} | {_format_envelope(entry['envelope'])} | {_format_guard(entry['claim'])} | "
                          f"{_fmt(entry['gap'])} | {shown} | **{entry['result']}** |")
-        lines += ["", "- The CDF percentile is descriptive only; the frozen envelope decides. For C2 (an upper bound) a high percentile lies toward the unfavorable upper tail.",
-                  f"- C4: {SEMANTICS['c4']}.", f"- {SEMANTICS['aggregate'][0].upper()}{SEMANTICS['aggregate'][1:]}."]
+        lines += ["", "Readings (frozen, design revision 3):", ""]
+        lines += [f"- {key}: **{conditions[key]['result']}** — {conditions[key]['reading']}." for key in (f"{p}/{c}" for p in POPULATIONS for c in CLAIMS)]
         for population in POPULATIONS:
             direction = conditions.get(f"{population}/C3", {}).get("direction")
             if direction:
-                lines.append(f"- C3 direction ({population}): reductions share {direction['reductions_share']:.4f}, layer-0 share {direction['layer0_share']:.4f}; larger: {direction['larger']}.")
+                lines.append(f"- C3 direction ({population}): s3 = {direction['reductions_share']:.4f} against the band [{direction['band'][0]:.4f}, {direction['band'][1]:.4f}]: "
+                             f"{direction['reading']} (layer-0 share {direction['layer0_share']:.4f}).")
+        lines += ["", "- The CDF percentile is descriptive only; the frozen envelope decides. For C2 (an upper bound) a high percentile lies toward the unfavorable upper tail.",
+                  f"- C4: {SEMANTICS['c4']}.", f"- {SEMANTICS['aggregate'][0].upper()}{SEMANTICS['aggregate'][1:]}.",
+                  f"- What a pass does not show: {SEMANTICS['not_shown']}.", f"- {SEMANTICS['incidents'][0].upper()}{SEMANTICS['incidents'][1:]}."]
         lines += ["", "## Shapley values and shares", "", "| population / group | G | φ R | φ emb | φ Bv | φ Bp | φ T | σ R | σ emb | σ Bv | σ Bp | σ T | efficiency |",
                   "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for population in POPULATIONS:
