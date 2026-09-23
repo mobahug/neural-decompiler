@@ -167,6 +167,9 @@ def test_calibrate_reexecutes_exactly_020s_ledger_and_writes_the_record(sandbox,
     assert set(calibration["screen"]) == {frame.frame_id for frame in fake[1].frames}
     record = json.loads(runner.candidate_calibration_path.read_text())
     assert rc.file_sha256(runner.candidate_calibration_path) == calibration["record_sha256"] and record["content_sha256"] == rc.content_digest(record)
+    for key, lock in (("lock_011", fake[3]), ("lock_012", fake[4]), ("lock_017", fake[5])):  # the exact inherited objects, bound
+        assert state[f"{key}_sha256"] == record["inputs"][key] == lock["content_sha256"]
+    assert set(record["inputs"]) == set(rc.DIGEST_KEYS)
     assert [len(record["rows"][o]) for o in ("Y1", "Y2", "Y3")] == [1, len(rc.y2_rows()), len(rc.y3_rows())]
     assert record["cross_check"]["n_checked"] == 2 * (1 + len(rc.y2_rows()) + len(rc.y3_rows())) and record["cross_check"]["max_difference"] <= rc.STATISTIC_AGREEMENT_TOLERANCE
     rd.assert_fresh_nouns_absent(record, confirmation)
@@ -383,6 +386,14 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
         rc.validate_lock(altered, state={**state, "lock": {**state["lock"], "content_sha256": altered["content_sha256"]}}, digests=runner._inputs()[5], confirmation=confirmation,
                          record=record, record_file_sha256=rc.file_sha256(runner.root / rc.CALIBRATION_RELATIVE_PATH), predictions_text=(runner.root / rc.PREDICTIONS_RELATIVE_PATH).read_text(),
                          git_state={"dirty": False}, tracked=True, changed_paths=[])
+    assert all(lock[f"{key}_sha256"] == runner._inputs()[5][key] for key in rc.DIGEST_KEYS)  # the lock binds every input, the inherited locks included
+    rebound = json.loads(json.dumps(lock))
+    rebound["lock_017_sha256"] = "1" * 64
+    rebound["content_sha256"] = rc.content_digest(rebound)
+    with pytest.raises(rd.PhaseError, match="different frozen inputs"):
+        rc.validate_lock(rebound, state={**state, "lock": {**state["lock"], "content_sha256": rebound["content_sha256"]}}, digests=runner._inputs()[5], confirmation=confirmation,
+                         record=record, record_file_sha256=rc.file_sha256(runner.root / rc.CALIBRATION_RELATIVE_PATH), predictions_text=(runner.root / rc.PREDICTIONS_RELATIVE_PATH).read_text(),
+                         git_state={"dirty": False}, tracked=True, changed_paths=[])
     runner.changed_paths = lambda commit: [rc.LOCK_RELATIVE_PATH, rc.PREDICTIONS_RELATIVE_PATH]
     invalid_fresh = {"cardinal-020-1", "coordinated-adjective-020-1", "coordinated-adjective-020-2"}
     permissive = rd.frame_validity
@@ -446,6 +457,45 @@ def test_lock_confirm_and_report_through_every_boundary(calibrated, sandbox, mon
     torch.save(arrays, runner.draws_path)
     with pytest.raises(rd.PhaseError, match="draw values"):
         runner.report()
+
+
+def test_a_replaced_inherited_lock_cannot_reuse_the_state_or_the_calibration_record(calibrated, sandbox, monkeypatch):
+    runner, logs = calibrated
+    _install_record(runner)
+    runner.changed_paths = lambda commit: [rc.CALIBRATION_RELATIVE_PATH]
+    world, fake, _ = sandbox
+    record = json.loads((runner.root / rc.CALIBRATION_RELATIVE_PATH).read_text())
+
+    def resealed(lock: dict, **changes) -> dict:
+        out = {**dict(lock), **changes}
+        out["content_sha256"] = rc.content_digest(out)  # self-consistent, and not the frozen object
+        return out
+
+    lock_011 = resealed(fake[3], sigma_T=fake[3]["sigma_T"] + 1e-3)
+    lock_012 = resealed(fake[4], sigma_T=fake[4]["sigma_T"] + 1e-3)
+    lock_017 = resealed(fake[5], lock_016_sha256="0" * 64)
+    chained_012 = resealed(fake[4], lock_011_sha256=lock_011["content_sha256"])  # 012 re-pointed at the replaced 011
+    # a replaced 011 alone breaks 012's own binding to it: refused before anything else
+    alone, _ = make_runner(sandbox, lock_011_loader=lambda path: dict(lock_011))
+    with pytest.raises(rd.PhaseError, match="012 lock does not carry"):
+        alone.lock()
+    cases = (({"lock_011": lock_011, "lock_012": chained_012}, {"lock_011_loader": lambda path: dict(lock_011), "lock_012_loader": lambda path: dict(chained_012)}),
+             ({"lock_012": lock_012}, {"lock_012_loader": lambda path: dict(lock_012)}),
+             ({"lock_017": lock_017}, {"lock_017_loader": lambda path: dict(lock_017)}))
+    for replaced, loaders in cases:
+        tampered, _ = make_runner(sandbox, **loaders)
+        with pytest.raises(rd.PhaseError, match="not the frozen ones"):
+            tampered.lock()
+        assert tampered.validate() == 1
+        with pytest.MonkeyPatch.context() as guard:  # even with the frozen constants moved to the new locks, nothing recorded is reused
+            guard.setattr(rc, "LOCK_DIGESTS", {**rc.LOCK_DIGESTS, **{key: value["content_sha256"] for key, value in replaced.items()}})
+            with pytest.raises(rd.PhaseError, match="differ from the recorded run"):
+                tampered.lock()
+            digests = tampered._inputs()[5]
+            assert all(digests[key] == value["content_sha256"] for key, value in replaced.items())
+            with pytest.raises(rd.PhaseError, match="different inputs"):
+                rc.assert_record_inputs(record, digests)
+    assert not (runner.output_dir / "candidate-lock.json").exists()  # no candidate lock was written by any of them
 
 
 def test_a_failure_after_stage_two_keeps_every_fresh_measurement_on_disk(calibrated, sandbox, monkeypatch):

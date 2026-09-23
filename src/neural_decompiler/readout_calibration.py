@@ -286,6 +286,20 @@ def assert_pool_counts(pools: CalibrationPools) -> None:
         raise PhaseError("the historical cue cohorts are not the frozen nine of 19–20 cues")
 
 
+def assert_lock_digests(digests: Mapping[str, str]) -> None:
+    """The inherited 011/012/017 objects are the frozen ones: a replaced lock, however self-consistent, is refused."""
+    differing = [key for key in LOCK_DIGESTS if digests.get(key) != LOCK_DIGESTS[key]]
+    if differing:
+        raise PhaseError(f"the inherited 011/012/017 locks are not the frozen ones: {differing}")
+
+
+def assert_record_inputs(record: Mapping[str, Any], digests: Mapping[str, str]) -> None:
+    """The calibration record was computed from exactly these inputs: every 021 digest, the inherited locks included."""
+    differing = [key for key in DIGEST_KEYS if record.get("inputs", {}).get(key) != digests.get(key)]
+    if differing:
+        raise PhaseError(f"the calibration record was computed from different inputs: {differing}")
+
+
 def production_pools(pool: Any) -> CalibrationPools:
     pools = build_pools(pool)
     assert_pool_counts(pools)
@@ -1440,8 +1454,10 @@ def score_021(stage1: Mapping[str, Any], measured: Mapping[str, Any], lock: Mapp
 
 def build_candidate_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], confirmation: rd.Confirmation020, rows: Sequence[Mapping[str, Any]],
                          noun_keys: Sequence[str], exploration_020: Mapping[str, Any], record: Mapping[str, Any], record_file_sha256: str) -> dict[str, Any]:
+    if digests["confirmation_020"] != confirmation.content_sha256:
+        raise PhaseError("the digests name a different confirmation set")
     lock = {"experiment": "021", "run_id": run_id, "protocol_code_commit": protocol_code_commit,
-            **{f"{key}_sha256": digests[key] for key in rd.CONFIRMATION_DIGEST_KEYS}, "confirmation_020_sha256": confirmation.content_sha256,
+            **{f"{key}_sha256": digests[key] for key in DIGEST_KEYS},
             "program_blob_sha1": PROGRAM_BLOB_SHA1, "calibration_content_sha256": record["content_sha256"], "calibration_file_sha256": record_file_sha256,
             "populations": {name: dict(value) for name, value in rd.POPULATIONS.items()},
             "noun_keys": list(noun_keys), "fresh_noun_keys": [noun.lexical_key for noun in confirmation.nouns],
@@ -1464,8 +1480,9 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests:
         raise PhaseError("the installed lock is not a verified Experiment 021 lock")
     if state.get("lock") is None or state["lock"]["content_sha256"] != lock["content_sha256"]:
         raise PhaseError("the installed lock is not the candidate this run wrote")
-    if tuple(lock[f"{key}_sha256"] for key in rd.CONFIRMATION_DIGEST_KEYS) != rd.digest_tuple(digests) or lock["confirmation_020_sha256"] != confirmation.content_sha256:
-        raise PhaseError("the lock was written against different frozen inputs")
+    if tuple(lock.get(f"{key}_sha256") for key in DIGEST_KEYS) != digest_tuple(digests) or lock["confirmation_020_sha256"] != confirmation.content_sha256:
+        raise PhaseError("the lock was written against different frozen inputs (the inherited locks and Experiment 020's closure included)")
+    assert_record_inputs(record, digests)
     if lock["program_blob_sha1"] != PROGRAM_BLOB_SHA1:
         raise PhaseError("the lock names a different readout program")
     verify_calibration_record(record)

@@ -209,8 +209,7 @@ class Runner:
         if any(key not in lock_017 for key in LOCK_017_REQUIRED_KEYS) or lock_017["confirmation_017_sha256"] != c017.content_sha256:
             raise rd.PhaseError("the Experiment 017 lock does not carry the locked layer-3 bases for the frozen 017 confirmation set")
         digests["lock_017"] = lock_017["content_sha256"]
-        if {key: digests[key] for key in rc.LOCK_DIGESTS} != rc.LOCK_DIGESTS:
-            raise rd.PhaseError(f"the inherited 011/012/017 locks are not the frozen ones: {[key for key in rc.LOCK_DIGESTS if digests[key] != rc.LOCK_DIGESTS[key]]}")
+        rc.assert_lock_digests(digests)  # the exact inherited objects, bound into every 021 state, record and lock
         pool_018 = bc.build_pool_018(manifest, extension, c006, c009, c011, c012, c013, c014, c015, c016, c017)
         c018 = bc.load_confirmation(self.root / br.EXPERIMENT_018_CONFIRMATION_PATH, pool_018, digests)
         digests["confirmation_018"] = c018.content_sha256
@@ -424,7 +423,7 @@ class Runner:
         axis_T = torch.tensor(lock_011["axes_vectors"]["T"], dtype=torch.float64)
         return rd.prediction_rows(program, chain, weights, states, rows16, nouns, list(pool.frames), list(confirmation.tokens), bases, axis_T), nouns
 
-    def _installed_record(self, state: Mapping[str, Any]) -> tuple[dict[str, Any], str]:
+    def _installed_record(self, state: Mapping[str, Any], digests: Mapping[str, str]) -> tuple[dict[str, Any], str]:
         path = self.root / rc.CALIBRATION_RELATIVE_PATH
         if not path.exists() or not self.tracked(path):
             raise rd.PhaseError(f"install the candidate calibration record byte-identical as {rc.CALIBRATION_RELATIVE_PATH} and commit it before lock")
@@ -433,6 +432,7 @@ class Runner:
             raise rd.PhaseError("the installed calibration record is not the candidate this run wrote")
         record = json.loads(path.read_text(encoding="utf-8"))
         rc.verify_calibration_record(record)
+        rc.assert_record_inputs(record, digests)
         return record, sha
 
     def lock(self) -> int:
@@ -446,7 +446,7 @@ class Runner:
         scientific = rc.scientific_changes(changed)
         if scientific:
             raise rd.PhaseError(f"scientific paths changed since calibrate: {scientific}; lock must be written at the calibrated protocol")
-        record, record_sha = self._installed_record(state)
+        record, record_sha = self._installed_record(state, digests)
         self._check_runtime(closure)  # the locked rows must reproduce exactly at confirm, on 020's runtime
         weights, lw, programs, bias_sum = self._weights_only()
         rows, nouns = self._prediction_rows(weights, lw, programs, closure["exploration"], lock_011, lock_012, lock_017, confirmation, pool, bias_sum=bias_sum)
@@ -483,7 +483,7 @@ class Runner:
         if not lock_path.exists() or not predictions_path.exists():
             raise rd.PhaseError("missing committed lock or predictions artifact")
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
-        record, record_sha = self._installed_record(state)
+        record, record_sha = self._installed_record(state, digests)
         git = self.git_state()
         rc.validate_lock(lock, state=state, digests=digests, confirmation=confirmation, record=record, record_file_sha256=record_sha,
                          predictions_text=predictions_path.read_text(encoding="utf-8"), git_state=git, tracked=self.tracked(lock_path) and self.tracked(predictions_path),

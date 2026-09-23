@@ -122,6 +122,27 @@ def test_frozen_constants_are_design_revision_3():
     assert (rd.MIN_VALID_FRESH_FRAMES, rd.MIN_VALID_COORDINATED_FRAMES, rd.MIN_SCORABLE_FRESH_NOUNS, rd.LEVEL1_TOLERANCE) == (12, 4, 18, 7e-3)
 
 
+def test_the_inherited_locks_are_bound_by_their_exact_digests(frozen):
+    pool, digests, confirmation = frozen
+    for key, path in (("lock_011", rd.EXPERIMENT_011_LOCK_PATH), ("lock_012", rd.EXPERIMENT_012_LOCK_PATH), ("lock_017", rd.EXPERIMENT_017_LOCK_PATH)):
+        committed = json.loads((ROOT / path).read_text())
+        assert committed["content_sha256"] == rc.content_digest(committed) == rc.LOCK_DIGESTS[key] == digests[key]  # the real input chain binds them
+    rc.assert_lock_digests(digests)
+    for key in rc.LOCK_DIGESTS:  # a replaced lock is refused, however self-consistent its own digest
+        with pytest.raises(rd.PhaseError, match=key):
+            rc.assert_lock_digests(dict(digests, **{key: "1" * 64}))
+    assert {"lock_011", "lock_012", "lock_017"} <= set(rc.DIGEST_KEYS)
+    full = {key: digests.get(key, f"{key}-digest") for key in rc.DIGEST_KEYS}
+    state = rc.new_results_state(digests=full, protocol_code_commit="a" * 40, git_dirty=False, versions={})
+    assert all(state[f"{key}_sha256"] == rc.LOCK_DIGESTS[key] for key in rc.LOCK_DIGESTS) and rc.state_digests(state) == rc.digest_tuple(full)
+    assert rc.state_digests(state) != rc.digest_tuple(dict(full, lock_017="1" * 64))  # a later phase would refuse the recorded state
+    record = {"inputs": dict(full)}
+    rc.assert_record_inputs(record, full)
+    for key in rc.LOCK_DIGESTS:
+        with pytest.raises(rd.PhaseError, match="different inputs"):
+            rc.assert_record_inputs(record, dict(full, **{key: "1" * 64}))
+
+
 def test_the_program_is_experiment_020s_blob(tmp_path):
     assert rc.program_blob_sha1(Path(rd.__file__)) == rc.PROGRAM_BLOB_SHA1 == rc.assert_program_blob()
     copy = tmp_path / "readout_decompilation.py"
