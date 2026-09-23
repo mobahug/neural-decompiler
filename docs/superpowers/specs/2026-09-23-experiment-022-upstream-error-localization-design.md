@@ -2,17 +2,16 @@
 
 **Date:** 2026-09-23
 
-**Status:** Revision 2. The review approved revision 1 (`2b20db3`) in principle and asked for precision changes
-before implementation. This revision makes exactly those changes (detailed in the revision history):
+**Status:** Revision 3. This is one correction to the approved revision 2 (`0f1009c`), found while writing the
+implementation plan and approved on its review.
 
-1. Every claim's calibration tail is an exact order statistic, so the upper-bound claim C2 cannot be computed from the
-   lower tail.
-2. C4 is worded to match its guard: a positive contribution, not a substantial one.
-3. The gap precondition is a per-condition interpretability rule. It removes no example and is never a pass or fail.
-4. Each of the eight conditions is reported individually, with no aggregate label and no requirement that all pass.
-5. New-frame validity is stated never to select anything.
+The calibration stop now triggers at **250 or more** undefined values of a one-sided statistic (C1, C2, C4), and at
+**125 or more** of C3's. Revision 2 said "more than 250" and "more than 125". Under the frozen ±∞ convention, exactly
+250 undefined values already make `v₍₂₅₀₎ = −∞` and `v₍₉₇₅₁₎ = +∞`, and exactly 125 make C3's bounds infinite.
 
-Nothing else changes from revision 1.
+Nothing else changes. Revision 2 had made the review's precision changes to revision 1 (`2b20db3`): exact tail
+directions, C4's wording, the gap rule as per-condition interpretability, eight individually reported conditions, and
+validity selecting nothing. They are listed in the revision history.
 
 Nothing is implemented: no Experiment 022 directory, code, results state, confirmation file, calibration record, lock
 or model run exists. This document freezes the question, the
@@ -375,8 +374,13 @@ The direction checks run before anything is written. The meaning guards are sepa
 - Descriptively, the share of draws in which all four conditions of a population pass, and in which all eight do.
 - The medians and the tails, and which claims are guard-bound.
 
-**Calibration stop.** If more than 250 values of a one-sided statistic, or more than 125 of C3's, are undefined, that
-envelope would be degenerate. `calibrate` then writes no floor table and stops for review. This is not an incident.
+**Calibration stop.** The stop triggers if **250 or more** values of a one-sided statistic (C1, C2, C4), or **125 or
+more** of C3's, are undefined. Under the frozen ±∞ convention, such an envelope would be infinite:
+- exactly 250 undefined values already make `v₍₂₅₀₎ = −∞` for C1 and C4, and `v₍₉₇₅₁₎ = +∞` for C2;
+- exactly 125 make `v₍₁₂₅₎ = −∞` and `v₍₉₈₇₆₎ = +∞` for C3.
+
+`calibrate` then writes no floor table and stops for review. This is a pre-lock calibration stop for review. It is not
+scientific evidence, not an incident, and it is never retried automatically.
 
 The candidate calibration record is installed byte-identically, committed, and reviewed before `lock` (021's
 procedure).
@@ -492,6 +496,12 @@ is in layer 0.
 
 Everything else in revision 1 was preserved.
 
+**Review of the implementation plan (2026-09-23).** Revision 2 was approved. The plan's review approved one correction
+to the design: the calibration stop triggers at 250 or more undefined values (C1, C2, C4) and at 125 or more (C3). It
+stays a pre-lock stop for review. This is revision 3. The review's other decisions are implementation-level and are
+recorded in the plan: the freeze before calibrate, the I3 norm, the R1 pre-check, the exclusion extraction, the draw
+order, the committed lock table, the median, the percentile, and the replication gates.
+
 ## Implementation boundary (for the plan, after approval)
 
 - **New module** `src/neural_decompiler/upstream_localization.py`:
@@ -511,6 +521,8 @@ Everything else in revision 1 was preserved.
   - the floor rule's exact order statistics: `F1`, `F4` from element `[249]` of the ascending array; `F2` from element
     `[9750]` (a test fails if C2 takes `[249]`); C3 from elements `[124]` and `[9875]`;
   - the direction checks and the undefined-value convention;
+  - the calibration stop at exactly 250 undefined values (C1, C2, C4) and exactly 125 (C3), with 249 and 124
+    proceeding;
   - the four-way condition result (`NOT_INTERPRETABLE`, `GUARD_FAILURE`, `ENVELOPE_ONLY_FAILURE`, `PASS`) at every
     boundary: exactly `0.50`, `0.10`, `0.90` and `0`, and exactly on each envelope bound;
   - that the gap rule removes no unit;
@@ -535,7 +547,7 @@ Stop after this revision. After approval, the sequence is:
 
 - Revision 1 (2026-09-23, `2b20db3`): proposal for review, after the research-design spike and the reviewer's choice
   of Option A.
-- Revision 2 (2026-09-23): the review's precision changes; nothing else changes.
+- Revision 2 (2026-09-23, `0f1009c`): the review's precision changes; nothing else changes.
   - **Tails.** Each claim's envelope is an exact 1-based order statistic of the ascending draws: `v₍₂₅₀₎` for the lower
     bounds C1 and C4; `v₍₉₇₅₁₎`, the upper tail, for C2; `v₍₁₂₅₎` and `v₍₉₈₇₆₎` for C3. Direction checks and tests are
     added, and the generic "250th value" wording is removed.
@@ -545,3 +557,7 @@ Stop after this revision. After approval, the sequence is:
   - **Results.** The Y1/Y2 aggregate labels are replaced by eight individual condition results (`PASS`,
     `ENVELOPE_ONLY_FAILURE`, `GUARD_FAILURE`, `NOT_INTERPRETABLE`), with no pooling and no all-pass requirement.
   - **Validity.** Stated to select nothing.
+- Revision 3 (2026-09-23): the calibration stop's threshold is corrected from "more than 250" and "more than 125" to
+  "250 or more" (C1, C2, C4) and "125 or more" (C3). Exactly those counts already make the order statistic infinite
+  under the ±∞ convention. It stays a pre-lock stop for review: not evidence, not an incident, never retried
+  automatically. Nothing else changes.
