@@ -852,6 +852,12 @@ def test_verified_y2_blocks_and_the_barrier_refuse_every_mismatch(tmp_path):
     confirmation = SimpleNamespace(target_prompts=(SimpleNamespace(key="k1"), SimpleNamespace(key="k2")))
     state = {"confirmation": {"stage1": stage1}, "executed_prompt_keys": ["other"]}
     assert set(ul.barrier_022(tmp_path, state, lock, confirmation)) == {"cue_final", "coordinated"}
+    expected = ul.stage_one_expectations(stage1)
+    assert set(ul.barrier_022(tmp_path, state, lock, confirmation, expected)) == {"cue_final", "coordinated"}
+    with pytest.raises(ul.IncidentError, match="not the one stage 1 wrote"):
+        ul.barrier_022(tmp_path, state, lock, confirmation, {**expected, "stage1_digest": "0" * 64})
+    with pytest.raises(ul.IncidentError, match="other than the ones stage 1 wrote"):
+        ul.verified_y2_blocks(tmp_path, stage1, lock, {**expected, "y2_file_sha256": "0" * 64})
     with pytest.raises(ul.IncidentError, match="S2-TARGET"):
         ul.barrier_022(tmp_path, {**state, "executed_prompt_keys": ["k2"]}, lock, confirmation)
     with pytest.raises(ul.IncidentError, match="digest"):

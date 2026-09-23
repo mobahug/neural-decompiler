@@ -520,6 +520,26 @@ def test_a_y2_table_changed_before_the_barrier_is_an_incident_and_the_artifact_i
         runner.confirm()
 
 
+def test_a_consistent_rewrite_of_the_stage1_record_is_caught_at_the_barrier(world, locked, sandbox, monkeypatch):
+    root = sandbox(locked)
+    original = rd.load_results_state
+
+    def rewritten(path):
+        state = original(path)
+        stage1 = (state.get("confirmation") or {}).get("stage1")
+        if stage1 is not None and "stage2" not in state["confirmation"]:
+            frame_id = sorted(stage1["frames"])[0]
+            stage1["frames"][frame_id]["validity"]["valid"] = not stage1["frames"][frame_id]["validity"]["valid"]
+            stage1["digest"] = ul.stage_one_digest(stage1)  # self-consistent: only the in-memory digest can tell
+        return state
+
+    monkeypatch.setattr(rd, "load_results_state", rewritten)
+    spy = ExecutionSpy(monkeypatch)
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2 and "not the one stage 1 wrote" in logs[-1]
+    assert not (set(spy.counts) & {prompt.key for prompt in _confirmation(runner).target_prompts})
+
+
 def test_a_y2_table_changed_after_the_barrier_is_an_incident(world, locked, sandbox, monkeypatch):
     root = sandbox(locked)
     original = ul.stage_two_022

@@ -543,6 +543,7 @@ class Runner:
             try:
                 executed_1: list[pm.Prompt] = []
                 stage1 = ul.stage_one_022(model, progs, confirmation, lock, root=self.root, protocol_code_commit=commit, executed=executed_1, log=self.log)
+                expected = ul.stage_one_expectations(stage1)  # kept in memory: the barrier compares the re-read artifacts with what stage 1 wrote
                 state["confirmation"] = {"stage1": stage1}
                 self._write(state)  # the stage-1 record, with the Y2 table's digests, is on disk
                 if Counter(prompt.key for prompt in executed_1) != Counter(prompt.key for prompt in confirmation.stage1_prompts):
@@ -550,7 +551,7 @@ class Runner:
                 ul.enforce_table_gates(stage1["y2_table"]["gates"])
                 # Hard boundary: the digested stage-1 record and the Y2 table are re-read from disk and verified before any S2-TARGET prompt.
                 state = rd.load_results_state(self.results_path)
-                y2_blocks = ul.barrier_022(self.root, state, lock, confirmation)
+                y2_blocks = ul.barrier_022(self.root, state, lock, confirmation, expected)
                 stage1 = state["confirmation"]["stage1"]
                 states["Y2"] = {frame.frame_id: rd.state_from_locked(stage1["states"][frame.frame_id], frame) for frame in confirmation.frames}
                 self.log("barrier passed: the stage-1 record and the Y2 table verified from disk; no S2-TARGET prompt has run; stage 2 begins")
@@ -568,7 +569,7 @@ class Runner:
                 for key, value in tensors.items():
                     if key.endswith(("/dc", "/ceiling", "/dx1", "/dx3")) and not bool(torch.isfinite(value).all()):
                         raise pm.IncidentError(f"a missing or non-finite stage-2 measurement in {key}")
-                after = ul.verified_y2_blocks(self.root, stage1, lock)  # any change after the barrier is an incident
+                after = ul.verified_y2_blocks(self.root, stage1, lock, expected)  # any change after the barrier is an incident
                 if any(not torch.equal(after[name], y2_blocks[name]) for name in y2_blocks):
                     raise pm.IncidentError("the Y2 table changed after the barrier")
                 tables = {"Y1": y1_blocks, "Y2": y2_blocks}

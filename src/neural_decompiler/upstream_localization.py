@@ -1856,14 +1856,23 @@ def stage_one_022(model: Any, progs: ModelPrograms, confirmation: Confirmation02
     return record
 
 
-def verified_y2_blocks(root: Path, stage1: Mapping[str, Any], lock: Mapping[str, Any]) -> dict[str, torch.Tensor]:
-    """The Y2 table re-read from disk: its index against the stage-1 record's digest, the bytes against the index's,
-    and the layout, construction and orders against the lock. Every mismatch is an incident."""
+def stage_one_expectations(stage1: Mapping[str, Any]) -> dict[str, str]:
+    """What stage 1 wrote, kept in memory: the barrier and the post-stage-2 check compare the re-read artifacts with
+    these, not only with themselves (a consistent rewrite of the state and the table is caught too)."""
+    return {"stage1_digest": stage1["digest"], "y2_file_sha256": stage1["y2_table"]["file_sha256"], "y2_index_sha256": stage1["y2_table"]["index_sha256"]}
+
+
+def verified_y2_blocks(root: Path, stage1: Mapping[str, Any], lock: Mapping[str, Any], expected: Mapping[str, str] | None = None) -> dict[str, torch.Tensor]:
+    """The Y2 table re-read from disk: its index against the stage-1 record's digest (and the digests stage 1 wrote,
+    when given), the bytes against the index's, and the layout, construction and orders against the lock. Every
+    mismatch is an incident."""
     import json
 
     entry = stage1["y2_table"]
     if (entry["data_path"], entry["index_path"]) != (lock["y2_table"]["data_path"], lock["y2_table"]["index_path"]):
         raise IncidentError("the stage-1 record names a Y2 table other than the bound one")
+    if expected is not None and (entry["file_sha256"], entry["index_sha256"]) != (expected["y2_file_sha256"], expected["y2_index_sha256"]):
+        raise IncidentError("the re-read stage-1 record names Y2 digests other than the ones stage 1 wrote")
     data_path, index_path = root / entry["data_path"], root / entry["index_path"]
     if not data_path.exists() or not index_path.exists():
         raise IncidentError("the Y2 table written at stage 1 is missing")
@@ -1876,19 +1885,22 @@ def verified_y2_blocks(root: Path, stage1: Mapping[str, Any], lock: Mapping[str,
     return read_table(data_path, index)
 
 
-def barrier_022(root: Path, state: Mapping[str, Any], lock: Mapping[str, Any], confirmation: Confirmation022) -> dict[str, torch.Tensor]:
-    """The hard boundary, on the results state re-read from disk: the stage-1 record reproduces its digest and names
-    this lock; the ledger holds no S2-TARGET key; the Y2 table is re-read and verified. Returns the verified blocks,
-    which stage 2's scoring consumes."""
+def barrier_022(root: Path, state: Mapping[str, Any], lock: Mapping[str, Any], confirmation: Confirmation022,
+                expected: Mapping[str, str] | None = None) -> dict[str, torch.Tensor]:
+    """The hard boundary, on the results state re-read from disk: the stage-1 record reproduces its digest, is the
+    one stage 1 wrote (``expected``) and names this lock; the ledger holds no S2-TARGET key; the Y2 table is re-read
+    and verified. Returns the verified blocks, which stage 2's scoring consumes."""
     stage1 = (state.get("confirmation") or {}).get("stage1")
     if stage1 is None or stage1.get("digest") != stage_one_digest(stage1):
         raise IncidentError("the stage-1 record does not reproduce its digest; no S2-TARGET prompt may run")
+    if expected is not None and stage1["digest"] != expected["stage1_digest"]:
+        raise IncidentError("the re-read stage-1 record is not the one stage 1 wrote; no S2-TARGET prompt may run")
     if stage1.get("lock_sha256") != lock["content_sha256"]:
         raise IncidentError("the stage-1 record was written under a different lock")
     overlap = {prompt.key for prompt in confirmation.target_prompts} & set(state["executed_prompt_keys"])
     if overlap:
         raise IncidentError(f"{len(overlap)} S2-TARGET keys are in the ledger before the barrier, e.g. {sorted(overlap)[:2]}")
-    return verified_y2_blocks(root, stage1, lock)
+    return verified_y2_blocks(root, stage1, lock, expected)
 
 
 def y1_states(locked_states: Mapping[str, Any], frames: Sequence[pm.Frame]) -> dict[str, rd.FrameState020]:
