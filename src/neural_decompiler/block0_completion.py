@@ -257,3 +257,193 @@ def exposed_units(inputs: ul.FrozenInputs) -> ExposedUnits:
     counts = {"classes": {cls: 0 for cls in ul.CUE_CLASSES}, "templates": {template: 0 for template in ul.TEMPLATES}}
     units = ul.units_from(pools.cues, inputs.pool.frames, pools.frames_unscreened, counts)
     return ExposedUnits(tuple(units.cues), tuple(units.frames), {template: tuple(indices) for template, indices in units.y2_frames.items()})
+
+
+# ---------------------------------------------------------------------------
+# The canonical scoring path: per-pair sufficient statistics → pooling → statistics → classification. The calibration
+# and the confirmation both use exactly these functions.
+
+
+def pair_cells(y: torch.Tensor, p0: torch.Tensor, p1: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+    """One pair's eight cell values over its nouns, in ``CELL_COLUMNS`` order. The SSE and the two-pass moments are
+    Experiment 022's own cell computation (``ul.pair_cells``); ``S`` and ``Q`` are plain float64 sums."""
+    y = y.double()
+    sse, count, mean, m2 = ul.pair_cells(y, torch.stack([p0.double(), p1.double(), c.double()]))
+    return torch.tensor([count, float(y.sum()), float((y * y).sum()), float(sse[0]), float(sse[1]), float(sse[2]), mean, m2], dtype=torch.float64)
+
+
+def pool(cells: torch.Tensor, index: torch.Tensor) -> dict[str, torch.Tensor]:
+    """Pool the cells selected by ``index`` (``[K]`` or ``[D, K]``; a repeated index counts once per selection) over its
+    last axis: ``N``, ``S``, ``Q``, the three SSE, ``SST = Q − S²/N`` and, for the E6 cross-check only, the pooled
+    two-pass identity ``Σ M2 + Σ n (mean − S/N)²``."""
+    selected = cells[index]
+    n, s, q = selected[..., 0].sum(-1), selected[..., 1].sum(-1), selected[..., 2].sum(-1)
+    grand = s / n
+    two_pass = selected[..., 7].sum(-1) + (selected[..., 0] * (selected[..., 6] - grand.unsqueeze(-1)) ** 2).sum(-1)
+    return {"N": n, "S": s, "Q": q, "SSE0": selected[..., 3].sum(-1), "SSE1": selected[..., 4].sum(-1), "SSEC": selected[..., 5].sum(-1), "SST": q - s * s / n,
+            "SST_two_pass": two_pass}
+
+
+def e6_error(pooled: Mapping[str, torch.Tensor]) -> torch.Tensor:
+    """|SST − two-pass| relative to the two-pass value (absolute where that is zero)."""
+    difference = (pooled["SST"] - pooled["SST_two_pass"]).abs()
+    scale = pooled["SST_two_pass"].abs()
+    return torch.where(scale > 0, difference / torch.where(scale > 0, scale, torch.ones_like(scale)), difference)
+
+
+def enforce_e6(pooled: Mapping[str, torch.Tensor], where: str) -> float:
+    worst = float(e6_error(pooled).max()) if pooled["SST"].numel() else 0.0
+    if not worst <= TOLERANCES["E6"]:
+        raise IncidentError(f"E6 failed at {where}: SST = Q − S²/N differs from the pooled two-pass identity by {worst:.3e} (relative) against {TOLERANCES['E6']:.0e}")
+    return worst
+
+
+def statistics(pooled: Mapping[str, torch.Tensor]) -> dict[str, torch.Tensor]:
+    """``g`` (unclipped; NaN where undefined), the interpretability flag, the gap ``(SSE0 − SSEC)/SST``, the three
+    ``R²`` and the descriptive ceiling-limited flag. Undefined iff ``SST ≤ 0`` or ``SSE0 − SSEC < 0.02 · SST``."""
+    sst, sse0, sse1, ssec = (pooled[key].double() for key in ("SST", "SSE0", "SSE1", "SSEC"))
+    positive = sst > 0.0
+    safe = torch.where(positive, sst, torch.ones_like(sst))
+    explainable = sse0 - ssec
+    defined = positive & torch.isfinite(explainable) & (explainable >= GAP_MIN * sst)
+    g = torch.where(defined, (sse0 - sse1) / torch.where(defined, explainable, torch.ones_like(explainable)), torch.full_like(sst, math.nan))
+    nan = torch.full_like(sst, math.nan)
+    r2 = {k: torch.where(positive, 1.0 - value / safe, nan) for k, value in (("R2_0", sse0), ("R2_1", sse1), ("R2_C", ssec))}
+    return {"g": g, "defined": defined, "gap": torch.where(positive, explainable / safe, nan), **r2, "ceiling_limited": positive & (r2["R2_C"] < CEILING_LIMITED_R2),
+            "SST": sst}
+
+
+def lower_rank(draws: int) -> int:
+    """⌈0.025·B⌉ in integer arithmetic: 250 at B = 10,000 (zero-based element [249])."""
+    return (25 * int(draws) + 999) // 1000
+
+
+def lower_bound(values: torch.Tensor, defined: torch.Tensor) -> dict[str, Any]:
+    """The lower envelope: the ``lower_rank``-th ascending value with undefined values placed at −∞."""
+    rank = lower_rank(int(values.shape[0]))
+    return {"kind": "lower", "rank": rank, "element": rank - 1, "bound": ul.order_statistic(values, defined, rank, undefined_at=-math.inf)}
+
+
+def direction_check(envelope: Mapping[str, Any], values: torch.Tensor, defined: torch.Tensor) -> dict[str, Any]:
+    median = ul.defined_median(values, defined)
+    return {"ok": bool(median is not None and envelope["bound"] <= median), "median": median}
+
+
+def classify(g: float | None, defined: bool, bound: float) -> str:
+    """``NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS``: the only function that decides a result.
+    The effective requirement of a PASS is ``g ≥ max(bound, 0.90)``; ``g > 1`` is an ordinary value."""
+    if not defined:
+        return "NOT_INTERPRETABLE"
+    if g is None or not math.isfinite(float(g)):
+        raise IncidentError("a non-finite g where the gap rule holds")
+    if float(g) < GUARD_MIN:
+        return "GUARD_FAILURE"
+    if float(g) < float(bound):
+        return "ENVELOPE_ONLY_FAILURE"
+    return "PASS"
+
+
+def score_selection(cells: torch.Tensor, index: torch.Tensor, bound: float | None, where: str) -> dict[str, Any]:
+    """One selection of pairs (a fresh condition): pooled, E6-checked, its statistics and, given a bound, its result."""
+    pooled = pool(cells, index)
+    e6 = enforce_e6(pooled, where)
+    stats = statistics(pooled)
+    defined = bool(stats["defined"])
+    g = float(stats["g"]) if defined else None
+    out = {"N": float(pooled["N"]), "SST": float(pooled["SST"]), "SSE0": float(pooled["SSE0"]), "SSE1": float(pooled["SSE1"]), "SSEC": float(pooled["SSEC"]),
+           "g": g, "interpretable": defined, "gap": _float_or_none(stats["gap"]), "R2_0": _float_or_none(stats["R2_0"]), "R2_1": _float_or_none(stats["R2_1"]),
+           "R2_C": _float_or_none(stats["R2_C"]), "ceiling_limited": bool(stats["ceiling_limited"]), "e6": e6}
+    if bound is not None:
+        out["result"] = classify(g, defined, bound)
+    return out
+
+
+def _float_or_none(value: torch.Tensor) -> float | None:
+    number = float(value)
+    return number if math.isfinite(number) else None
+
+
+# ---------------------------------------------------------------------------
+# SHA-indexed draws (022's formula with 023's tag).
+
+
+def slot_index(b: int, stratum: str, slot: int, n: int) -> int:
+    return int.from_bytes(hashlib.sha256(f"{DRAW_TAG}|{b}|{stratum}|{slot}".encode("utf-8")).digest()[:8], "big") % int(n)
+
+
+def draw_slots() -> dict[str, int]:
+    return {**{f"cue/{stratum}": CUE_QUOTA for stratum in STRATA}, **{f"frame/{template}": FRAME_QUOTA for template in TEMPLATES}}
+
+
+def draw_indices(units: ExposedUnits, draws: int) -> dict[str, torch.Tensor]:
+    """Per stratum ``[draws, slots]`` indices into that stratum's frozen order (cues by token id, Y2-like frames by
+    ``frame_id``)."""
+    sizes = {**{f"cue/{stratum}": len(units.stratum_cues(stratum)) for stratum in STRATA}, **{f"frame/{template}": len(units.y2_like[template]) for template in TEMPLATES}}
+    slots = draw_slots()
+    if any(size == 0 for size in sizes.values()):
+        raise PhaseError(f"an empty calibration stratum: {sizes}")
+    return {stratum: torch.tensor([[slot_index(b, stratum, i, n) for i in range(slots[stratum])] for b in range(draws)], dtype=torch.int64) for stratum, n in sizes.items()}
+
+
+def draw_index_digests(indices: Mapping[str, torch.Tensor]) -> dict[str, str]:
+    return {stratum: rc.tensor_digest(values) for stratum, values in sorted(indices.items())}
+
+
+def draw_pairs(units: ExposedUnits, indices: Mapping[str, torch.Tensor], population: str, group: str, rows: Sequence[int] | range) -> torch.Tensor:
+    """``[D, K]`` flat pair indices of draws ``rows`` for a population and group, repeats included: Y1-like — the
+    drawn cues × the group's exposed frames; Y2-like — the drawn cues × the group's drawn Y2-like frames."""
+    rows = torch.as_tensor(list(rows), dtype=torch.int64)
+    cues = torch.cat([torch.tensor(units.stratum_cues(stratum), dtype=torch.int64)[indices[f"cue/{stratum}"][rows]] for stratum in STRATA], dim=1)  # [D, 24]
+    n_frames = len(units.frames)
+    if population == "Y1":
+        frames = torch.tensor(units.group_frames(group), dtype=torch.int64).unsqueeze(0).expand(len(rows), -1)
+    elif population == "Y2":
+        templates = [template for template in TEMPLATES if (template == COORDINATED) == (group == "coordinated")]
+        frames = torch.cat([torch.tensor(units.y2_like[template], dtype=torch.int64)[indices[f"frame/{template}"][rows]] for template in templates], dim=1)
+    else:
+        raise ValueError(f"unknown population {population}")
+    return (cues.unsqueeze(2) * n_frames + frames.unsqueeze(1)).reshape(len(rows), -1)
+
+
+# ---------------------------------------------------------------------------
+# The exposed-cells artifact: 022's table byte format (raw little-endian float64 with a canonical-JSON index).
+
+
+def cells_source(record_022: Mapping[str, Any]) -> dict[str, Any]:
+    """What the artifact binds of Experiment 022: the local table's file digest and tensor digests (from 022's committed
+    record) and the record's file and content digests."""
+    return {"table_path": TABLE_022_RELATIVE_PATH, "table_file_sha256": INHERITED_022["table_file_sha256"],
+            "table_tensor_sha256": dict(record_022["rematerialization"]["table_sha256"]), "calibration_record_path": ul.CALIBRATION_RELATIVE_PATH,
+            "calibration_record_file_sha256": INHERITED_022["calibration_file_sha256"], "calibration_record_content_sha256": INHERITED_022["calibration_content_sha256"],
+            "confirmation_022_content_sha256": INHERITED_022["confirmation_content_sha256"]}
+
+
+def cells_meta(units: ExposedUnits, noun_keys: Sequence[str], record_022: Mapping[str, Any]) -> dict[str, Any]:
+    """Everything the artifact's index binds besides its bytes, all of it recomputable from the frozen inputs and 022's
+    committed record: the columns and their formulas, the canonical pair order with every cue's id and stratum and
+    every frame's id, template and group, the Y2-like frames, the nouns, the program's masks and 022's digests."""
+    return {"experiment": EXPERIMENT, "kind": "exposed-cells", "schema_version": 1, "version": CELLS_VERSION, "design": dict(DESIGN), "columns": list(CELL_COLUMNS),
+            "column_formulas": dict(CELL_FORMULAS), **units.to_json(), "nouns": list(noun_keys),
+            "program": {"P0_mask": P0_MASK, "P1_mask": dict(P1_MASK), "ceiling": "the frozen Experiment 020 readout fed the measured Δx3 (022's stored ceiling)"},
+            "source_022": cells_source(record_022)}
+
+
+def cells_layout(units: ExposedUnits) -> list[dict[str, Any]]:
+    return [{"name": "cells", "shape": [units.n_pairs, len(CELL_COLUMNS)]}]
+
+
+def write_cells(data_path: Path, index_path: Path, cells: torch.Tensor, meta: Mapping[str, Any], extraction: Mapping[str, Any]) -> dict[str, Any]:
+    """Write the artifact once, in 022's byte format; the index carries ``meta`` and the extraction record."""
+    return ul.write_table(Path(data_path), Path(index_path), [("cells", cells.double())], {**dict(meta), "extraction": dict(extraction)})
+
+
+def read_cells(data_path: Path, index_path: Path, *, units: ExposedUnits, meta: Mapping[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
+    """The artifact re-read and verified: the byte format, the layout, every bound meta field against the one recomputed
+    now, and the bytes against the index's digest. A mismatch refuses (``PhaseError``)."""
+    index = json.loads(Path(index_path).read_text(encoding="utf-8"))
+    ul.verify_table_index(index, layout=cells_layout(units), meta=meta, error=PhaseError)
+    try:
+        blocks = ul.read_table(Path(data_path), index)
+    except IncidentError as error:
+        raise PhaseError(f"the exposed-cells artifact does not match its index: {error}") from None
+    return blocks["cells"], index

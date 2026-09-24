@@ -102,3 +102,173 @@ def test_the_exposed_order_is_022s_canonical_calibration_order():
     reference = ul.units_from(rc.production_pools(inputs.pool).cues, inputs.pool.frames, rc.production_pools(inputs.pool).frames_unscreened,
                               {"classes": {cls: 6 for cls in ul.CUE_CLASSES}, "templates": {template: 6 for template in ul.TEMPLATES}})
     assert tuple(reference.cues) == units.cues and dict(reference.y2_frames) == dict(units.y2_like)  # the counts never change the order
+
+
+# ---------------------------------------------------------------------------
+# Task 2: the canonical scoring path, the draws and the artifact format.
+
+
+def _frames(templates):
+    from types import SimpleNamespace
+
+    return tuple(SimpleNamespace(frame_id=f"{template}-{i:02d}", template_id=template) for i, template in enumerate(templates))
+
+
+def _toy_units():
+    """Four cues per 022 class (the pronoun class included, as in 022's order) and nine frames, three per template."""
+    cues = tuple((f"{cls[:3]}{k}", 100 * i + k, cls) for i, cls in enumerate(ul.CUE_CLASSES) for k in range(4))
+    frames = _frames(["cardinal"] * 3 + ["coordinated-adjective"] * 3 + ["quantifier"] * 3)
+    frames = tuple(sorted(frames, key=lambda frame: frame.frame_id))
+    y2_like = {template: tuple(i for i, frame in enumerate(frames) if frame.template_id == template)[:2] for template in b0c.TEMPLATES}
+    return b0c.ExposedUnits(cues, frames, y2_like)
+
+
+def _random_cells(n_pairs, seed=23, n=79):
+    generator = torch.Generator().manual_seed(seed)
+    rows, raw = [], []
+    for k in range(n_pairs):
+        y = torch.randn(n, generator=generator, dtype=torch.float64) * (0.5 + k % 3) - 4.0 + 0.7 * k
+        p0 = y + torch.randn(n, generator=generator, dtype=torch.float64)
+        p1 = y + 0.1 * torch.randn(n, generator=generator, dtype=torch.float64)
+        c = y + 0.09 * torch.randn(n, generator=generator, dtype=torch.float64)
+        rows.append(b0c.pair_cells(y, p0, p1, c))
+        raw.append((y, p0, p1, c))
+    return torch.stack(rows), raw
+
+
+def test_pair_cells_are_the_sufficient_statistics_computed_by_022s_cell_path():
+    y = torch.tensor([1.0, 2.0, 4.0], dtype=torch.float64)
+    p0, p1, c = torch.zeros(3, dtype=torch.float64), y - 0.5, y + 0.25
+    cells = b0c.pair_cells(y, p0, p1, c)
+    mean = 7.0 / 3.0
+    assert cells[:6].tolist() == [3.0, 7.0, 21.0, 21.0, 0.75, 0.1875]
+    assert float(cells[6]) == pytest.approx(mean, abs=1e-15) and float(cells[7]) == pytest.approx(sum((v - mean) ** 2 for v in (1.0, 2.0, 4.0)), abs=1e-14)
+    compositions = torch.zeros(32, 3, dtype=torch.float64)
+    compositions[14] = p1
+    sse, count, mean_022, m2_022 = ul.pair_cells(y, compositions)  # 022's own cell computation on a 32-row table
+    assert float(cells[3]) == float(sse[0]) and float(cells[4]) == float(sse[14]) and float(cells[0]) == count
+    assert float(cells[6]) == mean_022 and float(cells[7]) == m2_022
+
+
+def test_pooled_sst_is_the_pooled_variance_with_repeats_never_a_sum_of_pair_variances():
+    cells, raw = _random_cells(4)
+    index = torch.tensor([0, 2, 2, 3, 2])  # repeats count once per selection
+    pooled = b0c.pool(cells, index)
+    flat = [torch.cat([raw[i][k] for i in index.tolist()]) for k in range(4)]
+    y = flat[0]
+    direct_sst = float(((y - y.mean()) ** 2).sum())
+    assert float(pooled["N"]) == 5 * 79 and float(pooled["S"]) == pytest.approx(float(y.sum()), rel=1e-14)
+    assert float(pooled["SST"]) == pytest.approx(direct_sst, rel=1e-12) and float(pooled["SST_two_pass"]) == pytest.approx(direct_sst, rel=1e-12)
+    for key, prediction in (("SSE0", flat[1]), ("SSE1", flat[2]), ("SSEC", flat[3])):
+        assert float(pooled[key]) == pytest.approx(float(((y - prediction) ** 2).sum()), rel=1e-13)
+    summed_pair_variances = float(cells[index, 7].sum())
+    assert direct_sst - summed_pair_variances > 100.0  # the pair means differ: the naive sum is wrong, and the pooled SST is not it
+    batched = b0c.pool(cells, torch.stack([index, torch.tensor([1, 1, 1, 0, 3])]))
+    assert float(batched["SST"][0]) == float(pooled["SST"]) and float(batched["SSE1"][0]) == float(pooled["SSE1"])
+
+
+def test_e6_holds_on_consistent_cells_and_raises_on_a_planted_inconsistency():
+    cells, _ = _random_cells(4)
+    index = torch.tensor([0, 1, 2, 3, 3])
+    assert b0c.enforce_e6(b0c.pool(cells, index), "consistent") <= 1e-13
+    bad = cells.clone()
+    bad[3, 2] += 1e-3  # Q no longer agrees with the two-pass moments
+    with pytest.raises(b0c.IncidentError, match="E6"):
+        b0c.enforce_e6(b0c.pool(bad, index), "planted")
+
+
+def test_g_is_unclipped_and_the_gap_rule_decides_interpretability():
+    pooled = {"SST": torch.tensor([100.0, 100.0, 100.0, 100.0, 0.0, 100.0, 100.0], dtype=torch.float64),
+              "SSE0": torch.tensor([50.0, 50.0, 50.0, 50.0, 1.0, 50.0, 50.0], dtype=torch.float64),
+              "SSE1": torch.tensor([5.0, 60.0, 10.0, 12.0, 1.0, 48.0, 48.0], dtype=torch.float64),
+              "SSEC": torch.tensor([10.0, 10.0, 10.0, 49.0, 1.0, 48.1, 48.0], dtype=torch.float64)}
+    stats = b0c.statistics(pooled)
+    assert stats["defined"].tolist() == [True, True, True, False, False, False, True]
+    assert float(stats["g"][0]) == pytest.approx(1.125)  # the program beats the ceiling: g > 1 is a valid value
+    assert float(stats["g"][1]) == pytest.approx(-0.25)  # g < 0 is a valid value
+    assert float(stats["g"][2]) == pytest.approx(1.0) and float(stats["g"][6]) == pytest.approx(1.0)  # exactly at the 0.02 boundary: defined
+    assert all(math_isnan(float(stats["g"][i])) for i in (3, 4, 5))
+    assert float(stats["gap"][0]) == pytest.approx(0.40) and float(stats["R2_1"][0]) == pytest.approx(0.95) and float(stats["R2_C"][3]) == pytest.approx(0.51)
+    assert stats["ceiling_limited"].tolist() == [False, False, False, True, False, True, True]  # R²_C < 0.80, descriptive only
+
+
+def math_isnan(value: float) -> bool:
+    return value != value
+
+
+def test_the_lower_bound_is_element_249_with_undefined_values_at_minus_infinity_and_250_stop_it():
+    assert b0c.lower_rank(10_000) == 250 and b0c.lower_rank(40) == 1
+    values = torch.arange(10_000, dtype=torch.float64) / 10_000
+    defined = torch.ones(10_000, dtype=torch.bool)
+    assert b0c.lower_bound(values, defined) == {"kind": "lower", "rank": 250, "element": 249, "bound": 0.0249}
+    defined[5000:5249] = False  # 249 undefined draws count against the tail but leave a finite bound
+    assert b0c.lower_bound(values, defined)["bound"] == 0.0  # the 250th value: after the 249 at −∞ comes the smallest defined value, 0.0
+    defined[5249] = False  # the 250th undefined draw makes the bound −∞: the calibration stop
+    assert b0c.lower_bound(values, defined)["bound"] == float("-inf")
+    assert b0c.direction_check({"bound": 0.0249}, values, torch.ones(10_000, dtype=torch.bool))["ok"]
+    assert not b0c.direction_check({"bound": 0.9}, values, torch.ones(10_000, dtype=torch.bool))["ok"]
+
+
+def test_classify_precedence_and_the_effective_threshold():
+    assert b0c.classify(None, False, 0.99) == "NOT_INTERPRETABLE"
+    assert b0c.classify(0.85, True, 0.50) == "GUARD_FAILURE"  # the guard binds even below a lower envelope
+    assert b0c.classify(-0.3, True, 0.99) == "GUARD_FAILURE"
+    assert b0c.classify(0.95, True, 0.99) == "ENVELOPE_ONLY_FAILURE"
+    assert b0c.classify(0.995, True, 0.99) == "PASS" and b0c.classify(0.90, True, 0.50) == "PASS"
+    assert b0c.classify(1.2, True, 0.99) == "PASS"  # g > 1: an ordinary pass, never an incident
+    with pytest.raises(b0c.IncidentError, match="non-finite"):
+        b0c.classify(float("nan"), True, 0.9)
+
+
+def test_score_selection_is_the_single_path_from_cells_to_a_result():
+    cells, _ = _random_cells(6)
+    index = torch.arange(6)
+    scored = b0c.score_selection(cells, index, 0.5, "toy")
+    pooled = b0c.pool(cells, index)
+    stats = b0c.statistics(pooled)
+    assert scored["g"] == float(stats["g"]) and scored["SST"] == float(pooled["SST"]) and scored["interpretable"]
+    assert scored["result"] == b0c.classify(scored["g"], True, 0.5) and scored["e6"] <= 1e-13
+    assert set(scored) == {"N", "SST", "SSE0", "SSE1", "SSEC", "g", "interpretable", "gap", "R2_0", "R2_1", "R2_C", "ceiling_limited", "e6", "result"}
+    assert "result" not in b0c.score_selection(cells, index, None, "toy")
+
+
+def test_draws_are_sha_indexed_with_the_023_tag_and_select_only_the_three_strata():
+    import hashlib
+
+    units = _toy_units()
+    indices = b0c.draw_indices(units, 7)
+    assert {key: tuple(value.shape) for key, value in indices.items()} == {**{f"cue/{s}": (7, 8) for s in b0c.STRATA}, **{f"frame/{t}": (7, 6) for t in b0c.TEMPLATES}}
+    expected = int.from_bytes(hashlib.sha256(b"023|primary|3|cue/quantity|5").digest()[:8], "big") % 4
+    assert int(indices["cue/quantity"][3, 5]) == expected == b0c.slot_index(3, "cue/quantity", 5, 4)
+    assert all(torch.equal(a, b) for a, b in zip(indices.values(), b0c.draw_indices(units, 7).values()))
+    stratum_cues = {i for stratum in b0c.STRATA for i in units.stratum_cues(stratum)}
+    for population in b0c.POPULATIONS:
+        for group in b0c.GROUPS:
+            pairs = b0c.draw_pairs(units, indices, population, group, range(7))
+            n_frames = len(units.group_frames(group)) if population == "Y1" else (12 if group == "cue_final" else 6)
+            assert tuple(pairs.shape) == (7, 24 * n_frames)
+            cues, frames = pairs // len(units.frames), pairs % len(units.frames)
+            assert set(cues.flatten().tolist()) <= stratum_cues  # never the pronoun class
+            assert all(units.group_of(f) == group for f in set(frames.flatten().tolist()))
+            if population == "Y2":
+                assert set(frames.flatten().tolist()) <= {i for indices_ in units.y2_like.values() for i in indices_}
+
+
+def test_the_cells_artifact_round_trips_and_refuses_any_mismatch(tmp_path):
+    units = _toy_units()
+    record = {"rematerialization": {"table_sha256": {"dc": "d" * 64}}}
+    meta = b0c.cells_meta(units, ["cat", "dog"], record)
+    cells, _ = _random_cells(units.n_pairs)
+    data, index = tmp_path / "cells.f64", tmp_path / "cells.json"
+    written = b0c.write_cells(data, index, cells, meta, {"module_blob": "x"})
+    assert written["total_bytes"] == units.n_pairs * 8 * 8 and written["extraction"] == {"module_blob": "x"}
+    read, loaded = b0c.read_cells(data, index, units=units, meta=meta)
+    assert torch.equal(read, cells) and loaded["file_sha256"] == rc.file_sha256(data)
+    assert loaded["source_022"]["table_file_sha256"] == b0c.INHERITED_022["table_file_sha256"] and loaded["columns"] == list(b0c.CELL_COLUMNS)
+    with pytest.raises(b0c.PhaseError, match="construction|order"):
+        b0c.read_cells(data, index, units=units, meta={**meta, "nouns": ["cat"]})
+    raw = bytearray(data.read_bytes())
+    raw[5] ^= 1
+    data.write_bytes(bytes(raw))
+    with pytest.raises(b0c.PhaseError, match="does not match its index"):
+        b0c.read_cells(data, index, units=units, meta=meta)
