@@ -236,7 +236,33 @@ def test_validate_loads_no_model_never_opens_the_022_table_and_refuses_tampering
     assert runner.validate() == 1 and "022" in logs[-1]
     record_path.write_text(original)
     monkeypatch.setitem(b0c.FROZEN_BLOBS, "upstream_localization.py", "0" * 40)
+    monkeypatch.setattr(ul, "load_frozen_inputs", lambda *args, **kwargs: pytest.fail("the frozen inputs were loaded before the pins were checked"))
     assert runner.validate() == 1 and "frozen modules" in logs[-1]
+
+
+def test_changed_paths_list_both_sides_of_a_rename(tmp_path, monkeypatch):
+    """A scientific file moved out of a scientific path is still a scientific change (git diff --no-renames)."""
+    import subprocess
+
+    repo = tmp_path / "repo"
+    (repo / "src").mkdir(parents=True)
+    (repo / "src/program.py").write_text("x = 1\n" * 20)
+
+    def git(*args):
+        return subprocess.run(["git", "-c", "user.name=test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", *args], cwd=repo, check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    git("init", "-q")
+    git("add", "-A")
+    git("commit", "-q", "-m", "one")
+    first = git("rev-parse", "HEAD")
+    (repo / "docs").mkdir()
+    git("mv", "src/program.py", "docs/program.py")
+    git("commit", "-q", "-m", "two")
+    monkeypatch.setattr(runner_module, "ROOT", repo)
+    changed = runner_module._git_changed_paths(first)
+    assert changed == ["docs/program.py", "src/program.py"] and b0c.scientific_changes(changed) == ["src/program.py"]
+    assert runner_module._git_changed_paths("0" * 40) is None  # not an ancestor
 
 
 def test_extract_runs_no_prompt_verifies_e1_to_e6_and_writes_the_candidate_once(world, base023, sandbox, monkeypatch):
@@ -268,16 +294,43 @@ def test_extract_runs_no_prompt_verifies_e1_to_e6_and_writes_the_candidate_once(
         runner.extract()
 
 
-def test_a_tampered_022_table_stops_extract_for_review_and_writes_nothing(world, base023, sandbox):
+def test_extract_requires_the_bound_022_table_file_before_it_writes_anything(world, base023, sandbox):
+    root = sandbox(base023["root"])
+    runner, _ = make_runner(root, world)
+    table = root / TABLE_022
+    original = table.read_bytes()
+    table.unlink()
+    with pytest.raises(b0c.PhaseError, match="precondition"):
+        runner.extract()
+    table.write_bytes(original + b"\0")  # another file at the path
+    with pytest.raises(b0c.PhaseError, match="precondition"):
+        runner.extract()
+    assert not runner.results_path.exists() and not any(path.exists() for path in runner.candidate_cells_paths)  # extract has not started
+
+
+def test_a_table_whose_tensors_are_not_022s_stops_extract_for_review_and_writes_nothing(world, base023, sandbox, monkeypatch):
     root = sandbox(base023["root"])
     table = torch.load(root / TABLE_022)
     table["dc"][0, 0, 0] += 1e-9
     torch.save(table, root / TABLE_022)
+    monkeypatch.setitem(b0c.INHERITED_022, "table_file_sha256", rc.file_sha256(root / TABLE_022))  # the file precondition holds; E1 checks the tensors
     runner, logs = make_runner(root, world)
-    assert runner.extract() == 3 and "E1" in logs[-1]
+    assert runner.extract() == 3 and "E1" in logs[-1] and "dc" in logs[-1]
     state = _state(runner)
     assert state["phases"]["extract"]["status"] == "stopped_for_review" and not any(path.exists() for path in runner.candidate_cells_paths)
     with pytest.raises(b0c.PhaseError, match="stopped_for_review"):
+        runner.extract()
+
+
+def test_a_failed_recheck_after_the_extraction_is_an_incident_and_writes_no_candidate(world, base023, sandbox, monkeypatch):
+    root = sandbox(base023["root"])
+    monkeypatch.setattr(runner_module.Runner, "_recheck", lambda self: {"ok": False, "message": "planted recheck failure"})
+    runner, logs = make_runner(root, world)
+    assert runner.extract() == 2 and "planted recheck failure" in logs[-1]
+    state = _state(runner)
+    assert state["phases"]["extract"]["incidents"][-1]["commit"] == COMMIT_A and not state["extract"].get("data_sha256")
+    assert not any(path.exists() for path in runner.candidate_cells_paths)
+    with pytest.raises(b0c.PhaseError, match="incident is recorded at this commit"):
         runner.extract()
 
 
@@ -396,6 +449,17 @@ def test_lock_runs_no_forward_pass_and_binds_the_y1_table_and_the_y2_specificati
     assert all(entry["guard"] == {"min_inclusive": 0.90} for entry in lock["conditions"].values())
     assert runner.output("candidate-preregistration.md").read_text() == b0c.render_preregistration(lock)
     with pytest.raises(b0c.PhaseError, match="lock already written"):
+        runner.lock()
+
+
+def test_a_failed_recheck_at_lock_is_an_incident_and_writes_no_lock(world, base023, calibrated023, sandbox, monkeypatch):
+    root = sandbox(calibrated023)
+    monkeypatch.setattr(runner_module.Runner, "_recheck", lambda self: {"ok": False, "message": "planted recheck failure"})
+    runner, logs = make_runner(root, world)
+    assert runner.lock() == 2 and "planted recheck failure" in logs[-1]
+    assert not runner.output("candidate-lock.json").exists() and not runner.output("candidate-preregistration.md").exists()
+    assert _state(runner)["phases"]["lock"]["incidents"][-1]["commit"] == COMMIT_A
+    with pytest.raises(b0c.PhaseError, match="lock identity incident is recorded"):
         runner.lock()
 
 

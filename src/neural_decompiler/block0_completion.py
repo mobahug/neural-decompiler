@@ -1519,6 +1519,10 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
             raise PhaseError(f"calibrate requires the completed extract phase (it is {status['extract']})")
         calibration = state.get("calibration") or {}
         if status["calibrate"] == "running" and calibration.get("incidents") and not calibration.get("record_sha256"):
+            # A rerun after an incident happens only at a new commit (the runner refuses the incident's commit) that changes
+            # no scientific path since extract (calibrate refuses any other), e.g. a documentation commit recording an
+            # interruption. The calibration is a deterministic function of the committed artifact, so such a rerun
+            # reproduces it; a code fix is a new protocol version.
             return
         if status["calibrate"] != "not_started":
             raise PhaseError(f"calibrate is {status['calibrate']}; the calibration runs once in this protocol version (a stop for review is never retried automatically)")

@@ -71,7 +71,8 @@ def _git_tracked(path: Path) -> bool:
 def _git_changed_paths(commit: str) -> list[str] | None:
     try:
         subprocess.run(["git", "merge-base", "--is-ancestor", commit, "HEAD"], cwd=ROOT, check=True, capture_output=True)
-        diff = subprocess.run(["git", "diff", "--name-only", commit, "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True)
+        # --no-renames: a moved file lists both its old and its new path, so a scientific file cannot leave by a rename.
+        diff = subprocess.run(["git", "diff", "--no-renames", "--name-only", commit, "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True)
     except (OSError, subprocess.CalledProcessError):
         return None
     return [line.strip() for line in diff.stdout.splitlines() if line.strip()]
@@ -160,10 +161,9 @@ class Runner:
     # -- inputs ---------------------------------------------------------------
 
     def _inputs(self) -> ul.FrozenInputs:
-        inputs = ul.load_frozen_inputs(self.root, lock_011_loader=self.lock_011_loader, lock_012_loader=self.lock_012_loader, lock_017_loader=self.lock_017_loader,
-                                       tracked=self.tracked)
-        b0c.assert_frozen_blobs()
-        return inputs
+        b0c.assert_frozen_blobs()  # the pins first: nothing is loaded through a changed module
+        return ul.load_frozen_inputs(self.root, lock_011_loader=self.lock_011_loader, lock_012_loader=self.lock_012_loader, lock_017_loader=self.lock_017_loader,
+                                     tracked=self.tracked)
 
     def _base(self):
         """The frozen inputs, Experiment 022's committed files (verified), the state's input digests and the forbidden
@@ -342,6 +342,10 @@ class Runner:
         candidate_data, candidate_index = self.candidate_cells_paths
         if candidate_data.exists() or candidate_index.exists():
             raise PhaseError("a candidate exposed-cells artifact already exists; extract runs once")
+        table_path = self.root / b0c.TABLE_022_RELATIVE_PATH
+        if not table_path.exists() or rc.file_sha256(table_path) != b0c.INHERITED_022["table_file_sha256"]:
+            raise PhaseError(f"{b0c.TABLE_022_RELATIVE_PATH} is missing or not the file Experiment 022's closure binds (sha256 {b0c.INHERITED_022['table_file_sha256']}); "
+                             "a precondition: nothing was written and extract has not started")
         state = self._state_for("extract", digests)
         commit = self._provenance()["protocol_code_commit"]
         if any(entry["commit"] == commit for entry in state["phases"]["extract"].get("incidents", [])):
@@ -351,10 +355,7 @@ class Runner:
         state["protocol_code_commit"] = commit
         state["phases"]["extract"] = {**state["phases"]["extract"], "status": "running", "started_at": pm.utc_now(), "commit": commit, "runtime": runtime}
         self._write(state)
-        table_path = self.root / b0c.TABLE_022_RELATIVE_PATH
         try:
-            if not table_path.exists() or rc.file_sha256(table_path) != b0c.INHERITED_022["table_file_sha256"]:
-                raise b0c.ExtractionMismatch(f"E1: {b0c.TABLE_022_RELATIVE_PATH} is missing or not the file Experiment 022's closure binds")
             progs = self._weights_only(inputs)
             units = b0c.exposed_units(inputs)
             noun_keys = [progs.nouns.nouns[index].lexical_key for index in progs.scorable]
@@ -375,13 +376,15 @@ class Runner:
         except BaseException as error:  # a protocol failure or an interruption: recorded, then raised
             self._record_phase_incident(state, "extract", error)
             raise
+        recheck = self._recheck()  # before the candidate exists: a failure is an incident and nothing is written
+        if not recheck["ok"]:
+            self._record_phase_incident(state, "extract", pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after the "
+                                                                          f"extraction: {recheck['message']}; nothing was written"))
+            return 2
         extraction = {"module": "src/neural_decompiler/block0_completion.py", "module_blob": b0c.own_blob(), "cells_version": b0c.CELLS_VERSION, "protocol_code_commit": commit,
                       "run_id": state["run_id"], "extracted_at": pm.utc_now(), "frozen_blobs": b0c.module_blobs(), "checks": result["checks"]}
         self.output_dir.mkdir(parents=True, exist_ok=True)
         index = b0c.write_cells(candidate_data, candidate_index, result["cells"], result["meta"], extraction)
-        recheck = self._recheck()
-        if not recheck["ok"]:
-            raise PhaseError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after extract: {recheck['message']}")
         state["extract"] = {"candidate_data_path": str(candidate_data), "candidate_index_path": str(candidate_index), "data_sha256": index["file_sha256"],
                             "index_sha256": rc.file_sha256(candidate_index), "checks": result["checks"], "commit": commit, "written_at": pm.utc_now()}
         state["phases"]["extract"] = {**state["phases"]["extract"], "status": "complete", "completed_at": pm.utc_now()}
@@ -517,6 +520,9 @@ class Runner:
                 again = b0c.prediction_tables(progs, units, states, confirmation.reference_ids)
             if ul.table_bytes(again["blocks"]) != data_path.read_bytes() or (again["p0_dx3_sha256"], again["factors_sha256"]) != (tables["p0_dx3_sha256"], tables["factors_sha256"]):
                 raise pm.IncidentError("provenance: the Y1 table does not reproduce bit for bit from the weights and the locked inputs")
+            recheck = self._recheck()  # before the candidate lock exists
+            if not recheck["ok"]:
+                raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify at lock: {recheck['message']}; no lock was written")
         except pm.IncidentError as error:
             self._record_phase_incident(state, "lock", error)
             return 2
@@ -527,9 +533,6 @@ class Runner:
         candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
         preregistration = b0c.render_preregistration(lock)
         preregistration_path.write_text(preregistration, encoding="utf-8")
-        recheck = self._recheck()
-        if not recheck["ok"]:
-            raise PhaseError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after lock: {recheck['message']}")
         state["lock"] = {"candidate_path": str(candidate_path), "preregistration_path": str(preregistration_path), "y1_data_path": str(data_path), "y1_index_path": str(index_path),
                          "content_sha256": lock["content_sha256"], "preregistration_sha256": pm.sha256_text(preregistration), "y1_file_sha256": index["file_sha256"],
                          "y1_index_sha256": rc.file_sha256(index_path), "calibration_content_sha256": record["content_sha256"], "gates": tables["gates"], "written_at": pm.utc_now()}
