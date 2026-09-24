@@ -410,6 +410,33 @@ def test_a_forbidden_key_in_the_ledger_is_refused(world, base023, calibrated023,
         runner.lock()
 
 
+def test_lock_refuses_a_confirmation_file_other_than_the_calibrated_one(world, base023, calibrated023, sandbox, monkeypatch):
+    """The calibration read its counts from one committed confirmation file; lock refuses any other, even a fully valid
+    freeze, and a results state that binds another one."""
+    root = sandbox(calibrated023)
+    runner, _ = make_runner(root, world)
+    inputs, confirmation_022, sha_022, _, _ = runner._base()
+    manifest, small = world["fake"][0], world["fake"][1]
+    with monkeypatch.context() as patch:  # another eligible cue first: a different, fully valid freeze
+        patch.setitem(b0c.CUE_CANDIDATES, "determiner-like", tuple(reversed(b0c.CUE_CANDIDATES["determiner-like"])))
+        payload = b0c.freeze_payload(toy_tokenizer_023(manifest, small), inputs, confirmation_022, sha_022)
+    path = root / b0c.CONFIRMATION_RELATIVE_PATH
+    original = path.read_bytes()
+    record = json.loads((root / b0c.CALIBRATION_RELATIVE_PATH).read_text())
+    path.write_text(pm.canonical_json(payload) + "\n")
+    assert _confirmation(runner).content_sha256 != record["confirmation_023"]["content_sha256"]  # it loads and verifies as a confirmation file
+    spy = ExecutionSpy(monkeypatch)
+    with pytest.raises(b0c.PhaseError, match="calibration record binds a confirmation file other than the committed one"):
+        runner.lock()
+    path.write_bytes(original)
+    state = _state(runner)
+    state["confirmation_023"] = {**state["confirmation_023"], "file_sha256": "0" * 64}
+    rd.write_results_state(runner.results_path, state)
+    with pytest.raises(b0c.PhaseError, match="results state binds a confirmation file other than the committed one"):
+        runner.lock()
+    assert not spy.counts and not runner.output("candidate-lock.json").exists()
+
+
 def test_confirm_runs_stage1_the_barrier_and_stage2_once_each_and_scores_four_conditions(world, base023, locked023, sandbox, monkeypatch):
     root = sandbox(locked023)
     assert not (root / TABLE_022).exists()

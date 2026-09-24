@@ -437,9 +437,9 @@ class Runner:
                 self.log(f"calibration stop: undefined draws {stop['offending']} at or above {stop['threshold']}; no envelope is written; stopped for review")
                 return 3
             evaluated = b0c.evaluate(kernel)
+            binding = b0c.confirmation_binding(confirmation, confirmation_sha)
             record = b0c.calibration_record(run_id=state["run_id"], protocol_code_commit=commit, digests=digests, units=units, cells_files=cells_files,
-                                            confirmation={"path": b0c.CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_sha, "content_sha256": confirmation.content_sha256},
-                                            index_digests=b0c.draw_index_digests(indices), kernel_check=kernel_check, e6_max=kernel["e6_max"], undefined=undefined,
+                                            confirmation=binding, index_digests=b0c.draw_index_digests(indices), kernel_check=kernel_check, e6_max=kernel["e6_max"], undefined=undefined,
                                             evaluated=evaluated, array_digests=array_digests, draws=b0c.B)
             recheck = self._recheck()
             if not recheck["ok"]:
@@ -448,7 +448,7 @@ class Runner:
             self.candidate_calibration_path.write_text(text, encoding="utf-8")
             calibration.update({"record_sha256": pm.sha256_text(text), "record_content_sha256": record["content_sha256"], "candidate_path": str(self.candidate_calibration_path),
                                 "envelopes": {condition: record["conditions"][condition]["envelope"] for condition in b0c.CONDITIONS}, "joint_rates": record["joint_rates"]})
-            state["confirmation_023"] = {"path": b0c.CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_sha, "content_sha256": confirmation.content_sha256}
+            state["confirmation_023"] = binding
             self._write(state)
         except b0c.KernelCheckError as error:
             calibration["kernel_check"] = rc.json_safe(error.details)
@@ -498,6 +498,7 @@ class Runner:
         if scientific:
             raise PhaseError(f"scientific paths changed since calibrate: {scientific}")
         record, record_sha = self._installed_record(state, digests)
+        b0c.verify_confirmation_binding(record, state, b0c.confirmation_binding(confirmation, confirmation_sha))
         self._cells_unchanged(record["exposed_cells"])
         self._check_runtime(inputs.closure)  # the locked table must reproduce bit for bit at confirm, on 020's runtime
         progs = self._weights_only(inputs)

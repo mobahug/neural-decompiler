@@ -615,9 +615,40 @@ def test_the_calibration_record_verifies_and_refuses_tampering():
     tampered = json.loads(json.dumps(record))
     tampered["conditions"]["Y1/cue_final"]["envelope"]["bound"] = 0.0
     with pytest.raises(b0c.PhaseError, match="verified"):
-        b0c.verify_calibration_record(tampered)
+        b0c.verify_calibration_record(tampered, draws=40)
     with pytest.raises(b0c.PhaseError, match="constants"):
         b0c.verify_calibration_record(record, draws=10_000)
+    with pytest.raises(b0c.PhaseError, match="constants"):
+        b0c.verify_calibration_record(record)  # the module's B, resolved at call time, unless given
+
+
+def test_a_calibration_record_with_an_unusable_envelope_is_refused_even_when_its_digest_verifies():
+    units = _toy_units()
+    cells = _toy_cells(units)
+    indices = b0c.draw_indices(units, 400)
+    kernel = b0c.calibration_kernel(cells, units, indices, 400)
+    arrays = b0c.draw_arrays(kernel)
+    record = b0c.calibration_record(run_id="r", protocol_code_commit="a" * 40, digests={"x": "y"}, units=units, cells_files={"data_sha256": "d", "index_sha256": "i"},
+                                    confirmation={"content_sha256": "c"}, index_digests=b0c.draw_index_digests(indices),
+                                    kernel_check=b0c.kernel_loop_check(cells, units, indices, kernel, n_draws=2), e6_max=kernel["e6_max"],
+                                    undefined=b0c.undefined_counts(kernel), evaluated=b0c.evaluate(kernel),
+                                    array_digests={key: rc.tensor_digest(value) for key, value in arrays.items()}, draws=400)
+    b0c.verify_calibration_record(record, draws=400)
+    entry = record["conditions"]["Y2/coordinated"]
+    for mutate, message in ((lambda e: e["envelope"].update(bound=None), "finite"), (lambda e: e["envelope"].update(rank=11), "order statistic"),
+                            (lambda e: e["direction_check"].update(ok=False), "direction check"), (lambda e: e.update(guard_bound=not e["guard_bound"]), "guard-bound"),
+                            (lambda e: e["envelope"].update(bound=True), "finite")):
+        tampered = json.loads(json.dumps(record))
+        mutate(tampered["conditions"]["Y2/coordinated"])
+        tampered["content_sha256"] = rc.content_digest(tampered)  # a record that verifies by its digest alone
+        with pytest.raises(b0c.PhaseError, match=message):
+            b0c.verify_calibration_record(tampered, draws=400)
+    tampered = json.loads(json.dumps(record))
+    tampered["undefined_counts"]["Y1/coordinated"] = 10  # at the stop (rank 10 at B = 400): no envelope may be used
+    tampered["content_sha256"] = rc.content_digest(tampered)
+    with pytest.raises(b0c.PhaseError, match="calibration stop"):
+        b0c.verify_calibration_record(tampered, draws=400)
+    assert entry["guard_bound"] == (entry["envelope"]["bound"] < 0.90)
 
 
 # ---------------------------------------------------------------------------

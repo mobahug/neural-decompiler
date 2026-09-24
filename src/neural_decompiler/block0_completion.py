@@ -929,14 +929,48 @@ def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mappi
 
 
 def verify_calibration_record(record: Mapping[str, Any], draws: int | None = None) -> None:
+    """A calibration record fit for the lock: its content digest; the frozen constants at ``draws`` (the module's ``B``
+    unless given), design, plan and modules; exactly the four conditions, each with a finite lower envelope at element
+    ``[lower_rank − 1]`` whose direction check passed and whose guard-bound flag it implies; and no condition at the
+    undefined-draw stop."""
+    draws = B if draws is None else int(draws)  # resolved at call time, never bound at definition
     if record.get("experiment") != EXPERIMENT or record.get("content_sha256") != rc.content_digest(record):
         raise PhaseError("not a verified Experiment 023 calibration record")
-    if record["constants"] != record_constants(draws if draws is not None else record["constants"]["B"]) or record["design"] != DESIGN or record["plan"] != PLAN:
+    if record["constants"] != record_constants(draws) or record["design"] != DESIGN or record["plan"] != PLAN:
         raise PhaseError("the calibration record's constants, design or plan are not the frozen ones")
     if record["module_blobs"] != FROZEN_BLOBS:
         raise PhaseError("the calibration record was written against different frozen modules")
-    if set(record["conditions"]) != set(CONDITIONS):
+    if set(record["conditions"]) != set(CONDITIONS) or set(record.get("undefined_counts") or {}) != set(CONDITIONS):
         raise PhaseError("the calibration record does not carry exactly the four conditions")
+    rank = lower_rank(draws)
+    for condition in CONDITIONS:
+        entry = record["conditions"][condition]
+        envelope = entry.get("envelope") or {}
+        bound = envelope.get("bound")
+        if (envelope.get("kind"), envelope.get("rank"), envelope.get("element")) != ("lower", rank, rank - 1):
+            raise PhaseError(f"{condition}: the calibration record's envelope is not the frozen lower order statistic v₍{rank}₎")
+        if isinstance(bound, bool) or not isinstance(bound, (int, float)) or not math.isfinite(bound):
+            raise PhaseError(f"{condition}: the calibration record's envelope is not a finite number ({bound!r})")
+        if not (entry.get("direction_check") or {}).get("ok"):
+            raise PhaseError(f"{condition}: the calibration record's direction check did not pass")
+        if entry.get("guard_bound") is not (bound < GUARD_MIN):
+            raise PhaseError(f"{condition}: the calibration record's guard-bound flag is not the one its envelope implies")
+        if int(record["undefined_counts"][condition]) >= rank:
+            raise PhaseError(f"{condition}: {record['undefined_counts'][condition]} undefined draws reach the calibration stop at {rank}; no envelope may be used")
+
+
+def confirmation_binding(confirmation: Confirmation023, file_sha256: str) -> dict[str, str]:
+    """What the calibration record, the results state and the lock bind of the committed confirmation file."""
+    return {"path": CONFIRMATION_RELATIVE_PATH, "file_sha256": file_sha256, "content_sha256": confirmation.content_sha256}
+
+
+def verify_confirmation_binding(record: Mapping[str, Any], state: Mapping[str, Any], binding: Mapping[str, str]) -> None:
+    """The calibration record and the results state bind the committed confirmation file now in the tree: the file the
+    calibration read its counts from is the one the lock and the confirmation use."""
+    if dict(record.get("confirmation_023") or {}) != dict(binding):
+        raise PhaseError("the calibration record binds a confirmation file other than the committed one; the frozen units cannot change after calibrate")
+    if dict(state.get("confirmation_023") or {}) != dict(binding):
+        raise PhaseError("the results state binds a confirmation file other than the committed one; the frozen units cannot change after calibrate")
 
 
 # ---------------------------------------------------------------------------
@@ -1084,9 +1118,9 @@ def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, 
         "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
         "constants": record_constants(B), "calibration": {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]},
         "exposed_cells": dict(cells_files),
-        "confirmation_023": {"path": CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_file_sha256, "content_sha256": confirmation.content_sha256,
-                             "counts": confirmation.counts(), "manifest_sizes": {"S1-REF": len(confirmation.frames), "S1-VALIDITY": len(confirmation.frames),
-                                                                                 "Y1": len(confirmation.y1_prompts), "Y2": len(confirmation.y2_prompts)}},
+        "confirmation_023": {**confirmation_binding(confirmation, confirmation_file_sha256), "counts": confirmation.counts(),
+                             "manifest_sizes": {"S1-REF": len(confirmation.frames), "S1-VALIDITY": len(confirmation.frames), "Y1": len(confirmation.y1_prompts),
+                                                "Y2": len(confirmation.y2_prompts)}},
         "conditions": lock_conditions(record), "semantics": dict(SEMANTICS), "program": {"P0_mask": P0_MASK, "P1_mask": dict(P1_MASK), "construction": TABLE_CONSTRUCTION},
         "noun_keys": list(noun_keys), "exposed_states_sha256": ul.exposed_states_digest(exposed_states),
         "y1_table": {"data_path": Y1_TABLE_RELATIVE_PATH, "index_path": Y1_TABLE_INDEX_RELATIVE_PATH, "file_sha256": y1_index["file_sha256"], "index_sha256": y1_index_sha256,
@@ -1152,8 +1186,10 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests:
         raise PhaseError("the lock's constants, conditions or semantics are not those of the committed record and the frozen design")
     if lock["exposed_cells"] != dict(cells_files) or record["exposed_cells"] != dict(cells_files):
         raise PhaseError("the lock or the record binds different exposed cells")
-    if lock["confirmation_023"]["content_sha256"] != confirmation.content_sha256 or lock["confirmation_023"]["file_sha256"] != confirmation_file_sha256:
+    binding = confirmation_binding(confirmation, confirmation_file_sha256)
+    if {key: lock["confirmation_023"].get(key) for key in binding} != binding:
         raise PhaseError("the lock was written against a different confirmation file")
+    verify_confirmation_binding(record, state, binding)
     if lock["noun_keys"] != list(noun_keys) or lock["exposed_states_sha256"] != ul.exposed_states_digest(exposed_states):
         raise PhaseError("the lock names a different noun order or different exposed reference states")
     if lock["program"] != {"P0_mask": P0_MASK, "P1_mask": dict(P1_MASK), "construction": TABLE_CONSTRUCTION}:
