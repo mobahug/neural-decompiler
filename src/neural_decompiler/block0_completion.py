@@ -4,9 +4,10 @@ Implements design revision 2 (``5b38aba``) through implementation plan revision 
 ``P1`` is Experiment 022's canonical "inputs only" coalition — the committed cue input ``ΔE``, the embedding change and
 block 0's value and pattern terms at the cue position, block 0's single-logit update at the target position, the
 committed reduced layers 1–2 (Experiment 017's chain, rows through ``p_c``) and the frozen Experiment 020 readout — and
-``P0`` is 022's empty coalition (Level 0). Both are computed by 022's own functions, whose module is pinned by git blob
-together with everything it calls; nothing here redefines them. The ceiling ``C`` (the frozen readout fed the measured
-``Δx3``) is a comparator only and never enters ``P1``.
+``P0`` is 022's empty coalition (Level 0). Both are computed by 022's own functions; nothing here redefines them. 022's
+module and the ten modules 022 itself pinned are pinned by git blob; the other ``neural_decompiler`` modules they import
+are held between phases by the rule that no scientific path changes after ``extract``. The ceiling ``C`` (the frozen
+readout fed the measured ``Δx3``) is a comparator only and never enters ``P1``.
 
 The primary statistic of each of the four conditions (Y1/Y2 × cue-final/coordinated) is
 
@@ -67,9 +68,12 @@ DESIGN = {"path": "docs/superpowers/specs/2026-09-24-experiment-023-block0-compl
 PLAN = {"path": "docs/superpowers/plans/2026-09-24-experiment-023-block0-completion-plan.md", "revision": 1, "commit": "3a795fb"}
 
 # ---------------------------------------------------------------------------
-# The frozen dependencies, by git blob (sha1(b"blob <len>\0" + bytes), computed without git). Written out literally —
-# never inherited from ``ul.FROZEN_BLOBS`` — so that a change anywhere in the reused Experiment 022 program, including
-# 022's own module, makes every phase refuse rather than recompute a different "completed program".
+# The frozen dependencies, by git blob (sha1(b"blob <len>\0" + bytes), computed without git): Experiment 022's own
+# module and the ten it pinned. Written out literally — never inherited from ``ul.FROZEN_BLOBS`` — so that a change in
+# any of them makes every phase refuse rather than recompute a different "completed program". The other
+# ``neural_decompiler`` modules these import (capture, interventions, components and a dozen more) are not pinned by
+# blob: between phases each phase refuses any scientific change since the previous one (everything under ``src/``), and
+# E4, I5 and I7 recompute the program against stored values.
 
 FROZEN_BLOBS = {
     "readout_decompilation.py": "caa73b40192f4c910dc63371bd19db75a3258339",
@@ -1644,7 +1648,9 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
         lines += ["", f"- Joint rate, all four passing (descriptive only): {record['joint_rates']['all_four_pass']:.4f}"]
     confirmation = state.get("confirmation") or {}
     conditions = confirmation.get("conditions")
-    if conditions:
+    if conditions and confirmation.get("incident"):
+        lines += ["", "## The four conditions", "", "- Not reported: an incident is recorded, and incidents carry no result."]
+    elif conditions:
         lines += ["", "## The four conditions (the result; no aggregate label)", "",
                   "| condition | g | envelope F | meaning guard | result | gap (SSE0 − SSEC)/SST | R²₀ | R²₁ | R²_C | ceiling-limited | CDF percentile (descriptive) | pairs |",
                   "|---|---|---|---|---|---|---|---|---|---|---|---|"]

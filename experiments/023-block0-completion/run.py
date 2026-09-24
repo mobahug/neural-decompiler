@@ -365,6 +365,20 @@ class Runner:
                 table = torch.load(table_path)
                 result = b0c.extract_cells(table, record_022, units, noun_keys, recompute=lambda: b0c.recompute_p1(progs, inputs, units, table, log=self.log), log=self.log)
             del table
+            recheck = self._recheck()  # before the candidate exists: a failure is an incident and nothing is written
+            if not recheck["ok"]:
+                raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after the extraction: {recheck['message']}; "
+                                       "nothing was written")
+            extraction = {"module": "src/neural_decompiler/block0_completion.py", "module_blob": b0c.own_blob(), "cells_version": b0c.CELLS_VERSION,
+                          "protocol_code_commit": commit, "run_id": state["run_id"], "extracted_at": pm.utc_now(), "frozen_blobs": b0c.module_blobs(), "checks": result["checks"]}
+            # Still inside the handler: an interruption or an I/O error from here on is recorded as an incident (a partial
+            # candidate left on disk then blocks a rerun until the reviewer removes it).
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            index = b0c.write_cells(candidate_data, candidate_index, result["cells"], result["meta"], extraction)
+            state["extract"] = {"candidate_data_path": str(candidate_data), "candidate_index_path": str(candidate_index), "data_sha256": index["file_sha256"],
+                                "index_sha256": rc.file_sha256(candidate_index), "checks": result["checks"], "commit": commit, "written_at": pm.utc_now()}
+            state["phases"]["extract"] = {**state["phases"]["extract"], "status": "complete", "completed_at": pm.utc_now()}
+            digest = self._write(state)
         except b0c.ExtractionMismatch as error:
             state["phases"]["extract"] = {**state["phases"]["extract"], "status": "stopped_for_review", "stopped_at": pm.utc_now(), "stop": str(error)}
             self._write(state)
@@ -376,19 +390,6 @@ class Runner:
         except BaseException as error:  # a protocol failure or an interruption: recorded, then raised
             self._record_phase_incident(state, "extract", error)
             raise
-        recheck = self._recheck()  # before the candidate exists: a failure is an incident and nothing is written
-        if not recheck["ok"]:
-            self._record_phase_incident(state, "extract", pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after the "
-                                                                          f"extraction: {recheck['message']}; nothing was written"))
-            return 2
-        extraction = {"module": "src/neural_decompiler/block0_completion.py", "module_blob": b0c.own_blob(), "cells_version": b0c.CELLS_VERSION, "protocol_code_commit": commit,
-                      "run_id": state["run_id"], "extracted_at": pm.utc_now(), "frozen_blobs": b0c.module_blobs(), "checks": result["checks"]}
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-        index = b0c.write_cells(candidate_data, candidate_index, result["cells"], result["meta"], extraction)
-        state["extract"] = {"candidate_data_path": str(candidate_data), "candidate_index_path": str(candidate_index), "data_sha256": index["file_sha256"],
-                            "index_sha256": rc.file_sha256(candidate_index), "checks": result["checks"], "commit": commit, "written_at": pm.utc_now()}
-        state["phases"]["extract"] = {**state["phases"]["extract"], "status": "complete", "completed_at": pm.utc_now()}
-        digest = self._write(state)
         self.log(f"extract complete: candidate {candidate_data} (sha256 {index['file_sha256']}) and {candidate_index}; results sha256 {digest}. Install both "
                  f"byte-identical as {b0c.CELLS_DATA_RELATIVE_PATH} and {b0c.CELLS_INDEX_RELATIVE_PATH}, commit them, and stop for the artifact's check.")
         return 0
@@ -520,7 +521,9 @@ class Runner:
                 again = b0c.prediction_tables(progs, units, states, confirmation.reference_ids)
             if ul.table_bytes(again["blocks"]) != data_path.read_bytes() or (again["p0_dx3_sha256"], again["factors_sha256"]) != (tables["p0_dx3_sha256"], tables["factors_sha256"]):
                 raise pm.IncidentError("provenance: the Y1 table does not reproduce bit for bit from the weights and the locked inputs")
-            recheck = self._recheck()  # before the candidate lock exists
+            # Before the candidate lock exists. Any failure here, even a transient one, is a lock incident, so lock is refused
+            # until the reviewer decides; the candidate Y1 table may already be on disk, the lock and preregistration are not.
+            recheck = self._recheck()
             if not recheck["ok"]:
                 raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify at lock: {recheck['message']}; no lock was written")
         except pm.IncidentError as error:
@@ -621,11 +624,10 @@ class Runner:
                 self._write(state)
                 b0c.enforce_target_gates(checked["gates"])
                 results = b0c.score(measured, tables, lock)
-                state["confirmation"].update({**results, "lock_sha256": lock["content_sha256"], "scored_at": pm.utc_now()})
-                self._write(state)  # the four results are on disk before anything else runs
-                recheck = self._recheck()
+                recheck = self._recheck()  # before any result is written: an incident carries no result
                 if not recheck["ok"]:
-                    raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after confirm: {recheck['message']}")
+                    raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after confirm: {recheck['message']}; the "
+                                           "scored results are void")
             except b0c.KernelCheckError as error:
                 state["confirmation"] = rc.json_safe(state.get("confirmation") or {})
                 state["confirmation"]["kernel_check"] = rc.json_safe(error.details)
@@ -637,9 +639,9 @@ class Runner:
             except BaseException as error:  # a protocol failure or an interruption: recorded, then raised; confirm never resumes
                 self._record_incident(state, "confirm", error)
                 raise
-            state["confirmation"]["completed_at"] = pm.utc_now()
+            state["confirmation"].update({**results, "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()})
             state["phases"]["confirm"] = {**state["phases"]["confirm"], "status": "complete", "completed_at": pm.utc_now()}
-            digest = self._write(state)
+            digest = self._write(state)  # the four results and the completed phase in one write, before anything descriptive runs
             self.log("confirm complete (four conditions, no aggregate label): " + "; ".join(f"{key} {entry['result']} (g {entry['g']})" for key, entry in results["conditions"].items())
                      + f"; results sha256 {digest}")
             self._descriptives(state, progs, confirmation, measured, states, tables)

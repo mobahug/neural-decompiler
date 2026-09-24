@@ -718,6 +718,34 @@ def test_a_y2_table_changed_after_the_barrier_is_an_incident_that_keeps_the_meas
     assert runner.confirm() == 2
     results = _state(runner)["confirmation"]
     assert results["incident"]["phase"] == "confirm" and "stage2" in results and "conditions" not in results and runner.stage2_path.exists()
+    assert "the table bytes do not match their index digest" in results["incident"]["message"]  # the re-read Y2 table, against the stage-1 digest
+
+
+def test_a_failed_recheck_after_scoring_is_an_incident_that_carries_no_result(world, base023, locked023, sandbox, monkeypatch):
+    """The 020/022 re-check runs after the scoring and before any result is written: its failure is an incident, the
+    state holds no result and the report shows none."""
+    root = sandbox(locked023)
+    scored = []
+    original_score = b0c.score
+
+    def spying(*args, **kwargs):
+        scored.append(original_score(*args, **kwargs))
+        return scored[-1]
+
+    monkeypatch.setattr(b0c, "score", spying)
+    monkeypatch.setattr(runner_module.Runner, "_recheck", lambda self: {"ok": False, "message": "planted recheck failure"})
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2 and "planted recheck failure" in logs[-1]
+    state = _state(runner)
+    results = state["confirmation"]
+    assert len(scored) == 1 and set(scored[0]["conditions"]) == set(b0c.CONDITIONS)  # the scoring ran...
+    assert "planted recheck failure" in results["incident"]["message"] and "conditions" not in results and "kernel_check" not in results  # ...and is void
+    assert state["phases"]["confirm"]["status"] == "running" and runner.stage2_path.exists()
+    with pytest.raises(b0c.PhaseError, match="confirm already started"):
+        runner.confirm()
+    assert runner.report() == 0
+    report = runner.report_path.read_text()
+    assert "Confirmation incident" in report and "## The four conditions" not in report
 
 
 def test_lock_refuses_a_calibration_record_that_is_missing_untracked_or_not_the_candidate(world, base023, calibrated023, sandbox):

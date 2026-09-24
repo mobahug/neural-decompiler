@@ -95,11 +95,7 @@ def test_the_exposed_order_is_022s_canonical_calibration_order():
     assert {template: len(indices) for template, indices in units.y2_like.items()} == {template: 14 for template in b0c.TEMPLATES}
     assert [len(units.stratum_cues(stratum)) for stratum in b0c.STRATA] == [45, 45, 49]
     assert len(units.group_frames("cue_final")) == 72 and len(units.group_frames("coordinated")) == 36
-    assert units.pair_index(2, 5) == 2 * 108 + 5
-    if TABLE_022.exists():  # the local 022 table (read-only here) holds its pairs in exactly this order
-        table = torch.load(TABLE_022)
-        assert table["cues"] == [word for word, _, _ in units.cues] and table["token_ids"] == [token for _, token, _ in units.cues]
-        assert table["classes"] == [cls for _, _, cls in units.cues] and table["frames"] == [frame.frame_id for frame in units.frames]
+    assert units.pair_index(2, 5) == 2 * 108 + 5  # that the local 022 table holds its pairs in this order is E1 (tier C, opt-in)
     reference = ul.units_from(rc.production_pools(inputs.pool).cues, inputs.pool.frames, rc.production_pools(inputs.pool).frames_unscreened,
                               {"classes": {cls: 6 for cls in ul.CUE_CLASSES}, "templates": {template: 6 for template in ul.TEMPLATES}})
     assert tuple(reference.cues) == units.cues and dict(reference.y2_frames) == dict(units.y2_like)  # the counts never change the order
@@ -735,6 +731,10 @@ def test_the_report_shows_the_calibration_stop_and_the_tails():
                                                                            "rates": {name: 0.25 for name in b0c.RESULTS}} for c in b0c.CONDITIONS}}
     text = b0c.render_report({**state, "calibration": {}}, record, None)
     assert "| Y1/cue_final | ≥ v₍250₎ = 0.990000 | 0.941000 | 0.998000 | 1.004000 | 0 | no |" in text and "stopped for review" not in text
+    voided = {**state, "calibration": {}, "confirmation": {"conditions": {c: {"result": "PASS"} for c in b0c.CONDITIONS},
+                                                          "incident": {"commit": "a" * 40, "message": "planted"}}}
+    text = b0c.render_report(voided, record, None)  # an incident carries no result, whatever the state holds
+    assert "Not reported: an incident is recorded" in text and "**PASS**" not in text and "Confirmation incident" in text
 
 
 def test_the_phase_rules_are_one_shot():

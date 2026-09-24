@@ -19,7 +19,9 @@ explainable gap between Level 0 and the measured-`Δx3` ceiling, on new cues in 
   and not a mathematical upper bound, so `g > 1` is permitted.
 
 Both programs are computed by Experiment 022's own functions. 022's module (`upstream_localization.py`, blob
-`46585696…`) is pinned by git blob together with everything it calls; a change anywhere in it refuses every phase.
+`46585696…`) and the ten modules 022 itself pinned are pinned by git blob; a change in any of them refuses every phase.
+The other modules they import are not pinned by blob. Between phases they are held by the rule that each phase refuses
+a scientific change since the previous one, which covers everything under `src/`.
 
 **The four conditions** (Y1/Y2 × cue-final/coordinated) each carry one statistic, pooled from per-pair sufficient
 statistics `(n, Σy, Σy², SSE0, SSE1, SSEC)`:
@@ -80,7 +82,8 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
     - E5: the cells against the per-noun table on the first 16 draws (1e-10);
     - E6: the pooled `SST` (1e-10).
   - E1–E3 stop for review; E4–E6 are incidents. The 020/022 re-check runs before the candidate is written; a failure is
-    an incident.
+    an incident. So is an interruption or an I/O error up to the completing state write. A partial candidate left on disk
+    then blocks a rerun until the reviewer removes it.
 
   The artifact holds 18,900 pairs × 8 columns (`n, S, Q, SSE0, SSE1, SSEC, mean, M2`; 1,209,600 bytes). Its index binds:
   - the canonical pair order, every cue's id and stratum, and every frame's template and group;
@@ -106,7 +109,9 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   The record and the results state must bind the committed confirmation file. It then builds the Y1 prediction table
   (`[1728, 2, 79]` then `[864, 2, 79]`, `(P0, P1)`) twice and requires it bit-identical, with I5 exactly 0 and the
   block-0 algebra at 1e-12. After the 020/022 re-check it writes the lock and the preregistration. All four files are
-  installed byte-identically, committed and reviewed.
+  installed byte-identically, committed and reviewed. Any failure of that re-check, even a transient one, is a lock
+  incident: lock is then refused until the reviewer decides. By then the candidate Y1 table may already exist; the lock
+  and the preregistration are not written.
 - **`confirm`** runs once and is never resumed:
   - `validate_lock`, then I7: the Y1 table rebuilt bit for bit before any fresh prompt;
   - stage 1: 18 S1-REF and 18 S1-VALIDITY (descriptive) prompts, then the Y2 prediction table written once from the
@@ -116,8 +121,9 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - stage 2: 3,024 targets, each once, measuring `Δc`, `Δx1` and `Δx3`; everything is saved before any gate, and the Y2
     table is re-verified;
   - I1, I3 and I4;
-  - the four conditions, with the kernel checked against a direct recomputation. They are written to the state before
-    anything descriptive runs, and the phase then completes;
+  - the four conditions, with the kernel checked against a direct recomputation;
+  - the 020/022 re-check, before any result is written: a failure is an incident, and incidents carry no result;
+  - the four results and the completed phase, in one write, before anything descriptive runs;
   - descriptive records: per-template and per-stratum `g`, the cheaper block-0 rules, `P1`'s `Δx3` error and block 0's
     profile. A descriptive failure is recorded as such and never touches a result.
 
