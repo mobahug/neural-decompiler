@@ -1,0 +1,56 @@
+outputs/experiment-023: ['candidate-exposed-cells.f64', 'candidate-exposed-cells.json', 'results.json']
+PASS  results state digest verifies  fcb2c0305a02c0c42a9ce39bc5a9c19c2c4f30c298d3a198c2644a751abb9e4d
+PASS  results.json file sha256  9bb1e33594670343a41e5c08f81cca3a78f50d1f1c4e04882708879e508a5ea7
+PASS  extract status complete  complete
+PASS  extract commit == approved HEAD  2111271892a8237f69c3ef18d6eec774e798ac5c
+PASS  no extract incident or stop  null
+   extract started 2026-09-24T14:20:44+00:00 completed 2026-09-24T14:26:14+00:00 runtime {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}
+PASS  other phases not started  {"calibrate": "not_started", "confirm": "not_started", "extract": "complete", "lock": "not_started", "report": "not_started"}
+PASS  zero prompts in the ledger  
+PASS  state inputs are the frozen digests  
+PASS  state module blobs == pins  
+   run_id 9428b2fde588ac75 created_at 2026-09-24T14:20:44+00:00
+PASS  data sha256 == state  d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4
+PASS  index file sha256 == state  628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe
+PASS  data size 18,900 × 8 × 8 = 1,209,600 bytes  1209600
+PASS  index content_sha256 verifies  d38305cb86624a4a1b7e70d21f85ed1b57c26e1d2f59f3ec7dbf2a940f582d16
+PASS  index binds the data bytes  
+PASS  index format and layout  [{"name": "cells", "nbytes": 1209600, "offset_bytes": 0, "shape": [18900, 8]}]
+PASS  read_cells verifies every bound field  14 meta keys: ['column_formulas', 'columns', 'cues', 'design', 'experiment', 'frames', 'kind', 'nouns', 'pair_order', 'program', 'schema_version', 'source_022', 'version', 'y2_like_frames']
+PASS  columns  ["n", "S", "Q", "SSE0", "SSE1", "SSEC", "mean", "M2"]
+PASS  pair order = 175 cues (022 order) × 108 frames, cue-major  cue-major: flat index = cue index × number of frames + frame index; cues in 022's canonical order (classes in 022's order, token id within a class), frames by frame_id
+   cue strata {'determiner-like': 45, 'quantity': 45, 'possessive-or-pronoun': 36, 'adjective': 49} ; frame template/group {'cardinal/cue_final': 36, 'coordinated-adjective/coordinated': 36, 'quantifier/cue_final': 36}
+   y2-like frames per template {'cardinal': 14, 'coordinated-adjective': 14, 'quantifier': 14} ; nouns 79
+   program {"P0_mask": 0, "P1_mask": {"coordinated": 30, "cue_final": 14}, "ceiling": "the frozen Experiment 020 readout fed the measured \u0394x3 (022's stored ceiling)"}
+   source_022 {"calibration_record_content_sha256": "46985fd59d9d22dc08c9344a2fa96eacaf832dfe954e84526fc76c5ac0d12f6d", "calibration_record_file_sha256": "db745653cfa8f411514e80839bf986bd6cbbe3e816e3bb3095cf43c2d9d11a87", "calibration_record_path": "experiments/022-upstream-error-localization/calibration-v1.json", "confirmation_022_content_sha256": "af848ae4bd48551cffec67f169a2a6d7b47f0eaaa5d2451010cc4c8bfd8fcda9", "table_file_sha256": "04659d5e8b20a70526e5862eb2b2de952b33496f25e3875de6c6254df2b8fd81", "table_path": "outputs/experiment-022/calibration-table.pt"}
+PASS  source_022 tensor digests == 022 record's  13 digests
+PASS  extraction module blob == block0_completion.py at HEAD  16d310fc7fab5599ec83b8bd8162fb9613f8dad2
+PASS  extraction commit, version, run  2111271892a8237f69c3ef18d6eec774e798ac5c 023-cells-v1 9428b2fde588ac75 at 2026-09-24T14:26:14+00:00
+PASS  extraction frozen blobs == pins  
+PASS  extraction checks == state checks  
+   E1 {"orders": ["classes", "cues", "frames", "noun_keys", "templates", "token_ids"], "passed": true, "tensors": ["ceiling", "count", "dc", "dc_hat", "gate_I1", "gate_I2", "gate_I3", "gate_I4", "gate_I5", "historical", "m2", "mean", "sse"]}
+   E2 {"columns": ["M2", "SSE0", "SSE1", "mean", "n"], "passed": true}
+   E3 {"columns": ["S", "Q", "SSEC"], "passed": true, "route": "whole-table float64 reductions over the noun axis"}
+   E4 {"at": "", "max": 0.0, "passed": true} tolerance 1e-09
+   E5 {"at": "Y1/coordinated/draw 14/SST", "max_difference": 3.999896971376354e-15, "n_checked": 192, "passed": true} tolerance 1e-10
+   E6 {"max_per_draw": 3.999896971376354e-15, "max_per_pair": 1.4325462769519472e-14, "passed": true, "tolerance": 1e-10}
+PASS  E1–E6 all passed  
+PASS  artifact == cells recomputed from 022's table, bit for bit  0 pairs differ
+PASS  artifact n == 022 stored (E2)  
+PASS  artifact SSE0 == 022 stored (E2)  
+PASS  artifact SSE1 == 022 stored (E2)  
+PASS  artifact mean == 022 stored (E2)  
+PASS  artifact M2 == 022 stored (E2)  
+PASS  artifact S == independent whole-table (E3)  
+PASS  artifact Q == independent whole-table (E3)  
+PASS  artifact SSEC == independent whole-table (E3)  
+PASS  artifact finite  
+PASS  n == 79 for every pair  
+PASS  per-pair E6  
+PASS  022 table file unchanged  
+PASS  022 committed files and 020 closure verify  
+PASS  HEAD unchanged, tree clean  
+PASS  outputs/experiment-023 ignored by git  
+PASS  no installed artifact yet  
+
+VERIFY: ALL PASS

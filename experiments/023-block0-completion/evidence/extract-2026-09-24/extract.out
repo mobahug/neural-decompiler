@@ -1,0 +1,17 @@
+start 2026-09-24T14:20:36Z at 2111271892a8237f69c3ef18d6eec774e798ac5c clean=0
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:14,  5.03it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 378.89it/s]
+E1: 13 tensor digests and the orders verified
+E2, E3: the cells reproduce 022's stored cells and an independent computation of S, Q and SSEC bit for bit
+  E4: 12/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 24/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 36/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 48/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 60/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 72/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 84/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 96/108 frames recomputed; max |ΔP1| so far 0.0
+  E4: 108/108 frames recomputed; max |ΔP1| so far 0.0
+E4: P1 recomputed from the weights, max |Δ| 0.0
+E5: 192 draw quantities, max 4.00e-15; E6: pairs 1.43e-14, draws 4.00e-15
+extract complete: candidate /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-exposed-cells.f64 (sha256 d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4) and /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-exposed-cells.json; results sha256 fcb2c0305a02c0c42a9ce39bc5a9c19c2c4f30c298d3a198c2644a751abb9e4d. Install both byte-identical as experiments/023-block0-completion/exposed-cells.f64 and experiments/023-block0-completion/exposed-cells.json, commit them, and stop for the artifact's check.
+exit 0 end 2026-09-24T14:26:15Z

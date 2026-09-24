@@ -1,0 +1,203 @@
+== A. design revision 2 text
+PASS  design text at 5b38aba == HEAD == working tree  
+PASS  design says Revision 2  
+PASS  design cue table: 3 strata in order  ['determiner-like', 'quantity', 'adjective']
+PASS  design frame table: 3 templates in order  ['cardinal', 'quantifier', 'coordinated-adjective']
+      list lengths {'determiner-like': 11, 'quantity': 14, 'adjective': 17} {'cardinal': 13, 'quantifier': 14, 'coordinated-adjective': 12}
+      quotas 8/6; p_c ranges {'cardinal': [3, 5], 'quantifier': [3, 5], 'coordinated-adjective': [4, 7]}
+PASS  design text: frame ids are <template>-023-<k>  
+PASS  design text: coordinated p_t = p_c + 1  
+PASS  design text: frames built by pm._build_new_frame  
+== B. frozen constants (ast over the frozen source text; no import)
+PASS  working-tree block0_completion.py == HEAD blob  
+PASS  working-tree upstream_localization.py == HEAD blob  
+PASS  working-tree plural_mechanism.py == HEAD blob  
+PASS  working-tree models.py == HEAD blob  
+      DESIGN {'path': 'docs/superpowers/specs/2026-09-24-experiment-023-block0-completion-design.md', 'revision': 2, 'commit': '5b38aba'} PLAN {'path': 'docs/superpowers/plans/2026-09-24-experiment-023-block0-completion-plan.md', 'revision': 1, 'commit': '3a795fb'}
+      KIND ['the new cues and frames of Experiment 023, frozen from the tokenizer and structural rules alone; no model output'] 
+      RULE_CUE ['a single token with a leading space whose id no earlier experiment (022 included) used'] 
+      RULE_FRAME ['a new text accepted by pm._build_new_frame; coordinated: one adjective token']
+      LOADERS {'006': 'cd.load_confirmation', '009': 'ht.load_confirmation', '011': 'er.load_confirmation', '012': 'lc.load_confirmation', '013': 'ap.load_confirmation', '014': 'nf.load_confirmation', '015': 'atp.load_confirmation', '016': 'fch.load_confirmation', '017': 'hp.load_confirmation', '018': 'bc.load_confirmation', '019': 'br.load_confirmation', '020': 'rd.load_confirmation'} 
+      POOL/EXT loaders ['rd.build_pool_020', 'pm.load_inputs'] 022 loader ["json: Experiment 022's committed confirmation file"] origin ['extension'] 
+      MODEL {'model_id': 'EleutherAI/pythia-70m-deduped', 'revision': 'e93a9faa9c77e5d09219f6c868bfc7a1bd65593c'}
+PASS  single kind / rule strings / 022 loader / origin found  
+PASS  design binding: the design commit is where revision 2 was written  
+PASS  plan binding: plan commit 3a795fb touched the plan  
+PASS  scope: new determiner-like, quantity and adjective cues and new frames only; no possessive/pronoun claim  Experiment 023 prospectively tests completion across new determiner-like, quantity and adjective cues and new sentence frames only; it makes no claim about all grammatical-number cue classes and no new prospective claim for possessive or pronoun cues
+== C. tokenizer
+      tokenizer GPTNeoXTokenizer vocab 50277 init path EleutherAI/pythia-70m-deduped
+== D. exclusion from raw files
+PASS  confirmation 006: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json
+PASS  confirmation 009: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json
+PASS  confirmation 011: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json
+PASS  confirmation 012: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json
+PASS  confirmation 013: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json
+PASS  confirmation 014: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json
+PASS  confirmation 015: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json
+PASS  confirmation 016: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json
+PASS  confirmation 017: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json
+PASS  confirmation 018: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json
+PASS  confirmation 019: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json
+PASS  confirmation 020: exactly one committed file  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json
+PASS  content_sha256 of 006 recomputes (own canonical JSON)  dbb8dbcef9ab201c
+PASS  content_sha256 of 009 recomputes (own canonical JSON)  6330b5a22f81455d
+PASS  content_sha256 of 011 recomputes (own canonical JSON)  174cf22214503836
+PASS  content_sha256 of 012 recomputes (own canonical JSON)  32892d23d8f853f6
+PASS  content_sha256 of 013 recomputes (own canonical JSON)  25f891e0a52da6cf
+PASS  content_sha256 of 014 recomputes (own canonical JSON)  a28edf831413489b
+PASS  content_sha256 of 015 recomputes (own canonical JSON)  66afcba4cddb872c
+PASS  content_sha256 of 016 recomputes (own canonical JSON)  e5a3a4eb392e4591
+PASS  content_sha256 of 017 recomputes (own canonical JSON)  07fc6ea974e22300
+PASS  content_sha256 of 018 recomputes (own canonical JSON)  e88c0625d105297e
+PASS  content_sha256 of 019 recomputes (own canonical JSON)  87540d9b5dacd71c
+PASS  content_sha256 of 020 recomputes (own canonical JSON)  e098e2b44a1702d2
+PASS  content_sha256 of extension recomputes (own canonical JSON)  1c6852547f1c2d8e
+PASS  content_sha256 of 022 recomputes (own canonical JSON)  af848ae4bd48551c
+PASS  020 exposed pool: 279 token ids (distinct), 108 frame ids (distinct)  
+PASS  every 020 exposed frame id resolves to a committed frame record (extension or 006..019)  ['006', '009', '011', '012', '013', '014', '015', '016', '017', '018', '019', 'extension-new', 'extension-original']
+PASS  the 108 exposed frames = extension 12 + confirmations 006..019 frames  
+PASS  template cue ids consistent within cardinal  
+PASS  template cue ids consistent within cardinal  
+PASS  template cue ids consistent within quantifier  
+PASS  template cue ids consistent within quantifier  
+PASS  template cue ids consistent within coordinated-adjective  
+PASS  template cue ids consistent within coordinated-adjective  
+PASS  reference ids identical in the extension and every confirmation 006..022  {'cardinal': 581, 'coordinated-adjective': 581, 'quantifier': 1016}
+PASS  reference ids are the template singular cues  
+      template cue ids {'cardinal': {'pl': 767, 'sg': 581}, 'quantifier': {'pl': 2067, 'sg': 1016}, 'coordinated-adjective': {'pl': 767, 'sg': 581}} decoded {'cardinal': {'pl': ' two', 'sg': ' one'}, 'quantifier': {'pl': ' several', 'sg': ' each'}, 'coordinated-adjective': {'pl': ' two', 'sg': ' one'}}
+PASS  022-style exclusion rebuilt = 022's own recorded exclusion (303 ids / 126 texts)  303 ids / 126 texts
+PASS  exclusion: 327 cue token ids, 144 frame texts  327 / 144
+PASS  15 sources  ['pool-020', 'confirmation-006', 'confirmation-009', 'confirmation-011', 'confirmation-012', 'confirmation-013', 'confirmation-014', 'confirmation-015', 'confirmation-016', 'confirmation-017', 'confirmation-018', 'confirmation-019', 'confirmation-020', 'extension', 'confirmation-022']
+== E. cue selection (every candidate, in order)
+      determiner-like  r 0 general      ' '+w -> [2087] ['Ġgeneral']  bare -> [16691] ['general']  eligible
+      determiner-like  r 1 subsequent   ' '+w -> [6774] ['Ġsubsequent']  bare -> [2377, 32437] ['sub', 'sequent']  eligible
+      determiner-like  r 2 given        ' '+w -> [1677] ['Ġgiven']  bare -> [28821] ['given']  eligible
+      determiner-like  r 3 chosen       ' '+w -> [6777] ['Ġchosen']  bare -> [348, 5458] ['ch', 'osen']  eligible
+      determiner-like  r 4 selected     ' '+w -> [4236] ['Ġselected']  bare -> [16191] ['selected']  eligible
+      determiner-like  r 5 present      ' '+w -> [1246] ['Ġpresent']  bare -> [15068] ['present']  eligible
+      determiner-like  r 6 ultimate     ' '+w -> [12553] ['Ġultimate']  bare -> [503, 2542] ['ult', 'imate']  eligible
+      determiner-like  r 7 preceding    ' '+w -> [17691] ['Ġpreceding']  bare -> [20355, 272] ['preced', 'ing']  eligible
+      determiner-like  r 8 following    ' '+w -> [1563] ['Ġfollowing']  bare -> [34814] ['following']  eligible
+      determiner-like  r 9 latest       ' '+w -> [6323] ['Ġlatest']  bare -> [35261] ['latest']  eligible
+      determiner-like  r10 earliest     ' '+w -> [18353] ['Ġearliest']  bare -> [613, 15717] ['ear', 'liest']  eligible
+PASS  determiner-like: 8 taken = ranks 0..7  
+PASS  determiner-like: picks == the design's expected picks  
+PASS  determiner-like: every entry of the list eligible (design pre-check)  11/11
+      quantity         r 0 tons         ' '+w -> [16298] ['Ġtons']  bare -> [24787] ['tons']  eligible
+      quantity         r 1 piles        ' '+w -> [41019] ['Ġpiles']  bare -> [81, 3205] ['p', 'iles']  eligible
+      quantity         r 2 masses       ' '+w -> [11843] ['Ġmasses']  bare -> [14611, 265] ['mass', 'es']  eligible
+      quantity         r 3 stacks       ' '+w -> [34577] ['Ġstacks']  bare -> [296, 7305] ['st', 'acks']  eligible
+      quantity         r 4 gross        ' '+w -> [13711] ['Ġgross']  bare -> [72, 1350] ['g', 'ross']  eligible
+      quantity         r 5 net          ' '+w -> [2036] ['Ġnet']  bare -> [3024] ['net']  eligible
+      quantity         r 6 scores       ' '+w -> [7363] ['Ġscores']  bare -> [44142] ['scores']  eligible
+      quantity         r 7 batches      ' '+w -> [39657] ['Ġbatches']  bare -> [13419, 2706] ['bat', 'ches']  eligible
+      quantity         r 8 bundles      ' '+w -> [25663] ['Ġbundles']  bare -> [45268, 868] ['bund', 'les']  eligible
+      quantity         r 9 crowds       ' '+w -> [24597] ['Ġcrowds']  bare -> [32910, 1397] ['crow', 'ds']  eligible
+      quantity         r10 herds        ' '+w -> [47862] ['Ġherds']  bare -> [379, 1397] ['her', 'ds']  eligible
+      quantity         r11 multitude    ' '+w -> [30408] ['Ġmultitude']  bare -> [9961, 3396] ['mult', 'itude']  eligible
+      quantity         r12 cumulative   ' '+w -> [18849] ['Ġcumulative']  bare -> [38655, 12581] ['cum', 'ulative']  eligible
+      quantity         r13 aggregate    ' '+w -> [19737] ['Ġaggregate']  bare -> [46601, 366] ['aggreg', 'ate']  eligible
+PASS  quantity: 8 taken = ranks 0..7  
+PASS  quantity: picks == the design's expected picks  
+PASS  quantity: every entry of the list eligible (design pre-check)  14/14
+      adjective        r 0 humble       ' '+w -> [26896] ['Ġhumble']  bare -> [18256, 934] ['hum', 'ble']  eligible
+      adjective        r 1 proud        ' '+w -> [9979] ['Ġproud']  bare -> [1087, 2995] ['pr', 'oud']  eligible
+      adjective        r 2 shy          ' '+w -> [23478] ['Ġshy']  bare -> [1200, 90] ['sh', 'y']  eligible
+      adjective        r 3 lazy         ' '+w -> [22658] ['Ġlazy']  bare -> [77, 26537] ['l', 'azy']  eligible
+      adjective        r 4 busy         ' '+w -> [10000] ['Ġbusy']  bare -> [13097, 90] ['bus', 'y']  eligible
+      adjective        r 5 sturdy       ' '+w -> [41789] ['Ġsturdy']  bare -> [296, 36849] ['st', 'urdy']  eligible
+      adjective        r 6 fragile      ' '+w -> [28304] ['Ġfragile']  bare -> [42494, 587] ['frag', 'ile']  eligible
+      adjective        r 7 shiny        ' '+w -> [30006] ['Ġshiny']  bare -> [1200, 5104] ['sh', 'iny']  eligible
+      adjective        r 8 dusty        ' '+w -> [38907] ['Ġdusty']  bare -> [49476, 90] ['dust', 'y']  eligible
+      adjective        r 9 hollow       ' '+w -> [19781] ['Ġhollow']  bare -> [73, 901] ['h', 'ollow']  eligible
+      adjective        r10 noble        ' '+w -> [17874] ['Ġnoble']  bare -> [31528, 282] ['nob', 'le']  eligible
+      adjective        r11 clever       ' '+w -> [19080] ['Ġclever']  bare -> [2148, 332] ['cle', 'ver']  eligible
+      adjective        r12 fuzzy        ' '+w -> [31921] ['Ġfuzzy']  bare -> [71, 25693] ['f', 'uzzy']  eligible
+      adjective        r13 crisp        ' '+w -> [29990] ['Ġcrisp']  bare -> [68, 4448, 81] ['c', 'ris', 'p']  eligible
+      adjective        r14 stiff        ' '+w -> [13827] ['Ġstiff']  bare -> [296, 1648] ['st', 'iff']  eligible
+      adjective        r15 tender       ' '+w -> [14510] ['Ġtender']  bare -> [85, 3109] ['t', 'ender']  eligible
+      adjective        r16 polished     ' '+w -> [29422] ['Ġpolished']  bare -> [4818, 1428] ['pol', 'ished']  eligible
+PASS  adjective: 8 taken = ranks 0..7  
+PASS  adjective: picks == the design's expected picks  
+PASS  adjective: every entry of the list eligible (design pre-check)  17/17
+PASS  the 24 selected (word, id) == the expected list  
+PASS  24 distinct ids  
+PASS  each selected id decodes to ' '+word  
+      leading-space rule matters for: ['batches', 'busy', 'chosen', 'fragile', 'general', 'given', 'gross', 'humble', 'lazy', 'masses', 'net', 'piles', 'preceding', 'present', 'proud', 'scores', 'selected', 'shiny', 'shy', 'stacks', 'sturdy', 'subsequent', 'tons', 'ultimate'] | bare word multi-token: ['batches', 'busy', 'chosen', 'fragile', 'gross', 'humble', 'lazy', 'masses', 'piles', 'preceding', 'proud', 'shiny', 'shy', 'stacks', 'sturdy', 'subsequent', 'ultimate']
+== F. frame selection (every candidate, in order; own structural rule)
+      cardinal               r 0 p_c 3 p_t 3 prefix [510, 22759, 11330] suffix []  'The dairy produces {cue}'  eligible
+      cardinal               r 1 p_c 3 p_t 3 prefix [510, 17824, 28468] suffix []  'The shelter feeds {cue}'  eligible
+      cardinal               r 2 p_c 4 p_t 4 prefix [510, 23928, 2271, 27924] suffix []  'The boutique sells {cue}'  eligible
+      cardinal               r 3 p_c 4 p_t 4 prefix [510, 10913, 274, 42204] suffix []  'The hangar shelters {cue}'  eligible
+      cardinal               r 4 p_c 3 p_t 3 prefix [510, 19476, 25931] suffix []  'The garage repairs {cue}'  eligible
+      cardinal               r 5 p_c 3 p_t 3 prefix [510, 42766, 17202] suffix []  'The nursery grows {cue}'  eligible
+      cardinal               r 6 p_c 3 p_t 3 prefix [510, 27134, 10111] suffix []  'The warehouse stores {cue}'  eligible
+      cardinal               r 7 p_c 4 p_t 4 prefix [510, 22586, 1113, 1634] suffix []  'The workshop carves {cue}'  eligible
+      cardinal               r 8 p_c 3 p_t 3 prefix [510, 22754, 11811] suffix []  'The harbor ships {cue}'  eligible
+      cardinal               r 9 p_c 3 p_t 3 prefix [510, 33173, 19487] suffix []  'The pharmacy stocks {cue}'  eligible
+      cardinal               r10 p_c 4 p_t 4 prefix [510, 49716, 382, 40039] suffix []  'The florist wraps {cue}'  eligible
+      cardinal               r11 p_c 3 p_t 3 prefix [510, 45975, 12176] suffix []  'The butcher cuts {cue}'  eligible
+      cardinal               r12 p_c 4 p_t 4 prefix [510, 40637, 396, 8819] suffix []  'The tailor sews {cue}'  eligible
+PASS  cardinal: 6 taken = ranks 0..5  
+PASS  cardinal: every candidate structurally eligible (design pre-check)  13/13
+      quantifier             r 0 p_c 4 p_t 4 prefix [510, 4522, 48453, 2722] suffix []  'The timetable shows {cue}'  eligible
+      quantifier             r 1 p_c 4 p_t 4 prefix [510, 27392, 552, 13067] suffix []  'The glossary defines {cue}'  eligible
+      quantifier             r 2 p_c 3 p_t 3 prefix [510, 19543, 10894] suffix []  'The inventory lists {cue}'  eligible
+      quantifier             r 3 p_c 3 p_t 3 prefix [510, 8326, 2722] suffix []  'The chart shows {cue}'  eligible
+      quantifier             r 4 p_c 3 p_t 3 prefix [510, 29054, 25957] suffix []  'The memo mentions {cue}'  eligible
+      quantifier             r 5 p_c 3 p_t 3 prefix [510, 6698, 7211] suffix []  'The journal notes {cue}'  eligible
+      quantifier             r 6 p_c 3 p_t 3 prefix [510, 8749, 5861] suffix []  'The register records {cue}'  eligible
+      quantifier             r 7 p_c 3 p_t 3 prefix [510, 3605, 28070] suffix []  'The index cites {cue}'  eligible
+      quantifier             r 8 p_c 4 p_t 4 prefix [510, 48762, 459, 10894] suffix []  'The brochure lists {cue}'  eligible
+      quantifier             r 9 p_c 4 p_t 4 prefix [510, 2412, 3305, 7211] suffix []  'The logbook notes {cue}'  eligible
+      quantifier             r10 p_c 3 p_t 3 prefix [510, 19818, 25957] suffix []  'The digest mentions {cue}'  eligible
+      quantifier             r11 p_c 4 p_t 4 prefix [510, 1133, 3305, 4454] suffix []  'The handbook names {cue}'  eligible
+      quantifier             r12 p_c 3 p_t 3 prefix [510, 43032, 9372] suffix []  'The spreadsheet counts {cue}'  eligible
+      quantifier             r13 p_c 3 p_t 3 prefix [510, 10130, 10894] suffix []  'The schedule lists {cue}'  eligible
+PASS  quantifier: 6 taken = ranks 0..5  
+PASS  quantifier: every candidate structurally eligible (design pre-check)  14/14
+      coordinated-adjective  r 0 p_c 6 p_t 7 prefix [38, 14797, 285, 308, 4921, 24982] suffix [1698]  'Ella and Tomas stacked {cue} low'  eligible
+      coordinated-adjective  r 1 p_c 5 p_t 6 prefix [40805, 285, 40537, 1289, 30981] suffix [6032]  'Anna and Erik glazed {cue} smooth'  eligible
+      coordinated-adjective  r 2 p_c 6 p_t 7 prefix [4015, 80, 285, 18410, 66, 20618] suffix [6507]  'Leo and Maja folded {cue} flat'  eligible
+      coordinated-adjective  r 3 p_c 7 p_t 8 prefix [45, 6736, 285, 10354, 284, 28990, 3026] suffix [4076]  'Lena and Jonas scrubbed {cue} clean'  eligible
+      coordinated-adjective  r 4 p_c 5 p_t 6 prefix [51, 6859, 285, 36172, 29422] suffix [6627]  'Rosa and Felix polished {cue} bright'  eligible
+      coordinated-adjective  r 5 p_c 5 p_t 6 prefix [2019, 4595, 285, 16137, 35517] suffix [2602]  'Clara and Hans boiled {cue} soft'  eligible
+      coordinated-adjective  r 6 p_c 6 p_t 7 prefix [46, 8432, 285, 322, 1261, 17513] suffix [4030]  'Mira and Sven chopped {cue} fine'  eligible
+      coordinated-adjective  r 7 p_c 5 p_t 6 prefix [42, 1473, 285, 40295, 14998] suffix [6863]  'Ida and Lars packed {cue} tight'  eligible
+      coordinated-adjective  r 8 p_c 6 p_t 7 prefix [38, 6156, 285, 427, 3683, 16264] suffix [4797]  'Eva and Nils painted {cue} blue'  eligible
+      coordinated-adjective  r 9 p_c 6 p_t 7 prefix [53, 1758, 285, 416, 6352, 30363] suffix [8516]  'Tina and Rolf baked {cue} brown'  eligible
+      coordinated-adjective  r10 p_c 7 p_t 8 prefix [52, 1171, 571, 285, 4825, 300, 13661] suffix [6507]  'Sofia and Emil pressed {cue} flat'  eligible
+      coordinated-adjective  r11 p_c 5 p_t 6 prefix [44906, 285, 500, 561, 35273] suffix [6032]  'Maria and Jens brushed {cue} smooth'  eligible
+PASS  coordinated-adjective: 6 taken = ranks 0..5  
+PASS  coordinated-adjective: every candidate structurally eligible (design pre-check)  12/12
+PASS  rejected (before quota) is empty  
+PASS  18 distinct new frame texts  
+      p_c over each full candidate list {'cardinal': [3, 4], 'quantifier': [3, 4], 'coordinated-adjective': [5, 6, 7]}
+      descriptive round trip (text with the cue word re-tokenizes to prefix+cue+suffix): {'Y2': [432, 432], 'Y1': [2592, 2592]}
+      descriptive: new cue ids occurring inside any exposed/new frame's prefix or suffix: [('shiny', 'coordinated-adjective-009-1')]
+== G. freshness
+PASS  0 overlap of the 24 ids with the 327 excluded ids  
+PASS  0 overlap of the 18 texts with the 144 excluded texts  
+PASS  022's calibration units (exposed-cells index): 175 cues / 108 frames; 0 overlap  
+PASS  020's confirmation set (021's spent set): 0 overlap (tokens, frame cue ids, prompt token ids, 18 frame texts)  28 ids, 18 texts
+PASS  022's frozen units: 0 overlap  28 ids, 18 texts
+PASS  new frame ids are not any earlier frame id  
+== H. manifest
+PASS  sizes 18 / 18 / 2592 / 432; 3060 unique  (18, 18, 2592, 432) unique 3060
+PASS  020 results state digest recomputes (own canonical JSON) and is 020's closed state  
+      020 ledger 30132, 020 confirmation manifest 3060, 022 manifest 3060, forbidden union 36252
+PASS  0 collisions with 020 ledger / 020 confirmation set / 022 manifest  
+PASS  0 collisions with the 023 ledger (empty)  
+PASS  every forbidden key has the <frame_id>|<label>|<token id> shape  []
+PASS  token level: no forbidden key carries a new cue id; no forbidden key uses a new frame id  
+PASS  token level: every token id in 020's ledger lies in the exclusion  
+PASS  every S2-TARGET key has a new cue id or a new frame; every stage-1 key has a new frame  
+== I. full object, byte for byte
+      mine: 128228 bytes, sha256 5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4, content 4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed
+      file: 128228 bytes, sha256 5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4
+PASS  byte-identical to confirmation-v1.json  
+PASS  file sha256 5fadfa50... / content 4e64d4c2... / 128228 bytes  
+PASS  file content_sha256 recomputes from the file itself  
+PASS  file is canonical JSON + newline  
+PASS  never imported neural_decompiler  
+ITEMS 2-5,7 (independent): ALL PASS

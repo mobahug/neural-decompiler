@@ -1,0 +1,106 @@
+file experiments/023-block0-completion/confirmation-v1.json 128228 bytes, sha256 5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4
+PASS  file is canonical JSON + newline  
+PASS  content_sha256 recomputes (pm and independent canonical JSON)  4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed
+PASS  load_confirmation_023 verifies (digest, manifest, 8/8/8 + 6/6/6, exclusion re-extracted, no reuse)  
+PASS  schema, design, plan, scope  Experiment 023 prospectively tests completion across new determiner-like, quanti…
+PASS  model binding  {"model_id": "EleutherAI/pythia-70m-deduped", "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"}
+
+cues:
+  determiner-like  general (2087, rank 0), subsequent (6774, rank 1), given (1677, rank 2), chosen (6777, rank 3), selected (4236, rank 4), present (1246, rank 5), ultimate (12553, rank 6), preceding (17691, rank 7)
+PASS  determiner-like: 8 = the first 8 of the frozen list  
+  quantity         tons (16298, rank 0), piles (41019, rank 1), masses (11843, rank 2), stacks (34577, rank 3), gross (13711, rank 4), net (2036, rank 5), scores (7363, rank 6), batches (39657, rank 7)
+PASS  quantity: 8 = the first 8 of the frozen list  
+  adjective        humble (26896, rank 0), proud (9979, rank 1), shy (23478, rank 2), lazy (22658, rank 3), busy (10000, rank 4), sturdy (41789, rank 5), fragile (28304, rank 6), shiny (30006, rank 7)
+PASS  adjective: 8 = the first 8 of the frozen list  
+frames:
+  cardinal-023-1               rank  0  p_c 3 p_t 3  'The dairy produces {cue}'
+  cardinal-023-2               rank  1  p_c 3 p_t 3  'The shelter feeds {cue}'
+  cardinal-023-3               rank  2  p_c 4 p_t 4  'The boutique sells {cue}'
+  cardinal-023-4               rank  3  p_c 4 p_t 4  'The hangar shelters {cue}'
+  cardinal-023-5               rank  4  p_c 3 p_t 3  'The garage repairs {cue}'
+  cardinal-023-6               rank  5  p_c 3 p_t 3  'The nursery grows {cue}'
+PASS  cardinal: 6 = the first 6 of the frozen list, ids cardinal-023-1…6  
+  quantifier-023-1             rank  0  p_c 4 p_t 4  'The timetable shows {cue}'
+  quantifier-023-2             rank  1  p_c 4 p_t 4  'The glossary defines {cue}'
+  quantifier-023-3             rank  2  p_c 3 p_t 3  'The inventory lists {cue}'
+  quantifier-023-4             rank  3  p_c 3 p_t 3  'The chart shows {cue}'
+  quantifier-023-5             rank  4  p_c 3 p_t 3  'The memo mentions {cue}'
+  quantifier-023-6             rank  5  p_c 3 p_t 3  'The journal notes {cue}'
+PASS  quantifier: 6 = the first 6 of the frozen list, ids quantifier-023-1…6  
+  coordinated-adjective-023-1  rank  0  p_c 6 p_t 7  'Ella and Tomas stacked {cue} low'
+  coordinated-adjective-023-2  rank  1  p_c 5 p_t 6  'Anna and Erik glazed {cue} smooth'
+  coordinated-adjective-023-3  rank  2  p_c 6 p_t 7  'Leo and Maja folded {cue} flat'
+  coordinated-adjective-023-4  rank  3  p_c 7 p_t 8  'Lena and Jonas scrubbed {cue} clean'
+  coordinated-adjective-023-5  rank  4  p_c 5 p_t 6  'Rosa and Felix polished {cue} bright'
+  coordinated-adjective-023-6  rank  5  p_c 5 p_t 6  'Clara and Hans boiled {cue} soft'
+PASS  coordinated-adjective: 6 = the first 6 of the frozen list, ids coordinated-adjective-023-1…6  
+PASS  rejections: none (every first candidate eligible)  0
+PASS  counts  {"classes": {"adjective": 8, "determiner-like": 8, "quantity": 8}, "templates": {"cardinal": 6, "coordinated-adjective": 6, "quantifier": 6}}
+PASS  no possessive-or-pronoun cue  
+
+exclusion: 327 earlier cue token ids, 144 earlier frame texts, sources: ['pool-020', 'confirmation-006', 'confirmation-009', 'confirmation-011', 'confirmation-012', 'confirmation-013', 'confirmation-014', 'confirmation-015', 'confirmation-016', 'confirmation-017', 'confirmation-018', 'confirmation-019', 'confirmation-020', 'extension', 'confirmation-022']
+PASS  24 distinct cue ids, 18 distinct frame texts  
+PASS  0 overlap with the excluded cue ids / frame texts  
+PASS  0 overlap with 020's exposed pool (175 cues / 108 frames; 022's calibration units)  
+PASS  0 overlap with 020's confirmation set (021's spent set)  28 ids, 126 texts
+PASS  0 overlap with 022's frozen units  28 ids, 18 texts
+PASS  the exclusion re-extracted now equals the recorded one  
+PASS  cue ' general' is one token 2087  
+PASS  cue ' subsequent' is one token 6774  
+PASS  cue ' given' is one token 1677  
+PASS  cue ' chosen' is one token 6777  
+PASS  cue ' selected' is one token 4236  
+PASS  cue ' present' is one token 1246  
+PASS  cue ' ultimate' is one token 12553  
+PASS  cue ' preceding' is one token 17691  
+PASS  cue ' tons' is one token 16298  
+PASS  cue ' piles' is one token 41019  
+PASS  cue ' masses' is one token 11843  
+PASS  cue ' stacks' is one token 34577  
+PASS  cue ' gross' is one token 13711  
+PASS  cue ' net' is one token 2036  
+PASS  cue ' scores' is one token 7363  
+PASS  cue ' batches' is one token 39657  
+PASS  cue ' humble' is one token 26896  
+PASS  cue ' proud' is one token 9979  
+PASS  cue ' shy' is one token 23478  
+PASS  cue ' lazy' is one token 22658  
+PASS  cue ' busy' is one token 10000  
+PASS  cue ' sturdy' is one token 41789  
+PASS  cue ' fragile' is one token 28304  
+PASS  cue ' shiny' is one token 30006  
+PASS  frame cardinal-023-1 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame cardinal-023-2 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame cardinal-023-3 structurally valid (rebuilt = stored; p_c 4 in 3–5; p_t)  
+PASS  frame cardinal-023-4 structurally valid (rebuilt = stored; p_c 4 in 3–5; p_t)  
+PASS  frame cardinal-023-5 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame cardinal-023-6 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame quantifier-023-1 structurally valid (rebuilt = stored; p_c 4 in 3–5; p_t)  
+PASS  frame quantifier-023-2 structurally valid (rebuilt = stored; p_c 4 in 3–5; p_t)  
+PASS  frame quantifier-023-3 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame quantifier-023-4 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame quantifier-023-5 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame quantifier-023-6 structurally valid (rebuilt = stored; p_c 3 in 3–5; p_t)  
+PASS  frame coordinated-adjective-023-1 structurally valid (rebuilt = stored; p_c 6 in 4–7; p_t)  
+PASS  frame coordinated-adjective-023-2 structurally valid (rebuilt = stored; p_c 5 in 4–7; p_t)  
+PASS  frame coordinated-adjective-023-3 structurally valid (rebuilt = stored; p_c 6 in 4–7; p_t)  
+PASS  frame coordinated-adjective-023-4 structurally valid (rebuilt = stored; p_c 7 in 4–7; p_t)  
+PASS  frame coordinated-adjective-023-5 structurally valid (rebuilt = stored; p_c 5 in 4–7; p_t)  
+PASS  frame coordinated-adjective-023-6 structurally valid (rebuilt = stored; p_c 5 in 4–7; p_t)  
+descriptive: 432 of 432 cue × frame texts tokenize exactly as prefix + cue + suffix
+
+manifest sizes {'S1-REF': 18, 'S1-VALIDITY': 18, 'Y1': 2592, 'Y2': 432}
+PASS  Y1 = 24 × 108 = 2,592 and Y2 = 24 × 18 = 432; stage 1 = 18 + 18  
+PASS  every key unique; total 3,060  3060
+PASS  each list in canonical (sorted) order  
+PASS  manifest == the one the cues and frames define  
+PASS  0 keys in the 023 prompt ledger  ledger 0
+PASS  0 collisions with forbidden keys (020 ledger ∪ 020 confirmation set ∪ 022 manifest)  36252 forbidden keys
+PASS  every key carries a new cue token or a new frame  
+PASS  in-memory recomputation == the frozen file, byte for byte  
+PASS  results state unchanged (freeze keeps no state)  
+PASS  phases  {"calibrate": "not_started", "confirm": "not_started", "extract": "complete", "lock": "not_started", "report": "not_started"}
+PASS  HEAD unchanged; only the freeze file is new (untracked)  
+PASS  installed exposed cells unchanged  
+
+VERIFY FREEZE: ALL PASS

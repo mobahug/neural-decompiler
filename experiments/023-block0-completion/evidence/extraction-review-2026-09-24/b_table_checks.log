@@ -1,0 +1,66 @@
+[     0.4s] table loaded; keys ['ceiling', 'classes', 'count', 'cues', 'dc', 'dc_hat', 'frames', 'gates', 'historical', 'm2', 'mean', 'noun_keys', 'sse', 'templates', 'token_ids']
+[NOTE] table dtypes: dc (175, 108, 79) torch.float64, dc_hat (175, 108, 32, 79) torch.float64, sse (175, 108, 32) torch.float64, count (175, 108) torch.float64, mean (175, 108) torch.float64, m2 (175, 108) torch.float64, ceiling (175, 108, 79) torch.float64, historical (175, 108, 79) torch.float64; gates I1 (175, 108) torch.float64, I2 (175, 108) torch.float64, I3 (175, 108) torch.float64, I4 (175, 108) torch.float64, I5 (175, 108) torch.float64
+[PASS] 13 own tensor digests == 022 record's rematerialization.table_sha256 :: differing []
+[PASS] 13 own tensor digests == index source_022.table_tensor_sha256
+[PASS] digest negative control (one-ulp change detected)
+[PASS] ul.CUE_CLASSES == (determiner-like, quantity, possessive-or-pronoun, adjective)
+[PASS] index cues (175) == table's cues/token_ids/classes lists
+[PASS] index frames (108) == table's frames/templates lists
+[PASS] classes appear in 022's class order (non-decreasing), all four present
+[PASS] token ids strictly ascending within each class
+[PASS] class counts 45/45/36/49 :: {'determiner-like': 45, 'quantity': 45, 'possessive-or-pronoun': 36, 'adjective': 49}
+[PASS] cue token ids unique
+[PASS] frames strictly sorted by frame_id (unique)
+[PASS] group == coordinated iff template == coordinated-adjective
+[PASS] 72 cue-final + 36 coordinated frames :: coordinated 36
+[PASS] P0/P1 masks == ul.BIT: emb|Bv|Bp = 14, +T = 30; index program masks match
+[     8.9s] frozen inputs loaded
+[PASS] nouns (79) == table noun_keys == pool single-token nouns in order
+[PASS] index frames == pool frames sorted by frame_id, templates equal
+[PASS] index cues == own rebuild from the pool (classes in order, token id ascending) :: own 175
+[PASS] index y2_like_frames == own derivation (frame origin 017–019), 14 per template :: {'cardinal': 14, 'quantifier': 14, 'coordinated-adjective': 14}
+[PASS] tokenizer (EleutherAI/pythia-70m-deduped@e93a9fa, local): ' '+word is exactly its single token id for all 175 cues :: []
+[PASS] 36 possessive-or-pronoun cues (3,888 pair rows) present, finite, n = 79 :: cue indices 90–125
+[PASS] b0c.exposed_units order == index order (cues, frames)
+[NOTE] stratum sizes {'cue/determiner-like': 45, 'cue/quantity': 45, 'cue/adjective': 49, 'frame/cardinal': 14, 'frame/quantifier': 14, 'frame/coordinated-adjective': 14}
+[    12.4s] computing own draw indices for 10,000 draws
+[    12.7s] computing b0c.draw_indices(units, 10000)
+[PASS] b0c.draw_indices keys == own strata (no pronoun stratum) :: ['cue/adjective', 'cue/determiner-like', 'cue/quantity', 'frame/cardinal', 'frame/coordinated-adjective', 'frame/quantifier']
+[PASS] own draw indices == b0c.draw_indices(units, 10000) for all 6 strata
+[PASS] no drawn cue row belongs to the pronoun stratum (all 10,000 draws)
+[PASS] Y1/cue_final: own pair indices == b0c.draw_pairs for all 10,000 draws; no pronoun row; frames in group :: shape (10000, 1728)
+[PASS] Y1/coordinated: own pair indices == b0c.draw_pairs for all 10,000 draws; no pronoun row; frames in group :: shape (10000, 864)
+[PASS] Y2/cue_final: own pair indices == b0c.draw_pairs for all 10,000 draws; no pronoun row; frames in group and Y2-like :: shape (10000, 288)
+[PASS] Y2/coordinated: own pair indices == b0c.draw_pairs for all 10,000 draws; no pronoun row; frames in group and Y2-like :: shape (10000, 144)
+[PASS] cue-final frames: stored dc_hat mask 30 == mask 14 bit for bit (T is a null player)
+[PASS] 5a stored: n :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5a stored: SSE0 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5a stored: SSE1 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5a stored: mean :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5a stored: M2 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] coordinated rows: artifact SSE1 == stored sse[mask 30] and != sse[mask 14] (mask-choice control) :: rows where mask 14 would differ: 6300/6300
+[PASS] 5b whole-table torch float64: S :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64: Q :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64: SSE0 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64: SSE1 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64: SSEC :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64 (descriptive): mean :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] 5b whole-table torch float64 (descriptive): M2 :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[    14.1s] fsum reconstruction
+[NOTE] 5c fsum vs artifact S: identical rows 18648/18900, max |diff| 5.684e-14, max rel 2.212e-16
+[NOTE] 5c fsum vs artifact Q: identical rows 18423/18900, max |diff| 4.547e-13, max rel 2.621e-16
+[NOTE] 5c fsum vs artifact SSE0: identical rows 12021/18900, max |diff| 1.137e-13, max rel 4.173e-16
+[NOTE] 5c fsum vs artifact SSE1: identical rows 11791/18900, max |diff| 1.421e-14, max rel 4.168e-16
+[NOTE] 5c fsum vs artifact SSEC: identical rows 11853/18900, max |diff| 1.421e-14, max rel 4.098e-16
+[NOTE] 5c fsum vs artifact mean: identical rows 18685/18900, max |diff| 8.882e-16, max rel 2.729e-16
+[NOTE] 5c fsum vs artifact M2: identical rows 11844/18900, max |diff| 5.684e-14, max rel 4.066e-16
+[PASS] 5c every column within 1e-13 relative of the exactly-rounded sums :: worst rel 4.173e-16
+[    14.4s] item 6 selections
+[NOTE] item 6: 409 selections, 1134663 repeated pair uses in total
+[PASS] item 6 SST onepass_vs_merge: max relative disagreement <= 1e-10 :: 2.322e-15 at random-156-size7962
+[PASS] item 6 SST onepass_vs_direct: max relative disagreement <= 1e-10 :: 2.156e-15 at random-156-size7962
+[PASS] item 6 SST merge_vs_direct: max relative disagreement <= 1e-10 :: 2.206e-16 at random-284-size11865
+[PASS] item 6 SST onepass_fsum_vs_direct: max relative disagreement <= 1e-10 :: 1.508e-15 at random-264-size15766
+[NOTE] all rows: pooled SST 3316114.496586 vs Σ M2 1817239.169361 (not equal, as the design requires)
+== items 3, 4 (tensors), 5, 6: 58 lines, 0 failures: []
+[    43.7s] done

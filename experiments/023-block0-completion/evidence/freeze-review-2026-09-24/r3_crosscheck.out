@@ -1,0 +1,71 @@
+PASS  reconstruction cue order / frame order follow the design tables  
+== constants against the design text
+PASS  b0c.CUE_CANDIDATES == design lists (order included)  
+PASS  b0c.FRAME_CANDIDATES == design lists (order included)  
+PASS  ul.P_C_RANGE == design ranges  {'cardinal': (3, 5), 'quantifier': (3, 5), 'coordinated-adjective': (4, 7)}
+PASS  quotas 8/6, strata/templates order  
+PASS  model binding == models.PYTHIA_70M  {'model_id': 'EleutherAI/pythia-70m-deduped', 'revision': 'e93a9faa9c77e5d09219f6c868bfc7a1bd65593c'}
+PASS  frozen blobs verify (the code the freeze ran is the pinned code)  
+PASS  block0_completion.py blob unchanged since extract (16d310fc…)  
+== tokenizer-only load (audited)
+== the runner's _base() inputs (audited; same loaders and tracked check as Runner._base)
+PASS  pool tokens == 020's raw exposed_token_ids (279)  
+PASS  pool frame order == file/reconstruction exposed_frame_ids  
+PASS  pool frame texts all inside the exclusion; pool reference ids / plural cue ids  {'cardinal': 'cardinal:pl', 'quantifier': 'quantifier:pl', 'coordinated-adjective': 'cardinal:pl'}
+PASS  manifest-origin template cue ids == the ones the reconstruction used  {'cardinal': {'sg': 581, 'pl': 767}, 'quantifier': {'sg': 1016, 'pl': 2067}, 'coordinated-adjective': {'sg': 581, 'pl': 767}}
+PASS  022's calibration units: 175 cues / 108 frames, disjoint from the 24 / 18  
+PASS  020 confirmation set via the frozen loader: disjoint  28 ids, 126 texts
+== pm._build_new_frame against the reconstruction (every candidate)
+PASS  pm._build_new_frame == own rule for all 39 candidates; the 18 picked frame dicts identical  
+== the runner's forbidden set and the frozen manifest code
+PASS  frozen Confirmation023.manifest() of the reconstruction == reconstruction manifest  
+PASS  Runner._base forbidden set: 36252 keys, 0 overlap with the 3060  36252
+PASS  020 raw confirmation manifest == frozen loader's all_prompts keys  
+== descriptive: noun-form and frame-token coincidences
+      exposed nouns whose sg/pl token is a new cue id: [] | 020 fresh nouns: [('batch', (14604,), (39657,), ['batches'])]
+      exposed frames containing a new cue id in prefix/suffix: [('coordinated-adjective-009-1', 'Ida and Tomas counted {cue} shiny', [42, 1473, 285, 308, 4921, 16042], [30006])]
+== audit of opens
+   [tokenizer] 10 files
+       ~HF/.agent_harnesses.json
+       ~HF/hub/models--EleutherAI--pythia-70m-deduped/blobs/0204ed10c186a4c7c68f55dff8f26087a45898d6
+       ~HF/hub/models--EleutherAI--pythia-70m-deduped/blobs/d7a9196e329eaf06d6e2802fed376e7459834236
+       ~HF/hub/models--EleutherAI--pythia-70m-deduped/blobs/f1860edb10f80bcaf7b023fce47c68a23b724c23
+       ~HF/hub/models--EleutherAI--pythia-70m-deduped/blobs/f74dfbfab8f97770a87769c739fb080c21c8bacc
+       ~HF/hub/models--EleutherAI--pythia-70m-deduped/trees/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c.json
+       ~HF/token
+       REPO/src/neural_decompiler.egg-info/METADATA
+       REPO/src/neural_decompiler.egg-info/PKG-INFO
+       REPO/src/neural_decompiler.egg-info/top_level.txt
+   [base] 23 files
+       REPO/experiments/005-regular-plural-mechanism/extension-v1.json
+       REPO/experiments/006-low-rank-cue-decompilation/confirmation-v1.json
+       REPO/experiments/009-head-transport-rule/confirmation-v1.json
+       REPO/experiments/011-encoding-read-prospective/confirmation-v1.json
+       REPO/experiments/011-encoding-read-prospective/preregistration-lock.json
+       REPO/experiments/012-layer-correction-token-local/confirmation-v1.json
+       REPO/experiments/012-layer-correction-token-local/preregistration-lock.json
+       REPO/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json
+       REPO/experiments/014-neuron-1987-feature/confirmation-v1.json
+       REPO/experiments/015-attention-pattern-token-local/confirmation-v1.json
+       REPO/experiments/016-frame-conditioned-qk/confirmation-v1.json
+       REPO/experiments/017-transport-head-pattern/confirmation-v1.json
+       REPO/experiments/017-transport-head-pattern/preregistration-lock.json
+       REPO/experiments/018-block2-concentration/confirmation-v1.json
+       REPO/experiments/019-block2-routing/confirmation-v1.json
+       REPO/experiments/020-readout-decompilation/closure.json
+       REPO/experiments/020-readout-decompilation/confirmation-v1.json
+       REPO/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json
+       REPO/experiments/022-upstream-error-localization/calibration-v1.json
+       REPO/experiments/022-upstream-error-localization/confirmation-v1.json
+       REPO/outputs/experiment-020/results.json
+       REPO/screening/behavior-candidates/manifest-v1.json
+       REPO/src/neural_decompiler/readout_decompilation.py
+      freeze-run HF opens mapped: [('.agent_harnesses.json', '(not a snapshot file)'), ('0204ed10c186a4c7c68f55dff8f26087a45898d6', 'special_tokens_map.json'), ('d7a9196e329eaf06d6e2802fed376e7459834236', 'config.json'), ('f1860edb10f80bcaf7b023fce47c68a23b724c23', 'tokenizer_config.json'), ('f74dfbfab8f97770a87769c739fb080c21c8bacc', 'tokenizer.json'), ('e93a9faa9c77e5d09219f6c868bfc7a1bd65593c.json', '(not a snapshot file)'), ('token', '(not a snapshot file)')]
+PASS  the freeze's HF opens == a tokenizer-only load's HF opens  freeze 7 / tokenizer-only 7
+PASS  model.safetensors blob 3da38833… absent from the freeze log  
+      freeze repo data files not opened by _base(): ['/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/023-block0-completion/confirmation-v1.json']
+      _base() repo data files not in the freeze log: []
+PASS  every repo data file the freeze opened is explained by _base() or the confirmation write/re-read  
+      blob atime changed by the tokenizer-only load: {'3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd': False, '0204ed10c186a4c7c68f55dff8f26087a45898d6': False, 'f74dfbfab8f97770a87769c739fb080c21c8bacc': False, 'd7a9196e329eaf06d6e2802fed376e7459834236': False, 'f1860edb10f80bcaf7b023fce47c68a23b724c23': False}
+      transformer_lens not imported | safetensors imported
+CROSS-CHECKS: ALL PASS

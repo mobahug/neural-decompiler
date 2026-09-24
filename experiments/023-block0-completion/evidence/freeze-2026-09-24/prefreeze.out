@@ -1,0 +1,27 @@
+PASS  HEAD  89536b004b2e4536e83185cdfec31df4e7206982
+PASS  origin/main (ls-remote)  89536b004b2e4536e83185cdfec31df4e7206982
+PASS  tree clean incl. untracked  
+PASS  extract complete once, no incident/stop  2026-09-24T14:20:44+00:00 → 2026-09-24T14:26:14+00:00 at 2111271
+PASS  freeze not run: no confirmation file, never committed  
+PASS  calibrate/lock/confirm/report not_started  {"calibrate": "not_started", "confirm": "not_started", "extract": "complete", "lock": "not_started", "report": "not_started"}
+PASS  both prompt ledgers empty  
+PASS  no calibration/lock/confirmation records  
+PASS  results state unchanged since extract  
+PASS  installed exposed-cells.f64  
+PASS  installed exposed-cells.json file  
+PASS  installed exposed-cells.json content  
+PASS  pin readout_decompilation.py  caa73b40192f4c910dc63371bd19db75a3258339
+PASS  pin readout_calibration.py  9107da975128d9b0383f3b346695675104e4cde9
+PASS  pin head_pattern.py  386682fe0a47d093dfbee2507afc1df61811ab15
+PASS  pin frame_channels.py  c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8
+PASS  pin attention_patterns.py  3f5acd65397bd11723ba6fc2ec4253f1d5c81943
+PASS  pin layer_correction.py  04df0cc9a20093cc48ee5ef62da7f206bf1a3186
+PASS  pin plural_mechanism.py  d39da8a8d9931005d411258bcddbb7f9beed35e4
+PASS  pin encoding_read.py  cab99c942de970332e726a5626b584242d4cf600
+PASS  pin head_transport.py  936093a4e82c83e299a65a7c85529a7226f80c95
+PASS  pin models.py  b1c6f03379af7e0918d0d1a6460a264651603fb2
+PASS  pin upstream_localization.py  465856962aa380747d1a4f1338d1d2762d03c9f9
+PASS  block0_completion.py unchanged since extract  
+PASS  no scientific path changed since extract  ["experiments/023-block0-completion/README.md", "experiments/023-block0-completion/exposed-cells.f64", "experiments/023-block0-completion/exposed-cells.json"]
+
+PRE-FREEZE: ALL PASS

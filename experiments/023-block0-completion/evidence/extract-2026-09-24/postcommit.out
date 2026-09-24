@@ -1,0 +1,18 @@
+PASS  guard live (deliberate open refused)  
+PASS  installed f64 sha256  
+PASS  installed json file sha256  
+PASS  installed json content_sha256  
+PASS  git show HEAD:experiments/023-block0-completion/exposed-cells.f64 == installed bytes == candidate bytes  
+PASS  experiments/023-block0-completion/exposed-cells.f64 tracked  
+PASS  git show HEAD:experiments/023-block0-completion/exposed-cells.json == installed bytes == candidate bytes  
+PASS  experiments/023-block0-completion/exposed-cells.json tracked  
+   runner: module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; exposed cells d2ee71e58f45… (18900 pairs, extracted at 2111271); not frozen yet
+PASS  stock validate (in-process, table blocked)  
+PASS  installed-artifact reader accepts the committed pair (== this run's extracted candidate, extraction commit == extract phase)  {"data_path": "experiments/023-block0-completion/exposed-cells.f64", "index_path": "experiments/023-block0-completion/exposed-cells.json", "data_sha256": "d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4", "index_sha256": "628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe"}
+PASS  calibrate precondition: no scientific change since extract  ["experiments/023-block0-completion/exposed-cells.f64", "experiments/023-block0-completion/exposed-cells.json"]
+PASS  calibration kernel on the committed artifact (16 draws × 4 conditions; E6 enforced)  E6 max 4.00e-15; loop check 8.56e-14 over 192
+PASS  no access to the 022 table beyond the deliberate probe  0 blocked attempts
+PASS  HEAD, tree  83d9c58b749595b5c86ed599552248e00f8d7c42
+PASS  results.json unchanged  
+
+POST-COMMIT: ALL PASS

@@ -1,0 +1,23 @@
+PASS  HEAD  89536b004b2e4536e83185cdfec31df4e7206982
+PASS  origin/main (tracking ref)  
+PASS  origin main (ls-remote)  ['89536b004b2e4536e83185cdfec31df4e7206982']
+PASS  status porcelain == exactly the untracked freeze file  '?? experiments/023-block0-completion/confirmation-v1.json\n'
+PASS  confirmation file never committed on any ref  
+PASS  results.json state_sha256 recomputes (own canonical JSON)  fcb2c0305a02c0c42a9ce39bc5a9c19c2c4f30c298d3a198c2644a751abb9e4d
+PASS  results.json bytes are canonical JSON + newline  
+      results.json file sha256 9bb1e33594670343a41e5c08f81cca3a78f50d1f1c4e04882708879e508a5ea7
+PASS  extract complete, no incidents / stop keys  {"commit": "2111271892a8237f69c3ef18d6eec774e798ac5c", "completed_at": "2026-09-24T14:26:14+00:00", "started_at": "2026-09-24T14:20:44+00:00", "status": "complete"}
+PASS  extract started/completed exactly once (single start/complete record)  
+PASS  calibrate/lock/confirm/report not_started  {"calibrate": {"status": "not_started"}, "lock": {"status": "not_started"}, "confirm": {"status": "not_started"}, "report": {"status": "not_started"}}
+PASS  phase set  ['calibrate', 'confirm', 'extract', 'lock', 'report']
+PASS  executed_prompt_keys empty  
+PASS  executed_noun_keys empty  
+PASS  no calibration / lock / confirmation / confirmation_023 / report record  
+PASS  no incident anywhere in the state text  
+PASS  state experiment 023, not dirty, protocol commit = extract commit  2111271892a8237f69c3ef18d6eec774e798ac5c
+PASS  experiments/023-block0-completion/exposed-cells.f64 sha256 == expected  d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4
+PASS  experiments/023-block0-completion/exposed-cells.f64 == git show HEAD bytes  1209600 bytes
+PASS  experiments/023-block0-completion/exposed-cells.json sha256 == expected  628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe
+PASS  experiments/023-block0-completion/exposed-cells.json == git show HEAD bytes  17493 bytes
+PASS  exposed-cells.json content digest recomputes (own canonical JSON)  d38305cb86624a4a1b7e70d21f85ed1b57c26e1d2f59f3ec7dbf2a940f582d16
+ITEM 1: ALL PASS

@@ -1,0 +1,14 @@
+[PASS] guard live: every deliberate probe refused :: {'builtins.open(abs)': True, 'builtins.open(relative to repo cwd)': True, 'os.open': True, 'pathlib.read_bytes': True, 'numpy.fromfile': True, 'torch.load (patched)': True, 'torch.load (original, audit only)': True, 'open via a symlink in the scratchpad': True}; triggers during probes {'audit': 7, 'torch_load': 1, 'armed': True}
+[PASS] b0c.read_cells accepted the candidate (content digest, layout, meta recomputed now, bytes digest)
+[PASS] b0c.read_cells tensor == own raw little-endian read, bit for bit
+[PASS] own pair indices == b0c.draw_pairs for the 16 draws × 4 conditions :: mismatching draws 0
+[PASS] b0c pool/statistics vs own fsum implementation: max |k − d| / max(1, |d|) <= 1e-10 :: 2.184e-15 at Y1/coordinated/draw 5/SST
+[PASS] interpretability and ceiling_limited flags identical (64 draw-conditions) :: mismatches 0
+[PASS] four-way result codes identical under the ILLUSTRATIVE bound 0.95 :: mismatches 0
+[PASS] E6 on these draws (own one-pass vs own two-pass merge) <= 1e-10 :: 1.867e-15
+[NOTE] ILLUSTRATIVE-bound (0.95, not F) code tally over the 16 draws: {'Y1/cue_final': {'PASS': 16}, 'Y1/coordinated': {'PASS': 16}, 'Y2/cue_final': {'PASS': 16}, 'Y2/coordinated': {'PASS': 16}}
+[NOTE] g over the 16 draws (min / max): Y1/cue_final 0.9972 / 0.9991; Y1/coordinated 0.9988 / 0.9997; Y2/cue_final 0.9964 / 1.0010; Y2/coordinated 0.9953 / 0.9993
+[PASS] guard triggers other than the deliberate probes == 0 :: {'audit': 0, 'torch_load': 0, 'armed': True}
+[NOTE] files opened under outputs/ during the run: ['/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-exposed-cells.f64', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-exposed-cells.json']
+== item 8: 9 checks, 0 failures: []
+exit code 0

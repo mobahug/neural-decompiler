@@ -1,0 +1,2 @@
+validation failed: experiments/023-block0-completion/confirmation-v1.json must be frozen and committed first (the freeze phase)
+exit 1

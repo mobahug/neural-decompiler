@@ -1,0 +1,36 @@
+PASS  HEAD is the approved commit  2111271892a8237f69c3ef18d6eec774e798ac5c
+PASS  origin/main == HEAD  2111271892a8237f69c3ef18d6eec774e798ac5c
+PASS  working tree clean (incl. untracked)  
+PASS  no outputs/experiment-023/  
+PASS  no results state  
+PASS  no installed artifact / confirmation / record / lock  
+validate stdout: module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; not extracted yet; not frozen yet
+PASS  stock validate exit 0  exit 0
+PASS  pin readout_decompilation.py  caa73b40192f4c910dc63371bd19db75a3258339
+PASS  pin readout_calibration.py  9107da975128d9b0383f3b346695675104e4cde9
+PASS  pin head_pattern.py  386682fe0a47d093dfbee2507afc1df61811ab15
+PASS  pin frame_channels.py  c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8
+PASS  pin attention_patterns.py  3f5acd65397bd11723ba6fc2ec4253f1d5c81943
+PASS  pin layer_correction.py  04df0cc9a20093cc48ee5ef62da7f206bf1a3186
+PASS  pin plural_mechanism.py  d39da8a8d9931005d411258bcddbb7f9beed35e4
+PASS  pin encoding_read.py  cab99c942de970332e726a5626b584242d4cf600
+PASS  pin head_transport.py  936093a4e82c83e299a65a7c85529a7226f80c95
+PASS  pin models.py  b1c6f03379af7e0918d0d1a6460a264651603fb2
+PASS  pin upstream_localization.py  465856962aa380747d1a4f1338d1d2762d03c9f9
+PASS  assert_frozen_blobs  11 modules
+PASS  block0_completion.py blob at HEAD  16d310fc7fab5599ec83b8bd8162fb9613f8dad2
+PASS  Experiment 020 closure verifies  
+PASS  022 calibration file sha256  db745653cfa8f411514e80839bf986bd6cbbe3e816e3bb3095cf43c2d9d11a87
+PASS  022 calibration content sha256  46985fd59d9d22dc08c9344a2fa96eacaf832dfe954e84526fc76c5ac0d12f6d
+PASS  022 calibration tracked  
+PASS  022 confirmation file sha256  1a9afef0791171129bcf3d716b41e2139857851088a30620481757409a2e04d2
+PASS  022 confirmation content sha256  af848ae4bd48551cffec67f169a2a6d7b47f0eaaa5d2451010cc4c8bfd8fcda9
+PASS  022 confirmation tracked  
+PASS  022 calibration-table.pt present  424131002 bytes
+PASS  022 table file sha256 == the bound one  04659d5e8b20a70526e5862eb2b2de952b33496f25e3875de6c6254df2b8fd81
+   022 record binds 13 table tensor digests (E1 checks them at extract)
+PASS  runtime and versions equal 020's explore  {"device": "cpu", "backend": "cpu", "dtype": "float32", "seed": 20260916, "control_seed": 20260924, "deterministic_algorithms": false, "torch_num_threads": 4}
+PASS  exposed pool 175 cues × 108 frames = 18,900 pairs  
+PASS  scorable nouns 79  79
+
+PREFLIGHT A: ALL PASS

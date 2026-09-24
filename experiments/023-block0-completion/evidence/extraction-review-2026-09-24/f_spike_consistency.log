@@ -1,0 +1,4 @@
+all 175 cues (the spike's pool)    cue_final    pairs  12600  R2_0 0.8117  R2_1 0.9673  R2_C 0.9676  g 0.9981  gap 0.1559  mean -3.833 sd 1.545
+all 175 cues (the spike's pool)    coordinated  pairs   6300  R2_0 0.5548  R2_1 0.9675  R2_C 0.9679  g 0.9991  gap 0.4131  mean -3.706 sd 1.370
+without the pronoun stratum        cue_final    pairs  10008  R2_0 0.8144  R2_1 0.9715  R2_C 0.9718  g 0.9982  gap 0.1574  mean -3.908 sd 1.548
+without the pronoun stratum        coordinated  pairs   5004  R2_0 0.5099  R2_1 0.9693  R2_C 0.9696  g 0.9992  gap 0.4597  mean -3.853 sd 1.371

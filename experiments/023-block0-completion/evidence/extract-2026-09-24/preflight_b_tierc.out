@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0 -- /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python
+tiers: no tier (explicit selection); pass --tier to intersect; current experiment: 023
+rootdir: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler
+configfile: pyproject.toml
+plugins: jaxtyping-0.3.11, xdist-3.8.0, typeguard-4.6.0, anyio-4.15.1
+collecting ... collected 37 items / 33 deselected / 4 selected
+tiers over the 37 collected: A 33 | B 37 (slow 0, current 0) | D historical 0 | pinned-model contract 4; selected 4 (tier none)
+
+tests/test_block0_completion.py::test_real_022_table_extraction_identities_read_only PASSED [ 25%]
+tests/test_block0_completion.py::test_real_022_p1_recomputes_bit_for_bit_on_a_handful_of_exposed_pairs PASSED [ 50%]
+tests/test_block0_completion.py::test_the_real_tokenizer_freeze_takes_the_designs_expected_units_and_writes_nothing PASSED [ 75%]
+tests/test_block0_completion.py::test_real_prediction_tables_reproduce_022_and_hold_i5_and_the_block0_algebra PASSED [100%]
+
+====================== 4 passed, 33 deselected in 36.17s =======================

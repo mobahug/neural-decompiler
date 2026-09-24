@@ -1,0 +1,17 @@
+at 2026-09-24T14:54:28Z HEAD 2111271892a8237f69c3ef18d6eec774e798ac5c status_lines 0
+d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4  outputs/experiment-023/candidate-exposed-cells.f64
+628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe  outputs/experiment-023/candidate-exposed-cells.json
+9bb1e33594670343a41e5c08f81cca3a78f50d1f1c4e04882708879e508a5ea7  outputs/experiment-023/results.json
+04659d5e8b20a70526e5862eb2b2de952b33496f25e3875de6c6254df2b8fd81  outputs/experiment-022/calibration-table.pt
+db745653cfa8f411514e80839bf986bd6cbbe3e816e3bb3095cf43c2d9d11a87  experiments/022-upstream-error-localization/calibration-v1.json
+1a9afef0791171129bcf3d716b41e2139857851088a30620481757409a2e04d2  experiments/022-upstream-error-localization/confirmation-v1.json
+outputs/experiment-023/candidate-exposed-cells.f64 1209600 1790259974
+outputs/experiment-023/candidate-exposed-cells.json 17493 1790259974
+outputs/experiment-023/results.json 5518 1790259974
+outputs/experiment-022/calibration-table.pt 424131002 1790194944
+total 2424
+drwxr-xr-x@  5 gaborhorvath-ulenius  staff      160 Sep 24 17:26 .
+drwxr-xr-x@ 25 gaborhorvath-ulenius  staff      800 Sep 24 17:20 ..
+-rw-r--r--@  1 gaborhorvath-ulenius  staff  1209600 Sep 24 17:26 candidate-exposed-cells.f64
+-rw-r--r--@  1 gaborhorvath-ulenius  staff    17493 Sep 24 17:26 candidate-exposed-cells.json
+-rw-r--r--@  1 gaborhorvath-ulenius  staff     5518 Sep 24 17:26 results.json

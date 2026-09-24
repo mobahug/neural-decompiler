@@ -1,0 +1,14 @@
+E1 passed: 13 tensor digests, orders ['classes', 'cues', 'frames', 'noun_keys', 'templates', 'token_ids']
+E2 n: 0 of 18900 pairs differ from 022's stored cells
+E2 SSE0: 0 of 18900 pairs differ from 022's stored cells
+E2 SSE1: 0 of 18900 pairs differ from 022's stored cells
+E2 mean: 0 of 18900 pairs differ from 022's stored cells
+E2 M2: 0 of 18900 pairs differ from 022's stored cells
+E3 S: 0 of 18900 pairs differ from the independent whole-table computation
+E3 Q: 0 of 18900 pairs differ from the independent whole-table computation
+E3 SSEC: 0 of 18900 pairs differ from the independent whole-table computation
+verify_cells_against_table: {"E2": {"columns": ["M2", "SSE0", "SSE1", "mean", "n"], "passed": true}, "E3": {"columns": ["S", "Q", "SSEC"], "route": "whole-table float64 reductions over the noun axis", "passed": true}}
+E5/E6: {"E5": {"max_difference": 3.999896971376354e-15, "at": "Y1/coordinated/draw 14/SST", "n_checked": 192, "passed": true}, "E6": {"max_per_pair": 1.4325462769519472e-14, "max_per_draw": 3.999896971376354e-15, "tolerance": 1e-10, "passed": true}}
+tensor layout contiguous: {'dc': True, 'ceiling': True, 'dc_hat': True} dtypes: {'dc': 'torch.float64', 'ceiling': 'torch.float64'}
+cells shape (18900, 8); 7.6s
+PREFLIGHT B NUMBERS: ALL PASS

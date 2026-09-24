@@ -1,0 +1,42 @@
+[     0.1s] torch 2.14.0, threads 4
+[     7.1s] frozen inputs loaded
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:27,  2.72it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 205.34it/s]
+[    12.1s] model loaded: TransformerBridge
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/extractreview023/c_e4_recheck.py:46: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+  live_modules = [type(o).__name__ for o in gc.get_objects() if isinstance(o, torch.nn.Module)]
+[NOTE] live nn.Module instances after deleting the model: 9 ['FastGELUActivation', 'GELUActivation', 'GELUTanh', 'LinearActivation', 'MishActivation', 'NewGELUActivation', 'QuickGELUActivation', 'SiLUActivation']
+[    12.6s] programs extracted, model deleted
+[PASS] program scorable nouns == index nouns (79, in order) :: 79
+[NOTE] pm entry points patched: ['capture_prompt', 'run_capture', 'run_interventions', 'run_patched']
+[PASS] nn.Module.__call__ guard active (deliberate probe refused)
+[    12.8s] 022 table loaded
+[    37.6s] 6/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[    59.6s] 12/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[    80.6s] 18/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   101.6s] 24/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   122.5s] 30/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   143.4s] 36/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   187.8s] 42/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   231.4s] 48/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   274.3s] 54/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   322.8s] 60/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   373.3s] 66/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   420.8s] 72/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   444.3s] 78/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   469.5s] 84/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   491.9s] 90/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   515.1s] 96/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   537.5s] 102/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[   560.2s] 108/108 frames; running max |P1 - stored| 0.000e+00, |P0 - stored| 0.000e+00
+[PASS] recomputation completed under the guard
+[PASS] guard triggers during the recomputation (pm, nn.Module) :: {'pm': 0, 'module': 0}
+[PASS] frame structure: template matches pool, p_t = p_c + 1 iff coordinated
+[PASS] max |P0 - stored dc_hat[mask 0]| <= 1e-9 :: max 0.000e+00; exactly equal elements 1493100/1493100
+[PASS] max |P1 - stored dc_hat[mask 14/30]| <= 1e-9 (E4) :: max 0.000e+00; exactly equal elements 1493100/1493100
+[NOTE] P0 bit-identical: True; P1 bit-identical: True
+[PASS] all recomputed P0/P1 finite
+[PASS] SSE0 from recomputed predictions vs artifact column :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[PASS] SSE1 from recomputed predictions vs artifact column :: differing rows 0/18900, max |diff| 0.000e+00, max rel 0.000e+00
+[   560.3s] saved recomputed P0/P1 to the scratchpad
+== item 7: E4 recheck from the weights: 13 lines, 0 failures: []
+[   560.3s] done
