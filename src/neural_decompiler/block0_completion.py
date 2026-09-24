@@ -15,7 +15,7 @@ The primary statistic of each of the four conditions (Y1/Y2 × cue-final/coordin
 pooled from per-pair sufficient statistics ``(n, S = Σy, Q = Σy², SSE0, SSE1, SSEC)``: for any selection of pairs
 (a fresh group, each pair once, or a calibration draw, a repeated pair once per selection) ``SST = Q − S²/N`` — never a
 sum of pair-local variances — cross-checked against the pooled two-pass identity (E6). One implementation
-(``pool`` → ``statistics`` → ``classify``) serves the calibration and the confirmation alike.
+(``pool`` → ``statistics`` → ``result_codes``) serves the calibration and the confirmation alike.
 
 Calibration reads only the committed exposed-cells artifact, extracted once, read-only, from Experiment 022's verified
 calibration table (``extract``, identities E1–E6); nothing after ``extract`` opens that table.
@@ -329,18 +329,30 @@ def direction_check(envelope: Mapping[str, Any], values: torch.Tensor, defined: 
     return {"ok": bool(median is not None and envelope["bound"] <= median), "median": median}
 
 
-def classify(g: float | None, defined: bool, bound: float) -> str:
-    """``NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS``: the only function that decides a result.
-    The effective requirement of a PASS is ``g ≥ max(bound, 0.90)``; ``g > 1`` is an ordinary value."""
-    if not defined:
-        return "NOT_INTERPRETABLE"
-    if g is None or not math.isfinite(float(g)):
+def result_codes(values: torch.Tensor, defined: torch.Tensor, bound: float) -> torch.Tensor:
+    """The four-way classification, as indices into ``RESULTS``: the only code that decides a result — a fresh
+    condition's (``classify``), every calibration draw's (the rates) and the joint rate alike. Precedence
+    ``NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS``: an undefined value is NOT_INTERPRETABLE; else
+    ``g < 0.90`` is a GUARD_FAILURE; else ``g < bound`` an ENVELOPE_ONLY_FAILURE; else a PASS. The effective requirement
+    of a PASS is ``g ≥ max(bound, 0.90)``; ``g > 1`` is an ordinary value. A non-finite ``g`` where the gap rule holds,
+    or a NaN bound, is an incident."""
+    values = torch.as_tensor(values, dtype=torch.float64)
+    defined = torch.as_tensor(defined, dtype=torch.bool)
+    if math.isnan(float(bound)):
+        raise IncidentError("a NaN envelope bound")
+    if bool((defined & ~torch.isfinite(values)).any()):
         raise IncidentError("a non-finite g where the gap rule holds")
-    if float(g) < GUARD_MIN:
-        return "GUARD_FAILURE"
-    if float(g) < float(bound):
-        return "ENVELOPE_ONLY_FAILURE"
-    return "PASS"
+    codes = torch.full(values.shape, RESULTS.index("PASS"), dtype=torch.int64)
+    codes[values < float(bound)] = RESULTS.index("ENVELOPE_ONLY_FAILURE")
+    codes[values < GUARD_MIN] = RESULTS.index("GUARD_FAILURE")
+    codes[~defined] = RESULTS.index("NOT_INTERPRETABLE")
+    return codes
+
+
+def classify(g: float | None, defined: bool, bound: float) -> str:
+    """One condition's result: ``result_codes`` on a single value (``None`` where undefined)."""
+    codes = result_codes(torch.tensor([math.nan if g is None else float(g)], dtype=torch.float64), torch.tensor([bool(defined)]), bound)
+    return RESULTS[int(codes[0])]
 
 
 def score_selection(cells: torch.Tensor, index: torch.Tensor, bound: float | None, where: str) -> dict[str, Any]:
@@ -854,19 +866,17 @@ def calibration_stop(counts: Mapping[str, int], draws: int) -> dict[str, Any]:
     return {"stop": bool(offending), "offending": offending, "threshold": threshold, "counts": dict(counts)}
 
 
-def result_rates(values: torch.Tensor, defined: torch.Tensor, bound: float) -> dict[str, float]:
-    """The share of draws in each result under the frozen classification (vectorized ``classify``)."""
-    draws = int(values.shape[0])
-    guard = defined & (values < GUARD_MIN)
-    envelope = defined & ~guard & (values < bound)
-    passed = defined & ~guard & ~envelope
-    return {"NOT_INTERPRETABLE": int((~defined).sum()) / draws, "GUARD_FAILURE": int(guard.sum()) / draws, "ENVELOPE_ONLY_FAILURE": int(envelope.sum()) / draws,
-            "PASS": int(passed.sum()) / draws}
+def result_rates(codes: torch.Tensor) -> dict[str, float]:
+    """The share of draws in each result, counted from ``result_codes``."""
+    counts = torch.bincount(codes.reshape(-1), minlength=len(RESULTS))
+    return {name: int(counts[index]) / int(codes.numel()) for index, name in enumerate(RESULTS)}
 
 
 def evaluate(kernel: Mapping[str, Any]) -> dict[str, Any]:
     """Per condition: the envelope (element [249], undefined at −∞), its direction check, the guard-bound flag, the result
-    rates and a summary; then the descriptive joint rate. A reversed tail is an incident, before anything is written."""
+    rates and a summary; then the descriptive joint rate. The rates and the joint rate are counted from
+    ``result_codes`` — the classification a fresh condition gets. A reversed tail is an incident, before anything is
+    written."""
     out: dict[str, Any] = {"conditions": {}}
     passes = []
     for condition in CONDITIONS:
@@ -881,11 +891,10 @@ def evaluate(kernel: Mapping[str, Any]) -> dict[str, Any]:
                    "max": float(kept[-1]) if kept.numel() else None, "gap_median": ul.defined_median(entries["gap"], defined),
                    "R2_1_median": ul.defined_median(entries["R2_1"], defined), "R2_C_median": ul.defined_median(entries["R2_C"], defined),
                    "ceiling_limited_share": int(entries["ceiling_limited"].sum()) / int(values.shape[0])}
-        rates = result_rates(values, defined, envelope["bound"])
-        out["conditions"][condition] = {"envelope": envelope, "direction_check": direction, "guard_bound": bool(envelope["bound"] < GUARD_MIN), "rates": rates,
+        codes = result_codes(values, defined, envelope["bound"])
+        out["conditions"][condition] = {"envelope": envelope, "direction_check": direction, "guard_bound": bool(envelope["bound"] < GUARD_MIN), "rates": result_rates(codes),
                                         "summary": summary}
-        guard = defined & (values < GUARD_MIN)
-        passes.append(defined & ~guard & (values >= envelope["bound"]))
+        passes.append(codes == RESULTS.index("PASS"))
     out["joint_rates"] = {"all_four_pass": float(torch.stack(passes).all(dim=0).double().mean()), "descriptive_only": True}
     return rc.json_safe(out)
 

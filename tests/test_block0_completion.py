@@ -4,6 +4,7 @@ scoring path, the draws and the artifact format (tier A); the pinned-model contr
 from __future__ import annotations
 
 import json
+import math
 import os
 from pathlib import Path
 
@@ -218,6 +219,42 @@ def test_classify_precedence_and_the_effective_threshold():
     assert b0c.classify(1.2, True, 0.99) == "PASS"  # g > 1: an ordinary pass, never an incident
     with pytest.raises(b0c.IncidentError, match="non-finite"):
         b0c.classify(float("nan"), True, 0.9)
+    with pytest.raises(b0c.IncidentError, match="NaN envelope"):
+        b0c.classify(0.95, True, float("nan"))
+
+
+def test_one_classification_function_decides_every_result():
+    """``result_codes`` is the only classification: a fresh condition's ``classify`` and the calibration's rates read it
+    value by value, at the boundaries of the guard and of the envelope."""
+    values = torch.tensor([math.nan, 0.5, 0.8999999, 0.90, 0.93, 0.95, 0.97, 1.3, -0.2], dtype=torch.float64)
+    defined = torch.tensor([False] + [True] * 8)
+    for bound, expected in ((0.95, ["NOT_INTERPRETABLE", "GUARD_FAILURE", "GUARD_FAILURE", "ENVELOPE_ONLY_FAILURE", "ENVELOPE_ONLY_FAILURE", "PASS", "PASS", "PASS",
+                                    "GUARD_FAILURE"]),
+                            (0.50, ["NOT_INTERPRETABLE", "GUARD_FAILURE", "GUARD_FAILURE", "PASS", "PASS", "PASS", "PASS", "PASS", "GUARD_FAILURE"])):
+        codes = b0c.result_codes(values, defined, bound)
+        assert [b0c.RESULTS[int(code)] for code in codes] == expected
+        assert [b0c.classify(value if flag else None, flag, bound) for value, flag in zip(values.tolist(), defined.tolist())] == expected
+        assert b0c.result_rates(codes) == {name: expected.count(name) / len(expected) for name in b0c.RESULTS}
+    assert b0c.result_codes(values[1:], defined[1:], float("-inf")).tolist() == [1, 1, 3, 3, 3, 3, 3, 1]  # a −∞ bound: only the guard can fail
+
+
+def test_the_calibration_rates_and_the_joint_rate_are_the_fresh_classification_draw_by_draw(monkeypatch):
+    units = _toy_units()
+    kernel = b0c.calibration_kernel(_toy_cells(units), units, b0c.draw_indices(units, 400), 400)
+    evaluated = b0c.evaluate(kernel)
+    per_draw = {}
+    for condition in b0c.CONDITIONS:
+        entries, bound = kernel["conditions"][condition], evaluated["conditions"][condition]["envelope"]["bound"]
+        per_draw[condition] = [b0c.classify(value if flag else None, flag, bound) for value, flag in zip(entries["g"].tolist(), entries["defined"].tolist())]
+        assert evaluated["conditions"][condition]["rates"] == {name: per_draw[condition].count(name) / 400 for name in b0c.RESULTS}
+    assert evaluated["joint_rates"]["all_four_pass"] == sum(all(per_draw[condition][b] == "PASS" for condition in b0c.CONDITIONS) for b in range(400)) / 400
+    # Every result path reads the one function: replaced, the fresh result, the rates and the joint rate all change with it.
+    monkeypatch.setattr(b0c, "result_codes", lambda values, defined, bound: torch.full(torch.as_tensor(values).shape, b0c.RESULTS.index("GUARD_FAILURE"), dtype=torch.int64))
+    assert b0c.classify(0.99, True, 0.5) == "GUARD_FAILURE"
+    cells, _ = _random_cells(6)
+    assert b0c.score_selection(cells, torch.arange(6), 0.5, "toy")["result"] == "GUARD_FAILURE"
+    patched = b0c.evaluate(kernel)
+    assert all(entry["rates"]["GUARD_FAILURE"] == 1.0 for entry in patched["conditions"].values()) and patched["joint_rates"]["all_four_pass"] == 0.0
 
 
 def test_score_selection_is_the_single_path_from_cells_to_a_result():
