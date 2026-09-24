@@ -1,0 +1,31 @@
+state_sha256 03397b4a16aeef524121eb2c70732a833b25bb95da548460df4ea0d546336a72 | results.json file 7875fb9958a5f716956ee9aa76ee20ac968fa437ab8f8d228190aa2b475510ca
+PASS  calibrate complete once at HEAD, no incident/stop  2026-09-24T15:53:16+00:00 → 2026-09-24T15:53:31+00:00
+PASS  lock/confirm/report not_started; ledgers empty  
+PASS  state binds the committed confirmation file  
+PASS  state binds the committed exposed cells  
+PASS  candidate record sha256 == state  94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a
+PASS  record content digest  a391500c28868612df5c818e15a82174575b627e2ddea1fc88fbaa44644388c3
+PASS  verify_calibration_record (strict, module B)  
+PASS  record bindings: inputs, cells, confirmation, run, commit  
+PASS  draw index digests reproduce (SHA formula, tag 023|primary)  
+pools {"cues": {"adjective": 49, "determiner-like": 45, "quantity": 45}, "y1_frames": {"coordinated": 36, "cue_final": 72}, "y2_like_frames": {"cardinal": 14, "coordinated-adjective": 14, "quantifier": 14}} | kernel check {"at": "Y1/cue_final/draw 13/SST", "max_difference": 8.55615485807161e-14, "n_checked": 192, "passed": true, "tolerance": 1e-10} | E6 max 7.4865343738778e-15 | undefined {"Y1/coordinated": 0, "Y1/cue_final": 0, "Y2/coordinated": 0, "Y2/cue_final": 0}
+PASS  draw arrays == record digests  
+
+| condition | F = v(250) | min | median | max | undefined | guard-bound | PASS | ENV_ONLY | GUARD | NOT_INTERP | gap median | R²₁ median | R²_C median |
+PASS  Y1/cue_final: envelope = element [249] of the saved draws  0.9968974947302105
+PASS  Y1/cue_final: median, rates, guard flag, direction  
+| Y1/cue_final | 0.996897 | 0.995470 | 0.998224 | 1.000004 | 0 | no | 0.9751 | 0.0249 | 0.0000 | 0.0000 | 0.1568 | 0.9715 | 0.9718 |
+PASS  Y1/coordinated: envelope = element [249] of the saved draws  0.9986343903419131
+PASS  Y1/coordinated: median, rates, guard flag, direction  
+| Y1/coordinated | 0.998634 | 0.997933 | 0.999205 | 0.999779 | 0 | no | 0.9751 | 0.0249 | 0.0000 | 0.0000 | 0.4990 | 0.9665 | 0.9669 |
+PASS  Y2/cue_final: envelope = element [249] of the saved draws  0.9950528086546427
+PASS  Y2/cue_final: median, rates, guard flag, direction  
+| Y2/cue_final | 0.995053 | 0.989844 | 0.998071 | 1.006282 | 0 | no | 0.9751 | 0.0249 | 0.0000 | 0.0000 | 0.1471 | 0.9706 | 0.9708 |
+PASS  Y2/coordinated: envelope = element [249] of the saved draws  0.9951864564481918
+PASS  Y2/coordinated: median, rates, guard flag, direction  
+| Y2/coordinated | 0.995186 | 0.986847 | 0.998423 | 1.001055 | 0 | no | 0.9751 | 0.0249 | 0.0000 | 0.0000 | 0.3868 | 0.9697 | 0.9704 |
+joint rate, all four pass (descriptive): {'all_four_pass': 0.9178, 'descriptive_only': True}
+PASS  spot g (4 draws × 4 conditions) == independent numpy pooling  
+PASS  HEAD unchanged, tree clean, nothing installed  
+
+VERIFY CALIBRATE: ALL PASS

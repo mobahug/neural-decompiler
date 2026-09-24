@@ -1,0 +1,367 @@
+{
+ "guard_proof": {
+  "open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "torch.load": "refused: lock review: torch.load refused for Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "os.open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "refused_entries": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+   "torch.load:/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt"
+  ],
+  "live": true
+ },
+ "floors": {
+  "Y1/cue_final": 0.9968974947302105,
+  "Y1/coordinated": 0.9986343903419131,
+  "Y2/cue_final": 0.9950528086546427,
+  "Y2/coordinated": 0.9951864564481918
+ },
+ "calibration_from_cells": {
+  "Y1/cue_final": {
+   "max_abs_diff_vs_draw_values": 1.4432899320127035e-15,
+   "defined_equal": true,
+   "F_from_cells": 0.9968974947302098,
+   "F_diff": 6.661338147750939e-16
+  },
+  "Y1/coordinated": {
+   "max_abs_diff_vs_draw_values": 4.440892098500626e-16,
+   "defined_equal": true,
+   "F_from_cells": 0.9986343903419131,
+   "F_diff": 0.0
+  },
+  "Y2/cue_final": {
+   "max_abs_diff_vs_draw_values": 1.1102230246251565e-15,
+   "defined_equal": true,
+   "F_from_cells": 0.9950528086546429,
+   "F_diff": 1.1102230246251565e-16
+  },
+  "Y2/coordinated": {
+   "max_abs_diff_vs_draw_values": 5.551115123125783e-16,
+   "defined_equal": true,
+   "F_from_cells": 0.9951864564481919,
+   "F_diff": 1.1102230246251565e-16
+  }
+ },
+ "effective_pass_threshold": {
+  "Y1/cue_final": 0.9968974947302105,
+  "Y1/coordinated": 0.9986343903419131,
+  "Y2/cue_final": 0.9950528086546427,
+  "Y2/coordinated": 0.9951864564481918
+ },
+ "guard_end": {
+  "refused_during_run": [],
+  "opened_022": []
+ },
+ "results": [
+  [
+   "1 HEAD == 13b8d39\u2026",
+   true,
+   "13b8d392f9e88844e2673c530a37228337cc64b7"
+  ],
+  [
+   "1 origin/main (ls-remote) == HEAD",
+   true,
+   "['13b8d392f9e88844e2673c530a37228337cc64b7']"
+  ],
+  [
+   "1 clean tree incl. untracked",
+   true,
+   "''"
+  ],
+  [
+   "1 parents: 13b8d39^ = 51b5c7d, 51b5c7d^ = 4e5deeb (calibrate commit)",
+   true,
+   ""
+  ],
+  [
+   "1 calibration-v1.json committed alone in 51b5c7d",
+   true,
+   "['experiments/023-block0-completion/calibration-v1.json']"
+  ],
+  [
+   "1 committed calibration-v1.json (51b5c7d, HEAD, tree) byte-identical to candidate-calibration.json",
+   true,
+   "94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a"
+  ],
+  [
+   "1 results.json state_sha256 recomputed (own canonical JSON)",
+   true,
+   "174390d11fada228615394e0a42d88abaae6476a55eae128960f9c5176f3b2f0"
+  ],
+  [
+   "1 results.json file is canonical JSON + newline",
+   true,
+   "a3344e8380c67b330cf86c827290c80a84678cf8b94d3445ccae1dc753dd834e"
+  ],
+  [
+   "1 extract complete once at 2111271, no incident",
+   true,
+   "{'status': 'complete', 'commit': '2111271892a8237f69c3ef18d6eec774e798ac5c'}"
+  ],
+  [
+   "1 calibrate complete once at 4e5deeb, no incident/stop",
+   true,
+   "{'commit': '4e5deebd021bc284143b01b76b45efd28e1a1344', 'completed_at': '2026-09-24T15:53:31+00:00', 'started_at': '2026-09-24T15:53:16+00:00', 'status': 'complete'}"
+  ],
+  [
+   "1 lock complete once at 13b8d39, no incident",
+   true,
+   "{'commit': '13b8d392f9e88844e2673c530a37228337cc64b7', 'completed_at': '2026-09-24T16:51:57+00:00', 'status': 'complete'}"
+  ],
+  [
+   "1 confirm and report not_started",
+   true,
+   "{'confirm': {'status': 'not_started'}, 'report': {'status': 'not_started'}}"
+  ],
+  [
+   "1 state lock entry digests == the candidate files",
+   true,
+   "{'content_sha256': '97ca520f342e212d5172b1476e9d5a80c6c2622f80a4f99f4e15e0a399007117', 'preregistration_sha256': 'dc198785b6350d20165f589236741f5f08ffc845da33840ca156c7d71780dc07', 'y1_file_sha256': '37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96', 'y1_index_sha256': '3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d'}"
+  ],
+  [
+   "1 state lock gates == candidate lock gates",
+   true,
+   "{'I5': {'at': '', 'max': 0.0}, 'algebra': {'at': 'stacks|coordinated-adjective-015-1', 'max': 4.884981308350689e-15}}"
+  ],
+  [
+   "1 git merge-base: calibrate commit is an ancestor of HEAD",
+   true,
+   ""
+  ],
+  [
+   "1 no scientific path changed since calibrate (b0c.scientific_changes)",
+   true,
+   "{'changed': ['experiments/023-block0-completion/calibration-v1.json', 'experiments/023-block0-completion/evidence/archive/README.md', 'experiments/023-block0-completion/evidence/archive/experiment-020-results.json.gz'], 'scientific': []}"
+  ],
+  [
+   "2 draw-values.pt: every tensor digest (own reimplementation) == the record's draw_arrays_sha256",
+   true,
+   "32 arrays"
+  ],
+  [
+   "2 floor Y1/cue_final: element [249] of the ascending 10,000 (undefined at -inf) == record == lock",
+   true,
+   "F 0.9968974947302105; undefined 0; n 10000"
+  ],
+  [
+   "2 floor Y1/coordinated: element [249] of the ascending 10,000 (undefined at -inf) == record == lock",
+   true,
+   "F 0.9986343903419131; undefined 0; n 10000"
+  ],
+  [
+   "2 floor Y2/cue_final: element [249] of the ascending 10,000 (undefined at -inf) == record == lock",
+   true,
+   "F 0.9950528086546427; undefined 0; n 10000"
+  ],
+  [
+   "2 floor Y2/coordinated: element [249] of the ascending 10,000 (undefined at -inf) == record == lock",
+   true,
+   "F 0.9951864564481918; undefined 0; n 10000"
+  ],
+  [
+   "2x committed exposed cells: bytes == index file_sha256; index content digest verifies",
+   true,
+   ""
+  ],
+  [
+   "2x exposed cue order: token id within each stratum",
+   true,
+   "{'determiner-like': 45, 'quantity': 45, 'adjective': 49}"
+  ],
+  [
+   "2x Y2-like frames by frame_id, 14 per template",
+   true,
+   ""
+  ],
+  [
+   "2x draw indices (own SHA draws) == the record's index digests",
+   true,
+   ""
+  ],
+  [
+   "2x Y1/cue_final: g of all 10,000 draws recomputed from the committed cells",
+   true,
+   "{'max_abs_diff_vs_draw_values': 1.4432899320127035e-15, 'defined_equal': True, 'F_from_cells': 0.9968974947302098, 'F_diff': 6.661338147750939e-16}"
+  ],
+  [
+   "2x Y1/coordinated: g of all 10,000 draws recomputed from the committed cells",
+   true,
+   "{'max_abs_diff_vs_draw_values': 4.440892098500626e-16, 'defined_equal': True, 'F_from_cells': 0.9986343903419131, 'F_diff': 0.0}"
+  ],
+  [
+   "2x Y2/cue_final: g of all 10,000 draws recomputed from the committed cells",
+   true,
+   "{'max_abs_diff_vs_draw_values': 1.1102230246251565e-15, 'defined_equal': True, 'F_from_cells': 0.9950528086546429, 'F_diff': 1.1102230246251565e-16}"
+  ],
+  [
+   "2x Y2/coordinated: g of all 10,000 draws recomputed from the committed cells",
+   true,
+   "{'max_abs_diff_vs_draw_values': 5.551115123125783e-16, 'defined_equal': True, 'F_from_cells': 0.9951864564481919, 'F_diff': 1.1102230246251565e-16}"
+  ],
+  [
+   "6 Y1/cue_final: result rates recomputed == record",
+   true,
+   "{'NOT_INTERPRETABLE': 0.0, 'GUARD_FAILURE': 0.0, 'ENVELOPE_ONLY_FAILURE': 0.0249, 'PASS': 0.9751}"
+  ],
+  [
+   "6 Y1/coordinated: result rates recomputed == record",
+   true,
+   "{'NOT_INTERPRETABLE': 0.0, 'GUARD_FAILURE': 0.0, 'ENVELOPE_ONLY_FAILURE': 0.0249, 'PASS': 0.9751}"
+  ],
+  [
+   "6 Y2/cue_final: result rates recomputed == record",
+   true,
+   "{'NOT_INTERPRETABLE': 0.0, 'GUARD_FAILURE': 0.0, 'ENVELOPE_ONLY_FAILURE': 0.0249, 'PASS': 0.9751}"
+  ],
+  [
+   "6 Y2/coordinated: result rates recomputed == record",
+   true,
+   "{'NOT_INTERPRETABLE': 0.0, 'GUARD_FAILURE': 0.0, 'ENVELOPE_ONLY_FAILURE': 0.0249, 'PASS': 0.9751}"
+  ],
+  [
+   "6 joint all-four PASS share recomputed == record 0.9178 (descriptive only)",
+   true,
+   "0.9178"
+  ],
+  [
+   "2 masks from ul.BIT: P0 = 0, P1 = 14 / 30 (R off)",
+   true,
+   "{'cue_final': 14, 'coordinated': 30}"
+  ],
+  [
+   "2 79-noun order: pool single-token nouns == lock == Y1 index == Y2 meta == exposed-cells index",
+   true,
+   "['cat', 'dog', 'book', 'lamp']"
+  ],
+  [
+   "2 exposed-state digest (own) == lock; per-frame digests == 020's committed extract",
+   true,
+   "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83"
+  ],
+  [
+   "2 confirmation binding (path, file, content, counts 8/8/8 + 6/6/6, sizes 18/18/2592/432) == lock",
+   true,
+   "5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4"
+  ],
+  [
+   "2 calibration binding (path, file 94db6df2\u2026, content a391500c\u2026) == lock",
+   true,
+   "{'path': 'experiments/023-block0-completion/calibration-v1.json', 'file_sha256': '94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a', 'content_sha256': 'a391500c28868612df5c818e15a82174575b627e2ddea1fc88fbaa44644388c3'}"
+  ],
+  [
+   "2 exposed-cells binding == lock == record == state",
+   true,
+   "{'data_path': 'experiments/023-block0-completion/exposed-cells.f64', 'index_path': 'experiments/023-block0-completion/exposed-cells.json', 'data_sha256': 'd2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4', 'index_sha256': '628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe'}"
+  ],
+  [
+   "2 design/plan identities (5b38aba = design rev. 2, 3a795fb = plan rev. 1) == b0c constants",
+   true,
+   ""
+  ],
+  [
+   "2 Y2 specification (layout [288,2,79] + [144,2,79], pair order, nouns, construction) == lock",
+   true,
+   "{'data_path': True, 'index_path': True, 'format': True, 'dtype': True, 'layout': True, 'meta': True, 'states': True, 'freeze': True}"
+  ],
+  [
+   "2 022 calibration content digest (own) == its stored content_sha256",
+   true,
+   ""
+  ],
+  [
+   "2 022 confirmation content digest (own) == its stored content_sha256",
+   true,
+   ""
+  ],
+  [
+   "2 table_022_file (not hashed: the table stays blocked) == 022's committed confirmation record == the committed cells index",
+   true,
+   "04659d5e8b20a70526e5862eb2b2de952b33496f25e3875de6c6254df2b8fd81"
+  ],
+  [
+   "2 inputs == state == record == frozen-input loader + own 022 digests; own recomputation of 020/lock/manifest digests agrees",
+   true,
+   "{'results_020_file': True, 'results_020_state': True, 'closure_020': True, 'extract_020': True, 'confirmation_020': True, 'manifest': True, 'lock_011': True, 'lock_012': True, 'lock_017': True}"
+  ],
+  [
+   "2 module blobs (own sha1 = git HEAD blobs) == lock == record == state; ul = 465856962a\u2026",
+   true,
+   "11"
+  ],
+  [
+   "2 constants (from the design) == lock == record",
+   true,
+   "{'B': True, 'draw_tag': True, 'cross_check_draws': True, 'lower_rank': True, 'guard_min': True, 'gap_min': True, 'ceiling_limited_r2': True, 'tolerances': True, 'cell_columns': True, 'cells_version': True, 'strata': True, 'slots': True, 'p0_mask': True, 'p1_mask': True, 'results': True, 'statistic': True, 'conditions': True, 'scope': True}"
+  ],
+  [
+   "6 the four conditions == record envelopes (own F) + guard {min_inclusive 0.90}; guard_bound == (F < 0.90) == record",
+   true,
+   "{'Y1/cue_final': 0.9968974947302105, 'Y1/coordinated': 0.9986343903419131, 'Y2/cue_final': 0.9950528086546427, 'Y2/coordinated': 0.9951864564481918}"
+  ],
+  [
+   "6 semantics: marginal conditions, no aggregate label, no all-pass requirement, Y1/Y2 never pooled; precedence; == b0c.SEMANTICS",
+   true,
+   "none: the four condition results are the result, each read on its own; Y1 and Y2 are never pooled; no all-pass requirement"
+  ],
+  [
+   "2 program == {P0 0, P1 14/30, 022's construction}",
+   true,
+   ""
+  ],
+  [
+   "2 y1_table: paths, file/index digests, 3,276,288 bytes, layout == lock",
+   true,
+   "{'file_sha256': '37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96', 'index_sha256': '3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d', 'total_bytes': 3276288}"
+  ],
+  [
+   "2 nothing else in the lock: top-level keys == expected (+ content_sha256)",
+   true,
+   "[]"
+  ],
+  [
+   "2 every lock field except the y1 model digests == my reconstruction",
+   true,
+   "[]"
+  ],
+  [
+   "2 lock content_sha256 == own canonical digest == state; file == canonical JSON + newline",
+   true,
+   ""
+  ],
+  [
+   "2 preregistration == b0c.render_preregistration(lock) (text-only), sha == state",
+   true,
+   "dc198785b6350d20165f589236741f5f08ffc845da33840ca156c7d71780dc07"
+  ],
+  [
+   "5 lock run: exit 0, one model load, forward refusal installed, refused_during_run empty, no 022 table in the opened list",
+   true,
+   "54"
+  ],
+  [
+   "4 lock run's file-open log lists no weights blob (safetensors opens natively, below the audit hook)",
+   true,
+   "['0204ed10c186a4c7c68f55dff8f26087a45898d6', 'd7a9196e329eaf06d6e2802fed376e7459834236', 'f1860edb10f80bcaf7b023fce47c68a23b724c23', 'f74dfbfab8f97770a87769c739fb080c21c8bacc']"
+  ],
+  [
+   "8 no y2-table.* and no stage2-measurements.pt / report.md in outputs/experiment-023",
+   true,
+   "['candidate-calibration.json', 'candidate-exposed-cells.f64', 'candidate-exposed-cells.json', 'candidate-lock.json', 'candidate-locked-y1-table.f64', 'candidate-locked-y1-table.json', 'candidate-preregistration.md', 'draw-values.pt', 'results.json']"
+  ],
+  [
+   "8 state: confirmation None, report None, both ledgers empty, confirm not_started",
+   true,
+   ""
+  ],
+  [
+   "8 nothing installed or tracked in experiments/023-block0-completion (lock, preregistration, Y1 table)",
+   true,
+   "{'installed': [], 'tracked': []}"
+  ],
+  [
+   "5 this review process: no refusal during the run; nothing opened under outputs/experiment-022",
+   true,
+   "{'refused_during_run': [], 'opened_022': []}"
+  ]
+ ]
+}

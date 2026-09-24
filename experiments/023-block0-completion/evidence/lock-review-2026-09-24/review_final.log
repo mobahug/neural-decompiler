@@ -1,0 +1,10 @@
+guard: True
+PASS  lock: my reconstruction serialized (own canonical JSON) is byte-identical to candidate-lock.json  {'mine': '4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c', 'candidate': '4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c', 'content_sha256': '97ca520f342e212d5172b1476e9d5a80c6c2622f80a4f99f4e15e0a399007117'}
+PASS  lock: algebra gate recorded 4.88e-15 at stacks|coordinated-adjective-015-1; my closed form 5.0e-15 at the same pair (tolerance 1e-12)  {'lock': {'at': 'stacks|coordinated-adjective-015-1', 'max': 4.884981308350689e-15}, 'mine': {'max': 4.9960036108132044e-15, 'at': 'stacks|coordinated-adjective-015-1'}}
+PASS  preregistration rendered from MY lock == candidate-preregistration.md (bytes)  dc198785b6350d20165f589236741f5f08ffc845da33840ca156c7d71780dc07
+PASS  re-hash: every file unchanged since the review started; outputs/experiment-023 holds exactly the 9 files  []
+PASS  git: tree clean incl. untracked; HEAD == origin == 13b8d39  ''
+PASS  no bytecode written into the repo during the review  []
+PASS  guard: no refusal during this process; nothing under outputs/experiment-022 opened  []
+
+FINAL: 7 PASS, 0 FAIL

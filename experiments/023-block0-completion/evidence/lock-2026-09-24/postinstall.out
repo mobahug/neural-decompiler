@@ -1,0 +1,11 @@
+   runner: module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; exposed cells d2ee71e58f45… (18900 pairs, extracted at 2111271); confirmation 4e64d4c2c85a… (24 cues, 18 frames, 3060 keys)
+PASS  stock validate  
+PASS  confirm allowed by the phase rules  
+PASS  ledger isolated and empty  
+PASS  validate_lock (confirm's pre-prompt validation) accepts the installed lock  changed since lock commit: ['experiments/023-block0-completion/locked-y1-table.f64', 'experiments/023-block0-completion/locked-y1-table.json', 'experiments/023-block0-completion/preregistration-lock.json', 'experiments/023-block0-completion/preregistration.md']
+PASS  no Y2 table on disk  
+PASS  runtime and versions == 020's explore (as confirm requires)  
+PASS  results state untouched by these checks  
+PASS  tree clean  
+
+POST-INSTALL: ALL PASS

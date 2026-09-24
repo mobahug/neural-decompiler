@@ -1,0 +1,28 @@
+[    0.0s] guard live: True; torch threads 4
+[    8.0s] frozen inputs loaded (ul.load_frozen_inputs)
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:23,  3.16it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 236.18it/s]
+[   14.7s] weights extracted; model deleted; execution refused True
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/lockreview023/review_model.py:109: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+  alive = sorted({type(o).__name__ for o in gc.get_objects() if isinstance(o, torch.nn.Module)})
+[   14.7s] nn.Module reachable from progs: [] (293 objects scanned; callables 0: []); alive after gc: ['FastGELUActivation', 'GELUActivation', 'GELUTanh', 'LinearActivation', 'MishActivation', 'NewGELUActivation', 'QuickGELUActivation', 'SiLUActivation']
+[   14.8s] units: {'tokens': 24, 'frames': 108, 'pairs': {'cue_final': 1728, 'coordinated': 864}, 'masks': {'P0': 0, 'P1': {'cue_final': 14, 'coordinated': 30}}, 'nouns': 79, 'noun_keys_progs_equal_pool_single_token': True}
+[   27.3s]   250/2592 pairs; I5 0.0; T 0.00e+00
+[   38.8s]   500/2592 pairs; I5 0.0; T 0.00e+00
+[   50.0s]   750/2592 pairs; I5 0.0; T 0.00e+00
+[   63.6s]   1000/2592 pairs; I5 0.0; T 0.00e+00
+[   76.0s]   1250/2592 pairs; I5 0.0; T 0.00e+00
+[   86.6s]   1500/2592 pairs; I5 0.0; T 0.00e+00
+[   95.6s] cue_final: 1728 pairs done
+[   97.6s]   1750/2592 pairs; I5 0.0; T 2.11e-15
+[  122.6s]   2000/2592 pairs; I5 0.0; T 4.61e-15
+[  143.4s]   2250/2592 pairs; I5 0.0; T 4.61e-15
+[  161.3s]   2500/2592 pairs; I5 0.0; T 5.00e-15
+[  167.9s] coordinated: 864 pairs done
+[  168.0s] Y1 table: {'n_values': 409536, 'bytes': 3276288, 'struct_serialization_equal': True, 'sha256_mine': '37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96', 'sha256_candidate': '37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96', 'byte_identical': True, 'differing_values': 0, 'max_abs_diff': 0.0, 'all_finite': True, 'p0_dx3_sha256': 'b6bfd0cd8cd01535be2e05f1a987d1cb6a39125b245791b72398bd1abf828bd2', 'factors_sha256': '6adf59c6466dec22d7eeb085d7ab3f880e1ba7749fb484de2cc7d6f87d27c410'}
+[  168.0s] Y1 index: {'byte_identical': True, 'sha256_mine': '3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d', 'sha256_candidate': '3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d', 'keys_equal': True, 'differing_fields': [], 'format': 'raw IEEE-754 float64, little-endian, C order; blocks back to back in the order listed', 'blocks': [{'name': 'cue_final', 'nbytes': 2184192, 'offset_bytes': 0, 'shape': [1728, 2, 79]}, {'name': 'coordinated', 'nbytes': 1092096, 'offset_bytes': 2184192, 'shape': [864, 2, 79]}], 'total_bytes': 3276288}
+[  168.0s] checks: {"I5_max_abs": {"max": 0.0, "at": ""}, "a_022_definitional_V+P-total": {"max": 4.440892098500626e-16, "at": "general|quantifier-012-1"}, "a_mine_V+P-total_mine": {"max": 1.5543122344752192e-15, "at": "stacks|quantifier-015-1"}, "a_mine_V-vs-022_V": {"max": 7.771561172376096e-15, "at": "fragile|coordinated-adjective-fresh-2"}, "a_mine_P-vs-022_P": {"max": 2.248201624865942e-14, "at": "shy|cardinal-018-1"}, "a_mine_total-vs-022_total": {"max": 2.0872192862952943e-14, "at": "shy|cardinal-018-1"}, "a_mine_V+P-vs-022_total": {"max": 2.1094237467877974e-14, "at": "shy|cardinal-018-1"}, "b_closed_form_T-vs-022_attn_pt": {"max": 4.9960036108132044e-15, "at": "stacks|coordinated-adjective-015-1"}, "b_exact_mine-vs-022_attn_pt": {"max": 5.329070518200751e-15, "at": "stacks|coordinated-adjective-015-2"}, "b_closed_form_T-vs-exact_mine": {"max": 3.2751579226442118e-15, "at": "scores|coordinated-adjective-019-4"}}
+[  168.0s] I5 bitwise: {'pairs': 2592, 'bitwise_equal': 2592, 'key_sets_equal': 2592}
+[  168.0s] lock model fields: {'p0_dx3_sha256_equal': True, 'factors_sha256_equal': True, 'noun_keys_equal': True, 'lock_gates': {'I5': {'at': '', 'max': 0.0}, 'algebra': {'at': 'stacks|coordinated-adjective-015-1', 'max': 4.884981308350689e-15}}}
+[  168.0s] guard end: {'refused_during_run': [], 'opened_022': [], 'opened_hf': ['/Users/gaborhorvath-ulenius/.cache/huggingface/.agent_harnesses.json', '/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/0204ed10c186a4c7c68f55dff8f26087a45898d6', '/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/d7a9196e329eaf06d6e2802fed376e7459834236', '/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f1860edb10f80bcaf7b023fce47c68a23b724c23', '/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f74dfbfab8f97770a87769c739fb080c21c8bacc', '/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/trees/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c.json', '/Users/gaborhorvath-ulenius/.cache/huggingface/token'], 'execution_refused': True}
+[  168.0s] done
+exit 0

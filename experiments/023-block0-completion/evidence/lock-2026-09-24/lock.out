@@ -1,0 +1,6 @@
+start 2026-09-24T16:47:12Z at 13b8d392f9e88844e2673c530a37228337cc64b7 clean=0
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:16,  4.44it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 334.18it/s]
+  cue_final: 1728 pairs predicted (P0, P1)
+  coordinated: 864 pairs predicted (P0, P1)
+candidate lock /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-lock.json (content sha256 97ca520f342e212d5172b1476e9d5a80c6c2622f80a4f99f4e15e0a399007117), /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-preregistration.md and the Y1 table /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-locked-y1-table.f64 (3276288 bytes, sha256 37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96) with its index. Install all four byte-identical as experiments/023-block0-completion/preregistration-lock.json, experiments/023-block0-completion/preregistration.md, experiments/023-block0-completion/locked-y1-table.f64 and experiments/023-block0-completion/locked-y1-table.json, commit, and stop for the independent lock review before confirm.
+exit 0 end 2026-09-24T16:51:59Z

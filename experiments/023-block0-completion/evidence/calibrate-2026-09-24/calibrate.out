@@ -1,0 +1,7 @@
+start 2026-09-24T15:53:07Z at 4e5deebd021bc284143b01b76b45efd28e1a1344 clean=0
+  Y1/cue_final: 10000 draws pooled
+  Y1/coordinated: 10000 draws pooled
+  Y2/cue_final: 10000 draws pooled
+  Y2/coordinated: 10000 draws pooled
+calibrate complete: candidate record /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/candidate-calibration.json (sha256 94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a); results sha256 03397b4a16aeef524121eb2c70732a833b25bb95da548460df4ea0d546336a72. Install it byte-identical as experiments/023-block0-completion/calibration-v1.json, commit it, and stop for the floor review before lock.
+exit 0 end 2026-09-24T15:53:31Z

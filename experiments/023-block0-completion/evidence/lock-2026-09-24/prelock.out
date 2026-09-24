@@ -1,0 +1,17 @@
+PASS  HEAD == origin  13b8d392f9e88844e2673c530a37228337cc64b7
+PASS  tree clean incl. untracked  
+   runner: module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; exposed cells d2ee71e58f45… (18900 pairs, extracted at 2111271); confirmation 4e64d4c2c85a… (24 cues, 18 frames, 3060 keys)
+PASS  stock validate  
+PASS  state: extract + calibrate complete once; lock/confirm/report not_started; no lock incident  {"calibrate": "complete", "confirm": "not_started", "extract": "complete", "lock": "not_started", "report": "not_started"}
+PASS  ledgers empty  
+PASS  lock allowed by the phase rules  
+PASS  installed calibration record == this run's candidate (strict verification)  
+PASS  record and state bind the committed confirmation  
+PASS  installed exposed cells == the record's binding  
+PASS  no scientific change since calibrate  ["experiments/023-block0-completion/calibration-v1.json", "experiments/023-block0-completion/evidence/archive/README.md", "experiments/023-block0-completion/evidence/archive/experiment-020-results.json.gz"]
+PASS  runtime and versions == 020's explore  
+PASS  no lock candidates yet  
+PASS  020 results file is the pinned one (and the archive restores it)  
+PASS  pins  
+
+PRE-LOCK: ALL PASS

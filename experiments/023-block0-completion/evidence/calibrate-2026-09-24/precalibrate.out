@@ -1,0 +1,19 @@
+PASS  HEAD  4e5deebd021bc284143b01b76b45efd28e1a1344
+PASS  origin/main (ls-remote)  
+PASS  tree clean incl. untracked  
+PASS  extract complete once, no incident/stop  2111271
+PASS  calibrate/lock/confirm/report not_started  
+PASS  no calibration/lock/confirmation records  
+PASS  both ledgers empty  
+PASS  results state unchanged since extract  
+PASS  no calibration outputs yet  
+PASS  experiments/023-block0-completion/exposed-cells.f64 committed and exact  
+PASS  experiments/023-block0-completion/exposed-cells.json committed and exact  
+PASS  experiments/023-block0-completion/confirmation-v1.json committed and exact  
+PASS  state's candidate digests == the installed artifact  
+PASS  all 11 pins == HEAD blobs  
+PASS  block0_completion.py == extract's blob  
+PASS  no scientific path changed since extract  53 paths changed
+PASS  B, tag, rank  
+
+PRE-CALIBRATE: ALL PASS

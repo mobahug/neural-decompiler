@@ -1,0 +1,19 @@
+guard live: {"open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt", "torch.load": "refused: lock review: torch.load refused for Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt", "os.open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt", "refused_entries": ["/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt", "torch.load:/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt"], "live": true}
+refusal installed before load: {'module_call_refused': True, 'patched': ['pm.capture_prompt', 'pm.run_patched', 'pm.run_capture', 'pm.run_interventions', 'capture.run_capture', 'interventions.run_interventions']}
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.29it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 323.54it/s]
+load succeeded under the refusal (the load executed no module)
+modules 430; classes whose __call__ is not the refusal: ['GPTNeoXLayer']
+execution_refused(): True
+HF files opened (Python-level): [
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/.agent_harnesses.json",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/0204ed10c186a4c7c68f55dff8f26087a45898d6",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/d7a9196e329eaf06d6e2802fed376e7459834236",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f1860edb10f80bcaf7b023fce47c68a23b724c23",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f74dfbfab8f97770a87769c739fb080c21c8bacc",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/trees/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c.json",
+ "/Users/gaborhorvath-ulenius/.cache/huggingface/token"
+]
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/lockreview023/probe_load.py:29: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+  alive = [type(o).__name__ for o in gc.get_objects() if isinstance(o, torch.nn.Module)]
+nn.Module objects alive after del + gc: 9 ['FastGELUActivation', 'GELUActivation', 'GELUTanh', 'LinearActivation', 'MishActivation', 'NewGELUActivation', 'QuickGELUActivation', 'SiLUActivation']
+refused during probe: []

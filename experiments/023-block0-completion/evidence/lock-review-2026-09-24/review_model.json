@@ -1,0 +1,187 @@
+{
+ "guard_proof": {
+  "open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "torch.load": "refused: lock review: torch.load refused for Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "os.open": "refused: lock review: refused open of Experiment 022's table: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "refused_entries": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+   "torch.load:/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt"
+  ],
+  "live": true
+ },
+ "torch_threads": 4,
+ "refusal": {
+  "module_call_refused": true,
+  "patched": [
+   "pm.capture_prompt",
+   "pm.run_patched",
+   "pm.run_capture",
+   "pm.run_interventions",
+   "capture.run_capture",
+   "interventions.run_interventions"
+  ]
+ },
+ "model": {
+  "modules": 430,
+  "classes_not_refused_directly": [
+   "GPTNeoXLayer"
+  ],
+  "execution_refused": true
+ },
+ "no_module_reachable": {
+  "reachable_from_progs": [],
+  "objects_scanned": 293,
+  "callables_reachable": [],
+  "n_callables": 0,
+  "nn_modules_alive_after_gc": [
+   "FastGELUActivation",
+   "GELUActivation",
+   "GELUTanh",
+   "LinearActivation",
+   "MishActivation",
+   "NewGELUActivation",
+   "QuickGELUActivation",
+   "SiLUActivation"
+  ]
+ },
+ "units": {
+  "tokens": 24,
+  "frames": 108,
+  "pairs": {
+   "cue_final": 1728,
+   "coordinated": 864
+  },
+  "masks": {
+   "P0": 0,
+   "P1": {
+    "cue_final": 14,
+    "coordinated": 30
+   }
+  },
+  "nouns": 79,
+  "noun_keys_progs_equal_pool_single_token": true
+ },
+ "execution_still_refused_after_loop": true,
+ "y1_table": {
+  "n_values": 409536,
+  "bytes": 3276288,
+  "struct_serialization_equal": true,
+  "sha256_mine": "37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96",
+  "sha256_candidate": "37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96",
+  "byte_identical": true,
+  "differing_values": 0,
+  "max_abs_diff": 0.0,
+  "all_finite": true,
+  "p0_dx3_sha256": "b6bfd0cd8cd01535be2e05f1a987d1cb6a39125b245791b72398bd1abf828bd2",
+  "factors_sha256": "6adf59c6466dec22d7eeb085d7ab3f880e1ba7749fb484de2cc7d6f87d27c410"
+ },
+ "y1_index": {
+  "byte_identical": true,
+  "sha256_mine": "3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d",
+  "sha256_candidate": "3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d",
+  "keys_equal": true,
+  "differing_fields": [],
+  "format": "raw IEEE-754 float64, little-endian, C order; blocks back to back in the order listed",
+  "blocks": [
+   {
+    "name": "cue_final",
+    "nbytes": 2184192,
+    "offset_bytes": 0,
+    "shape": [
+     1728,
+     2,
+     79
+    ]
+   },
+   {
+    "name": "coordinated",
+    "nbytes": 1092096,
+    "offset_bytes": 2184192,
+    "shape": [
+     864,
+     2,
+     79
+    ]
+   }
+  ],
+  "total_bytes": 3276288
+ },
+ "lock_model_fields": {
+  "p0_dx3_sha256_equal": true,
+  "factors_sha256_equal": true,
+  "noun_keys_equal": true,
+  "lock_gates": {
+   "I5": {
+    "at": "",
+    "max": 0.0
+   },
+   "algebra": {
+    "at": "stacks|coordinated-adjective-015-1",
+    "max": 4.884981308350689e-15
+   }
+  }
+ },
+ "checks": {
+  "I5_max_abs": {
+   "max": 0.0,
+   "at": ""
+  },
+  "a_022_definitional_V+P-total": {
+   "max": 4.440892098500626e-16,
+   "at": "general|quantifier-012-1"
+  },
+  "a_mine_V+P-total_mine": {
+   "max": 1.5543122344752192e-15,
+   "at": "stacks|quantifier-015-1"
+  },
+  "a_mine_V-vs-022_V": {
+   "max": 7.771561172376096e-15,
+   "at": "fragile|coordinated-adjective-fresh-2"
+  },
+  "a_mine_P-vs-022_P": {
+   "max": 2.248201624865942e-14,
+   "at": "shy|cardinal-018-1"
+  },
+  "a_mine_total-vs-022_total": {
+   "max": 2.0872192862952943e-14,
+   "at": "shy|cardinal-018-1"
+  },
+  "a_mine_V+P-vs-022_total": {
+   "max": 2.1094237467877974e-14,
+   "at": "shy|cardinal-018-1"
+  },
+  "b_closed_form_T-vs-022_attn_pt": {
+   "max": 4.9960036108132044e-15,
+   "at": "stacks|coordinated-adjective-015-1"
+  },
+  "b_exact_mine-vs-022_attn_pt": {
+   "max": 5.329070518200751e-15,
+   "at": "stacks|coordinated-adjective-015-2"
+  },
+  "b_closed_form_T-vs-exact_mine": {
+   "max": 3.2751579226442118e-15,
+   "at": "scores|coordinated-adjective-019-4"
+  }
+ },
+ "I5_bitwise": {
+  "pairs": 2592,
+  "bitwise_equal": 2592,
+  "key_sets_equal": 2592
+ },
+ "guard_end": {
+  "refused_during_run": [],
+  "opened_022": [],
+  "opened_hf": [
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/.agent_harnesses.json",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/0204ed10c186a4c7c68f55dff8f26087a45898d6",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/d7a9196e329eaf06d6e2802fed376e7459834236",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f1860edb10f80bcaf7b023fce47c68a23b724c23",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/blobs/f74dfbfab8f97770a87769c739fb080c21c8bacc",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/trees/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c.json",
+   "/Users/gaborhorvath-ulenius/.cache/huggingface/token"
+  ],
+  "execution_refused": true
+ },
+ "seconds": 168.0
+}
