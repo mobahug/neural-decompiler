@@ -2,7 +2,18 @@
 
 **Date:** 2026-09-24
 
-**Status:** Revision 1 — proposal for review. It follows the exposed-only design spike and the reviewer's decisions:
+**Status:** Revision 2. The reviewer approved revision 1 (`68698d6`) in principle and asked that five details be made
+explicit before the implementation plan. Revision 2 does only that:
+- **Sufficient statistics.** The exposed-cells artifact stores `n`, `Σy` and `Σy²` per pair. A draw's `SST` is
+  `ΣΣy² − (ΣΣy)² / Σn` over the selected pairs, never a sum of pair-local variances. 022's two-pass moments are kept
+  as a hard cross-check.
+- **Multiplicity.** A repeated pair contributes repeatedly to every sufficient statistic.
+- **Calibration semantics.** The element `[249]` bound, the undefined-draw rule and the stop are stated in one place.
+- **The ceiling.** `C` is a frozen comparator, not a mathematical upper bound. `g > 1` and `g < 0` are valid and are
+  never incidents.
+- **Scope.** The scope is stated positively: new determiner-like, quantity and adjective cues, and new frames.
+
+Nothing else changes. Revision 1 followed the exposed-only design spike and the reviewer's first decisions:
 - Option A, prospective block-0 completion;
 - population option (a), three cue strata × 8;
 - the gap-recovered statistic with its interpretability rule and meaning guard, and no absolute-`R²` gate;
@@ -79,6 +90,10 @@ Nothing measured on a cue prompt ever enters `P0` or `P1`.
 **The ceiling (`C`).** The frozen readout is fed the *measured* `Δx3` of the cue prompt, at `p_c` and `p_t`, at the
 frame's reference state. It is a comparator and normalizer only and is never an input to `P1`.
 
+`C` is the frozen downstream ceiling *comparator*, not a mathematical upper bound on a finite sample's `R²`. The readout
+has its own error, so `P1` can be slightly closer to the measured `Δc` than `C` is, through finite-sample error or
+cancellation. That gives `g > 1`, which is permitted and is not an incident.
+
 ## The exposed spike (exploratory; it motivates the question and scores nothing)
 
 **Setup.**
@@ -138,12 +153,32 @@ Each `SSE_k` is summed from per-pair cells, with a repeated pair counted with it
 **`g = (SSE₀ − SSE₁) / (SSE₀ − SSE_C)`**
 
 - The SSE form is authoritative. It equals `(R²₁ − R²₀)/(R²_C − R²₀)` with the total variance cancelled.
-- `g` is not clipped. It can exceed 1, when the program is closer to `y` than the ceiling, or fall below 0.
+- `g` is not clipped. `g > 1` (the program closer to `y` than the ceiling) and `g < 0` are valid numeric results, never
+  incidents.
 
-**Interpretability.** The condition is evaluated on its full group aggregate. It requires `SST > 0` and
-`(SSE₀ − SSE_C) / SST ≥ 0.02`: the ceiling must beat Level 0 by at least 2 % of the variance, which is 022's gap rule.
-Otherwise the result is `NOT_INTERPRETABLE`. No pair, cue, frame or noun is removed or re-weighted. `SST` is pooled
-from per-pair two-pass moments, as in 022.
+**Sufficient statistics and `SST` (authoritative).** Every pair `i` carries six sufficient statistics over its 79
+nouns:
+- `n_i` (79);
+- `S_i = Σ y`;
+- `Q_i = Σ y²`;
+- `SSE0_i = Σ (y − P0)²`;
+- `SSE1_i = Σ (y − P1)²`;
+- `SSEC_i = Σ (y − C)²`.
+
+For any selection of pairs — a fresh group, where each pair counts once, or a calibration draw, where a repeated pair
+counts once per selection — the pooled quantities are:
+- `N = Σ n_i`, `S = Σ S_i`, `Q = Σ Q_i`;
+- **`SST = Q − S² / N`**;
+- `SSE_k = Σ SSE{k}_i`, for `k ∈ {0, 1, C}`.
+
+`SST` is never a sum of pair-local variances: the pooled mean changes with every selection. As a hard implementation
+cross-check, `SST` must also equal the pooled two-pass identity `Σ M2_i + Σ n_i (mean_i − S/N)²` to a relative 1e-10.
+Here `mean_i` and `M2_i` are the pair's two-pass moments, the quantities 021 and 022 used. On the whole exposed pool the
+two forms agree to 2.5e-16 (mean −3.8, standard deviation 1.5). `R²_k = 1 − SSE_k / SST`.
+
+**Interpretability.** The condition is evaluated on its full group aggregate. `g` is undefined — the result is
+`NOT_INTERPRETABLE` — when `SST ≤ 0` or `SSE₀ − SSE_C < 0.02 · SST`. That is 022's gap rule: the ceiling must beat Level
+0 by at least 2 % of the variance. No pair, cue, frame or noun is removed or re-weighted.
 
 **Frozen and reported, without outcome force:**
 - `R²₀`, `R²₁` and `R²_C` (`= 1 − SSE_k / SST`) for every condition;
@@ -179,8 +214,9 @@ There is no aggregate label. Each condition is read on its own, and Y1 and Y2 ar
 | **Y2** (frame-conditional) | 24 new cues × 18 new frames × 79 exposed nouns, each frame at its own stage-1 reference state | 288 / 144 |
 
 - **Three cue strata × 8:** determiner-like, quantity and adjective.
-- **Scope:** Experiment 023 makes no new prospective generalization claim for possessive or pronoun cues. That stratum is
-  exhausted. A tokenizer-only sweep of every standard personal, possessive, reflexive, demonstrative, interrogative and
+- **Scope:** Experiment 023 prospectively tests completion across new determiner-like, quantity and adjective cues and
+  new sentence frames only. It makes no claim about "all grammatical-number cue classes" and no new prospective claim for
+  possessive or pronoun cues. That stratum is exhausted. A tokenizer-only sweep of every standard personal, possessive, reflexive, demonstrative, interrogative and
   indefinite form found them all used by earlier experiments. The archaic forms are used or split into several tokens.
   Only `I` and `whatsoever` remain as clean candidates, and the reviewer declined a two-word stratum and informal forms.
 - No new nouns.
@@ -257,11 +293,11 @@ that file.
 - a canonical-JSON index, `exposed-cells.json`.
 
 **Contents.** For every exposed pair — all 175 cues × 108 frames = 18,900, in 022's canonical order (the strata in
-022's order, then token id; frames by `frame_id`) — six columns:
-- `SSE₀`, `SSE₁`, `SSE_C`;
-- `count`, `mean`, `M2` (the two-pass moments of `y` over the 79 nouns).
+022's order, then token id; frames by `frame_id`) — eight columns, in this order:
+- the six sufficient statistics `n`, `S = Σy`, `Q = Σy²`, `SSE₀`, `SSE₁`, `SSE_C`;
+- `mean` and `M2`, 022's stored two-pass moments, for the `SST` cross-check only.
 
-That is 907,200 bytes. The index binds:
+That is 1,209,600 bytes. The index binds:
 - the identifiers (cue, token id, stratum; frame id, template, group);
 - the column formulas;
 - 022's table file sha256 and its tensor digests;
@@ -277,13 +313,23 @@ The pronoun rows are kept for completeness; 023's draws do not use them.
 | gate | what must hold | tolerance |
 |---|---|---|
 | E1 | the table's tensors match the digests in 022's committed calibration record | exact |
-| E2 | `SSE₀` and `SSE₁` equal 022's stored per-pair `sse` at mask 0 and mask 14 / 30 | bit for bit |
-| E3 | `SSE_C`, computed twice from the stored `Δc` and ceiling | bit for bit |
+| E2 | `SSE₀` and `SSE₁` equal 022's stored per-pair `sse` at mask 0 and mask 14 / 30; `n`, `mean` and `M2` equal 022's stored `count`, `mean` and `m2` | bit for bit |
+| E3 | `S`, `Q` and `SSE_C`, computed twice from the stored `Δc` and ceiling | bit for bit |
 | E4 | `P1` recomputed from the weights and 020's locked states equals the table's `P1` on all 18,900 pairs | max abs 1e-9 |
-| E5 | for the first 16 calibration draws, `g` and the gap from the cells equal a direct recomputation from the per-noun table | `|k − d| / max(1, |d|) ≤ 1e-10` |
+| E5 | for the first 16 calibration draws, `g`, the gap and `SST` from the cells equal a direct recomputation from the per-noun table | `|k − d| / max(1, |d|) ≤ 1e-10` |
+| E6 | for every pair and every draw of E5, `SST = Q − S²/N` agrees with the pooled two-pass identity | relative 1e-10 |
 
-The spike already found E2 exact and E4 at 7e-12. The artifact is installed byte-identically and committed. From then
-on `calibrate` reads only the committed artifact, and never the 0.42-GB table.
+The spike already found E2 exact and E4 at 7e-12.
+
+**The extraction boundary.** The path is one-way:
+
+`022 calibration table → exact verified extraction → 023 exposed-cells.f64/json (committed, digest-bound) → 023 calibration`
+
+After the artifact is extracted, verified by E1–E6, installed byte-identically, independently checked and committed,
+nothing in Experiment 023 reads the 0.42-GB table again:
+- `calibrate` reads only the committed artifact, verified against the digests the committed index carries;
+- the runner opens the 022 table in `extract` only;
+- a second `extract` is refused once the artifact is committed.
 
 ## Calibration (exposed only, once; no model)
 
@@ -298,15 +344,24 @@ on `calibrate` reads only the committed artifact, and never the 0.42-GB table.
 - 24 cues per draw, with replacement, at 8 per stratum.
 - Y1-like: the drawn cues × the 108 frames.
 - Y2-like: the drawn cues × 18 frames drawn with replacement at 6 per template from the 42.
-- Per draw and group: the SSE sums with multiplicity, `SST` from the pooled moments, `g`, and the gap rule.
+- Per draw and group, with every selected pair counted once per selection:
+  - `N`, `S`, `Q`, `SSE₀`, `SSE₁` and `SSE_C` are summed from the sufficient statistics;
+  - `SST = Q − S²/N`;
+  - then `g` and the gap rule.
 
 **Kernel check.** On the first 16 draws, the cell kernel is checked against a direct loop over the drawn pairs'
-cells, at 1e-10 (implementation only). The per-noun check is E5.
+cells, at 1e-10 (implementation only). The per-noun check is E5, and E6 applies to every draw.
 
-**Floor rule.** Per condition, `F = v₍₂₅₀₎` of the ascending 10,000 values, with undefined values at −∞.
-- **Direction check** before anything is written: `F ≤` the median of the defined draws.
-- **Calibration stop:** 250 or more undefined values in any condition. `calibrate` then writes no floor table and stops
-  for review. This is not an incident and is never retried automatically.
+**Exact calibration semantics (frozen):**
+- 10,000 deterministic SHA-indexed draws per population.
+- A draw's value for a condition is undefined when `SST ≤ 0` or `SSE₀ − SSE_C < 0.02 · SST`. Otherwise it is `g`,
+  unclipped: `g > 1` and `g < 0` are valid values.
+- Undefined values are placed at −∞ before sorting, so they always count against the lower tail.
+- `F = v₍₂₅₀₎`: the 250th value of the ascending 10,000 (1-based), zero-based element `[249]`, as in 022.
+- **Direction check,** before anything is written: `F ≤` the median of the defined draws.
+- **Calibration stop:** 250 or more undefined values in any condition make `F = −∞`. `calibrate` then writes no floor
+  table and stops for review before `lock`. The result is never a usable envelope; this is not an incident and is never
+  retried automatically.
 
 **Recorded, never corrected:**
 - the share of draws in each of the four results per condition;
@@ -352,9 +407,10 @@ The candidate record is installed byte-identically, committed and reviewed befor
   - I4: its `Δĉ` equals `C`.
   - I5: `P0` equals the committed Level 0 exactly.
 - **Scoring.**
-  - Per condition: `SSE₀`, `SSE₁`, `SSE_C` and `SST` from the cells, `g`, the gap, the three `R²`, the flag, and the
-    result;
-  - the cell kernel against a direct recomputation from the per-noun measurements, at 1e-10.
+  - Per condition: the six sufficient statistics of every fresh pair, each pair once; then `SST = Q − S²/N` with its E6
+    cross-check, `g`, the gap, the three `R²`, the flag, and the result;
+  - the cell kernel against a direct recomputation from the per-noun measurements, at 1e-10;
+  - a `g > 1` or `g < 0` is reported as it is; it is never an incident.
 - **Descriptive, with no outcome force:**
   - per-template and per-stratum `g`;
   - the spike's cheaper rules — value term only, the relative self logit, the oracle self-weight, the first-order
@@ -370,6 +426,7 @@ The candidate record is installed byte-identically, committed and reviewed befor
 | E1, E2, E3 | exact / bit for bit |
 | E4 | max abs 1e-9 |
 | E5, kernel checks | `|k − d| / max(1, |d|) ≤ 1e-10` |
+| E6 (`SST` one-pass against pooled two-pass), at extraction, calibration and confirm | relative 1e-10 |
 | lock tables twice; I7 at confirm | bit for bit |
 | block-0 algebra (`V + P`, closed-form `T`) | 1e-12 |
 | I1 | max abs 1e-4 |
@@ -414,7 +471,8 @@ Each condition is read on its own.
 
 - **`PASS`.** On that population and group, the completed program recovers essentially all of the explainable upstream
   gap, within the exposed-like envelope. The weight-derived upstream program reaches the ceiling that the decoded
-  downstream readout allows.
+  downstream readout allows. A `g` above 1 means the program came slightly closer to the measured `Δc` than the
+  ceiling comparator did. That is allowed and says nothing beyond "essentially all".
 - **`ENVELOPE_ONLY_FAILURE`.** `g ≥ 0.90`, so "essentially all" still holds, but `g` lies below the calibrated
   envelope. This is a quantitative shift relative to exposed-like sets, never a refutation. The spike expects envelopes
   near 0.995–0.999, so this result can occur with `g ≈ 0.99`.
@@ -451,6 +509,22 @@ Each condition is read on its own.
 7. **Comparators.** The cheaper rules are descriptive only; there is no necessity claim.
 8. **Replication.** There is no automatic spent-set replication.
 
+**Design approval in principle (2026-09-24, revision 1).** The reviewer approved revision 1 and required five details
+to be explicit before the implementation plan; revision 2 makes them so.
+1. **Sufficient statistics.** `n`, `Σy`, `Σy²` and the three SSE per pair. A draw's `SST = Q − S²/N` from the pooled
+   sums, never a sum of pair-local variances. A repeated pair contributes repeatedly to every statistic.
+2. **Calibration semantics.** 10,000 draws; the element `[249]` bound; `g` unclipped, with `g > 1` and `g < 0` valid;
+   undefined draws when the `SST` or gap rule fails, placed against the lower tail; 250 or more undefined draws stop
+   calibration for review before `lock`.
+3. **The ceiling.** `C` is a frozen comparator, not a mathematical upper bound; `P1` beating it is not an incident.
+4. **Scope.** New determiner-like, quantity and adjective cues only; no claim about possessive or pronoun cues or "all
+   grammatical-number cue classes".
+5. **The extraction boundary.** Once the artifact is verified and committed, calibration never reads 022's table
+   again.
+
+Revision 2 keeps 022's two-pass moments beside the reviewer's `SST` formula as a cross-check (E6), not as an
+alternative.
+
 ## Implementation boundary (for the plan, after approval)
 
 - A new module (planned as `src/neural_decompiler/block0_completion.py`) imports 022's module and the 017–021 programs
@@ -464,8 +538,9 @@ Each condition is read on its own.
 
 ## Stopping condition
 
-Stop after this revision, for design review. After approval, each step only when authorized:
-1. the implementation plan and its review;
+The reviewer approved the design in principle and authorized the implementation plan document after this revision.
+Stop after the plan, for its review. Then, each step only when authorized:
+1. the implementation plan's review;
 2. the implementation and its independent review;
 3. tier C on the clean gated commit;
 4. `extract`, then install and commit;
@@ -478,4 +553,9 @@ Stop after this revision, for design review. After approval, each step only when
 
 ## Revision history
 
-- Revision 1 (2026-09-24): proposal for review, after the exposed-only design spike and the reviewer's decisions.
+- Revision 1 (2026-09-24, `68698d6`): proposal for review, after the exposed-only design spike and the reviewer's
+  decisions.
+- Revision 2 (2026-09-24): the five explicit details required at the approval in principle. These are the sufficient
+  statistics and the pooled `SST` formula with its two-pass cross-check (E6); the exact calibration semantics; the
+  ceiling as a comparator, not an upper bound; the positive scope statement; and the one-way extraction boundary. The
+  artifact grows from six to eight columns (1,209,600 bytes). Nothing else changes.
