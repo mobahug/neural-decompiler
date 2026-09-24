@@ -1598,6 +1598,8 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
             lines.append(f"- P1 Δx3 relative error {key}: " + ", ".join(f"{slot} median {value['median']:.2e} max {value['max']:.2e}" for slot, value in entry.items()))
         for key, profile in (descriptives.get("block0_profile") or {}).items():
             lines.append(f"- Block-0 profile {key}: self-weight {profile['reference_self_weight_median']}; p_t→p_c {profile['attention_pt_to_pc_median']}")
+        for name, failure in sorted((descriptives.get("failures") or {}).items()):
+            lines.append(f"- The descriptive record {name} was not computed ({failure['type']}: {failure['message']}); it has no outcome force and the four results stand")
         for frame_id, frame in sorted(((confirmation.get("stage1") or {}).get("frames") or {}).items()):
             lines.append(f"- Validity (descriptive, selects nothing) {frame_id}: {frame['validity'].get('valid')}")
     lines.append("")

@@ -12,7 +12,8 @@ table (E5) and the pooled ``SST`` (E6), and writes the candidate artifact, insta
 pass) writes the Y1 prediction table, the candidate lock and the preregistration. ``confirm`` (once, never resumed)
 validates the lock, rebuilds the Y1 table bit for bit (I7) before any fresh prompt, runs stage 1 and writes the Y2
 prediction table once, re-reads and verifies both at the barrier, runs stage 2, saves every measurement, enforces the
-identities and scores the four conditions through the one canonical path. ``report`` renders the report.
+identities and scores the four conditions through the one canonical path, writing them before any descriptive record is
+computed. ``report`` renders the report.
 """
 
 from __future__ import annotations
@@ -612,11 +613,12 @@ class Runner:
                 tables = {"Y1": y1_blocks, "Y2": y2_blocks}
                 checked = b0c.target_gates(progs, confirmation, measured, states)
                 state["confirmation"]["gates"] = checked["gates"]
+                state["confirmation"]["descriptives"] = {"p1_dx3_relative_error": checked["p1_dx3_relative_error"], "block0_profile": checked["block0_profile"]}
                 self._write(state)
                 b0c.enforce_target_gates(checked["gates"])
                 results = b0c.score(measured, tables, lock)
-                descriptives = {"subsets": b0c.fresh_descriptives(measured, tables), "p1_dx3_relative_error": checked["p1_dx3_relative_error"],
-                                "block0_profile": checked["block0_profile"], "comparators": b0c.comparators(progs, confirmation, measured, states, tables)}
+                state["confirmation"].update({**results, "lock_sha256": lock["content_sha256"], "scored_at": pm.utc_now()})
+                self._write(state)  # the four results are on disk before anything else runs
                 recheck = self._recheck()
                 if not recheck["ok"]:
                     raise pm.IncidentError(f"Experiment 020's closure or Experiment 022's committed files no longer verify after confirm: {recheck['message']}")
@@ -631,15 +633,35 @@ class Runner:
             except BaseException as error:  # a protocol failure or an interruption: recorded, then raised; confirm never resumes
                 self._record_incident(state, "confirm", error)
                 raise
+            state["confirmation"]["completed_at"] = pm.utc_now()
+            state["phases"]["confirm"] = {**state["phases"]["confirm"], "status": "complete", "completed_at": pm.utc_now()}
+            digest = self._write(state)
+            self.log("confirm complete (four conditions, no aggregate label): " + "; ".join(f"{key} {entry['result']} (g {entry['g']})" for key, entry in results["conditions"].items())
+                     + f"; results sha256 {digest}")
+            self._descriptives(state, progs, confirmation, measured, states, tables)
         finally:
             del model
             gc.collect()
-        state["confirmation"] = {**state["confirmation"], **results, "descriptives": rc.json_safe(descriptives), "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()}
-        state["phases"]["confirm"] = {**state["phases"]["confirm"], "status": "complete", "completed_at": pm.utc_now()}
-        digest = self._write(state)
-        self.log("confirm complete (four conditions, no aggregate label): " + "; ".join(f"{key} {entry['result']} (g {entry['g']})" for key, entry in results["conditions"].items())
-                 + f"; results sha256 {digest}")
         return 0
+
+    def _descriptives(self, state: dict[str, Any], progs: ul.ModelPrograms, confirmation: b0c.Confirmation023, measured: Mapping[str, Any],
+                      states: Mapping[str, Any], tables: Mapping[str, Any]) -> None:
+        """The descriptive records (no outcome force), computed only after the four results and the completed phase are on
+        disk: a failure is recorded as such and the phase stays complete; an interruption is recorded and raised. Neither
+        can touch a result."""
+        descriptives = state["confirmation"].setdefault("descriptives", {})
+        for name, compute in (("subsets", lambda: b0c.fresh_descriptives(measured, tables)),
+                              ("comparators", lambda: b0c.comparators(progs, confirmation, measured, states, tables))):
+            try:
+                descriptives[name] = rc.json_safe(compute())
+            except BaseException as error:
+                descriptives.setdefault("failures", {})[name] = {"type": type(error).__name__, "message": str(error), "at": pm.utc_now()}
+                self._write(state)
+                self.log(f"the descriptive record {name} failed (no outcome force; the four results stand): {error}")
+                if not isinstance(error, Exception):
+                    raise
+                continue
+            self._write(state)
 
     def _record_for_report(self) -> dict[str, Any] | None:
         installed = self.root / b0c.CALIBRATION_RELATIVE_PATH

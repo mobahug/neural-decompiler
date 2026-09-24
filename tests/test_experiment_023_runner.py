@@ -450,6 +450,36 @@ def test_confirm_runs_stage1_the_barrier_and_stage2_once_each_and_scores_four_co
     assert all(f"{condition}: **" in report for condition in b0c.CONDITIONS) and _state(runner)["phases"]["report"]["status"] == "complete"
 
 
+@pytest.mark.parametrize("error", [RuntimeError("a descriptive comparator failed"), KeyboardInterrupt()], ids=["failure", "interruption"])
+def test_a_descriptive_failure_after_scoring_keeps_the_four_results(world, base023, locked023, sandbox, monkeypatch, error):
+    """The four results and the completed phase are on disk before any descriptive record runs; a descriptive failure
+    is recorded as such (an interruption is recorded and raised) and never touches a result."""
+    root = sandbox(locked023)
+
+    def broken(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(b0c, "comparators", broken)
+    runner, logs = make_runner(root, world)
+    if isinstance(error, Exception):
+        assert runner.confirm() == 0, logs[-3:]
+    else:
+        with pytest.raises(KeyboardInterrupt):
+            runner.confirm()
+    state = _state(runner)
+    results = state["confirmation"]
+    assert state["phases"]["confirm"]["status"] == "complete" and "incident" not in results
+    assert set(results["conditions"]) == set(b0c.CONDITIONS) and all(entry["result"] in b0c.RESULTS for entry in results["conditions"].values())
+    descriptives = results["descriptives"]
+    assert descriptives["failures"]["comparators"]["type"] == type(error).__name__ and "comparators" not in descriptives
+    assert "subsets" in descriptives and "p1_dx3_relative_error" in descriptives and "block0_profile" in descriptives
+    with pytest.raises(b0c.PhaseError, match="confirm already started"):
+        runner.confirm()
+    assert runner.report() == 0
+    report = runner.report_path.read_text()
+    assert "comparators was not computed" in report and all(f"{condition}: **" in report for condition in b0c.CONDITIONS)
+
+
 def test_i7_refuses_a_y1_table_that_does_not_reproduce_before_any_fresh_prompt(world, base023, locked023, sandbox, monkeypatch):
     root = sandbox(locked023)
     original = b0c.prediction_tables
