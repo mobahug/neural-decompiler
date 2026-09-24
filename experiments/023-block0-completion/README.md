@@ -156,10 +156,17 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - `bc72347`: E3 as an independent recomputation, the index's content digest, and the report's stop and tails
     (findings 9, 10, 12; 15 documented);
   - `e4b8f3e`: the missing tier-B tests (finding 4).
+- **Independent re-review of those fixes (read-only).** It found findings 1–13 fixed. One should-fix remained,
+  introduced by the finding-2 fix: an incident recorded after scoring could sit beside four results. There were also
+  two minors: extract's last steps sat outside its incident handler, and the pinning claim was overstated. All are
+  fixed in `28d1bbb`: the re-check now runs before any result is written, and an incident carries no result, in the
+  state and in the report.
 - **Not run.** Nothing has been extracted, frozen, calibrated, locked or confirmed.
 - **Next steps, each only when authorized:**
-  1. (done) the independent implementation review, its fixes, and tiers A/B/C on the final implementation commit;
-  2. `extract`, then install, commit and the artifact's own checkpoint;
+  1. (done) the independent implementation review, its fixes, a re-review, and tiers A/B/C on the final implementation
+     commit;
+  2. `extract`, then install, commit and the artifact's own checkpoint. E3 is bit for bit and sensitive to memory
+     layout, so at the extract commit the opt-in tier-C real-table test runs first;
   3. `freeze`, then commit;
   4. `calibrate` once, then install, commit and the floor review;
   5. `lock`, then install, commit and the lock review;
