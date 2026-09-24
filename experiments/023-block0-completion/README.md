@@ -130,7 +130,7 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   An incident is recorded and stops the phase; nothing is retried.
 - **`report`** renders `outputs/experiment-023/report.md`.
 
-## Status — 2026-09-24: implemented and reviewed; not run
+## Status — 2026-09-24: extracted; the exposed-cells artifact installed and committed; nothing else run
 
 - **Implementation.** Plan Tasks 1–6 are implemented in `src/neural_decompiler/block0_completion.py`, this runner and
   their tests:
@@ -161,12 +161,51 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   two minors: extract's last steps sat outside its incident handler, and the pinning claim was overstated. All are
   fixed in `28d1bbb`: the re-check now runs before any result is written, and an incident carries no result, in the
   state and in the report.
-- **Not run.** Nothing has been extracted, frozen, calibrated, locked or confirmed.
+- **Tests on the final implementation commit `2111271`:** tier A 483 passed; tier B 514 passed, 11 skipped (the opt-in
+  pinned-model tests); tier C 525 passed.
+- **`extract` ran once and succeeded.** It ran at `2111271` on 2026-09-24, 14:20:44–14:26:14Z, as run
+  `9428b2fde588ac75`, with no prompt: weights only, under the no-forward-pass guard.
+  - **Preflight, read-only.** The pins, 020's closure and 022's committed files all verified, and the stock `validate`
+    passed. The 022 table was the bound file (424,131,002 bytes, `04659d5e…`). Immediately before the run, the opt-in
+    tier-C real-table tests passed, with E2 and E3 each 0 of 18,900 pairs differing.
+  - **Identities.**
+    - E1: 13 tensor digests and the orders;
+    - E2 and E3: bit for bit on all 18,900 pairs;
+    - E4: `P1` recomputed from the weights for all 18,900 pairs, max |Δ| exactly 0.0;
+    - E5: 4.0e-15 over 192 draw quantities;
+    - E6: 1.43e-14 per pair, 4.0e-15 per draw.
+
+    E4's recorded `"at"` is an empty string, because the maximum never rose above 0.0 (a cosmetic effect of 022's
+    max-tracker).
+- **Independent extraction review (read-only): PASS WITH NOTES, no blockers.** A separate reviewer wrote its own
+  checker and did not rely on the runner's pass flags. It re-derived:
+  - the state digest, the hashes, the byte layout and the canonical order (including every cue's token id through the
+    tokenizer);
+  - the 023 draws for all 10,000 draws, which never select the pronoun stratum;
+  - the 13 tensor digests;
+  - every column of all 18,900 rows: bit for bit against 022's stored values and its own reductions, and within
+    4.2e-16 relative of exactly rounded sums;
+  - the pooled `SST` on 409 selections with repeats: three methods agree within 2.3e-15;
+  - `P0` and `P1` from the weights for all pairs, bit for bit, under a guard that refused any module call.
+
+  It also showed, with every route to Experiment 022's table blocked, that the calibration reader and kernel work from
+  the compact artifact alone.
+- **The artifact is installed and committed.** The reviewed candidate bytes were copied, not regenerated, as
+  `exposed-cells.f64` (sha256 `d2ee71e5…`, 1,209,600 bytes) and `exposed-cells.json` (file sha256 `62818147…`,
+  content digest `d38305cb…`). They were committed alone in `83d9c58`, and `git show` of that commit reproduces the
+  reviewed bytes. The stock `validate` and the runner's installed-artifact reader accept the pair, and no scientific
+  path has changed since extract.
+- **Experiment 022's 0.42-GB calibration table is no longer an operational dependency of 023.** From here on,
+  calibration reads only the committed artifact; nothing after `extract` opens the table.
+- **Inherited dependency.** Every phase still reads Experiment 020's git-ignored local
+  `outputs/experiment-020/results.json` through the frozen `load_frozen_inputs`, as 020–022 did. This is documented and
+  lies outside 023's table-independence claim.
+- **Not run:** `freeze`, `calibrate`, `lock`, `confirm` and `report`. No Experiment 023 prompt has been executed.
 - **Next steps, each only when authorized:**
   1. (done) the independent implementation review, its fixes, a re-review, and tiers A/B/C on the final implementation
      commit;
-  2. `extract`, then install, commit and the artifact's own checkpoint. E3 is bit for bit and sensitive to memory
-     layout, so at the extract commit the opt-in tier-C real-table test runs first;
+  2. (done) `extract`, the independent extraction review, and the byte-identical installation and commit of the
+     artifact (`83d9c58`);
   3. `freeze`, then commit;
   4. `calibrate` once, then install, commit and the floor review;
   5. `lock`, then install, commit and the lock review;
