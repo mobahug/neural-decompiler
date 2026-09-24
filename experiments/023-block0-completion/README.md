@@ -1,5 +1,8 @@
 # Experiment 023: Prospective Block-0 Completion
 
+**Status: CLOSED (2026-09-24).** Three conditions PASS, and Y1/cue_final is an ENVELOPE_ONLY_FAILURE. There is no
+aggregate label; see [Result and closure](#result-and-closure--2026-09-24-closed).
+
 Implements the design
 [`docs/superpowers/specs/2026-09-24-experiment-023-block0-completion-design.md`](../../docs/superpowers/specs/2026-09-24-experiment-023-block0-completion-design.md)
 (revision 2, `5b38aba`) through the plan
@@ -130,7 +133,64 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   An incident is recorded and stops the phase; nothing is retried.
 - **`report`** renders `outputs/experiment-023/report.md`.
 
-## Status — 2026-09-24: extracted, frozen, calibrated and locked; every artifact committed and independently reviewed; confirm next
+## Result and closure — 2026-09-24: CLOSED
+
+The single `confirm` ran at `c7efec7` (17:38:14–17:49:23Z, exit 0). Each condition is read on its own:
+
+| condition | g | F (exact, from the lock) | result | gap | R²₀ | R²₁ | R²_C | pairs |
+|---|---|---|---|---|---|---|---|---|
+| Y1/cue_final | 0.9955204329648195 | 0.9968974947302105 | **ENVELOPE_ONLY_FAILURE** | 0.1411 | 0.8182 | 0.9587 | 0.9593 | 1728 |
+| Y1/coordinated | 0.9987141803462269 | 0.9986343903419131 | **PASS** | 0.4159 | 0.5420 | 0.9574 | 0.9579 | 864 |
+| Y2/cue_final | 0.9974185656823554 | 0.9950528086546427 | **PASS** | 0.1468 | 0.8146 | 0.9610 | 0.9613 | 288 |
+| Y2/coordinated | 0.9965628370581808 | 0.9951864564481918 | **PASS** | 0.3812 | 0.5719 | 0.9518 | 0.9531 | 144 |
+
+**Closure notes.** These are the facts the frozen renderer does not print; the generated report is kept unedited.
+
+- **Marginal floors.** Experiment 023 uses four marginal, per-condition calibrated floors. There is no aggregate
+  PASS/FAIL criterion, and the 0.9178 joint pass rate is descriptive only. "Three of four conditions passed" is not a
+  protocol outcome; the protocol defines no majority or all-pass rule.
+- **Primary result: three PASS and one ENVELOPE_ONLY_FAILURE.** Y1/cue-final recovered nearly all explainable
+  performance (`g = 0.9955204329648195`) but fell below its preregistered exposed-like floor
+  (`F = 0.9968974947302105`). Under the frozen interpretation this is a small quantitative shift, not a refutation:
+  because `g ≥ 0.90` it is an ENVELOPE_ONLY_FAILURE. It is neither simply a failure nor "basically a pass".
+- **Full precision.** Y1/coordinated's PASS was decided at full precision, `0.9987141803462269 > 0.9986343903419131`,
+  a margin of +7.979e-5 in exact arithmetic. The six-decimal rendering is display only.
+- **Provenance.**
+  - All 3,060 frozen prompts executed exactly once: expected manifest = executed `capture_prompt` calls = ledger
+    spend, with zero extras, omissions or duplicates.
+  - There were no interventions or patched forward passes.
+  - Stage 1 preceded the construction of the Y2 table and stage 2.
+  - Experiment 022's table stayed isolated, and `confirm` executed once.
+- **`" shiny"`.** The pair stays in the 864-pair primary Y1/coordinated analysis. Its preplanned descriptive exclusion
+  gives `g = 0.9987161` (863 pairs) and does not change the PASS. There is no substitution and no corrected primary
+  statistic.
+- **Renderer artifacts, kept as they are, not "fixed".**
+  - The report header says `report not_started`, because rendering happens before the phase completes.
+  - The display formatting uses `g ≥ 0.9`, six-decimal floors and `E4 = 0.000`.
+
+  The authoritative values remain the machine-readable lock and results artifacts.
+- **Reviews.** Every checkpoint had an independent read-only review:
+  - the implementation (NOT READY, then fixed and re-reviewed);
+  - extraction, freeze and lock: each PASS WITH NOTES;
+  - the floor review: PASS, marginal by design;
+  - the confirmation review: PASS WITH NOTES, with the outcome reproduced in exact arithmetic, the Y2 table rebuilt
+    byte for byte and the identities recomputed.
+- **Descriptive only, no outcome force:**
+  - Y1 cue-final by stratum: adjective 0.9926, determiner-like 0.9959, quantity 0.9974; both templates about 0.9955.
+  - Cheaper block-0 rules recover far less in cue-final frames: value-only about 0.50, six heads 0.91–0.94, linear
+    response about 0.76. So the exact block-0 rule is what completes the program.
+  - All 18 new frames were valid at stage 1.
+- **Scope, unchanged.** The claim covers new determiner-like, quantity and adjective cues and new frames only. There
+  is no claim about possessive or pronoun cues, and none that the downstream readout is complete (`R²_C` 0.95–0.96).
+  No claim file was changed.
+
+**Closure evidence**, all in `evidence/`:
+- `5344f44`: the Y2 table (`4623adde…`, index `e87091ef…`) and the report as rendered (`final-report-2026-09-24.md`,
+  `9b7a8d7a…`);
+- `69ec270`: the confirm run record with its prompt accounting, the confirmation review, the report verification, and
+  the confirmation-record extract (content `0dcc2c44…`) with its builder.
+
+## Protocol history — 2026-09-24
 
 - **Implementation.** Plan Tasks 1–6 are implemented in `src/neural_decompiler/block0_completion.py`, this runner and
   their tests:
@@ -241,8 +301,15 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - The freeze's no-weights evidence is restated in the lock review's evidence (`a0e41a9`), not in the bound design
     text: a Python-level file-open log cannot show weight reads, so the conclusion rests on the code path and the
     tokenizer-only reconstruction.
-- **Not run:** `confirm` and `report`. No Experiment 023 prompt has been executed; both ledgers are empty.
-- **Next steps, each only when authorized:**
+- **`confirm` ran once and succeeded.** It ran at `c7efec7`, 17:38:14–17:49:23Z, exit 0, after tier C (525) and confirm's
+  own pre-prompt validation.
+  - I7 bitwise; stage 1 (36 prompts); the Y2 table written once; the barrier; stage 2 (3,024 prompts).
+  - I1 1.3e-5, I3 2.0e-5, I4 4.3e-5; kernel 1.6e-15.
+  - Independent confirmation review: PASS WITH NOTES; outcome reproduced.
+- **`report` ran once.** At `c7efec7`, 18:14:58–18:15:07Z, exit 0: `report.md` (`9b7a8d7a…`), exactly the frozen
+  renderer's output for the confirmed state.
+- **Closure:** `5344f44` (data), `69ec270` (evidence) and this documentation.
+- **Steps, all done:**
   1. (done) the independent implementation review, its fixes, a re-review, and tiers A/B/C on the final implementation
      commit;
   2. (done) `extract`, the independent extraction review, and the byte-identical installation and commit of the
@@ -250,6 +317,6 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   3. (done) `freeze`, the independent freeze review, and the byte-identical commit (`a9287ec`);
   4. (done) `calibrate` once, the floor review, and the commit (`51b5c7d`);
   5. (done) `lock`, the independent lock review, and the commit (`f2294ab`);
-  6. `confirm` once;
-  7. `report`;
-  8. closure.
+  6. (done) `confirm` once, and the independent confirmation review;
+  7. (done) `report`, and its verification;
+  8. (done) closure.
