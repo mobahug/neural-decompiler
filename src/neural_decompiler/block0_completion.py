@@ -549,10 +549,11 @@ def agreement(kernel: float, direct: float) -> float:
     return abs(kernel - direct) / max(1.0, abs(direct))
 
 
-def verify_draws_against_table(cells: torch.Tensor, table: Mapping[str, Any], units: ExposedUnits, draws: int = CROSS_CHECK_DRAWS) -> dict[str, Any]:
+def verify_draws_against_table(cells: torch.Tensor, table: Mapping[str, Any], units: ExposedUnits, draws: int | None = None) -> dict[str, Any]:
     """E5 and E6: on the first ``draws`` calibration draws of every population and group, ``SST``, ``g`` and the gap
     from the cells against a direct recomputation from the per-noun table; ``SST`` against the pooled two-pass identity
     on every pair and every one of those draws."""
+    draws = CROSS_CHECK_DRAWS if draws is None else int(draws)  # resolved at call time, never bound at definition
     per_pair = enforce_e6(pool(cells, torch.arange(units.n_pairs).unsqueeze(1)), "a single exposed pair")
     indices = draw_indices(units, draws)
     worst = {"max_difference": 0.0, "at": "", "n_checked": 0}
@@ -814,9 +815,10 @@ def calibration_kernel(cells: torch.Tensor, units: ExposedUnits, indices: Mappin
 
 
 def kernel_loop_check(cells: torch.Tensor, units: ExposedUnits, indices: Mapping[str, torch.Tensor], kernel: Mapping[str, Any],
-                      n_draws: int = CROSS_CHECK_DRAWS) -> dict[str, Any]:
+                      n_draws: int | None = None) -> dict[str, Any]:
     """Implementation-only: on the first draws, ``SST``, ``g`` and the gap recomputed by an explicit loop over the drawn
     pairs' cells (pure Python sums, the frozen rule written out again) against the vectorized kernel."""
+    n_draws = CROSS_CHECK_DRAWS if n_draws is None else int(n_draws)  # resolved at call time
     worst = {"max_difference": 0.0, "at": "", "n_checked": 0}
     for population in POPULATIONS:
         for group in GROUPS:
@@ -926,3 +928,668 @@ def verify_calibration_record(record: Mapping[str, Any], draws: int | None = Non
         raise PhaseError("the calibration record was written against different frozen modules")
     if set(record["conditions"]) != set(CONDITIONS):
         raise PhaseError("the calibration record does not carry exactly the four conditions")
+
+
+# ---------------------------------------------------------------------------
+# The prediction tables (weights and reference states only; no measured quantity): P0 and P1 per pair (Task 6).
+
+TABLE_SCHEMA_VERSION = 1
+TABLE_CONSTRUCTION = (
+    "per pair (cue t, frame f, the template's reference cue r), from the frame's reference state and the weights by Experiment 022's own functions "
+    "(ul.pair_context, ul.compose_dx3, ul.contrast_of): P0 = 022's empty coalition (mask 0: ΔE through Experiment 017's reduced chain, layer-1/2 reference "
+    "rows through p_c) and P1 = 022's inputs-only coalition (mask 14 in cue-final frames, 30 in coordinated frames: ΔE + Δemb + V + P at p_c and T at p_t, "
+    "through the same reduced chain), each through the frozen Experiment 020 readout; columns (P0, P1); Δĉ over the scorable exposed nouns in the listed order")
+
+
+def table_meta(kind: str, units: ul.TableUnits, noun_keys: Sequence[str]) -> dict[str, Any]:
+    return {"experiment": EXPERIMENT, "kind": kind, "schema_version": TABLE_SCHEMA_VERSION, "construction": TABLE_CONSTRUCTION, "design": dict(DESIGN),
+            "pair_order": "cue token id, then frame_id", "pairs": units.pair_json(), "columns": ["P0", "P1"], "masks": {"P0": P0_MASK, "P1": dict(P1_MASK)},
+            "nouns": list(noun_keys)}
+
+
+def table_layout(units: ul.TableUnits, n_nouns: int) -> list[dict[str, Any]]:
+    return [{"name": group, "shape": [len(units.pairs[group]), 2, int(n_nouns)]} for group in GROUPS]
+
+
+def closed_form_t(progs: ul.ModelPrograms, frame: pm.Frame, reference_id: int, token_id: int) -> torch.Tensor:
+    """The design's closed form of block 0's change at the target position (one logit update per head):
+    ``Σ_h [a_h (o'_h − o_h) + (σ(logit a_h + ⟨q_{p_t,h}, Δk_h⟩/√d) − a_h)(o'_h − rest_h)]``, from the embeddings alone."""
+    program0 = progs.program0
+    x0_all = ul.reference_embeddings(progs.weights, frame, reference_id)
+    rr = atp.ReferenceRow(program0, [x.double() for x in x0_all[: frame.p_t + 1]])
+    normed = program0.normalize(progs.weights.W_E[int(token_id)].double())
+    k_new = program0.rotate(program0.k_tilde(normed), frame.p_c)
+    o_new = torch.einsum("he,hed->hd", program0.v(normed), program0.W_O)
+    o_all = program0.output(rr.values)
+    a = rr.A_ref[:, frame.p_c]
+    rest = (torch.einsum("hk,hkd->hd", rr.A_ref, o_all) - a[:, None] * o_all[:, frame.p_c]) / (1.0 - a)[:, None]
+    shift = (rr.q_ref * (k_new - rr.keys[:, frame.p_c])).sum(-1) / program0.scale
+    a_new = torch.sigmoid(torch.log(a) - torch.log1p(-a) + shift)
+    return (a[:, None] * (o_new - o_all[:, frame.p_c]) + (a_new - a)[:, None] * (o_new - rest)).sum(0)
+
+
+def pair_predictions(progs: ul.ModelPrograms, ctx: ul.PairContext) -> tuple[torch.Tensor, torch.Tensor, dict[int, torch.Tensor]]:
+    """``P0`` and ``P1`` of one pair (022's mask 0 and mask 14 / 30), and P0's ``Δx̂3`` for I5."""
+    group = "cue_final" if ctx.cue_final else "coordinated"
+    empty = ul.compose_dx3(progs, ctx, P0_MASK)
+    p0 = ul.contrast_of(progs, ctx.state, empty)
+    p1 = ul.contrast_of(progs, ctx.state, ul.compose_dx3(progs, ctx, P1_MASK[group]))
+    return p0, p1, empty
+
+
+def prediction_tables(progs: ul.ModelPrograms, units: ul.TableUnits, states: Mapping[str, rd.FrameState020], reference_ids: Mapping[str, int], *,
+                      log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Every pair's ``(P0, P1)`` in the table's order, weights and reference states only, with the maxima of I5 (P0
+    against the committed Level 0, exactly) and of the block-0 algebra (``V + P = ΔA0(p_c)``; the closed-form ``T``
+    against the exact attention output at ``p_t``), and digests of every pair's P0 ``Δx̂3`` and block-0 terms."""
+    say = log or (lambda message: None)
+    rows16: dict[str, Mapping[int, atp.ReferenceRow]] = {}
+    level0, factor_bytes = hashlib.sha256(), hashlib.sha256()
+    gates = {"I5": {"max": 0.0, "at": ""}, "algebra": {"max": 0.0, "at": ""}}
+    blocks = []
+    for group in GROUPS:
+        out = torch.empty(len(units.pairs[group]), 2, len(progs.scorable), dtype=torch.float64)
+        for row, (t, f) in enumerate(units.pairs[group]):
+            frame, token = units.frames[f], units.tokens[t]
+            state = states[frame.frame_id]
+            if frame.frame_id not in rows16:
+                rows16[frame.frame_id] = ul.reference_rows_017(progs.programs, state)
+            reference_id = int(reference_ids[frame.template_id])
+            ctx = ul.pair_context(progs, frame, state, reference_id, int(token["token_id"]), token["word"], rows16[frame.frame_id])
+            p0, p1, empty = pair_predictions(progs, ctx)
+            out[row, 0], out[row, 1] = p0, p1
+            committed = rd.predicted_dx3(progs.chain, progs.weights, state, ctx.rows16, ctx.token_id, frame.template_id)
+            i5 = math.inf if set(committed) != set(empty) else max(float((empty[p] - committed[p]).abs().max()) for p in committed)
+            factors = ctx.factors
+            algebra = float((factors.value_pc + factors.pattern_pc - factors.block0_pc.total).abs().max())
+            if factors.attn_pt is not None:
+                algebra = max(algebra, float((closed_form_t(progs, frame, reference_id, int(token["token_id"])) - factors.attn_pt).abs().max()))
+            where = f"{token['word']}|{frame.frame_id}"
+            ul._worse(gates["I5"], i5, where)
+            ul._worse(gates["algebra"], algebra, where)
+            for position in sorted(empty):
+                level0.update(ul._f64(empty[position]))
+            for vector in (factors.delta_e, factors.d_emb, factors.value_pc, factors.pattern_pc) + (() if factors.attn_pt is None else (factors.attn_pt,)):
+                factor_bytes.update(ul._f64(vector))
+        blocks.append((group, out))
+        say(f"  {group}: {len(units.pairs[group])} pairs predicted (P0, P1)")
+    return {"blocks": blocks, "gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "p0_dx3_sha256": level0.hexdigest(), "factors_sha256": factor_bytes.hexdigest()}
+
+
+def enforce_table_gates(gates: Mapping[str, Mapping[str, Any]], error: type[Exception] = IncidentError) -> None:
+    for name in ("I5", "algebra"):
+        value = gates[name]["max"]
+        if value is None or not value <= TOLERANCES[name]:
+            raise error(f"identity gate {name} failed while predicting a table: {value} at {gates[name]['at']} against {TOLERANCES[name]:.0e}")
+
+
+# ---------------------------------------------------------------------------
+# The lock (no forward pass): the four conditions, the Y1 companion, the Y2 specification.
+
+GUARD = {"min_inclusive": GUARD_MIN}
+SEMANTICS = {
+    "results": {
+        "NOT_INTERPRETABLE": "too little Level-0 → ceiling gap remains (SST ≤ 0 or SSE0 − SSEC < 0.02·SST on the full aggregate); neither a pass nor a failure",
+        "GUARD_FAILURE": "g < 0.90: the completed program does not recover essentially all of the explainable upstream gap on that population and group",
+        "ENVELOPE_ONLY_FAILURE": "g ≥ 0.90, so essentially all of the explainable gap is recovered, but g lies below the calibrated exposed-like envelope: a "
+                                 "quantitative shift, never a refutation",
+        "PASS": "the completed program recovers essentially all of the explainable upstream gap within the exposed-like envelope: the weight-derived upstream "
+                "program reaches the ceiling the decoded downstream readout allows",
+    },
+    "precedence": list(RESULTS),
+    "ceiling": "C is the frozen downstream ceiling comparator, not a mathematical upper bound on a finite sample's R²; P1 slightly outperforming it (g > 1) is "
+               "permitted and never an incident, and says nothing beyond 'essentially all'",
+    "aggregate": "none: the four condition results are the result, each read on its own; Y1 and Y2 are never pooled; no all-pass requirement",
+    "gap_rule": "evaluated on the condition's full aggregate; it removes, re-weights or selects no pair, cue, frame or noun",
+    "scope": SCOPE,
+    "cdf_percentile": "descriptive only; the frozen envelope decides",
+    "not_shown": "a pass does not show that the downstream readout is complete, anything about possessive or pronoun cues, new nouns or behavior beyond Δc at "
+                 "p_t, or that a cheaper block-0 rule would suffice (the comparators are descriptive)",
+    "incidents": "incidents carry no result",
+}
+
+
+def lock_conditions(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {condition: {"population": condition.split("/")[0], "group": condition.split("/")[1], "statistic": STATISTIC,
+                        "envelope": dict(record["conditions"][condition]["envelope"]), "guard": dict(GUARD),
+                        "guard_bound": bool(record["conditions"][condition]["guard_bound"])} for condition in CONDITIONS}
+
+
+def y2_table_spec(confirmation: Confirmation023, noun_keys: Sequence[str]) -> dict[str, Any]:
+    """What the lock binds of the Y2 table, which cannot exist before stage 1: construction, byte format, layout and
+    every order. Its numbers are frozen at the stage-1 barrier."""
+    units = ul.table_units(confirmation.tokens, confirmation.frames)
+    return {"data_path": Y2_TABLE_OUTPUT, "index_path": Y2_TABLE_INDEX_OUTPUT, "format": ul.TABLE_FORMAT, "dtype": ul.TABLE_DTYPE,
+            "layout": table_layout(units, len(noun_keys)), "meta": table_meta("Y2", units, noun_keys),
+            "states": "each new frame's digested S1-REF reference state (rd.locked_state), rebuilt by rd.state_from_locked",
+            "freeze": "written once at stage 1 with its digests in the stage-1 record; frozen at the stage-1 barrier, where it is re-read from disk and verified "
+                      "against the digests held in memory; stage 2 consumes the verified file; any later change is an incident; committed as closure evidence "
+                      "after a successful confirmation"}
+
+
+def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], record: Mapping[str, Any], record_file_sha256: str,
+               confirmation: Confirmation023, confirmation_file_sha256: str, cells_files: Mapping[str, str], y1_index: Mapping[str, Any], y1_index_sha256: str,
+               y1_tables: Mapping[str, Any], noun_keys: Sequence[str], exposed_states: Mapping[str, Any]) -> dict[str, Any]:
+    lock = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "the preregistration lock of Experiment 023 (design revision 2, plan revision 1)", "design": dict(DESIGN),
+        "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
+        "constants": record_constants(B), "calibration": {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]},
+        "exposed_cells": dict(cells_files),
+        "confirmation_023": {"path": CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_file_sha256, "content_sha256": confirmation.content_sha256,
+                             "counts": confirmation.counts(), "manifest_sizes": {"S1-REF": len(confirmation.frames), "S1-VALIDITY": len(confirmation.frames),
+                                                                                 "Y1": len(confirmation.y1_prompts), "Y2": len(confirmation.y2_prompts)}},
+        "conditions": lock_conditions(record), "semantics": dict(SEMANTICS), "program": {"P0_mask": P0_MASK, "P1_mask": dict(P1_MASK), "construction": TABLE_CONSTRUCTION},
+        "noun_keys": list(noun_keys), "exposed_states_sha256": ul.exposed_states_digest(exposed_states),
+        "y1_table": {"data_path": Y1_TABLE_RELATIVE_PATH, "index_path": Y1_TABLE_INDEX_RELATIVE_PATH, "file_sha256": y1_index["file_sha256"], "index_sha256": y1_index_sha256,
+                     "total_bytes": y1_index["total_bytes"], "layout": [{"name": entry["name"], "shape": list(entry["shape"])} for entry in y1_index["blocks"]],
+                     "p0_dx3_sha256": y1_tables["p0_dx3_sha256"], "factors_sha256": y1_tables["factors_sha256"], "gates": dict(y1_tables["gates"])},
+        "y2_table": y2_table_spec(confirmation, noun_keys),
+    }
+    validate_json_safe(lock)
+    lock["content_sha256"] = rc.content_digest(lock)
+    return lock
+
+
+def render_preregistration(lock: Mapping[str, Any]) -> str:
+    lines = ["# Experiment 023 — preregistered conditions", "",
+             f"- Lock run `{lock['run_id']}` at commit `{lock['protocol_code_commit']}`; design revision {lock['design']['revision']} (`{lock['design']['commit']}`), "
+             f"plan revision {lock['plan']['revision']} (`{lock['plan']['commit']}`)",
+             f"- Calibration record content sha256 `{lock['calibration']['content_sha256']}` (file `{lock['calibration']['file_sha256']}`), B = {lock['constants']['B']}",
+             f"- Exposed cells: data `{lock['exposed_cells']['data_sha256']}`, index `{lock['exposed_cells']['index_sha256']}`",
+             f"- Confirmation file content sha256 `{lock['confirmation_023']['content_sha256']}`: {lock['confirmation_023']['manifest_sizes']}",
+             f"- Y1 table `{lock['y1_table']['data_path']}`: sha256 `{lock['y1_table']['file_sha256']}`, index sha256 `{lock['y1_table']['index_sha256']}`, blocks "
+             f"{[(entry['name'], entry['shape']) for entry in lock['y1_table']['layout']]}",
+             f"- Y2 table: written at stage 1 as `{lock['y2_table']['data_path']}` in the same format, blocks {[(entry['name'], entry['shape']) for entry in lock['y2_table']['layout']]}; "
+             "frozen at the stage-1 barrier", "",
+             f"Statistic: {STATISTIC}. Meaning guard: g ≥ {GUARD_MIN}. Effective requirement of a PASS: g ≥ max(F, {GUARD_MIN}).", "",
+             "| condition | envelope F (lower, exact order statistic) | meaning guard | guard-bound |", "|---|---|---|---|"]
+    for condition in CONDITIONS:  # a fixed order: the text must not depend on a mapping's order
+        entry = lock["conditions"][condition]
+        lines.append(f"| {condition} | ≥ v₍{entry['envelope']['rank']}₎ = {entry['envelope']['bound']:.6f} | g ≥ {GUARD_MIN} | {'yes' if entry['guard_bound'] else 'no'} |")
+    lines += ["", "Each condition has exactly one result, decided in the order NOT_INTERPRETABLE → GUARD_FAILURE → ENVELOPE_ONLY_FAILURE → PASS:", ""]
+    lines += [f"- `{name}`: {lock['semantics']['results'][name]}" for name in RESULTS]
+    lines += ["", f"- The ceiling: {lock['semantics']['ceiling']}.", f"- Aggregate: {lock['semantics']['aggregate']}.", f"- Gap rule: {lock['semantics']['gap_rule']}.",
+              f"- Scope: {lock['semantics']['scope']}.", f"- What a pass does not show: {lock['semantics']['not_shown']}.", ""]
+    return "\n".join(lines)
+
+
+SCIENTIFIC_PATH_PREFIXES = ("src/", f"{EXPERIMENT_DIR}/", *ul.SCIENTIFIC_PATH_PREFIXES[1:])
+NON_SCIENTIFIC_PATHS = (CELLS_DATA_RELATIVE_PATH, CELLS_INDEX_RELATIVE_PATH, CONFIRMATION_RELATIVE_PATH, CALIBRATION_RELATIVE_PATH, LOCK_RELATIVE_PATH,
+                        PREREGISTRATION_RELATIVE_PATH, Y1_TABLE_RELATIVE_PATH, Y1_TABLE_INDEX_RELATIVE_PATH, f"{EXPERIMENT_DIR}/README.md", *ul.NON_SCIENTIFIC_PATHS)
+NON_SCIENTIFIC_PREFIXES = (f"{EXPERIMENT_DIR}/evidence/", *ul.NON_SCIENTIFIC_PREFIXES)
+
+
+def scientific_changes(paths: Sequence[str]) -> list[str]:
+    return [path for path in paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and path not in NON_SCIENTIFIC_PATHS and not path.startswith(NON_SCIENTIFIC_PREFIXES)]
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests: Mapping[str, str], record: Mapping[str, Any], record_file_sha256: str,
+                  confirmation: Confirmation023, confirmation_file_sha256: str, cells_files: Mapping[str, str], noun_keys: Sequence[str],
+                  exposed_states: Mapping[str, Any], preregistration_text: str, y1_index_text: str, y1_file_sha256: str, git_state: Mapping[str, Any], tracked: bool,
+                  changed_paths: Sequence[str] | None) -> dict[str, Any]:
+    """The installed lock before any fresh prompt: its digest; that it is this run's candidate; every bound input,
+    constant, condition and semantics; the exposed cells; the Y1 companion; the Y2 specification; the rendered
+    preregistration; and a clean tree with no scientific change since the lock commit. Returns the Y1 index."""
+    if lock.get("experiment") != EXPERIMENT or lock.get("content_sha256") != rc.content_digest(lock):
+        raise PhaseError("the installed lock is not a verified Experiment 023 lock")
+    if state.get("lock") is None or state["lock"].get("content_sha256") != lock["content_sha256"]:
+        raise PhaseError("the installed lock is not the candidate this run wrote")
+    if lock["inputs"] != dict(digests) or lock["module_blobs"] != dict(FROZEN_BLOBS) or lock["design"] != dict(DESIGN) or lock["plan"] != dict(PLAN):
+        raise PhaseError("the lock was written against different frozen inputs, modules, design or plan")
+    verify_calibration_record(record)
+    if lock["calibration"] != {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]}:
+        raise PhaseError("the lock was written against a different calibration record")
+    if lock["constants"] != record_constants(B) or lock["conditions"] != lock_conditions(record) or lock["semantics"] != dict(SEMANTICS):
+        raise PhaseError("the lock's constants, conditions or semantics are not those of the committed record and the frozen design")
+    if lock["exposed_cells"] != dict(cells_files) or record["exposed_cells"] != dict(cells_files):
+        raise PhaseError("the lock or the record binds different exposed cells")
+    if lock["confirmation_023"]["content_sha256"] != confirmation.content_sha256 or lock["confirmation_023"]["file_sha256"] != confirmation_file_sha256:
+        raise PhaseError("the lock was written against a different confirmation file")
+    if lock["noun_keys"] != list(noun_keys) or lock["exposed_states_sha256"] != ul.exposed_states_digest(exposed_states):
+        raise PhaseError("the lock names a different noun order or different exposed reference states")
+    if lock["program"] != {"P0_mask": P0_MASK, "P1_mask": dict(P1_MASK), "construction": TABLE_CONSTRUCTION}:
+        raise PhaseError("the lock's program is not the frozen P0/P1")
+    if lock["y2_table"] != y2_table_spec(confirmation, noun_keys):
+        raise PhaseError("the lock's Y2 table specification is not the frozen construction, format and order")
+    if pm.sha256_text(y1_index_text) != lock["y1_table"]["index_sha256"]:
+        raise PhaseError("the committed Y1 table index is not the one the lock binds")
+    y1_index = json.loads(y1_index_text)
+    if y1_index.get("file_sha256") != lock["y1_table"]["file_sha256"] or y1_file_sha256 != lock["y1_table"]["file_sha256"]:
+        raise PhaseError("the committed Y1 table is not the one the lock binds")
+    ul.verify_table_index(y1_index, layout=lock["y1_table"]["layout"], meta=table_meta("Y1", ul.table_units(confirmation.tokens, confirmation.exposed_frames), noun_keys),
+                          error=PhaseError)
+    if preregistration_text != render_preregistration(lock) or pm.sha256_text(preregistration_text) != state["lock"].get("preregistration_sha256"):
+        raise PhaseError("the installed preregistration is not the one this lock renders")
+    if not tracked:
+        raise PhaseError("the lock, the preregistration and the Y1 table must be tracked and committed")
+    if git_state.get("dirty"):
+        raise PhaseError("confirm requires a clean Git tree")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = scientific_changes(changed_paths)
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock: {scientific}")
+    return y1_index
+
+
+# ---------------------------------------------------------------------------
+# Confirm: stage 1 and the write-once Y2 table, the barrier, the target gates, the scoring (once; no resume).
+
+
+def stage_one_digest(stage1: Mapping[str, Any]) -> str:
+    return pm.sha256_text(pm.canonical_json({key: value for key, value in stage1.items() if key != "digest"}))
+
+
+def stage_one(model: Any, progs: ul.ModelPrograms, confirmation: Confirmation023, lock: Mapping[str, Any], *, root: Path, protocol_code_commit: str,
+              executed: list[pm.Prompt], log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Exactly the S1-REF and the S1-VALIDITY prompt of each new frame, one forward each, in ``frame_id`` order (the
+    validity verdicts are descriptive and select nothing); then the Y2 prediction table from the recorded reference
+    states — weights and states only, never a target measurement — written once in the bound byte format, and the
+    stage-1 record carrying its digests."""
+    say = log or (lambda message: None)
+    frames_out: dict[str, Any] = {}
+    states: dict[str, Any] = {}
+    for frame in sorted(confirmation.frames, key=lambda frame: frame.frame_id):
+        reference = confirmation.reference_prompt(frame)
+        state = rd.capture_frame_020(model, progs.head, reference, progs.nouns, progs.axis_T)
+        executed.append(reference)
+        coordinated = frame.template_id == COORDINATED
+        if (state.p_c, state.p_t) != (frame.p_c, frame.p_t) or frame.p_t != frame.p_c + (1 if coordinated else 0):
+            raise IncidentError(f"{frame.frame_id}: the reference capture's positions ({state.p_c}, {state.p_t}) break the frame's frozen structure")
+        validity = confirmation.validity_prompt(frame)
+        plural = rd.measure_pair(model, state, progs.nouns, validity.cue_label, validity.cue_token_id)
+        executed.append(validity)
+        verdict = rd.frame_validity(progs.readout, state, progs.nouns, plural, progs.axis_T)
+        frames_out[frame.frame_id] = {"template_id": frame.template_id, "p_c": frame.p_c, "p_t": frame.p_t, "cue_final": not coordinated,
+                                      "validity": rc.json_safe(dict(verdict)), "selects": "nothing: descriptive only"}
+        states[frame.frame_id] = rd.locked_state(state)
+        say(f"  {frame.frame_id}: reference state captured; validity {verdict['valid']} (descriptive)")
+    data_path, index_path = root / lock["y2_table"]["data_path"], root / lock["y2_table"]["index_path"]
+    if data_path.exists() or index_path.exists():
+        raise IncidentError("a Y2 table is already on disk; it is written exactly once, at stage 1")
+    rebuilt = {frame.frame_id: rd.state_from_locked(states[frame.frame_id], frame) for frame in confirmation.frames}
+    tables = prediction_tables(progs, ul.table_units(confirmation.tokens, confirmation.frames), rebuilt, confirmation.reference_ids, log=say)
+    index = ul.write_table(data_path, index_path, tables["blocks"], lock["y2_table"]["meta"])
+    record = {"frames": frames_out, "states": states, "state_digests": {frame_id: rd.state_digest(entry) for frame_id, entry in sorted(states.items())},
+              "y2_table": {"data_path": lock["y2_table"]["data_path"], "index_path": lock["y2_table"]["index_path"], "file_sha256": index["file_sha256"],
+                           "index_sha256": rc.file_sha256(index_path), "total_bytes": index["total_bytes"], "p0_dx3_sha256": tables["p0_dx3_sha256"],
+                           "factors_sha256": tables["factors_sha256"], "gates": tables["gates"]},
+              "commit": protocol_code_commit, "lock_sha256": lock["content_sha256"], "noun_keys": list(lock["noun_keys"])}
+    record["digest"] = stage_one_digest(record)
+    return record
+
+
+def stage_one_expectations(stage1: Mapping[str, Any]) -> dict[str, str]:
+    """What stage 1 wrote, kept in memory: the barrier and the post-stage-2 check compare the re-read artifacts with
+    these, not only with themselves."""
+    return {"stage1_digest": stage1["digest"], "y2_file_sha256": stage1["y2_table"]["file_sha256"], "y2_index_sha256": stage1["y2_table"]["index_sha256"]}
+
+
+def verified_y2_blocks(root: Path, stage1: Mapping[str, Any], lock: Mapping[str, Any], expected: Mapping[str, str] | None = None) -> dict[str, torch.Tensor]:
+    """The Y2 table re-read from disk: its index against the stage-1 record's digest (and the digests stage 1 wrote,
+    when given), the bytes against the index's, and the layout, construction and orders against the lock."""
+    entry = stage1["y2_table"]
+    if (entry["data_path"], entry["index_path"]) != (lock["y2_table"]["data_path"], lock["y2_table"]["index_path"]):
+        raise IncidentError("the stage-1 record names a Y2 table other than the bound one")
+    if expected is not None and (entry["file_sha256"], entry["index_sha256"]) != (expected["y2_file_sha256"], expected["y2_index_sha256"]):
+        raise IncidentError("the re-read stage-1 record names Y2 digests other than the ones stage 1 wrote")
+    data_path, index_path = root / entry["data_path"], root / entry["index_path"]
+    if not data_path.exists() or not index_path.exists():
+        raise IncidentError("the Y2 table written at stage 1 is missing")
+    if rc.file_sha256(index_path) != entry["index_sha256"]:
+        raise IncidentError("the Y2 table index changed after its stage-1 digest")
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    if index.get("file_sha256") != entry["file_sha256"]:
+        raise IncidentError("the Y2 table index binds bytes other than the stage-1 record's")
+    ul.verify_table_index(index, layout=lock["y2_table"]["layout"], meta=lock["y2_table"]["meta"])
+    return ul.read_table(data_path, index)
+
+
+def barrier(root: Path, state: Mapping[str, Any], lock: Mapping[str, Any], confirmation: Confirmation023, expected: Mapping[str, str] | None = None) -> dict[str, torch.Tensor]:
+    """The hard boundary, on the results state re-read from disk: the stage-1 record reproduces its digest, is the one
+    stage 1 wrote and names this lock; the ledger holds no S2-TARGET key; the Y2 table is re-read and verified. Returns
+    the verified blocks, which the scoring consumes."""
+    stage1 = (state.get("confirmation") or {}).get("stage1")
+    if stage1 is None or stage1.get("digest") != stage_one_digest(stage1):
+        raise IncidentError("the stage-1 record does not reproduce its digest; no S2-TARGET prompt may run")
+    if expected is not None and stage1["digest"] != expected["stage1_digest"]:
+        raise IncidentError("the re-read stage-1 record is not the one stage 1 wrote; no S2-TARGET prompt may run")
+    if stage1.get("lock_sha256") != lock["content_sha256"]:
+        raise IncidentError("the stage-1 record was written under a different lock")
+    overlap = {prompt.key for prompt in confirmation.target_prompts} & set(state["executed_prompt_keys"])
+    if overlap:
+        raise IncidentError(f"{len(overlap)} S2-TARGET keys are in the ledger before the barrier, e.g. {sorted(overlap)[:2]}")
+    return verified_y2_blocks(root, stage1, lock, expected)
+
+
+def _changes(block: Mapping[str, torch.Tensor], row: int, name: str, frame: pm.Frame) -> dict[int, torch.Tensor]:
+    return {frame.p_c: block[name][row, 0]} if frame.p_t == frame.p_c else {frame.p_c: block[name][row, 0], frame.p_t: block[name][row, 1]}
+
+
+def target_gates(progs: ul.ModelPrograms, confirmation: Confirmation023, measured: Mapping[str, Any], states: Mapping[str, Mapping[str, rd.FrameState020]]) -> dict[str, Any]:
+    """I1, I3 and I4 on every target pair, from the saved measurements and a weights-only recomputation of the pair's
+    factors and of 022's full composition (layers 1–2 exact); descriptively, ``P1``'s ``Δx3`` relative error at the
+    changed positions and block 0's head profile. The measured ``Δx3`` enters only these gates and the ceiling."""
+    gates = {name: {"max": 0.0, "at": ""} for name in ("I1", "I3", "I4")}
+    errors: dict[str, Any] = {}
+    profile: dict[str, Any] = {}
+    for population, entry in measured.items():
+        units = entry["units"]
+        rows16: dict[str, Any] = {}
+        for group, pairs in units.pairs.items():
+            block = entry["blocks"][group]
+            p1_errors = {slot: [] for slot in (("p_c",) if group == "cue_final" else ("p_c", "p_t"))}
+            self_weight, target_weight = [], []
+            for row, (t, f) in enumerate(pairs):
+                frame, token = units.frames[f], units.tokens[t]
+                state = states[population][frame.frame_id]
+                if frame.frame_id not in rows16:
+                    rows16[frame.frame_id] = ul.reference_rows_017(progs.programs, state)
+                ctx = ul.pair_context(progs, frame, state, int(confirmation.reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
+                factors, where = ctx.factors, f"{population}|{token['word']}|{frame.frame_id}"
+                dx1, dx3 = _changes(block, row, "dx1", frame), _changes(block, row, "dx3", frame)
+                i1 = float((factors.d_emb + factors.delta_e + factors.block0_pc.total - dx1[frame.p_c]).abs().max())
+                if factors.block0_pt is not None:
+                    i1 = max(i1, float((factors.block0_pt.total - dx1[frame.p_t]).abs().max()))
+                ul._worse(gates["I1"], i1, where)
+                full = ul.compose_dx3(progs, ctx, FULL_MASK[group])
+                ul._worse(gates["I3"], ul.i3_error(full, dx3), where)
+                ul._worse(gates["I4"], float((ul.contrast_of(progs, state, full) - block["ceiling"][row]).abs().max()), where)
+                p1_dx3 = ul.compose_dx3(progs, ctx, P1_MASK[group])
+                for position in sorted(dx3):
+                    p1_errors["p_c" if position == frame.p_c else "p_t"].append(ul.i3_error({position: p1_dx3[position]}, {position: dx3[position]}))
+                self_weight.append(factors.block0_pc.weight_to_cue)
+                if factors.block0_pt is not None:
+                    target_weight.append(factors.block0_pt.weight_to_cue)
+            median = lambda rows: [float(value) for value in torch.stack(rows).median(dim=0).values] if rows else None  # noqa: E731
+            errors[f"{population}/{group}"] = {slot: {"median": float(torch.tensor(values).median()), "max": float(max(values))} for slot, values in p1_errors.items() if values}
+            profile[f"{population}/{group}"] = {"reference_self_weight_median": median(self_weight), "attention_pt_to_pc_median": median(target_weight)}
+    return {"gates": {name: rc.json_safe(entry) for name, entry in gates.items()}, "p1_dx3_relative_error": rc.json_safe(errors), "block0_profile": rc.json_safe(profile)}
+
+
+def enforce_target_gates(gates: Mapping[str, Mapping[str, Any]]) -> None:
+    for name in ("I1", "I3", "I4"):
+        value = gates[name]["max"]
+        if value is None or not value <= TOLERANCES[name]:
+            raise IncidentError(f"identity gate {name} failed at stage 2: {value} at {gates[name]['at']} against {TOLERANCES[name]:.0e}")
+
+
+def fresh_cells(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]]) -> dict[str, torch.Tensor]:
+    """Every fresh pair's cells, per condition, in the table's pair order: ``y`` = the measured ``Δc``, ``P0``/``P1``
+    from the verified table, ``C`` = the ceiling."""
+    out = {}
+    for population in POPULATIONS:
+        for group in GROUPS:
+            block, table = measured[population]["blocks"][group], tables[population][group]
+            rows = [pair_cells(block["dc"][i], table[i, 0], table[i, 1], block["ceiling"][i]) for i in range(int(block["dc"].shape[0]))]
+            out[f"{population}/{group}"] = torch.stack(rows) if rows else torch.empty(0, len(CELL_COLUMNS), dtype=torch.float64)
+    return out
+
+
+def score(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]], lock: Mapping[str, Any]) -> dict[str, Any]:
+    """The four conditions through the canonical path (each fresh pair once) against the locked envelopes, and the cell
+    kernel checked against a direct flattened recomputation from the per-noun measurements (1e-10). No aggregate
+    label."""
+    cells = fresh_cells(measured, tables)
+    conditions: dict[str, Any] = {}
+    worst = {"max_difference": 0.0, "at": "", "n_checked": 0}
+    for condition in CONDITIONS:
+        population, group = condition.split("/")
+        entry = lock["conditions"][condition]
+        scored = score_selection(cells[condition], torch.arange(int(cells[condition].shape[0])), entry["envelope"]["bound"], condition)
+        block, table = measured[population]["blocks"][group], tables[population][group]
+        y, p0, p1, c = (tensor.double().reshape(-1) for tensor in (block["dc"], table[:, 0], table[:, 1], block["ceiling"]))
+        sst = float(((y - y.mean()) ** 2).sum())
+        sse0, sse1, ssec = (float(((y - k) ** 2).sum()) for k in (p0, p1, c))
+        defined = sst > 0 and sse0 - ssec >= GAP_MIN * sst
+        direct = {"SST": sst, "g": (sse0 - sse1) / (sse0 - ssec) if defined else math.nan}
+        for name, value in direct.items():
+            difference = agreement(scored["SST"] if name == "SST" else (scored["g"] if scored["g"] is not None else math.nan), value)
+            worst["n_checked"] += 1
+            if difference > worst["max_difference"]:
+                worst.update({"max_difference": difference, "at": f"{condition}/{name}"})
+        conditions[condition] = rc.json_safe({**scored, "population": population, "group": group, "statistic": STATISTIC, "envelope": entry["envelope"],
+                                              "guard": entry["guard"], "reading": SEMANTICS["results"][scored["result"]], "n_pairs": int(cells[condition].shape[0])})
+    worst.update({"tolerance": TOLERANCES["kernel"], "passed": worst["max_difference"] <= TOLERANCES["kernel"]})
+    if not worst["passed"]:
+        raise KernelCheckError(worst)
+    return {"conditions": conditions, "kernel_check": rc.json_safe(worst), "aggregate_label": None}
+
+
+def fresh_descriptives(measured: Mapping[str, Any], tables: Mapping[str, Mapping[str, torch.Tensor]]) -> dict[str, Any]:
+    """Per template and per stratum, the canonical statistics on subsets of the fresh pairs (descriptive; the
+    conditions use the full groups)."""
+    cells = fresh_cells(measured, tables)
+    out: dict[str, Any] = {}
+    for population in POPULATIONS:
+        units = measured[population]["units"]
+        for group in GROUPS:
+            pairs = units.pairs[group]
+            condition_cells = cells[f"{population}/{group}"]
+            subsets = {f"template/{template}": [row for row, (_, f) in enumerate(pairs) if units.frames[f].template_id == template]
+                       for template in sorted({units.frames[f].template_id for _, f in pairs})}
+            subsets.update({f"stratum/{stratum}": [row for row, (t, _) in enumerate(pairs) if units.tokens[t]["class"] == stratum] for stratum in STRATA})
+            for name, rows in subsets.items():
+                if rows:
+                    out[f"{population}/{group}/{name}"] = rc.json_safe(score_selection(condition_cells, torch.tensor(rows, dtype=torch.int64), None, name))
+    return out
+
+
+def comparator_inputs(progs: ul.ModelPrograms, ctx: ul.PairContext, reference_id: int) -> dict[str, torch.Tensor]:
+    """The exposed spike's cheaper block-0 rules at the cue position (descriptive only): the value term alone; the
+    self logit shifted relative to the mean query shift; the oracle self weight with the other keys proportional; the
+    first-order (linear-response) softmax; the exact terms of the 4 and 6 highest-ranked heads."""
+    program0, frame = progs.program0, ctx.frame
+    x0_all = ul.reference_embeddings(progs.weights, frame, int(reference_id))
+    rr = atp.ReferenceRow(program0, [x.double() for x in x0_all[: frame.p_c + 1]])
+    normed = program0.normalize(progs.weights.W_E[int(ctx.token_id)].double())
+    q_new, k_new, v_new = rr.cue(normed)
+    values_new = rr.values.clone()
+    values_new[:, frame.p_c] = v_new
+    o_new_all, o_ref_all = program0.output(values_new), program0.output(rr.values)
+    a = rr.A_ref[:, frame.p_c]
+    head_ref = torch.einsum("hk,hkd->hd", rr.A_ref, o_ref_all)
+    rest = (head_ref - a[:, None] * o_ref_all[:, frame.p_c]) / (1.0 - a)[:, None]
+    row_exact = rr.row(q_new, k_new)
+    exact_h = torch.einsum("hk,hkd->hd", row_exact, o_new_all) - head_ref
+    value_h = a[:, None] * (o_new_all[:, frame.p_c] - o_ref_all[:, frame.p_c])
+    scores = torch.einsum("he,hke->hk", q_new, rr.keys) / program0.scale
+    scores = scores.clone()
+    scores[:, frame.p_c] = (q_new * k_new).sum(-1) / program0.scale
+    shift = scores - rr.scores_ref
+    mean_off = (rr.A_ref[:, : frame.p_c] * shift[:, : frame.p_c]).sum(-1) / (1.0 - a)
+    a_relative = torch.sigmoid(torch.log(a) - torch.log1p(-a) + shift[:, frame.p_c] - mean_off)
+    linear = rr.A_ref * (shift - (rr.A_ref * shift).sum(-1, keepdim=True))
+    base = ctx.factors.delta_e + ctx.factors.d_emb
+    n_heads = int(a.shape[0])
+    order = [h for h in HEAD_ORDER if h < n_heads]
+    return {"value_only": base + value_h.sum(0),
+            "relative_self_logit": base + value_h.sum(0) + ((a_relative - a)[:, None] * (o_new_all[:, frame.p_c] - rest)).sum(0),
+            "oracle_self_weight": base + value_h.sum(0) + ((row_exact[:, frame.p_c] - a)[:, None] * (o_new_all[:, frame.p_c] - rest)).sum(0),
+            "linear_response": base + value_h.sum(0) + torch.einsum("hk,hkd->d", linear, o_new_all),
+            "heads_4": base + exact_h[order[:4]].sum(0), "heads_6": base + exact_h[order[:6]].sum(0)}
+
+
+def comparators(progs: ul.ModelPrograms, confirmation: Confirmation023, measured: Mapping[str, Any], states: Mapping[str, Mapping[str, rd.FrameState020]],
+                tables: Mapping[str, Mapping[str, torch.Tensor]]) -> dict[str, Any]:
+    """Each cheaper rule composed exactly like ``P1`` (the reduced layers 1–2, 022's exact ``T`` at the target) and
+    scored descriptively on each condition: ``g_rule = (SSE0 − SSE_rule) / (SSE0 − SSEC)``. No outcome force."""
+    out: dict[str, Any] = {}
+    for population in POPULATIONS:
+        units = measured[population]["units"]
+        rows16: dict[str, Any] = {}
+        for group in GROUPS:
+            block, table = measured[population]["blocks"][group], tables[population][group]
+            sse = {name: 0.0 for name in COMPARATORS}
+            sse0 = ssec = 0.0
+            for row, (t, f) in enumerate(units.pairs[group]):
+                frame, token = units.frames[f], units.tokens[t]
+                state = states[population][frame.frame_id]
+                if frame.frame_id not in rows16:
+                    rows16[frame.frame_id] = ul.reference_rows_017(progs.programs, state)
+                reference_id = int(confirmation.reference_ids[frame.template_id])
+                ctx = ul.pair_context(progs, frame, state, reference_id, int(token["token_id"]), token["word"], rows16[frame.frame_id])
+                y = block["dc"][row].double()
+                sse0 += float(((y - table[row, 0]) ** 2).sum())
+                ssec += float(((y - block["ceiling"][row]) ** 2).sum())
+                s17 = state.state_017
+                for name, u_pc in comparator_inputs(progs, ctx, reference_id).items():
+                    dx3 = ul.reduced_chain(progs.chain, ctx.rows16, s17.x1_all, s17.x2_all, frame.p_c, frame.p_t, frame.template_id, u_pc, ctx.factors.attn_pt)
+                    sse[name] += float(((y - ul.contrast_of(progs, state, dx3)) ** 2).sum())
+            denominator = sse0 - ssec
+            out[f"{population}/{group}"] = {name: (sse0 - value) / denominator if denominator > 0 else None for name, value in sse.items()}
+    return rc.json_safe(out)
+
+
+# ---------------------------------------------------------------------------
+# The results state and the phase rules (022's discipline).
+
+RESULTS_SCHEMA_VERSION = 1
+PHASES = ("validate", "extract", "freeze", "calibrate", "lock", "confirm", "report")
+STATE_PHASES = ("extract", "calibrate", "lock", "confirm", "report")
+
+
+def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any]) -> dict[str, Any]:
+    if not pm._COMMIT_SHA.fullmatch(protocol_code_commit or ""):
+        raise PhaseError("scientific execution requires a 40-character committed protocol/code SHA")
+    if git_dirty:
+        raise PhaseError("scientific execution requires a clean Git tree")
+    return {"schema_version": RESULTS_SCHEMA_VERSION, "experiment": EXPERIMENT, "run_id": pm.sha256_text(pm.canonical_json(dict(digests)) + protocol_code_commit + pm.utc_now())[:16],
+            "created_at": pm.utc_now(), "inputs": {key: digests[key] for key in DIGEST_KEYS}, "module_blobs": dict(FROZEN_BLOBS), "design": dict(DESIGN), "plan": dict(PLAN),
+            "protocol_code_commit": protocol_code_commit, "git_dirty": False, "model": {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision},
+            "versions": dict(versions), "phases": {phase: {"status": "not_started"} for phase in STATE_PHASES}, "executed_prompt_keys": [], "executed_noun_keys": [],
+            "extract": {}, "calibration": {}, "confirmation_023": None, "lock": None, "confirmation": None, "report": None}
+
+
+def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
+    status = {name: entry["status"] for name, entry in state["phases"].items()}
+    if phase == "extract":
+        entry = state["phases"]["extract"]
+        if status["extract"] == "running" and entry.get("incidents") and not state["extract"].get("data_sha256"):
+            return  # resumable only after a recorded incident, at a new commit (the runner refuses the incident's commit)
+        if status["extract"] != "not_started":
+            raise PhaseError(f"extract is {status['extract']}; the extraction runs once in this protocol version (a stop for review is never retried automatically)")
+    elif phase == "calibrate":
+        if status["extract"] != "complete":
+            raise PhaseError(f"calibrate requires the completed extract phase (it is {status['extract']})")
+        calibration = state.get("calibration") or {}
+        if status["calibrate"] == "running" and calibration.get("incidents") and not calibration.get("record_sha256"):
+            return
+        if status["calibrate"] != "not_started":
+            raise PhaseError(f"calibrate is {status['calibrate']}; the calibration runs once in this protocol version (a stop for review is never retried automatically)")
+    elif phase == "lock":
+        if status["calibrate"] != "complete":
+            raise PhaseError(f"lock requires the completed calibrate phase (it is {status['calibrate']})")
+        if status["lock"] == "complete":
+            raise PhaseError("lock already written; a new candidate lock requires a new protocol version")
+        if state["phases"]["lock"].get("incidents"):
+            raise PhaseError("a lock identity incident is recorded; lock is refused until the reviewer decides (a new protocol version)")
+    elif phase == "confirm":
+        if status["lock"] != "complete":
+            raise PhaseError("confirm requires the lock phase")
+        if status["confirm"] != "not_started":
+            raise PhaseError("confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version")
+        if state["phases"]["confirm"].get("incidents"):
+            raise PhaseError("an I7 incident is recorded; confirm is refused until the reviewer decides (a new protocol version)")
+    elif phase == "report":
+        calibration = state.get("calibration") or {}
+        if status["calibrate"] not in ("complete", "stopped_for_review") and not calibration.get("incidents"):
+            raise PhaseError("report requires a calibrate phase that completed, stopped for review or recorded an incident")
+    else:
+        raise PhaseError(f"unknown phase {phase}")
+
+
+def assert_ledger_isolated(ledger: Sequence[str], forbidden: frozenset[str], what: str) -> None:
+    overlap = set(ledger) & forbidden
+    if overlap:
+        raise PhaseError(f"{what} holds {len(overlap)} forbidden keys, e.g. {sorted(overlap)[:2]}")
+
+
+# ---------------------------------------------------------------------------
+# The report.
+
+
+def _fmt(value: Any, digits: int = 4) -> str:
+    return "—" if value is None else f"{value:.{digits}f}" if isinstance(value, float) else str(value)
+
+
+def cdf_percentile(values: torch.Tensor, defined: torch.Tensor, fresh: float | None) -> dict[str, Any]:
+    """The fraction of *defined* calibration draws at or below the fresh value, and the undefined count; descriptive."""
+    n, undefined = int(defined.sum()), int((~defined).sum())
+    if fresh is None or not math.isfinite(float(fresh)) or n == 0:
+        return {"cdf_percentile": None, "defined": n, "undefined": undefined}
+    return {"cdf_percentile": int(((values.double() <= float(fresh)) & defined).sum()) / n, "defined": n, "undefined": undefined}
+
+
+def draw_values_verified(arrays: Mapping[str, torch.Tensor], record: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    if {key: rc.tensor_digest(value) for key, value in arrays.items()} != dict(record["draw_arrays_sha256"]):
+        raise PhaseError("the calibration draw arrays are not the ones the record binds")
+    return dict(arrays)
+
+
+def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, arrays: Mapping[str, torch.Tensor] | None) -> str:
+    phases = ", ".join(f"{name} {entry['status']}" for name, entry in state["phases"].items())
+    commits = {name: entry.get("commit") or entry.get("confirm_commit") for name, entry in state["phases"].items() if entry.get("commit") or entry.get("confirm_commit")}
+    lines = ["# Experiment 023 — report", "", f"- Run `{state['run_id']}`; phase commits {commits}; phases: {phases}",
+             f"- Design revision {state['design']['revision']} (`{state['design']['commit']}`), plan revision {state['plan']['revision']} (`{state['plan']['commit']}`)",
+             f"- Scope: {SCOPE}.", ""]
+    for name in STATE_PHASES:
+        for entry in state["phases"][name].get("incidents", []):
+            lines.append(f"- **{name} incident** at `{entry['commit']}`: {entry['message']}")
+    for entry in (state.get("calibration") or {}).get("incidents", []):
+        lines.append(f"- **Calibration incident** at `{entry['commit']}`: {entry['message']}")
+    incident = (state.get("confirmation") or {}).get("incident")
+    if incident:
+        lines.append(f"- **Confirmation incident** at `{incident['commit']}`: {incident['message']} — the one-shot confirmation is consumed; nothing is retried")
+    extract = state.get("extract") or {}
+    if extract.get("checks"):
+        checks = extract["checks"]
+        lines += ["", "## Extraction (exposed cells from Experiment 022's verified table)", "",
+                  f"- E1 digests and orders verified; E2 and E3 bit for bit; E4 max |ΔP1| {_fmt(checks['E4'].get('max'), 3)}; E5 max {checks['E5']['max_difference']:.1e} over "
+                  f"{checks['E5']['n_checked']}; E6 pairs {checks['E6']['max_per_pair']:.1e}, draws {checks['E6']['max_per_draw']:.1e}",
+                  f"- Artifact data sha256 `{extract.get('data_sha256')}`, index `{extract.get('index_sha256')}`"]
+    if record is not None:
+        lines += ["", f"## Calibration (exposed only, B = {record['constants']['B']})", "",
+                  f"- Kernel/loop check {record['kernel_check']['max_difference']:.1e} over {record['kernel_check']['n_checked']}; E6 max {record['e6_max']:.1e}",
+                  "", "| condition | envelope F | median of defined draws | undefined | guard-bound | PASS | ENVELOPE_ONLY | GUARD | NOT_INTERPRETABLE |",
+                  "|---|---|---|---|---|---|---|---|---|"]
+        for condition in CONDITIONS:
+            entry = record["conditions"][condition]
+            rates = entry["rates"]
+            lines.append(f"| {condition} | ≥ v₍{entry['envelope']['rank']}₎ = {entry['envelope']['bound']:.6f} | {_fmt(entry['summary']['median'], 6)} | "
+                         f"{record['undefined_counts'][condition]} | {'yes' if entry['guard_bound'] else 'no'} | {rates['PASS']:.4f} | {rates['ENVELOPE_ONLY_FAILURE']:.4f} | "
+                         f"{rates['GUARD_FAILURE']:.4f} | {rates['NOT_INTERPRETABLE']:.4f} |")
+        lines += ["", f"- Joint rate, all four passing (descriptive only): {record['joint_rates']['all_four_pass']:.4f}"]
+    confirmation = state.get("confirmation") or {}
+    conditions = confirmation.get("conditions")
+    if conditions:
+        lines += ["", "## The four conditions (the result; no aggregate label)", "",
+                  "| condition | g | envelope F | meaning guard | result | gap (SSE0 − SSEC)/SST | R²₀ | R²₁ | R²_C | ceiling-limited | CDF percentile (descriptive) | pairs |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        for condition in CONDITIONS:
+            entry = conditions[condition]
+            percentile = cdf_percentile(arrays[f"{condition}/g"], arrays[f"{condition}/defined"].bool(), entry["g"]) if arrays is not None else {}
+            shown = "—" if not percentile else f"{_fmt(percentile.get('cdf_percentile'), 4)} ({percentile['defined']} / {percentile['undefined']})"
+            lines.append(f"| {condition} | {_fmt(entry['g'], 6)} | {entry['envelope']['bound']:.6f} | g ≥ {GUARD_MIN} | **{entry['result']}** | {_fmt(entry['gap'], 4)} | "
+                         f"{_fmt(entry['R2_0'], 4)} | {_fmt(entry['R2_1'], 4)} | {_fmt(entry['R2_C'], 4)} | {'yes' if entry['ceiling_limited'] else 'no'} | {shown} | "
+                         f"{entry['n_pairs']} |")
+        lines += ["", "Readings (frozen, design revision 2):", ""]
+        lines += [f"- {condition}: **{conditions[condition]['result']}** — {conditions[condition]['reading']}." for condition in CONDITIONS]
+        lines += ["", f"- The ceiling: {SEMANTICS['ceiling']}.", f"- Aggregate: {SEMANTICS['aggregate']}.", f"- What a pass does not show: {SEMANTICS['not_shown']}.",
+                  f"- Kernel against the direct recomputation: {confirmation['kernel_check']['max_difference']:.1e} over {confirmation['kernel_check']['n_checked']}"]
+        descriptives = confirmation.get("descriptives") or {}
+        lines += ["", "## Descriptive records (no outcome force)", ""]
+        gates = confirmation.get("gates") or {}
+        lines.append("- Stage-2 identities (maxima): " + ", ".join(f"{name} {gates[name].get('max')} (tolerance {TOLERANCES[name]:.0e})" for name in sorted(gates)))
+        for key, entry in (descriptives.get("subsets") or {}).items():
+            lines.append(f"- {key}: g {_fmt(entry.get('g'), 4)}; gap {_fmt(entry.get('gap'), 4)}; R²₁ {_fmt(entry.get('R2_1'), 4)}; R²_C {_fmt(entry.get('R2_C'), 4)}")
+        for key, entry in (descriptives.get("comparators") or {}).items():
+            lines.append(f"- Cheaper block-0 rules, {key} (descriptive g): " + ", ".join(f"{name} {_fmt(entry.get(name), 4)}" for name in COMPARATORS))
+        for key, entry in (descriptives.get("p1_dx3_relative_error") or {}).items():
+            lines.append(f"- P1 Δx3 relative error {key}: " + ", ".join(f"{slot} median {value['median']:.2e} max {value['max']:.2e}" for slot, value in entry.items()))
+        for key, profile in (descriptives.get("block0_profile") or {}).items():
+            lines.append(f"- Block-0 profile {key}: self-weight {profile['reference_self_weight_median']}; p_t→p_c {profile['attention_pt_to_pc_median']}")
+        for frame_id, frame in sorted(((confirmation.get("stage1") or {}).get("frames") or {}).items()):
+            lines.append(f"- Validity (descriptive, selects nothing) {frame_id}: {frame['validity'].get('valid')}")
+    lines.append("")
+    return "\n".join(lines)

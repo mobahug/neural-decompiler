@@ -581,3 +581,120 @@ def test_the_calibration_record_verifies_and_refuses_tampering():
         b0c.verify_calibration_record(tampered)
     with pytest.raises(b0c.PhaseError, match="constants"):
         b0c.verify_calibration_record(record, draws=10_000)
+
+
+# ---------------------------------------------------------------------------
+# Task 6: the scoring of a confirmation, the lock's text, the phase rules and the scientific paths (tier A); the
+# prediction tables on real exposed pairs (tier C).
+
+
+def _measured_and_tables(p1_noise, c_noise, seed=3):
+    """A synthetic confirmation in stage 2's shape: per population and group, measured Δc and ceiling with two-column
+    (P0, P1) tables; ``p1_noise`` < ``c_noise`` makes the program closer to y than the ceiling (g > 1)."""
+    from types import SimpleNamespace
+
+    generator = torch.Generator().manual_seed(seed)
+    measured, tables = {}, {}
+    for population in b0c.POPULATIONS:
+        blocks, table = {}, {}
+        for group in b0c.GROUPS:
+            y = torch.randn(6, 7, generator=generator, dtype=torch.float64) - 3.0
+            p0 = y + torch.randn(6, 7, generator=generator, dtype=torch.float64)
+            p1 = y + p1_noise * torch.randn(6, 7, generator=generator, dtype=torch.float64)
+            c = y + c_noise * torch.randn(6, 7, generator=generator, dtype=torch.float64)
+            blocks[group] = {"dc": y, "ceiling": c}
+            table[group] = torch.stack([p0, p1], dim=1)
+        measured[population] = {"units": SimpleNamespace(pairs={group: tuple((i, 0) for i in range(6)) for group in b0c.GROUPS}), "blocks": blocks}
+        tables[population] = table
+    return measured, tables
+
+
+def _lock_with_bound(bound):
+    return {"conditions": {condition: {"envelope": {"kind": "lower", "rank": 250, "element": 249, "bound": bound}, "guard": {"min_inclusive": 0.90}}
+                           for condition in b0c.CONDITIONS}}
+
+
+def test_score_passes_a_program_that_beats_the_ceiling_and_never_raises_on_g_above_one():
+    measured, tables = _measured_and_tables(p1_noise=0.01, c_noise=0.05)
+    results = b0c.score(measured, tables, _lock_with_bound(0.95))
+    assert results["aggregate_label"] is None and results["kernel_check"]["passed"] and results["kernel_check"]["max_difference"] <= 1e-12
+    for condition in b0c.CONDITIONS:
+        entry = results["conditions"][condition]
+        assert entry["g"] > 1.0 and entry["result"] == "PASS" and entry["interpretable"]  # C is a comparator, not an upper bound
+        assert entry["reading"] == b0c.SEMANTICS["results"]["PASS"] and entry["n_pairs"] == 6
+    worse, tables = _measured_and_tables(p1_noise=0.9, c_noise=0.05)
+    results = b0c.score(worse, tables, _lock_with_bound(0.95))
+    assert {entry["result"] for entry in results["conditions"].values()} == {"GUARD_FAILURE"}
+
+
+def test_the_preregistration_renders_deterministically_with_the_scope_and_the_ceiling_note():
+    lock = {"run_id": "r", "protocol_code_commit": "a" * 40, "design": b0c.DESIGN, "plan": b0c.PLAN,
+            "calibration": {"content_sha256": "c", "file_sha256": "f"}, "constants": {"B": b0c.B}, "exposed_cells": {"data_sha256": "d", "index_sha256": "i"},
+            "confirmation_023": {"content_sha256": "x", "manifest_sizes": {}}, "y1_table": {"data_path": "p", "file_sha256": "s", "index_sha256": "t", "layout": []},
+            "y2_table": {"data_path": "q", "layout": []}, "semantics": b0c.SEMANTICS,
+            "conditions": {condition: {"envelope": {"rank": 250, "bound": 0.99}, "guard_bound": False} for condition in reversed(b0c.CONDITIONS)}}
+    text = b0c.render_preregistration(lock)
+    assert text == b0c.render_preregistration(json.loads(json.dumps(lock)))
+    assert [line.split(" |")[0] for line in text.splitlines() if line.startswith("| Y")] == [f"| {condition}" for condition in b0c.CONDITIONS]
+    assert b0c.SCOPE in text and "not a mathematical upper bound" in text and "g ≥ max(F, 0.9)" in text
+
+
+def test_the_phase_rules_are_one_shot():
+    state = {"phases": {phase: {"status": "not_started"} for phase in b0c.STATE_PHASES}, "extract": {}, "calibration": {}}
+    b0c.assert_phase_allowed("extract", state)
+    with pytest.raises(b0c.PhaseError, match="calibrate requires the completed extract"):
+        b0c.assert_phase_allowed("calibrate", state)
+    state["phases"]["extract"] = {"status": "stopped_for_review"}
+    with pytest.raises(b0c.PhaseError, match="stopped_for_review"):
+        b0c.assert_phase_allowed("extract", state)
+    state["phases"]["extract"] = {"status": "running", "incidents": [{"commit": "a"}]}
+    b0c.assert_phase_allowed("extract", state)  # after an incident, at a new commit (the runner refuses the incident's commit)
+    state["phases"]["extract"] = {"status": "complete"}
+    state["phases"]["calibrate"] = {"status": "complete"}
+    state["phases"]["lock"] = {"status": "complete"}
+    b0c.assert_phase_allowed("confirm", state)
+    state["phases"]["confirm"] = {"status": "running"}
+    with pytest.raises(b0c.PhaseError, match="runs once"):
+        b0c.assert_phase_allowed("confirm", state)
+    with pytest.raises(b0c.PhaseError, match="unknown"):
+        b0c.assert_phase_allowed("replicate-022", state)
+
+
+def test_scientific_paths_cover_023_022_and_the_frozen_programs_but_not_the_installed_artifacts():
+    assert b0c.scientific_changes(["src/neural_decompiler/block0_completion.py", "src/neural_decompiler/upstream_localization.py",
+                                   "experiments/023-block0-completion/run.py", "experiments/022-upstream-error-localization/run.py"]) == [
+        "src/neural_decompiler/block0_completion.py", "src/neural_decompiler/upstream_localization.py", "experiments/023-block0-completion/run.py",
+        "experiments/022-upstream-error-localization/run.py"]
+    assert b0c.scientific_changes([b0c.CELLS_DATA_RELATIVE_PATH, b0c.CELLS_INDEX_RELATIVE_PATH, b0c.CONFIRMATION_RELATIVE_PATH, b0c.CALIBRATION_RELATIVE_PATH,
+                                   b0c.LOCK_RELATIVE_PATH, b0c.PREREGISTRATION_RELATIVE_PATH, b0c.Y1_TABLE_RELATIVE_PATH, b0c.Y1_TABLE_INDEX_RELATIVE_PATH,
+                                   "experiments/023-block0-completion/README.md", "experiments/023-block0-completion/evidence/x.md",
+                                   "experiments/022-upstream-error-localization/evidence/y.md", "README.md", "docs/superpowers/specs/x.md"]) == []
+
+
+@pytest.mark.pythia_smoke
+@requires_table
+def test_real_prediction_tables_reproduce_022_and_hold_i5_and_the_block0_algebra():
+    """The lock's and I7's prediction path on real exposed pairs (two pool cues × one frame per template): P0 and P1
+    equal 022's stored coalitions bit for bit, I5 is exactly 0 and the block-0 algebra (the closed-form T included) holds
+    at 1e-12. Weights only; nothing is written."""
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    from neural_decompiler.models import PYTHIA_70M, load_model
+
+    inputs = ul.load_frozen_inputs(ROOT)
+    units = b0c.exposed_units(inputs)
+    table = torch.load(TABLE_022)
+    progs = ul.ModelPrograms.from_model(load_model(PYTHIA_70M), inputs)
+    picks = (3, 150)
+    tokens = [{"word": units.cues[ci][0], "token_id": units.cues[ci][1], "class": units.cues[ci][2]} for ci in picks]
+    frames = [units.frames[i] for i in (0, units.group_frames("coordinated")[0], [i for i, f in enumerate(units.frames) if f.template_id == "quantifier"][0])]
+    table_units = ul.table_units(tokens, frames)
+    states = ul.y1_states(inputs.closure["exploration"]["locked_states"], table_units.frames)
+    tables = b0c.prediction_tables(progs, table_units, states, inputs.pool.reference_ids)
+    assert tables["gates"]["I5"]["max"] == 0.0 and tables["gates"]["algebra"]["max"] <= 1e-12
+    frame_index = {frame.frame_id: i for i, frame in enumerate(units.frames)}
+    cue_index = {int(token): i for i, (_, token, _) in enumerate(units.cues)}
+    for group, block in tables["blocks"]:
+        for row, (t, f) in enumerate(table_units.pairs[group]):
+            ci, fi = cue_index[int(table_units.tokens[t]["token_id"])], frame_index[table_units.frames[f].frame_id]
+            assert torch.equal(block[row, 0], table["dc_hat"][ci, fi, b0c.P0_MASK]) and torch.equal(block[row, 1], table["dc_hat"][ci, fi, b0c.P1_MASK[group]])
