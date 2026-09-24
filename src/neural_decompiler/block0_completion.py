@@ -445,14 +445,25 @@ def cells_layout(units: ExposedUnits) -> list[dict[str, Any]]:
 
 
 def write_cells(data_path: Path, index_path: Path, cells: torch.Tensor, meta: Mapping[str, Any], extraction: Mapping[str, Any]) -> dict[str, Any]:
-    """Write the artifact once, in 022's byte format; the index carries ``meta`` and the extraction record."""
-    return ul.write_table(Path(data_path), Path(index_path), [("cells", cells.double())], {**dict(meta), "extraction": dict(extraction)})
+    """Write the artifact once, in 022's byte format (``ul.table_bytes`` and ``ul.table_index``); the index carries
+    ``meta``, the extraction record and its own ``content_sha256`` (canonical JSON without that key)."""
+    blocks = [("cells", cells.double())]
+    data = ul.table_bytes(blocks)
+    index = ul.table_index(blocks, data, {**dict(meta), "extraction": dict(extraction)})
+    index["content_sha256"] = rc.content_digest(index)
+    Path(data_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(data_path).write_bytes(data)
+    Path(index_path).write_text(pm.canonical_json(index) + "\n", encoding="utf-8")
+    return index
 
 
 def read_cells(data_path: Path, index_path: Path, *, units: ExposedUnits, meta: Mapping[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
-    """The artifact re-read and verified: the byte format, the layout, every bound meta field against the one recomputed
-    now, and the bytes against the index's digest. A mismatch refuses (``PhaseError``)."""
+    """The artifact re-read and verified: the index against its content digest, the byte format, the layout, every
+    bound meta field against the one recomputed now, and the bytes against the index's digest. A mismatch refuses
+    (``PhaseError``)."""
     index = json.loads(Path(index_path).read_text(encoding="utf-8"))
+    if index.get("content_sha256") != rc.content_digest(index):
+        raise PhaseError("the exposed-cells index does not verify against its content digest")
     ul.verify_table_index(index, layout=cells_layout(units), meta=meta, error=PhaseError)
     try:
         blocks = ul.read_table(Path(data_path), index)
@@ -498,9 +509,20 @@ def cells_from_table(table: Mapping[str, Any], units: ExposedUnits) -> torch.Ten
     return cells
 
 
+def independent_sums(table: Mapping[str, Any], units: ExposedUnits) -> torch.Tensor:
+    """E3's second computation of ``S``, ``Q`` and ``SSEC`` for every pair (columns in that order, canonical flat pair
+    order): whole-table float64 reductions over the noun axis, independent of the per-pair cell path."""
+    dc, ceiling = table["dc"].double(), table["ceiling"].double()
+    return torch.stack([dc.sum(-1), (dc * dc).sum(-1), ((dc - ceiling) ** 2).sum(-1)], dim=-1).reshape(units.n_pairs, 3)
+
+
+E3_COLUMNS = ("S", "Q", "SSEC")
+
+
 def verify_cells_against_table(cells: torch.Tensor, table: Mapping[str, Any], units: ExposedUnits) -> dict[str, Any]:
-    """E2: ``SSE0``, ``SSE1``, ``n``, ``mean`` and ``M2`` equal 022's stored per-pair cells bit for bit; E3: the cells,
-    computed a second time, are bit-identical."""
+    """E2: ``SSE0``, ``SSE1``, ``n``, ``mean`` and ``M2`` equal 022's stored per-pair cells bit for bit; E3: ``S``,
+    ``Q`` and ``SSEC`` — which 022 did not store — equal an independent second computation from the stored ``Δc`` and
+    ceiling (``independent_sums``) bit for bit."""
     n_pairs = units.n_pairs
     sse = table["sse"].reshape(n_pairs, -1)
     p1 = torch.tensor([P1_MASK[units.group_of(i % len(units.frames))] for i in range(n_pairs)], dtype=torch.int64)
@@ -509,9 +531,12 @@ def verify_cells_against_table(cells: torch.Tensor, table: Mapping[str, Any], un
     wrong = sorted(name for name, values in expected.items() if not torch.equal(cells[:, CELL_COLUMNS.index(name)], values.double()))
     if wrong:
         raise ExtractionMismatch(f"E2: the cells' {wrong} are not 022's stored cells bit for bit")
-    if not torch.equal(cells_from_table(table, units), cells):
-        raise ExtractionMismatch("E3: the cells computed a second time are not bit-identical")
-    return {"E2": {"columns": sorted(expected), "passed": True}, "E3": {"passed": True}}
+    independent = independent_sums(table, units)
+    differing = [name for k, name in enumerate(E3_COLUMNS) if not torch.equal(cells[:, CELL_COLUMNS.index(name)], independent[:, k])]
+    if differing:
+        raise ExtractionMismatch(f"E3: the cells' {differing} are not bit-identical to their independent whole-table computation")
+    return {"E2": {"columns": sorted(expected), "passed": True},
+            "E3": {"columns": list(E3_COLUMNS), "route": "whole-table float64 reductions over the noun axis", "passed": True}}
 
 
 def recompute_p1(progs: ul.ModelPrograms, inputs: ul.FrozenInputs, units: ExposedUnits, table: Mapping[str, Any], *, log: Callable[[str], None] | None = None) -> dict[str, Any]:
@@ -598,7 +623,7 @@ def extract_cells(table: Mapping[str, Any], record_022: Mapping[str, Any], units
     say(f"E1: {len(checks['E1']['tensors'])} tensor digests and the orders verified")
     cells = cells_from_table(table, units)
     checks.update(verify_cells_against_table(cells, table, units))
-    say("E2, E3: the cells reproduce 022's stored cells bit for bit, twice")
+    say("E2, E3: the cells reproduce 022's stored cells and an independent computation of S, Q and SSEC bit for bit")
     checks["E4"] = dict(recompute())
     say(f"E4: P1 recomputed from the weights, max |Δ| {checks['E4']['max']}")
     checks.update(verify_draws_against_table(cells, table, units))
@@ -1023,8 +1048,10 @@ def pair_predictions(progs: ul.ModelPrograms, ctx: ul.PairContext) -> tuple[torc
 def prediction_tables(progs: ul.ModelPrograms, units: ul.TableUnits, states: Mapping[str, rd.FrameState020], reference_ids: Mapping[str, int], *,
                       log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Every pair's ``(P0, P1)`` in the table's order, weights and reference states only, with the maxima of I5 (P0
-    against the committed Level 0, exactly) and of the block-0 algebra (``V + P = ΔA0(p_c)``; the closed-form ``T``
-    against the exact attention output at ``p_t``), and digests of every pair's P0 ``Δx̂3`` and block-0 terms."""
+    against the committed Level 0, exactly) and of the block-0 algebra, and digests of every pair's P0 ``Δx̂3`` and
+    block-0 terms. Of the algebra, ``V + P = ΔA0(p_c)`` only restates 022's decomposition (022 defines ``P`` as the total
+    minus ``V``; it guards the stored factors' consistency), while the closed-form ``T`` against the exact attention
+    output at ``p_t`` is an independent derivation."""
     say = log or (lambda message: None)
     rows16: dict[str, Mapping[int, atp.ReferenceRow]] = {}
     level0, factor_bytes = hashlib.sha256(), hashlib.sha256()
@@ -1590,6 +1617,12 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
     incident = (state.get("confirmation") or {}).get("incident")
     if incident:
         lines.append(f"- **Confirmation incident** at `{incident['commit']}`: {incident['message']} — the one-shot confirmation is consumed; nothing is retried")
+    stop = (state.get("calibration") or {}).get("stop")
+    if stop:
+        lines += ["", "## Calibration stopped for review (no envelope was written)", "",
+                  f"- Undefined draws per condition, against the stop at {stop['threshold']} or more: "
+                  + ", ".join(f"{condition} {stop['counts'].get(condition)}" for condition in CONDITIONS),
+                  f"- At or above the stop: {', '.join(sorted(stop['offending']))}; never retried automatically — the reviewer decides"]
     extract = state.get("extract") or {}
     if extract.get("checks"):
         checks = extract["checks"]
@@ -1600,14 +1633,14 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None, ar
     if record is not None:
         lines += ["", f"## Calibration (exposed only, B = {record['constants']['B']})", "",
                   f"- Kernel/loop check {record['kernel_check']['max_difference']:.1e} over {record['kernel_check']['n_checked']}; E6 max {record['e6_max']:.1e}",
-                  "", "| condition | envelope F | median of defined draws | undefined | guard-bound | PASS | ENVELOPE_ONLY | GUARD | NOT_INTERPRETABLE |",
-                  "|---|---|---|---|---|---|---|---|---|"]
+                  "", "| condition | envelope F | min of defined draws | median | max | undefined | guard-bound | PASS | ENVELOPE_ONLY | GUARD | NOT_INTERPRETABLE |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|"]
         for condition in CONDITIONS:
             entry = record["conditions"][condition]
-            rates = entry["rates"]
-            lines.append(f"| {condition} | ≥ v₍{entry['envelope']['rank']}₎ = {entry['envelope']['bound']:.6f} | {_fmt(entry['summary']['median'], 6)} | "
-                         f"{record['undefined_counts'][condition]} | {'yes' if entry['guard_bound'] else 'no'} | {rates['PASS']:.4f} | {rates['ENVELOPE_ONLY_FAILURE']:.4f} | "
-                         f"{rates['GUARD_FAILURE']:.4f} | {rates['NOT_INTERPRETABLE']:.4f} |")
+            rates, summary = entry["rates"], entry["summary"]
+            lines.append(f"| {condition} | ≥ v₍{entry['envelope']['rank']}₎ = {entry['envelope']['bound']:.6f} | {_fmt(summary['min'], 6)} | {_fmt(summary['median'], 6)} | "
+                         f"{_fmt(summary['max'], 6)} | {record['undefined_counts'][condition]} | {'yes' if entry['guard_bound'] else 'no'} | {rates['PASS']:.4f} | "
+                         f"{rates['ENVELOPE_ONLY_FAILURE']:.4f} | {rates['GUARD_FAILURE']:.4f} | {rates['NOT_INTERPRETABLE']:.4f} |")
         lines += ["", f"- Joint rate, all four passing (descriptive only): {record['joint_rates']['all_four_pass']:.4f}"]
     confirmation = state.get("confirmation") or {}
     conditions = confirmation.get("conditions")

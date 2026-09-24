@@ -278,6 +278,7 @@ def test_extract_runs_no_prompt_verifies_e1_to_e6_and_writes_the_candidate_once(
     loaded = json.loads(index.read_text())
     checks = loaded["extraction"]["checks"]
     assert set(checks) == {"E1", "E2", "E3", "E4", "E5", "E6"} and checks["E4"]["max"] == 0.0 and checks["E5"]["max_difference"] <= 1e-10
+    assert checks["E3"]["columns"] == ["S", "Q", "SSEC"] and loaded["content_sha256"] == rc.content_digest(loaded)
     assert loaded["extraction"]["protocol_code_commit"] == COMMIT_A and loaded["extraction"]["module_blob"] == b0c.own_blob()
     assert loaded["source_022"]["table_file_sha256"] == base023["inherited"]["table_file_sha256"] and loaded["columns"] == list(b0c.CELL_COLUMNS)
     assert [entry[2] for entry in loaded["frames"]] == ["coordinated" if frame.template_id == ul.COORDINATED else "cue_final" for frame in b0c.exposed_units(runner._inputs()).frames]
@@ -423,6 +424,8 @@ def test_the_undefined_draw_stop_writes_no_envelope_and_is_never_retried(world, 
     state = _state(runner)
     assert state["phases"]["calibrate"]["status"] == "stopped_for_review" and not runner.candidate_calibration_path.exists()
     assert state["calibration"]["stop"]["offending"] == {condition: 40 for condition in b0c.CONDITIONS}
+    assert runner.report() == 0
+    assert "Calibration stopped for review" in runner.report_path.read_text() and "Y2/coordinated 40" in runner.report_path.read_text()
     with pytest.raises(b0c.PhaseError, match="stopped_for_review"):
         runner.calibrate()
     with pytest.raises(b0c.PhaseError, match="lock requires"):

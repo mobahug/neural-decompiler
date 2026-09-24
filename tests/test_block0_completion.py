@@ -302,8 +302,16 @@ def test_the_cells_artifact_round_trips_and_refuses_any_mismatch(tmp_path):
     read, loaded = b0c.read_cells(data, index, units=units, meta=meta)
     assert torch.equal(read, cells) and loaded["file_sha256"] == rc.file_sha256(data)
     assert loaded["source_022"]["table_file_sha256"] == b0c.INHERITED_022["table_file_sha256"] and loaded["columns"] == list(b0c.CELL_COLUMNS)
+    assert loaded["content_sha256"] == rc.content_digest(loaded) and data.read_bytes() == ul.table_bytes([("cells", cells)])  # 022's byte format
     with pytest.raises(b0c.PhaseError, match="construction|order"):
         b0c.read_cells(data, index, units=units, meta={**meta, "nouns": ["cat"]})
+    original = index.read_text()
+    edited = json.loads(original)
+    edited["extraction"]["module_blob"] = "y"  # a hand edit that the bound meta does not cover
+    index.write_text(json.dumps(edited))
+    with pytest.raises(b0c.PhaseError, match="content digest"):
+        b0c.read_cells(data, index, units=units, meta=meta)
+    index.write_text(original)
     raw = bytearray(data.read_bytes())
     raw[5] ^= 1
     data.write_bytes(bytes(raw))
@@ -369,6 +377,12 @@ def test_every_extraction_mismatch_refuses():
     wrong[3, 4] = float(wrong[3, 4]) * (1 + 1e-15) + 1e-12
     with pytest.raises(b0c.ExtractionMismatch, match="E2.*SSE1"):
         b0c.verify_cells_against_table(wrong, table, units)
+    for column in b0c.E3_COLUMNS:  # S, Q and SSEC, which 022 did not store, against their independent computation
+        off = cells.clone()
+        off[4, b0c.CELL_COLUMNS.index(column)] = float(off[4, b0c.CELL_COLUMNS.index(column)]) * (1 + 1e-15) + 1e-13
+        with pytest.raises(b0c.ExtractionMismatch, match=f"E3.*{column}"):
+            b0c.verify_cells_against_table(off, table, units)
+    assert torch.equal(b0c.independent_sums(table, units), cells[:, [1, 2, 5]])  # bit for bit on 022's format
     bad = cells.clone()
     bad[1, 2] += 1.0  # Q inconsistent with the two-pass moments: E6 on the single pair
     with pytest.raises(b0c.IncidentError, match="E6"):
@@ -705,6 +719,22 @@ def test_the_preregistration_renders_deterministically_with_the_scope_and_the_ce
     assert text == b0c.render_preregistration(json.loads(json.dumps(lock)))
     assert [line.split(" |")[0] for line in text.splitlines() if line.startswith("| Y")] == [f"| {condition}" for condition in b0c.CONDITIONS]
     assert b0c.SCOPE in text and "not a mathematical upper bound" in text and "g ≥ max(F, 0.9)" in text
+
+
+def test_the_report_shows_the_calibration_stop_and_the_tails():
+    state = {"run_id": "r", "design": b0c.DESIGN, "plan": b0c.PLAN, "extract": {}, "confirmation": None,
+             "phases": {phase: {"status": "not_started"} for phase in b0c.STATE_PHASES},
+             "calibration": {"stop": {"stop": True, "threshold": 250, "offending": {"Y2/coordinated": 300},
+                                      "counts": {"Y1/cue_final": 0, "Y1/coordinated": 3, "Y2/cue_final": 12, "Y2/coordinated": 300}}}}
+    state["phases"]["calibrate"] = {"status": "stopped_for_review"}
+    text = b0c.render_report(state, None, None)
+    assert "Calibration stopped for review" in text and "Y2/coordinated 300" in text and "Y1/coordinated 3" in text and "at 250 or more" in text
+    summary = {"median": 0.998, "min": 0.941, "max": 1.004, "defined": 10_000}
+    record = {"constants": {"B": 10_000}, "kernel_check": {"max_difference": 0.0, "n_checked": 192}, "e6_max": 1e-15, "undefined_counts": {c: 0 for c in b0c.CONDITIONS},
+              "joint_rates": {"all_four_pass": 0.9}, "conditions": {c: {"envelope": {"rank": 250, "bound": 0.99}, "summary": summary, "guard_bound": False,
+                                                                           "rates": {name: 0.25 for name in b0c.RESULTS}} for c in b0c.CONDITIONS}}
+    text = b0c.render_report({**state, "calibration": {}}, record, None)
+    assert "| Y1/cue_final | ≥ v₍250₎ = 0.990000 | 0.941000 | 0.998000 | 1.004000 | 0 | no |" in text and "stopped for review" not in text
 
 
 def test_the_phase_rules_are_one_shot():
