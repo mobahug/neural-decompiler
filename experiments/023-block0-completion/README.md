@@ -130,7 +130,7 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   An incident is recorded and stops the phase; nothing is retried.
 - **`report`** renders `outputs/experiment-023/report.md`.
 
-## Status — 2026-09-24: extracted; the exposed-cells artifact installed and committed; nothing else run
+## Status — 2026-09-24: extracted and frozen; both artifacts committed and independently reviewed; calibrate next
 
 - **Implementation.** Plan Tasks 1–6 are implemented in `src/neural_decompiler/block0_completion.py`, this runner and
   their tests:
@@ -200,13 +200,34 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
 - **Inherited dependency.** Every phase still reads Experiment 020's git-ignored local
   `outputs/experiment-020/results.json` through the frozen `load_frozen_inputs`, as 020–022 did. This is documented and
   lies outside 023's table-independence claim.
-- **Not run:** `freeze`, `calibrate`, `lock`, `confirm` and `report`. No Experiment 023 prompt has been executed.
+- **`freeze` ran once and succeeded.** It ran at `89536b0` on 2026-09-24, 15:08:07–15:08:17Z, exit 0.
+  - It used the tokenizer and the structural rules only. The stock runner ran inside a launcher that refused
+    `load_model` and every `torch.nn.Module` call; neither fired.
+  - It took exactly design revision 2's expected picks, the first 8 of each cue list and the first 6 of each frame
+    list, with 0 rejections.
+  - The exclusion holds 327 cue ids and 144 frame texts from 15 sources.
+  - The manifest has 3,060 unique keys: S1-REF 18, S1-VALIDITY 18, Y1 2,592, Y2 432. None collides with the 36,252
+    forbidden keys.
+- **Independent freeze review (read-only): PASS WITH NOTES, no blockers.** A clean-room reconstruction rebuilt the file
+  byte for byte from the design's lists, its own tokenizer and structural checks, and its own exclusion sets, with no
+  numerical input.
+- **The freeze file is committed.** `confirmation-v1.json` (128,228 bytes, sha256 `5fadfa50…`, content `4e64d4c2…`) is
+  committed exactly as written, alone, in `a9287ec`. The stock `validate` accepts it.
+- **The review notes are in the design's notes N1–N4; the data is unchanged:**
+  - cue freshness is a cue-slot rule;
+  - `" shiny"` is also the target adjective of one exposed frame, so one Y1 pair repeats the token at `p_c` and `p_t`;
+    it is kept and will be named at confirm;
+  - `freeze` reads prior numerical artifacts for integrity and isolation checks only;
+  - the weights claim is stated precisely.
+
+  The run records and both reviews are in `evidence/` (`391586f`).
+- **Not run:** `calibrate`, `lock`, `confirm` and `report`. No Experiment 023 prompt has been executed.
 - **Next steps, each only when authorized:**
   1. (done) the independent implementation review, its fixes, a re-review, and tiers A/B/C on the final implementation
      commit;
   2. (done) `extract`, the independent extraction review, and the byte-identical installation and commit of the
      artifact (`83d9c58`);
-  3. `freeze`, then commit;
+  3. (done) `freeze`, the independent freeze review, and the byte-identical commit (`a9287ec`);
   4. `calibrate` once, then install, commit and the floor review;
   5. `lock`, then install, commit and the lock review;
   6. `confirm` once;

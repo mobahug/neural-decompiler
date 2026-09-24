@@ -227,7 +227,7 @@ There is no aggregate label. Each condition is read on its own, and Y1 and Y2 ar
 `freeze` takes, per stratum, the first 8 entries that are a single token with a leading space and whose id lies
 outside the exclusion set. The exclusion set is Experiment 022's freeze exclusion plus 022's own 24 frozen cues:
 - every cue token of Experiment 020's exposed pool;
-- every token of every committed confirmation file from 006 to 022;
+- every token of every committed confirmation file from 006 to 022 (its cue tokens: a cue-slot rule; note N1);
 - every template reference cue and plural cue;
 - every frame's cue ids and the extension's cue words.
 
@@ -443,7 +443,7 @@ At 022's confirm it was 2.4×. An I3 exceedance at confirm would be an incident 
 |---|---|---|---|
 | `validate` | frozen inputs, locks, 020/021/022 closure records and digests | nothing | nothing |
 | `extract` (once) | 022's local table (digest-verified), 022's record, 020's locked states, the weights | nothing | the exposed-cells artifact (committed) |
-| `freeze` | the tokenizer, the committed frame and cue sets | nothing | `confirmation-v1.json` (committed) |
+| `freeze` | the tokenizer, the committed frame and cue sets; prior numerical artifacts for integrity and isolation checks only (note N2) | nothing | `confirmation-v1.json` (committed) |
 | `calibrate` (once) | the committed artifact and the confirmation's counts | nothing (no model) | the candidate calibration record |
 | `lock` | the committed record, 020's locked states, the weights | nothing (no forward pass) | the Y1 table, the lock, the preregistration |
 | `confirm` stage 1 | the lock, the confirmation file, the weights | S1-REF and S1-VALIDITY only | the reference states, the Y2 table and its digests |
@@ -559,3 +559,48 @@ Stop after the plan, for its review. Then, each step only when authorized:
   statistics and the pooled `SST` formula with its two-pass cross-check (E6); the exact calibration semantics; the
   ceiling as a comparator, not an upper bound; the positive scope statement; and the one-way extraction boundary. The
   artifact grows from six to eight columns (1,209,600 bytes). Nothing else changes.
+- Notes N1–N4 after extract and freeze (2026-09-24, documentation only; no rule, unit, selection, artifact or digest
+  changed): the section below and two inline pointers.
+
+## Notes after extract and freeze (2026-09-24; documentation only)
+
+These notes correct and qualify the text above. They change no frozen rule, unit, selection, manifest, artifact or
+digest. The extract artifact (`83d9c58`) and `confirmation-v1.json` (`a9287ec`) are committed exactly as produced and
+independently reviewed; see `experiments/023-block0-completion/evidence/`.
+
+- **N1. Cue freshness is a cue-slot rule.** The exclusion that `freeze` applies, and the design-time count of 327 ids,
+  cover the ids that earlier experiments used as cues:
+  - the cue tokens of 020's exposed pool;
+  - the cue entries of the committed confirmation files from 006 to 022;
+  - the templates' reference and plural cues;
+  - every frame's cue ids and the extension's cue words.
+
+  "Every token of every committed confirmation file" above means those files' cue tokens. The rule text recorded in
+  `confirmation-v1.json` ("whose id no earlier experiment (022 included) used") is limited the same way. A token that
+  occurred earlier only as a frame word is not excluded. Two such cases are frozen:
+  - `" shiny"` (30006), an adjective cue, is the target-position adjective of exposed frame
+    `coordinated-adjective-009-1` ("Ida and Tomas counted {cue} shiny"). So the Y1 target shiny × that frame carries
+    the same token at `p_c` and `p_t`: 1 of 864 coordinated Y1 pairs, 1 of 3,024 targets. It is kept, and the frozen
+    population is the primary analysis. `confirm`'s report names the pair; a descriptive result without it may be
+    shown as a secondary check.
+  - `" batches"` (39657), a quantity cue, is the plural of 020's fresh noun "batch". It was never a cue and is not
+    among 023's 79 nouns.
+- **N2. What `freeze` reads.** Besides the tokenizer and the committed cue and frame sets, `freeze` also reads prior
+  numerical artifacts, through the frozen-input loader every phase shares. They are Experiment 020's results state,
+  closure and exploration record, the 011/012/017 locks, and Experiment 022's calibration record. They serve integrity
+  and isolation checks, which can only abort the freeze. No numerical value from them takes part in candidate
+  eligibility, ranking or selection: the independent review rebuilt the file byte for byte from the tokenizer, the
+  ordered lists and the committed cue and frame sets alone.
+- **N3. The weights, stated precisely.**
+  - The freeze code path contains no model-loading call.
+  - The independent reconstruction is tokenizer-only and byte-identical.
+  - The observed Python-level file accesses contain tokenizer and config files, and not the known weight blob.
+
+  The run launcher's name-based weight guard was ineffective, because Hugging Face stores blobs under hash names, so it
+  is not relied upon as evidence.
+- **N4. The extract.**
+  - `P1` recomputed from the weights matched 022's stored values exactly: E4 max 0.0, where the spike above found
+    7e-12. The empty `"at"` field of that record at a zero maximum is cosmetic.
+  - Every phase still reads Experiment 020's git-ignored `outputs/experiment-020/results.json` through the frozen-input
+    loader. That inherited dependency lies outside 023's claim that calibration no longer depends on Experiment 022's
+    0.42-GB table.
