@@ -1,0 +1,23 @@
+PASS  HEAD == origin == c7efec7  
+PASS  tree clean incl. untracked  
+PASS  preregistration-lock.json: installed == committed == reviewed  
+PASS  preregistration.md: installed == committed == reviewed  
+PASS  locked-y1-table.f64: installed == committed == reviewed  
+PASS  locked-y1-table.json: installed == committed == reviewed  
+PASS  calibration-v1.json: installed == committed == reviewed  
+PASS  confirmation-v1.json: installed == committed == reviewed  
+PASS  exposed-cells.f64: installed == committed == reviewed  
+PASS  exposed-cells.json: installed == committed == reviewed  
+PASS  state: extract/calibrate/lock complete; confirm/report not_started; no incident  174390d11fada228615394e0a42d88abaae6476a55eae128960f9c5176f3b2f0
+PASS  both ledgers empty  
+PASS  state lock == installed lock  
+PASS  no Y2 table, stage-2 file or report yet  
+PASS  pins  
+PASS  020 results file == the pinned one  
+   runner: module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; exposed cells d2ee71e58f45… (18900 pairs, extracted at 2111271); confirmation 4e64d4c2c85a… (24 cues, 18 frames, 3060 keys)
+PASS  stock validate  
+PASS  validate_lock accepts the installed lock  
+PASS  runtime and versions == 020's explore  
+PASS  frozen manifest: 18 + 18 + 2,592 + 432 = 3,060 unique keys; none forbidden  
+
+PRE-CONFIRM: ALL PASS

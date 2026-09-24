@@ -1,0 +1,11 @@
+{
+ "exit": 0,
+ "error": null,
+ "counts": {
+  "capture_prompt": 3060,
+  "run_capture": 3060,
+  "run_patched": 0,
+  "run_interventions": 0
+ },
+ "refused_during_run": []
+}

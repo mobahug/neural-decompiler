@@ -1,0 +1,6 @@
+guard live: 6 routes refused (open(path), open(resolved), open(dotted path), os.open, torch.load, pathlib.read_bytes); 6 refusals recorded and cleared; table inode 31816276
+PASS  final state minus descriptives.{subsets, comparators} reproduces the digest logged at completion (2cba1ece…)  | 2cba1ecec892ede9 vs logged 2cba1ecec892ede9
+PASS  the logged results line == the state's labels and g (repr)
+PASS  log: exit 0, barrier message present, 2592 + 432 target pairs, no INCIDENT
+
+EXTRA: ALL PASS

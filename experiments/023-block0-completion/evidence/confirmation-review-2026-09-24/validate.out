@@ -1,0 +1,4 @@
+guard live: 6 routes refused (open(path), open(resolved), open(dotted path), os.open, torch.load, pathlib.read_bytes); 6 refusals recorded and cleared; table inode 31816276
+forward guard live: nn.Module.__call__ and pm.capture_prompt, pm.run_capture, pm.run_patched, pm.run_interventions raise
+module blobs 11 verified (022's program included); Experiment 022's record and confirmation verified; exposed pool 175 cues × 108 frames; exposed cells d2ee71e58f45… (18900 pairs, extracted at 2111271); confirmation 4e64d4c2c85a… (24 cues, 18 frames, 3060 keys)
+validate exit 0; results.json unchanged: True (328be2b688fd8cef); refusals during validate: []

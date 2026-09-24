@@ -1,0 +1,36 @@
+guard live: 6 routes refused (open(path), open(resolved), open(dotted path), os.open, torch.load, pathlib.read_bytes); 6 refusals recorded and cleared; table inode 31816276
+frozen inputs loaded (8 s); torch threads 4
+PASS  runtime threads == the recorded runtime (4)
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:14,  5.26it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 395.99it/s]
+forward guard live: nn.Module.__call__ and pm.capture_prompt, pm.run_capture, pm.run_patched, pm.run_interventions raise
+PASS  the model load itself ran no module call (counted during the load)  | 0 calls
+PASS  no class in the model's MRO overrides __call__ (the Module.__call__ guard covers model(...))
+weights extracted, model deleted (14 s)
+PASS  scorable nouns == the lock's 79 noun keys
+PASS  new frames rebuilt from confirmation-v1.json reproduce its p_c/p_t
+PASS  exposed states digest == the lock's exposed_states_sha256
+PASS  stage-1 states: rd.state_digest == recorded state_digests (18)
+PASS  rebuilt stage-1 states carry the frames' p_c/p_t
+PASS  ul's full mask canonicalizes to 15 (cue-final) / 31 (coordinated); P1 masks = emb|Bv|Bp (+T)
+PASS  pair counts: Y1 1728/864, Y2 288/144
+  Y1/cue_final: 1728 pairs (119 s)
+  Y1/coordinated: 864 pairs (215 s)
+  Y2/cue_final: 288 pairs (231 s)
+  Y2/coordinated: 144 pairs (246 s)
+my gates: {"I1": {"max": 1.324621902565326e-05, "at": "Y2|batches|coordinated-adjective-023-1"}, "I3": {"max": 2.028769855580874e-05, "at": "Y1|net|quantifier-1"}, "I3_ul": {"max": 2.028769855580874e-05, "at": "Y1|net|quantifier-1"}, "I4": {"max": 4.332195089062907e-05, "at": "Y1|gross|quantifier-019-4"}, "I5": {"max": 0.0, "at": ""}, "C_recomputed": {"max": 0.0, "at": ""}}
+state gates: {"I1": {"at": "Y2|batches|coordinated-adjective-023-1", "max": 1.324621902565326e-05}, "I3": {"at": "Y1|net|quantifier-1", "max": 2.028769855580874e-05}, "I4": {"at": "Y1|gross|quantifier-019-4", "max": 4.332195089062907e-05}}
+PASS  cue-final rows: both Δx1/Δx3 slots hold the same p_c vector
+PASS  I1 ≤ 1e-4 on all 3,024 targets and == the recorded maximum (value and location)  | 1.324622e-05 at Y2|batches|coordinated-adjective-023-1
+PASS  I3 (my relative-error code) ≤ 1e-4 and == ul.i3_error's maximum ≈ the recorded one  | mine 2.028770e-05, ul 2.028770e-05 at Y1|net|quantifier-1
+PASS  I4 ≤ 1e-3 and == the recorded maximum  | 4.332195e-05 at Y1|gross|quantifier-019-4
+PASS  I5: P0's Δx̂3 == the committed Level 0 exactly (all 3,024)
+PASS  C: the saved ceiling == the frozen readout fed the saved measured Δx3, bit for bit (all 3,024)  | max |Δ| 0.0
+PASS  Y2 table rebuilt from the stage-1 states and the weights == y2-table.f64 byte for byte (4623adde…)  | 546048 bytes, sha 4623adde5eb53e14
+PASS  my struct serialization == numpy '<f8' C-order bytes (two independent serializers)
+PASS  Y2 index rebuilt (my pairs, masks, nouns, layout, digest) == y2-table.json byte for byte (e87091ef…)  | e87091ef5b273f40
+PASS  the lock's Y2 specification == my layout and meta (construction, orders, masks, nouns; paths)
+PASS  the construction text the lock binds is b0c.TABLE_CONSTRUCTION (P0 mask 0; P1 mask 14/30)
+PASS  Y1 table rebuilt from 020's locked states and the weights == committed locked-y1-table.f64 byte for byte (37603f05…)  | 3276288 bytes
+PASS  Y1 index rebuilt == committed locked-y1-table.json byte for byte (3bf85e18…)
+
+REBUILD (247 s): ALL PASS

@@ -1,0 +1,21 @@
+PASS  pre-report state is the confirmed one  
+PASS  the report is exactly the frozen renderer's output for the confirmed state  
+PASS  state: report complete; its sha256 == the file's text  9b7a8d7aeba91308759c84b5550de36dfbe9e7a22f01ed83658ce8f2c9aac7f7
+PASS  state: only the report fields changed  
+PASS  Y1/cue_final: row == results (g 0.9955204329648195, F 0.9968974947302105, ENVELOPE_ONLY_FAILURE, CDF 0.0001)  
+PASS  Y1/cue_final: reading == the frozen semantics  
+PASS  Y1/coordinated: row == results (g 0.9987141803462269, F 0.9986343903419131, PASS, CDF 0.0431)  
+PASS  Y1/coordinated: reading == the frozen semantics  
+PASS  Y2/cue_final: row == results (g 0.9974185656823554, F 0.9950528086546427, PASS, CDF 0.318)  
+PASS  Y2/cue_final: reading == the frozen semantics  
+PASS  Y2/coordinated: row == results (g 0.9965628370581808, F 0.9951864564481918, PASS, CDF 0.0927)  
+PASS  Y2/coordinated: reading == the frozen semantics  
+PASS  no aggregate label; aggregate note present  
+PASS  joint rate shown as descriptive only  
+PASS  scope sentence and the ceiling note present  
+PASS  no incident lines (the renderer's '- **… incident** at' form)  
+PASS  calibration table == record (F, min, median, max, undefined, rates)  
+PASS  HEAD unchanged; tree clean  
+post-report state_sha256 809e4405f7de60c7f517ceef926b7577f37fee87e92b702aeea84aa8afdc101f | results.json file dff189a014faab705831142d29be3c30ade3960f2874dc3fc1a1056287de3f27 | report.md 9b7a8d7aeba91308759c84b5550de36dfbe9e7a22f01ed83658ce8f2c9aac7f7
+
+VERIFY REPORT: ALL PASS

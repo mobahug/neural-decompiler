@@ -1,0 +1,35 @@
+HEAD c7efec7f32709dc20ecb83cae16bb73927a14366
+94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a  outputs/experiment-023/candidate-calibration.json
+d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4  outputs/experiment-023/candidate-exposed-cells.f64
+628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe  outputs/experiment-023/candidate-exposed-cells.json
+4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c  outputs/experiment-023/candidate-lock.json
+37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96  outputs/experiment-023/candidate-locked-y1-table.f64
+3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d  outputs/experiment-023/candidate-locked-y1-table.json
+dc198785b6350d20165f589236741f5f08ffc845da33840ca156c7d71780dc07  outputs/experiment-023/candidate-preregistration.md
+38ef8b5b49f0334b67849945c4dd9ecb54daff379607251670006f22ebb7d3bf  outputs/experiment-023/draw-values.pt
+328be2b688fd8cef34a523c308dc4dd5790c703a90ab0cc6f66ac377a0ec21f2  outputs/experiment-023/results.json
+13b7da1758e8c6d0a324d47f8ca8f513d22d2089d774ce2057d5535a845d034d  outputs/experiment-023/stage2-measurements.pt
+4623adde5eb53e14b0368e5b4d8b91bd6f2513bd522ba074bc55ab747970d2c2  outputs/experiment-023/y2-table.f64
+e87091ef5b273f4045540f1cbef432407a74ef9ac2164b1fe748fd8a8486c931  outputs/experiment-023/y2-table.json
+94db6df26156d7a134e51f8afbf10707ca18030525f62dd08f02fb298e9ba03a  experiments/023-block0-completion/calibration-v1.json
+5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4  experiments/023-block0-completion/confirmation-v1.json
+628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe  experiments/023-block0-completion/exposed-cells.json
+3bf85e186db7dfbf8c80f45557275058317e259cb5995dcd2f73e327dfd9644d  experiments/023-block0-completion/locked-y1-table.json
+4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c  experiments/023-block0-completion/preregistration-lock.json
+d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4  experiments/023-block0-completion/exposed-cells.f64
+37603f058500e056214a8a6ae413ef2b27eb94c5e1d618caaa8c9a61121a2f96  experiments/023-block0-completion/locked-y1-table.f64
+46c382e30107135f1daee89644f2523537b191ff24841ef2716bb1db64513791  experiments/023-block0-completion/README.md
+dc198785b6350d20165f589236741f5f08ffc845da33840ca156c7d71780dc07  experiments/023-block0-completion/preregistration.md
+da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00  outputs/experiment-020/results.json
+outputs/experiment-023/candidate-calibration.json 11220 1790265211
+outputs/experiment-023/candidate-exposed-cells.f64 1209600 1790259974
+outputs/experiment-023/candidate-exposed-cells.json 17493 1790259974
+outputs/experiment-023/candidate-lock.json 29896 1790268717
+outputs/experiment-023/candidate-locked-y1-table.f64 3276288 1790268565
+outputs/experiment-023/candidate-locked-y1-table.json 101594 1790268565
+outputs/experiment-023/candidate-preregistration.md 3583 1790268717
+outputs/experiment-023/draw-values.pt 2009947 1790265197
+outputs/experiment-023/results.json 5389689 1790272162
+outputs/experiment-023/stage2-measurements.pt 53423071 1790271763
+outputs/experiment-023/y2-table.f64 546048 1790271652
+outputs/experiment-023/y2-table.json 18627 1790271652

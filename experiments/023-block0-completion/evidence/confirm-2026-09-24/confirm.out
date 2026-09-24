@@ -1,0 +1,29 @@
+start 2026-09-24T17:38:14Z at c7efec7f32709dc20ecb83cae16bb73927a14366 clean=0
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.19it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 313.61it/s]
+  cue_final: 1728 pairs predicted (P0, P1)
+  coordinated: 864 pairs predicted (P0, P1)
+  cardinal-023-1: reference state captured; validity True (descriptive)
+  cardinal-023-2: reference state captured; validity True (descriptive)
+  cardinal-023-3: reference state captured; validity True (descriptive)
+  cardinal-023-4: reference state captured; validity True (descriptive)
+  cardinal-023-5: reference state captured; validity True (descriptive)
+  cardinal-023-6: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-1: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-2: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-3: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-4: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-5: reference state captured; validity True (descriptive)
+  coordinated-adjective-023-6: reference state captured; validity True (descriptive)
+  quantifier-023-1: reference state captured; validity True (descriptive)
+  quantifier-023-2: reference state captured; validity True (descriptive)
+  quantifier-023-3: reference state captured; validity True (descriptive)
+  quantifier-023-4: reference state captured; validity True (descriptive)
+  quantifier-023-5: reference state captured; validity True (descriptive)
+  quantifier-023-6: reference state captured; validity True (descriptive)
+  cue_final: 288 pairs predicted (P0, P1)
+  coordinated: 144 pairs predicted (P0, P1)
+barrier passed: the stage-1 record and the Y2 table verified from disk; no S2-TARGET prompt has run; stage 2 begins
+  Y1: 2592 target pairs measured
+  Y2: 432 target pairs measured
+confirm complete (four conditions, no aggregate label): Y1/cue_final ENVELOPE_ONLY_FAILURE (g 0.9955204329648195); Y1/coordinated PASS (g 0.9987141803462269); Y2/cue_final PASS (g 0.9974185656823554); Y2/coordinated PASS (g 0.9965628370581808); results sha256 2cba1ecec892ede91cfb4324ebffb2a17d492d5a1e6d81ff6a9a109b18cfc0d5
+exit 0 end 2026-09-24T17:49:23Z

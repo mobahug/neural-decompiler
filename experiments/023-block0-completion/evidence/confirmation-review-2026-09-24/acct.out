@@ -1,0 +1,77 @@
+guard live: 6 routes refused (open(path), open(resolved), open(dotted path), os.open, torch.load, pathlib.read_bytes); 6 refusals recorded and cleared; table inode 31816276
+PASS  confirmation-v1.json file sha256 == 5fadfa50…
+PASS  confirmation-v1.json content digest recomputes (own canonical JSON)  | 4e64d4c2c85ae8f9
+PASS  lock file sha256 == 4bd5a5b1…
+PASS  lock content digest recomputes == 97ca520f…
+PASS  108 exposed frames: 020 pool == 020 locked states == confirmation-v1.json exposed_frame_ids  | 108 frames
+PASS  reference cue ids: confirmation-v1.json == 020 pool  | {'cardinal': 581, 'coordinated-adjective': 581, 'quantifier': 1016}
+PASS  pm.Prompt.key format is '{frame_id}|{cue_label}|{cue_token_id}'
+PASS  24 cues (8/8/8), 18 new frames (6/6/6), all ids distinct
+PASS  my manifest: S1-REF 18, S1-VALIDITY 18, Y1 2,592, Y2 432 = 3,060 unique  | {'S1-REF': 18, 'S1-VALIDITY': 18, 'Y1': 2592, 'Y2': 432}
+PASS  confirmation-v1.json manifest == my manifest
+PASS  lock manifest sizes == mine
+PASS  prompts.jsonl: 3,060 lines, n = 1..3060 contiguous (one launcher run)
+PASS  executed keys == my manifest: each exactly once; no extra, omission or duplicate  | extra 0 missing 0 dup 0
+PASS  timestamps non-decreasing
+PASS  launcher counts: capture_prompt == run_capture == 3060; run_patched == run_interventions == 0; exit 0; no error  | {'capture_prompt': 3060, 'run_capture': 3060, 'run_patched': 0, 'run_interventions': 0}
+PASS  launcher: the 022 table was never opened during the run (refused_during_run empty)
+PASS  results.json file sha256 == 328be2b6…
+PASS  state_sha256 recomputes with my canonical JSON  | 938cb2469d6445b4
+PASS  the file is exactly canonical JSON + newline (no hand edit)
+PASS  ledger (executed_prompt_keys) == my manifest, sorted, no duplicates
+PASS  executed_noun_keys == every exposed pool noun key (pm.record_execution over inputs.pool.nouns); no 020 fresh noun  | 80 keys (79 scorable single-token, 1 multi-token); fresh-020 overlap 0 of 24
+PASS  scored nouns == the lock's 79 noun keys
+PASS  no executed key was executed or reserved before (020 ledger, 020 confirmation, 022 manifest)  | 36252 forbidden keys
+PASS  phases: extract, calibrate, lock complete; confirm complete; report not_started
+PASS  confirm: commit c7efec7, lock 97ca520f…, I7 bitwise_equal with the Y1 file digest  | 2026-09-24T17:40:28+00:00 → 2026-09-24T17:44:24+00:00
+PASS  no incident anywhere (no phase 'incidents', no confirmation 'incident', no calibration incidents)
+PASS  report: state['report'] is None and no report.md
+PASS  descriptives present (subsets, comparators after the results; p1_dx3_relative_error, block0_profile from the gates); no failures
+PASS  no aggregate label; confirmation.lock_sha256 == lock
+PASS  stage 2: n_executed == 3024 and path is the bound stage-2 file
+PASS  stage-1 record reproduces its digest (own canonical JSON)  | ed7ee402518b6794
+PASS  stage-1 record names the lock and the commit
+PASS  stage-1 state digests: each of the 18 recorded states hashes (own canonical JSON) to its recorded digest
+PASS  stage-1 Y2 digests == the files on disk (data 4623adde…, index e87091ef…)
+PASS  stage-1 Y2 paths == the lock's
+PASS  stage-1 noun keys == lock
+PASS  stage-1 frames: 18, p_c/p_t == the frozen frames; validity descriptive  | validity all True: True
+PASS  stage-1 gates (I5, algebra) within tolerance  | {'I5': {'at': '', 'max': 0.0}, 'algebra': {'at': 'shy|coordinated-adjective-023-1', 'max': 3.4416913763379853e-15}}
+PASS  the 36 stage-1 keys are lines 1..36 (by order) and precede every stage-2 key
+PASS  by timestamp: last stage-1 < first stage-2  | last S1 2026-09-24T17:40:30.974+00:00, first S2 2026-09-24T17:40:53.158+00:00
+PASS  stage-1 order == frames by frame_id, S1-REF then S1-VALIDITY
+PASS  stage-2 order == Y1 then Y2, frames by frame_id, cues by token id (ul.stage_two_022)
+PASS  y2-table.f64: created and last modified after the last stage-1 prompt and before the first S2-TARGET prompt; never rewritten (birth ≈ mtime ≈ ctime)  | birth 2026-09-24T17:40:52.235+00:00 mtime 2026-09-24T17:40:52.235+00:00 ctime 2026-09-24T17:40:52.235+00:00; window (2026-09-24T17:40:30.974+00:00, 2026-09-24T17:40:53.158+00:00)
+PASS  y2-table.json: created and last modified after the last stage-1 prompt and before the first S2-TARGET prompt; never rewritten (birth ≈ mtime ≈ ctime)  | birth 2026-09-24T17:40:52.235+00:00 mtime 2026-09-24T17:40:52.236+00:00 ctime 2026-09-24T17:40:52.236+00:00; window (2026-09-24T17:40:30.974+00:00, 2026-09-24T17:40:53.158+00:00)
+PASS  stage2-measurements.pt written once, after the last S2 prompt  | birth 2026-09-24T17:42:43.007+00:00 mtime 2026-09-24T17:42:43.108+00:00 last prompt 2026-09-24T17:42:42.959+00:00
+PASS  results.json last modified within the confirm run (≤ its end 17:49:23Z) and after completion  | mtime 2026-09-24T17:49:22.696+00:00
+PASS  confirm started_at (the I7 record, second resolution) ≤ first capture  | started_at 2026-09-24T17:40:28+00:00, first capture 2026-09-24T17:40:28.263+00:00
+PASS  confirm completed_at after the last capture  | 2026-09-24T17:44:24+00:00 vs last capture 2026-09-24T17:42:42.959+00:00
+PASS  outputs/experiment-023 holds only the expected files (no report, no second-run leftovers)  | ['candidate-calibration.json', 'candidate-exposed-cells.f64', 'candidate-exposed-cells.json', 'candidate-lock.json', 'candidate-locked-y1-table.f64', 'candidate-locked-y1-table.json', 'candidate-preregistration.md', 'draw-values.pt', 'results.json', 'stage2-measurements.pt', 'y2-table.f64', 'y2-table.json']
+PASS  confirm_summary.json written once at the run's end (a later launcher run would rewrite it)  | mtime 2026-09-24T17:49:23.095+00:00
+INFO  022 table stat (not opened): atime 2026-09-24T06:22:42.184+00:00 mtime 2026-09-23T20:22:24.950+00:00; confirm window 2026-09-24T17:38:14.000+00:00 → 2026-09-24T17:49:24.000+00:00; atime before window: True
+PASS  preregistration-lock.json: working tree == HEAD blob == 4bd5a5b1…  | 4bd5a5b14627768d
+PASS  preregistration.md: working tree == HEAD blob  | dc198785b6350d20
+PASS  locked-y1-table.f64: working tree == HEAD blob == 37603f05…  | 37603f058500e056
+PASS  locked-y1-table.json: working tree == HEAD blob == 3bf85e18…  | 3bf85e186db7dfbf
+PASS  calibration-v1.json: working tree == HEAD blob == 94db6df2…  | 94db6df26156d7a1
+PASS  confirmation-v1.json: working tree == HEAD blob == 5fadfa50…  | 5fadfa503f4fe353
+PASS  exposed-cells.f64: working tree == HEAD blob  | d2ee71e58f455536
+PASS  exposed-cells.json: working tree == HEAD blob  | 628181475e557728
+PASS  state binds the committed confirmation file (path, file and content digests)
+PASS  state lock == committed lock (content), preregistration and Y1 digests == committed files
+PASS  state calibration record digests == committed calibration-v1.json (file, content)
+PASS  state/lock/record bind the committed exposed cells
+PASS  lock binds the committed Y1 table (file 37603f05…, index 3bf85e18…)
+PASS  state inputs == lock inputs == record inputs
+PASS  lock envelopes == calibration record envelopes (full precision)
+PASS  state condition envelopes == lock envelopes (full precision)
+PASS  confirm() and _descriptives() never name the 022 table or call torch.load
+PASS  run.py opens the 022 table only in extract()
+PASS  block0_completion.py: TABLE_022_RELATIVE_PATH only a constant and a string in cells_source (no open/torch.load of it)
+PASS  no run_patched / run_interventions in the confirm path sources (run.py confirm, b0c, ul stage_two/measure_prompt)
+PASS  no 'shiny' / 30006 / coordinated-adjective-009 exclusion in run.py or block0_completion.py (the only hit is the frozen CUE_CANDIDATES list)  | [('block0_completion.py', 153, '"adjective": ("humble", "proud", "shy", "lazy", "busy", "stu')]
+PASS  a second confirm is refused by assert_phase_allowed on this state (called read-only)
+PASS  results.json untouched by this review (mtime unchanged)
+
+ACCT: ALL PASS

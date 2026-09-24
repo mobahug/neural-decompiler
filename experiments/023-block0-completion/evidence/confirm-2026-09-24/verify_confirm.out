@@ -1,0 +1,37 @@
+launcher summary: {"exit": 0, "error": null, "counts": {"capture_prompt": 3060, "run_capture": 3060, "run_patched": 0, "run_interventions": 0}, "refused_during_run": []}
+executed forwards (capture_prompt calls) 3060; unique 3060; run_capture 3060; run_patched 0; run_interventions 0
+PASS  manifest: 3,060 unique keys  
+PASS  executed = manifest: every key exactly once, no extra, no omission  extra [], missing 0, duplicated []
+PASS  ledger = manifest, no duplicates  
+PASS  one forward per capture; no patched or intervention run  
+PASS  all 36 stage-1 prompts ran before any target (the barrier)  
+PASS  no 022 table access during confirm  
+PASS  confirm complete, once, at c7efec7; no incident  2026-09-24T17:40:28+00:00 → 2026-09-24T17:44:24+00:00
+PASS  bindings: lock digest in phase, confirmation and stage 1; I7 bitwise  
+PASS  stage-1 record digest reproduces  
+PASS  Y2 table verified from disk  file 4623adde5eb53e14b0368e5b4d8b91bd6f2513bd522ba074bc55ab747970d2c2
+PASS  stage-2 measurements == their recorded digests  
+gates: {"I1": {"at": "Y2|batches|coordinated-adjective-023-1", "max": 1.324621902565326e-05}, "I3": {"at": "Y1|net|quantifier-1", "max": 2.028769855580874e-05}, "I4": {"at": "Y1|gross|quantifier-019-4", "max": 4.332195089062907e-05}} | kernel check: {"at": "Y1/coordinated/SST", "max_difference": 1.6323961038804367e-15, "n_checked": 8, "passed": true, "tolerance": 1e-10}
+PASS  identities within tolerance (I1 1e-4, I3 1e-4, I4 1e-3)  
+
+| condition | g | F (lock, exact) | max(F, 0.90) | result | gap | R²₀ | R²₁ | R²_C | pairs |
+PASS  Y1/cue_final: independent recomputation == recorded (g, result, pairs)  
+PASS  Y1/cue_final: envelope == lock == record, guard 0.90  
+| Y1/cue_final | 0.9955204329648195 | 0.9968974947302105 | 0.996897 | **ENVELOPE_ONLY_FAILURE** | 0.1411 | 0.8182 | 0.9587 | 0.9593 | 1728 |
+PASS  Y1/coordinated: independent recomputation == recorded (g, result, pairs)  
+PASS  Y1/coordinated: envelope == lock == record, guard 0.90  
+| Y1/coordinated | 0.9987141803462269 | 0.9986343903419131 | 0.998634 | **PASS** | 0.4159 | 0.5420 | 0.9574 | 0.9579 | 864 |
+PASS  Y2/cue_final: independent recomputation == recorded (g, result, pairs)  
+PASS  Y2/cue_final: envelope == lock == record, guard 0.90  
+| Y2/cue_final | 0.9974185656823554 | 0.9950528086546427 | 0.995053 | **PASS** | 0.1468 | 0.8146 | 0.9610 | 0.9613 | 288 |
+PASS  Y2/coordinated: independent recomputation == recorded (g, result, pairs)  
+PASS  Y2/coordinated: envelope == lock == record, guard 0.90  
+| Y2/coordinated | 0.9965628370581808 | 0.9951864564481918 | 0.995186 | **PASS** | 0.3812 | 0.5719 | 0.9518 | 0.9531 | 144 |
+PASS  no aggregate label  
+PASS  the shiny × coordinated-adjective-009-1 pair is present once in Y1/coordinated  row [684]
+SECONDARY (descriptive only; the frozen population is primary): Y1/coordinated without that pair: g 0.9987161006600694 (863 pairs), classification by the same rule: PASS
+descriptive records present: ['block0_profile', 'comparators', 'p1_dx3_relative_error', 'subsets'] | failures: None
+state_sha256 938cb2469d6445b4ffcf04ca5937e8d26f4e80c80e7b96ad5458102f70fa5876 | results.json file 328be2b688fd8cef34a523c308dc4dd5790c703a90ab0cc6f66ac377a0ec21f2
+PASS  HEAD unchanged, tree clean, no report yet  
+
+VERIFY CONFIRM: ALL PASS

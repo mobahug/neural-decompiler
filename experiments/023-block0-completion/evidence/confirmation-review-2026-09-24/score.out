@@ -1,0 +1,60 @@
+guard live: 6 routes refused (open(path), open(resolved), open(dotted path), os.open, torch.load, pathlib.read_bytes); 6 refusals recorded and cleared; table inode 31816276
+PASS  stage-2 tensors: my tensor digests == the state's (20 tensors)
+PASS  stage-2 dc/ceiling/dx1/dx3 all finite
+PASS  committed Y1 table bytes sha256 == lock-bound 37603f05…
+PASS  on-disk Y2 table bytes sha256 == stage-1 record 4623adde…
+PASS  my pair order == the Y1 and Y2 indexes' pair lists
+PASS  stage-2 positions tensors == (p_c, p_t) of each row's frame in my order
+
+| condition | pairs | g (state) | g (mine, pooled) | g exact (to 20 d.p.) | F (lock, exact double) | g − F (float) | g − F (exact) | my label | state label | gap | R²₀ | R²₁ | R²_C |
+PASS  Y1/cue_final: the lock's envelope is the frozen element [249] (rank 250, lower) and == the state's
+PASS  Y1/cue_final: my pooled float64 statistics == state (N exact; others ≤ 1e-12 relative)  | max rel diff 1.54e-15
+PASS  Y1/cue_final: exact arithmetic == state within 1e-12 (g |Δ| 1.11e-16)  | max rel diff 1.92e-16
+PASS  Y1/cue_final: flattened two-pass and fsum agree with exact (g ≤ 1e-12)  | flat +0.00e+00, fsum -1.11e-16
+PASS  Y1/cue_final: E6 (SST one-pass vs pooled two-pass) ≤ 1e-10  | 1.92e-15
+PASS  Y1/cue_final: interpretable (SST > 0, gap ≥ 0.02) exactly  | gap exact 0.141100
+PASS  Y1/cue_final: my label (float and exact) == state label == expected  | ENVELOPE_ONLY_FAILURE
+| Y1/cue_final | 1728 | 0.9955204329648195 | np.float64(0.9955204329648196) | 0.99552043296481962 (130/130 bits) | 0.9968974947302105 | -1.37706176539087455e-03 | -1.37706176539091184e-03 | ENVELOPE_ONLY_FAILURE | ENVELOPE_ONLY_FAILURE | 0.1411 | 0.8182 | 0.9587 | 0.9593 |
+PASS  Y1/coordinated: the lock's envelope is the frozen element [249] (rank 250, lower) and == the state's
+PASS  Y1/coordinated: my pooled float64 statistics == state (N exact; others ≤ 1e-12 relative)  | max rel diff 4.35e-15
+PASS  Y1/coordinated: exact arithmetic == state within 1e-12 (g |Δ| 0.00e+00)  | max rel diff 1.77e-15
+PASS  Y1/coordinated: flattened two-pass and fsum agree with exact (g ≤ 1e-12)  | flat +0.00e+00, fsum +0.00e+00
+PASS  Y1/coordinated: E6 (SST one-pass vs pooled two-pass) ≤ 1e-10  | 2.72e-15
+PASS  Y1/coordinated: interpretable (SST > 0, gap ≥ 0.02) exactly  | gap exact 0.415945
+PASS  Y1/coordinated: my label (float and exact) == state label == expected  | PASS
+| Y1/coordinated | 864 | 0.9987141803462269 | np.float64(0.9987141803462269) | 0.99871418034622694 (126/126 bits) | 0.9986343903419131 | +7.97900043137955706e-05 | +7.97900043138065210e-05 | PASS | PASS | 0.4159 | 0.5420 | 0.9574 | 0.9579 |
+PASS  Y2/cue_final: the lock's envelope is the frozen element [249] (rank 250, lower) and == the state's
+PASS  Y2/cue_final: my pooled float64 statistics == state (N exact; others ≤ 1e-12 relative)  | max rel diff 1.34e-15
+PASS  Y2/cue_final: exact arithmetic == state within 1e-12 (g |Δ| 0.00e+00)  | max rel diff 8.39e-16
+PASS  Y2/cue_final: flattened two-pass and fsum agree with exact (g ≤ 1e-12)  | flat +0.00e+00, fsum -1.11e-16
+PASS  Y2/cue_final: E6 (SST one-pass vs pooled two-pass) ≤ 1e-10  | 5.03e-16
+PASS  Y2/cue_final: interpretable (SST > 0, gap ≥ 0.02) exactly  | gap exact 0.146771
+PASS  Y2/cue_final: my label (float and exact) == state label == expected  | PASS
+| Y2/cue_final | 288 | 0.9974185656823554 | np.float64(0.9974185656823553) | 0.99741856568235543 (127/127 bits) | 0.9950528086546427 | +2.36575702771257834e-03 | +2.36575702771263602e-03 | PASS | PASS | 0.1468 | 0.8146 | 0.9610 | 0.9613 |
+PASS  Y2/coordinated: the lock's envelope is the frozen element [249] (rank 250, lower) and == the state's
+PASS  Y2/coordinated: my pooled float64 statistics == state (N exact; others ≤ 1e-12 relative)  | max rel diff 1.31e-16
+PASS  Y2/coordinated: exact arithmetic == state within 1e-12 (g |Δ| 0.00e+00)  | max rel diff 6.73e-16
+PASS  Y2/coordinated: flattened two-pass and fsum agree with exact (g ≤ 1e-12)  | flat +0.00e+00, fsum +0.00e+00
+PASS  Y2/coordinated: E6 (SST one-pass vs pooled two-pass) ≤ 1e-10  | 6.73e-16
+PASS  Y2/coordinated: interpretable (SST > 0, gap ≥ 0.02) exactly  | gap exact 0.381217
+PASS  Y2/coordinated: my label (float and exact) == state label == expected  | PASS
+| Y2/coordinated | 144 | 0.9965628370581808 | np.float64(0.9965628370581808) | 0.99656283705818083 (123/123 bits) | 0.9951864564481918 | +1.37638060998901413e-03 | +1.37638060998902432e-03 | PASS | PASS | 0.3812 | 0.5719 | 0.9518 | 0.9531 |
+
+Y1/cue_final: g − F exact = -1.37706176539091184e-03; |g_state − g_exact| = 1.11e-16; |g_mine − g_exact| = 0.00e+00; margin / numerical error = 1.240e+13; g − 0.90 = +0.095520
+Y1/coordinated: g − F exact = +7.97900043138065210e-05; |g_state − g_exact| = 0.00e+00; |g_mine − g_exact| = 0.00e+00; margin / numerical error = 7.979e+295; g − 0.90 = +0.098714
+Y2/cue_final: g − F exact = +2.36575702771263602e-03; |g_state − g_exact| = 0.00e+00; |g_mine − g_exact| = 1.11e-16; margin / numerical error = 2.366e+297; g − 0.90 = +0.097419
+Y2/coordinated: g − F exact = +1.37638060998902432e-03; |g_state − g_exact| = 0.00e+00; |g_mine − g_exact| = 0.00e+00; margin / numerical error = 1.376e+297; g − 0.90 = +0.096563
+PASS  Y1/coordinated: g ≥ F exactly (exact rational comparison with the lock's double) and the float comparison agrees  | g − F = 7.979000e-05 exact, 7.979000e-05 float; numerical error 0.0e+00
+PASS  labels unchanged against the preregistration's rounded display bounds (robustness only)
+PASS  score() classifies with lock['conditions'][c]['envelope']['bound'] (the lock JSON's full-precision double), not a rendered value
+PASS  ' shiny' (30006) × coordinated-adjective-009-1 is exactly one Y1/coordinated row; that frame's p_t token is 30006 (same token at p_c and p_t)  | row 684; frame text 'Ida and Tomas counted {cue} shiny', suffix (30006,)
+PASS  the primary Y1/coordinated result includes all 864 pairs (n_pairs 864, N 68,256)
+PASS  SECONDARY (descriptive only): Y1/coordinated without that pair (863 pairs) keeps the label  | g 0.9987161006600696 (float 0.9987161006600694); g − F +8.171e-05; Δg vs primary +1.920e-06
+INFO  the shiny pair: SSE0 4.4206, SSE1 3.3064, SSEC 3.2194; mean Δc -4.2208
+PASS  draw-values.pt: my tensor digests == the calibration record's draw_arrays_sha256
+PASS  Y1/cue_final: F == the 250th ascending of the 10,000 draws (undefined at −inf) == lock  | undefined 0; CDF of fresh g among defined draws 0.0001
+PASS  Y1/coordinated: F == the 250th ascending of the 10,000 draws (undefined at −inf) == lock  | undefined 0; CDF of fresh g among defined draws 0.0431
+PASS  Y2/cue_final: F == the 250th ascending of the 10,000 draws (undefined at −inf) == lock  | undefined 0; CDF of fresh g among defined draws 0.3180
+PASS  Y2/coordinated: F == the 250th ascending of the 10,000 draws (undefined at −inf) == lock  | undefined 0; CDF of fresh g among defined draws 0.0927
+
+SCORE: ALL PASS
