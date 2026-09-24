@@ -3,6 +3,12 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Closed (2026-09-24):** executed to completion — freeze, calibrate, lock, confirm, report and the exploratory
+`replicate-021` each ran once; all eight conditions passed. The body below is not edited; the *Constants* block, copied
+from revision 2, still names design revision 2 (`0f1009c`), whereas the code, the lock and the results bind design
+revision 4 (`219cdc5`) and plan revision 3 (`e6d8299`). See the experiment's
+[README](../../../experiments/022-upstream-error-localization/README.md).
+
 **Plan revision 3** (2026-09-23). It tracks design revision 4 (`219cdc5`). The independent implementation review of
 the revision-2 implementation found that Experiment 020's Level-0 program built the coordinated-frame layer-1/2
 reference rows through `p_t` rather than through the cue position `p_c`. The 020/021 errata record that defect. The
@@ -229,6 +235,9 @@ compared with the kernel on the first 16 draws of each population and on the fre
   and exposed table, and no 021 stage-1 or stage-2 artifact. A test runs `calibrate` with those artifacts absent.
 
 ## Constants (copied from revision 2; a tier-A test pins every one)
+
+> Closure note (2026-09-24): the `DESIGN` line below was not refreshed from revision 2; the code binds
+> `DESIGN = {"revision": 4, "commit": "219cdc5"}` and `PLAN = {"revision": 3, "commit": "e6d8299"}`.
 
 - `DESIGN = {"path": …, "revision": 2, "commit": "0f1009c"}`; `B = 10_000`; `CROSS_CHECK_DRAWS = 16`.
 - Order statistics: `LOWER_RANK = 250` (element `[249]`) for C1 and C4; `UPPER_RANK = 9751` (element `[9750]`) for C2

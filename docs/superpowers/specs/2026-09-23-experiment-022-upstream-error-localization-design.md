@@ -2,6 +2,14 @@
 
 **Date:** 2026-09-23
 
+**Closed (2026-09-24, revision 4):** the single confirmation ran once at `4f8f31d` with no incident, and all eight
+conditions passed individually (C1–C4 × Y1/Y2, each within its frozen envelope and meaning guard; no aggregate label).
+The exploratory replication on Experiment 021's spent set ran after the report and changes nothing. The body below is
+not edited; one statement is corrected at closure: the tolerances of *Identity and isolation gates* do not all carry
+margins of at least 8× — against the calibration's exposed maxima they were I1 7.0×, I3 1.8× and I4 7.7×, and I3 was
+knowingly kept at 1e-4 (confirm: I1 6.1×, I3 2.4×, I4 13×; every gate passed). See the experiment's
+[README](../../../experiments/022-upstream-error-localization/README.md) and its `evidence/`.
+
 **Status:** Revision 4. The independent implementation review of revision 3 found a computational defect inherited
 from Experiment 020 (recorded in the post-closure errata of Experiments 020 and 021). In coordinated-adjective frames,
 020's Level-0 program built the committed chain's layer-1/2 reference rows through `p_t` instead of through the cue
