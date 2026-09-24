@@ -404,3 +404,101 @@ def test_extract_cells_runs_the_identities_in_order_and_writes_a_verifiable_arti
     with pytest.raises(b0c.ExtractionMismatch, match="E1"):
         b0c.extract_cells(dict(table, noun_keys=["x"] * 5), record, units, table["noun_keys"], recompute=recompute)
     assert calls == ["E4"]  # an E1 failure stops before the model is ever consulted
+
+
+# ---------------------------------------------------------------------------
+# Task 4: the tokenizer-only freeze (a stub tokenizer, tier A; the real tokenizer, tier C).
+
+
+def _confirmation_022(tokenizer, words=("general",), texts=("The dairy produces {cue}",)):
+    """A stand-in for Experiment 022's committed confirmation: its cues and frame texts are excluded from 023."""
+    return {"cues": [{"word": word, "token_id": tokenizer.id(" " + word), "class": "determiner-like"} for word in words],
+            "frames": [{"text_template": text, "cue_ids": {"sg": tokenizer.id(" one"), "pl": tokenizer.id(" two")}} for text in texts], "content_sha256": "2" * 64}
+
+
+def test_the_freeze_takes_the_first_eligible_entries_and_excludes_022s_units():
+    from test_upstream_localization import StubTokenizer, _stub_inputs
+
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer, planted=("humble",))
+    payload = b0c.freeze_payload(tokenizer, inputs, _confirmation_022(tokenizer), "f" * 64, model={"model_id": "stub", "revision": "x"})
+    words = {stratum: [entry["word"] for entry in payload["cues"] if entry["class"] == stratum] for stratum in b0c.STRATA}
+    assert words["determiner-like"] == ["subsequent", "given", "chosen", "selected", "present", "ultimate", "preceding", "following"]  # general: 022's
+    assert words["quantity"] == ["tons", "piles", "masses", "stacks", "gross", "net", "scores", "batches"]
+    assert words["adjective"] == ["proud", "shy", "lazy", "busy", "sturdy", "fragile", "shiny", "dusty"]  # humble planted in an earlier confirmation
+    cardinal = [entry for entry in payload["frames"] if entry["template_id"] == "cardinal"]
+    assert cardinal[0]["text_template"] == "The shelter feeds {cue}" and [entry["frame_id"] for entry in cardinal] == [f"cardinal-023-{k}" for k in range(1, 7)]
+    reasons = {(entry["candidate"], entry["reason"].split(" ")[0]) for entry in payload["rejected"]}
+    assert ("general", "token") in reasons and ("humble", "token") in reasons and ("The dairy produces {cue}", "text") in reasons
+    assert payload["exclusion"]["sources"][-1]["source"] == "confirmation-022" and payload["scope"] == b0c.SCOPE
+    assert payload["counts"] == {"classes": {stratum: 8 for stratum in b0c.STRATA}, "templates": {template: 6 for template in b0c.TEMPLATES}}
+    coordinated = [entry for entry in payload["frames"] if entry["template_id"] == "coordinated-adjective"]
+    assert all(entry["p_t"] == entry["p_c"] + 1 for entry in coordinated)
+    confirmation = b0c.confirmation_from_payload(payload, inputs.pool)
+    manifest = confirmation.manifest()
+    assert len(manifest["S1-REF"]) == 18 and len(manifest["S1-VALIDITY"]) == 18 and len(manifest["S2-TARGET"]["Y2"]) == 24 * 18
+    assert len(manifest["S2-TARGET"]["Y1"]) == 24 * len(inputs.pool.frames) and len(confirmation.manifest_keys()) == 36 + 24 * (len(inputs.pool.frames) + 18)
+
+
+def test_a_freeze_shortfall_writes_nothing_and_is_never_refilled():
+    from test_upstream_localization import StubTokenizer, _stub_inputs
+
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer)
+    used = _confirmation_022(tokenizer, words=("tons", "piles", "masses", "stacks", "gross", "net", "scores"))  # 7 of the 14 quantity words
+    with pytest.raises(b0c.FreezeShortfall, match="quantity: 7 eligible of 8"):
+        b0c.freeze_payload(tokenizer, inputs, used, "f" * 64)
+
+
+def test_a_tampered_or_stale_confirmation_file_is_refused(tmp_path):
+    from test_upstream_localization import StubTokenizer, _stub_inputs
+
+    from neural_decompiler import plural_mechanism as pm
+
+    tokenizer = StubTokenizer()
+    inputs = _stub_inputs(tokenizer)
+    c022 = _confirmation_022(tokenizer)
+    payload = b0c.freeze_payload(tokenizer, inputs, c022, "f" * 64)
+    path = tmp_path / "confirmation-v1.json"
+    path.write_text(pm.canonical_json(payload) + "\n")
+    assert len(b0c.load_confirmation_023(path, inputs, c022, "f" * 64).tokens) == 24
+    for mutate in (lambda p: p["cues"][0].update(word="other"), lambda p: p["manifest"]["S1-REF"].pop(), lambda p: p.update(counts={}), lambda p: p.update(experiment="022")):
+        changed = json.loads(path.read_text())
+        mutate(changed)
+        changed["content_sha256"] = pm.sha256_text(pm.canonical_json({k: v for k, v in changed.items() if k != "content_sha256"}))
+        (tmp_path / "bad.json").write_text(pm.canonical_json(changed) + "\n")
+        with pytest.raises(b0c.PhaseError):
+            b0c.load_confirmation_023(tmp_path / "bad.json", inputs, c022, "f" * 64)
+    with pytest.raises(b0c.PhaseError, match="sources|exclusion"):
+        b0c.load_confirmation_023(path, inputs, c022, "e" * 64)  # 022's confirmation file changed since the freeze
+    later = _confirmation_022(tokenizer, words=("general", payload["cues"][0]["word"]))  # a unit that became used after the freeze
+    with pytest.raises(b0c.PhaseError):
+        b0c.load_confirmation_023(path, inputs, later, "f" * 64)
+
+
+@pytest.mark.pythia_smoke
+def test_the_real_tokenizer_freeze_takes_the_designs_expected_units_and_writes_nothing():
+    """Task 4's contract: with the real tokenizer and the real exclusion sources (022's confirmation included), in memory
+    only, the picks are the ones design revision 2 documents. Nothing is written; the freeze phase is a later,
+    authorized step."""
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    from transformers import AutoTokenizer
+
+    from neural_decompiler.models import PYTHIA_70M
+
+    tokenizer = AutoTokenizer.from_pretrained(PYTHIA_70M.model_id, revision=PYTHIA_70M.revision, local_files_only=True)
+    inputs = ul.load_frozen_inputs(ROOT)
+    c022_path = ROOT / ul.CONFIRMATION_RELATIVE_PATH
+    target = ROOT / b0c.CONFIRMATION_RELATIVE_PATH
+    existed = target.exists()
+    payload = b0c.freeze_payload(tokenizer, inputs, json.loads(c022_path.read_text()), rc.file_sha256(c022_path))
+    assert target.exists() == existed
+    expected = {"determiner-like": ["general", "subsequent", "given", "chosen", "selected", "present", "ultimate", "preceding"],
+                "quantity": ["tons", "piles", "masses", "stacks", "gross", "net", "scores", "batches"],
+                "adjective": ["humble", "proud", "shy", "lazy", "busy", "sturdy", "fragile", "shiny"]}
+    assert {stratum: [entry["word"] for entry in payload["cues"] if entry["class"] == stratum] for stratum in b0c.STRATA} == expected
+    assert {template: [entry["text_template"] for entry in payload["frames"] if entry["template_id"] == template] for template in b0c.TEMPLATES} == \
+        {template: list(texts[:6]) for template, texts in b0c.FRAME_CANDIDATES.items()}
+    assert payload["rejected"] == [] and len(payload["exclusion"]["cue_token_ids"]) == 327 and len(payload["exclusion"]["frame_texts"]) == 144
+    assert all(entry["p_t"] == entry["p_c"] + (1 if entry["template_id"] == ul.COORDINATED else 0) for entry in payload["frames"])
