@@ -447,3 +447,148 @@ def read_cells(data_path: Path, index_path: Path, *, units: ExposedUnits, meta: 
     except IncidentError as error:
         raise PhaseError(f"the exposed-cells artifact does not match its index: {error}") from None
     return blocks["cells"], index
+
+
+# ---------------------------------------------------------------------------
+# Extraction (once; read-only on Experiment 022's table; weights only): identities E1–E6.
+
+
+class ExtractionMismatch(PhaseError):
+    """E1–E3: the local table is not the one 022's record binds, or the cells do not reproduce 022's stored cells.
+    Nothing is written and the phase stops for review (not an incident)."""
+
+
+def verify_table_022(table: Mapping[str, Any], record_022: Mapping[str, Any], units: ExposedUnits, noun_keys: Sequence[str]) -> dict[str, Any]:
+    """E1: every tensor of the local table against the digest in 022's committed record, and its pair and noun orders
+    against the canonical ones rebuilt from the frozen inputs."""
+    bound = dict(record_022["rematerialization"]["table_sha256"])
+    actual = {name: rc.tensor_digest(table[name]) for name in ul.CalibrationTable.TENSORS}
+    actual.update({f"gate_{name}": rc.tensor_digest(values) for name, values in sorted(table["gates"].items())})
+    if actual != bound:
+        raise ExtractionMismatch(f"E1: the local table's tensors are not the ones 022's record binds: {sorted(key for key in set(actual) | set(bound) if actual.get(key) != bound.get(key))}")
+    orders = {"cues": [word for word, _, _ in units.cues], "token_ids": [int(token) for _, token, _ in units.cues], "classes": [cls for _, _, cls in units.cues],
+              "frames": [frame.frame_id for frame in units.frames], "templates": [frame.template_id for frame in units.frames], "noun_keys": list(noun_keys)}
+    wrong = sorted(key for key, value in orders.items() if list(table[key]) != value)
+    if wrong:
+        raise ExtractionMismatch(f"E1: the local table's orders differ from the canonical ones: {wrong}")
+    return {"tensors": sorted(bound), "orders": sorted(orders), "passed": True}
+
+
+def cells_from_table(table: Mapping[str, Any], units: ExposedUnits) -> torch.Tensor:
+    """Every exposed pair's cells in the canonical flat order: ``y`` = the stored ``Δc``, ``P0`` = the stored mask-0
+    coalition, ``P1`` = the stored mask 14 / 30, ``C`` = the stored ceiling."""
+    dc, dc_hat, ceiling = table["dc"], table["dc_hat"], table["ceiling"]
+    cells = torch.empty(units.n_pairs, len(CELL_COLUMNS), dtype=torch.float64)
+    for fi in range(len(units.frames)):
+        mask = P1_MASK[units.group_of(fi)]
+        for ci in range(len(units.cues)):
+            cells[units.pair_index(ci, fi)] = pair_cells(dc[ci, fi], dc_hat[ci, fi, P0_MASK], dc_hat[ci, fi, mask], ceiling[ci, fi])
+    return cells
+
+
+def verify_cells_against_table(cells: torch.Tensor, table: Mapping[str, Any], units: ExposedUnits) -> dict[str, Any]:
+    """E2: ``SSE0``, ``SSE1``, ``n``, ``mean`` and ``M2`` equal 022's stored per-pair cells bit for bit; E3: the cells,
+    computed a second time, are bit-identical."""
+    n_pairs = units.n_pairs
+    sse = table["sse"].reshape(n_pairs, -1)
+    p1 = torch.tensor([P1_MASK[units.group_of(i % len(units.frames))] for i in range(n_pairs)], dtype=torch.int64)
+    expected = {"n": table["count"].reshape(-1), "SSE0": sse[:, P0_MASK], "SSE1": sse[torch.arange(n_pairs), p1], "mean": table["mean"].reshape(-1),
+                "M2": table["m2"].reshape(-1)}
+    wrong = sorted(name for name, values in expected.items() if not torch.equal(cells[:, CELL_COLUMNS.index(name)], values.double()))
+    if wrong:
+        raise ExtractionMismatch(f"E2: the cells' {wrong} are not 022's stored cells bit for bit")
+    if not torch.equal(cells_from_table(table, units), cells):
+        raise ExtractionMismatch("E3: the cells computed a second time are not bit-identical")
+    return {"E2": {"columns": sorted(expected), "passed": True}, "E3": {"passed": True}}
+
+
+def recompute_p1(progs: ul.ModelPrograms, inputs: ul.FrozenInputs, units: ExposedUnits, table: Mapping[str, Any], *, log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """E4: ``P1`` recomputed for every exposed pair from the weights and 020's locked states by 022's own functions,
+    against the table's stored ``P1``. No prompt, no forward pass."""
+    say = log or (lambda message: None)
+    locked = inputs.closure["exploration"]["locked_states"]
+    worst = {"max": 0.0, "at": ""}
+    for fi, frame in enumerate(units.frames):
+        state = rd.state_from_locked(locked[frame.frame_id], frame)
+        rows16 = ul.reference_rows_017(progs.programs, state)
+        reference_id = int(inputs.pool.reference_ids[frame.template_id])
+        mask = P1_MASK[units.group_of(fi)]
+        for ci, (word, token_id, _) in enumerate(units.cues):
+            ctx = ul.pair_context(progs, frame, state, reference_id, int(token_id), word, rows16)
+            p1 = ul.contrast_of(progs, state, ul.compose_dx3(progs, ctx, mask))
+            ul._worse(worst, float((p1 - table["dc_hat"][ci, fi, mask].double()).abs().max()), f"{word}|{frame.frame_id}")
+        if (fi + 1) % 12 == 0:
+            say(f"  E4: {fi + 1}/{len(units.frames)} frames recomputed; max |ΔP1| so far {worst['max']}")
+    worst["passed"] = worst.get("max") is not None and worst["max"] <= TOLERANCES["E4"]
+    if not worst["passed"]:
+        raise IncidentError(f"E4 failed: P1 recomputed from the weights differs from 022's stored P1 by {worst['max']} at {worst['at']} against {TOLERANCES['E4']:.0e}")
+    return rc.json_safe(worst)
+
+
+def direct_selection(table: Mapping[str, Any], units: ExposedUnits, pairs: torch.Tensor) -> dict[str, float]:
+    """A selection's statistics recomputed directly from the per-noun table (the independent side of E5)."""
+    n_nouns = table["dc"].shape[-1]
+    flat = {"y": table["dc"].reshape(-1, n_nouns), "c": table["ceiling"].reshape(-1, n_nouns)}
+    dc_hat = table["dc_hat"].reshape(units.n_pairs, -1, n_nouns)
+    p1_mask = torch.tensor([P1_MASK[units.group_of(int(i) % len(units.frames))] for i in pairs], dtype=torch.int64)
+    y = flat["y"][pairs].double().reshape(-1)
+    p0 = dc_hat[pairs, P0_MASK].double().reshape(-1)
+    p1 = dc_hat[pairs, p1_mask].double().reshape(-1)
+    c = flat["c"][pairs].double().reshape(-1)
+    sst = float(((y - y.mean()) ** 2).sum())
+    sse0, sse1, ssec = (float(((y - k) ** 2).sum()) for k in (p0, p1, c))
+    defined = sst > 0 and sse0 - ssec >= GAP_MIN * sst
+    return {"SST": sst, "g": (sse0 - sse1) / (sse0 - ssec) if defined else math.nan, "gap": (sse0 - ssec) / sst if sst > 0 else math.nan}
+
+
+def agreement(kernel: float, direct: float) -> float:
+    if math.isnan(kernel) and math.isnan(direct):
+        return 0.0
+    if math.isnan(kernel) != math.isnan(direct):
+        return math.inf
+    return abs(kernel - direct) / max(1.0, abs(direct))
+
+
+def verify_draws_against_table(cells: torch.Tensor, table: Mapping[str, Any], units: ExposedUnits, draws: int = CROSS_CHECK_DRAWS) -> dict[str, Any]:
+    """E5 and E6: on the first ``draws`` calibration draws of every population and group, ``SST``, ``g`` and the gap
+    from the cells against a direct recomputation from the per-noun table; ``SST`` against the pooled two-pass identity
+    on every pair and every one of those draws."""
+    per_pair = enforce_e6(pool(cells, torch.arange(units.n_pairs).unsqueeze(1)), "a single exposed pair")
+    indices = draw_indices(units, draws)
+    worst = {"max_difference": 0.0, "at": "", "n_checked": 0}
+    e6_draws = 0.0
+    for population in POPULATIONS:
+        for group in GROUPS:
+            pairs = draw_pairs(units, indices, population, group, range(draws))
+            pooled = pool(cells, pairs)
+            e6_draws = max(e6_draws, enforce_e6(pooled, f"{population}/{group} draws"))
+            stats = statistics(pooled)
+            for b in range(draws):
+                direct = direct_selection(table, units, pairs[b])
+                for name, value in (("SST", float(pooled["SST"][b])), ("g", float(stats["g"][b])), ("gap", float(stats["gap"][b]))):
+                    difference = agreement(value, direct[name])
+                    worst["n_checked"] += 1
+                    if difference > worst["max_difference"]:
+                        worst.update({"max_difference": difference, "at": f"{population}/{group}/draw {b}/{name}"})
+    worst["passed"] = worst["max_difference"] <= TOLERANCES["E5"]
+    if not worst["passed"]:
+        raise IncidentError(f"E5 failed: the cells disagree with the per-noun table by {worst['max_difference']} at {worst['at']} against {TOLERANCES['E5']:.0e}")
+    return {"E5": rc.json_safe(worst), "E6": {"max_per_pair": per_pair, "max_per_draw": e6_draws, "tolerance": TOLERANCES["E6"], "passed": True}}
+
+
+def extract_cells(table: Mapping[str, Any], record_022: Mapping[str, Any], units: ExposedUnits, noun_keys: Sequence[str], *,
+                  recompute: Callable[[], Mapping[str, Any]], log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """The extraction in its frozen order — E1, the cells, E2 and E3, E4 (``recompute``: P1 from the weights), E5 and
+    E6 — returning the cells, the index meta and every check. Any failure raises before anything is written."""
+    say = log or (lambda message: None)
+    checks: dict[str, Any] = {"E1": verify_table_022(table, record_022, units, noun_keys)}
+    say(f"E1: {len(checks['E1']['tensors'])} tensor digests and the orders verified")
+    cells = cells_from_table(table, units)
+    checks.update(verify_cells_against_table(cells, table, units))
+    say("E2, E3: the cells reproduce 022's stored cells bit for bit, twice")
+    checks["E4"] = dict(recompute())
+    say(f"E4: P1 recomputed from the weights, max |Δ| {checks['E4']['max']}")
+    checks.update(verify_draws_against_table(cells, table, units))
+    say(f"E5: {checks['E5']['n_checked']} draw quantities, max {checks['E5']['max_difference']:.2e}; E6: pairs {checks['E6']['max_per_pair']:.2e}, "
+        f"draws {checks['E6']['max_per_draw']:.2e}")
+    return {"cells": cells, "meta": cells_meta(units, noun_keys, record_022), "checks": rc.json_safe(checks)}

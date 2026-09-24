@@ -272,3 +272,135 @@ def test_the_cells_artifact_round_trips_and_refuses_any_mismatch(tmp_path):
     data.write_bytes(bytes(raw))
     with pytest.raises(b0c.PhaseError, match="does not match its index"):
         b0c.read_cells(data, index, units=units, meta=meta)
+
+
+# ---------------------------------------------------------------------------
+# Task 3: the extraction identities, on a synthetic table in 022's format (tier A) and read-only on the real local
+# 022 table (tier C, opt-in; no artifact is written and no phase runs).
+
+
+def _synthetic_table(seed=5):
+    """A small table in 022's saved format: 3 cues per 022 class, 3 frames per template, 5 nouns; the per-pair cells
+    computed by 022's own ``ul.pair_cells`` exactly as 022's calibration stored them."""
+    generator = torch.Generator().manual_seed(seed)
+    units = _toy_units()
+    cues = units.cues
+    n_c, n_f, n_n = len(cues), len(units.frames), 5
+    dc = torch.randn(n_c, n_f, n_n, generator=generator, dtype=torch.float64) - 3.0
+    dc_hat = dc.unsqueeze(2) + 0.3 * torch.randn(n_c, n_f, 32, n_n, generator=generator, dtype=torch.float64)
+    ceiling = dc + 0.05 * torch.randn(n_c, n_f, n_n, generator=generator, dtype=torch.float64)
+    sse = torch.empty(n_c, n_f, 32, dtype=torch.float64)
+    count, mean, m2 = (torch.empty(n_c, n_f, dtype=torch.float64) for _ in range(3))
+    for ci in range(n_c):
+        for fi in range(n_f):
+            sse[ci, fi], count[ci, fi], mean[ci, fi], m2[ci, fi] = ul.pair_cells(dc[ci, fi], dc_hat[ci, fi])
+    gates = {name: torch.rand(n_c, n_f, generator=generator, dtype=torch.float64) for name in ("I1", "I2", "I3", "I4", "I5")}
+    table = {"cues": [w for w, _, _ in cues], "token_ids": [t for _, t, _ in cues], "classes": [c for _, _, c in cues], "frames": [f.frame_id for f in units.frames],
+             "templates": [f.template_id for f in units.frames], "noun_keys": [f"n{k}" for k in range(n_n)], "dc": dc, "dc_hat": dc_hat, "sse": sse, "count": count,
+             "mean": mean, "m2": m2, "ceiling": ceiling, "historical": dc_hat[:, :, 0].clone(), "gates": gates}
+    record = {"rematerialization": {"table_sha256": {**{name: rc.tensor_digest(table[name]) for name in ul.CalibrationTable.TENSORS},
+                                                     **{f"gate_{name}": rc.tensor_digest(values) for name, values in sorted(gates.items())}}}}
+    return table, record, units
+
+
+def test_the_extraction_identities_hold_on_a_table_in_022s_format():
+    table, record, units = _synthetic_table()
+    assert b0c.verify_table_022(table, record, units, table["noun_keys"])["passed"]
+    cells = b0c.cells_from_table(table, units)
+    checks = b0c.verify_cells_against_table(cells, table, units)
+    assert checks["E2"]["passed"] and checks["E3"]["passed"]
+    fi_coordinated = units.group_frames("coordinated")[0]
+    row = units.pair_index(2, fi_coordinated)
+    assert float(cells[row, 4]) == float(table["sse"][2, fi_coordinated, 30])  # SSE1 is mask 30 in a coordinated frame, mask 14 in a cue-final one
+    assert float(cells[units.pair_index(2, units.group_frames("cue_final")[0]), 4]) == float(table["sse"][2, units.group_frames("cue_final")[0], 14])
+    draws = b0c.verify_draws_against_table(cells, table, units, draws=4)
+    assert draws["E5"]["passed"] and draws["E5"]["max_difference"] <= 1e-12 and draws["E5"]["n_checked"] == 4 * 4 * 3 and draws["E6"]["passed"]
+
+
+def test_every_extraction_mismatch_refuses():
+    table, record, units = _synthetic_table()
+    tampered = dict(table, dc=table["dc"].clone())
+    tampered["dc"][0, 0, 0] += 1e-9
+    with pytest.raises(b0c.ExtractionMismatch, match="E1.*dc"):
+        b0c.verify_table_022(tampered, record, units, table["noun_keys"])
+    with pytest.raises(b0c.ExtractionMismatch, match="E1.*frames"):
+        b0c.verify_table_022(dict(table, frames=list(reversed(table["frames"]))), record, units, table["noun_keys"])
+    with pytest.raises(b0c.ExtractionMismatch, match="E1.*noun_keys"):
+        b0c.verify_table_022(table, record, units, list(reversed(table["noun_keys"])))
+    cells = b0c.cells_from_table(table, units)
+    wrong = cells.clone()
+    wrong[3, 4] = float(wrong[3, 4]) * (1 + 1e-15) + 1e-12
+    with pytest.raises(b0c.ExtractionMismatch, match="E2.*SSE1"):
+        b0c.verify_cells_against_table(wrong, table, units)
+    bad = cells.clone()
+    bad[1, 2] += 1.0  # Q inconsistent with the two-pass moments: E6 on the single pair
+    with pytest.raises(b0c.IncidentError, match="E6"):
+        b0c.verify_draws_against_table(bad, table, units, draws=2)
+
+
+requires_table = pytest.mark.skipif(not TABLE_022.exists(), reason="the local Experiment 022 calibration table is not present")
+
+
+@pytest.mark.pythia_smoke
+@requires_table
+def test_real_022_table_extraction_identities_read_only():
+    """E1–E3, E5 and E6 on the real local 022 table, read-only: the implementation reproduces 022's stored cells bit for
+    bit before any extraction runs. Nothing is written."""
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    inputs = ul.load_frozen_inputs(ROOT)
+    units = b0c.exposed_units(inputs)
+    record = json.loads((ROOT / ul.CALIBRATION_RELATIVE_PATH).read_text())
+    table = torch.load(TABLE_022)
+    assert rc.file_sha256(TABLE_022) == b0c.INHERITED_022["table_file_sha256"]
+    assert b0c.verify_table_022(table, record, units, table["noun_keys"])["passed"]
+    cells = b0c.cells_from_table(table, units)
+    checks = b0c.verify_cells_against_table(cells, table, units)
+    assert checks["E2"]["passed"] and checks["E3"]["passed"]
+    draws = b0c.verify_draws_against_table(cells, table, units)
+    assert draws["E5"]["max_difference"] <= 1e-10 and draws["E6"]["max_per_pair"] <= 1e-10 and draws["E6"]["max_per_draw"] <= 1e-10
+
+
+@pytest.mark.pythia_smoke
+@requires_table
+def test_real_022_p1_recomputes_bit_for_bit_on_a_handful_of_exposed_pairs():
+    """E4 on a deterministic handful of exposed pairs (every template, both groups): 022's own functions, fed the
+    pinned weights and 020's locked states, reproduce the stored P1 — and the stored P0 — exactly. Weights only."""
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    from neural_decompiler import readout_decompilation as rd
+    from neural_decompiler.models import PYTHIA_70M, load_model
+
+    inputs = ul.load_frozen_inputs(ROOT)
+    units = b0c.exposed_units(inputs)
+    table = torch.load(TABLE_022)
+    progs = ul.ModelPrograms.from_model(load_model(PYTHIA_70M), inputs)
+    locked = inputs.closure["exploration"]["locked_states"]
+    picks = [(0, 0), (44, 40), (90, 75), (174, 107)] + [(ci, units.group_frames("coordinated")[k]) for ci, k in ((7, 0), (130, 20))]
+    for ci, fi in picks:
+        frame = units.frames[fi]
+        word, token_id, _ = units.cues[ci]
+        state = rd.state_from_locked(locked[frame.frame_id], frame)
+        ctx = ul.pair_context(progs, frame, state, int(inputs.pool.reference_ids[frame.template_id]), int(token_id), word)
+        for mask in (b0c.P0_MASK, b0c.P1_MASK[units.group_of(fi)]):
+            recomputed = ul.contrast_of(progs, state, ul.compose_dx3(progs, ctx, mask))
+            assert torch.equal(recomputed, table["dc_hat"][ci, fi, mask]), (word, frame.frame_id, mask)
+
+
+def test_extract_cells_runs_the_identities_in_order_and_writes_a_verifiable_artifact(tmp_path):
+    table, record, units = _synthetic_table()
+    calls = []
+
+    def recompute():
+        calls.append("E4")
+        return {"max": 0.0, "at": "", "passed": True}
+
+    result = b0c.extract_cells(table, record, units, table["noun_keys"], recompute=recompute)
+    assert calls == ["E4"] and set(result["checks"]) == {"E1", "E2", "E3", "E4", "E5", "E6"}
+    data, index = tmp_path / "c.f64", tmp_path / "c.json"
+    b0c.write_cells(data, index, result["cells"], result["meta"], {"checks": result["checks"]})
+    cells, loaded = b0c.read_cells(data, index, units=units, meta=b0c.cells_meta(units, table["noun_keys"], record))
+    assert torch.equal(cells, result["cells"]) and loaded["extraction"]["checks"]["E2"]["passed"]
+    with pytest.raises(b0c.ExtractionMismatch, match="E1"):
+        b0c.extract_cells(dict(table, noun_keys=["x"] * 5), record, units, table["noun_keys"], recompute=recompute)
+    assert calls == ["E4"]  # an E1 failure stops before the model is ever consulted
