@@ -130,7 +130,7 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   An incident is recorded and stops the phase; nothing is retried.
 - **`report`** renders `outputs/experiment-023/report.md`.
 
-## Status — 2026-09-24: extracted and frozen; both artifacts committed and independently reviewed; calibrate next
+## Status — 2026-09-24: extracted, frozen, calibrated and locked; every artifact committed and independently reviewed; confirm next
 
 - **Implementation.** Plan Tasks 1–6 are implemented in `src/neural_decompiler/block0_completion.py`, this runner and
   their tests:
@@ -221,15 +221,35 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - the weights claim is stated precisely.
 
   The run records and both reviews are in `evidence/` (`391586f`).
-- **Not run:** `calibrate`, `lock`, `confirm` and `report`. No Experiment 023 prompt has been executed.
+- **`calibrate` ran once and succeeded.** It ran at `4e5deeb`, 15:53:07–15:53:31Z, exit 0, with no model; 022's
+  table and the weight blob were blocked.
+  - 0 undefined draws. The kernel matches a plain loop within 8.6e-14; the largest E6 difference is 7.5e-15.
+  - The floors, F = v₍₂₅₀₎ per condition: 0.996897 / 0.998634 / 0.995053 / 0.995186. None is guard-bound.
+  - Floor review: PASS. The four gates are marginal by design; the joint all-four share, 0.9178, is recorded
+    descriptively and never corrected.
+  - The record is committed alone, byte-identically, in `51b5c7d` (`94db6df2…`).
+- **Experiment 020's results state is archived.** The hash-pinned but gitignored file is the only copy of the locked
+  reference states that lock and confirm use. An exact, recoverable copy is now in `evidence/archive/` (`13b8d39`).
+- **`lock` ran once and succeeded.** It ran at `13b8d39`, 16:47:12–16:51:59Z, exit 0. The weights were loaded once
+  and every module call was refused after the load.
+  - Tier C passed first: 525.
+  - I5 is exactly 0 and the block-0 algebra is 4.9e-15.
+  - Independent lock review: PASS WITH NOTES, no blockers. The reviewer regenerated the whole Y1 table
+    (`37603f05…`, 409,536 values) and the lock (`4bd5a5b1…`) byte for byte.
+  - The four files are committed together, byte-identically, in `f2294ab`. Confirm's own `validate_lock`, run
+    read-only, accepts them.
+  - The freeze's no-weights evidence is restated in the lock review's evidence (`a0e41a9`), not in the bound design
+    text: a Python-level file-open log cannot show weight reads, so the conclusion rests on the code path and the
+    tokenizer-only reconstruction.
+- **Not run:** `confirm` and `report`. No Experiment 023 prompt has been executed; both ledgers are empty.
 - **Next steps, each only when authorized:**
   1. (done) the independent implementation review, its fixes, a re-review, and tiers A/B/C on the final implementation
      commit;
   2. (done) `extract`, the independent extraction review, and the byte-identical installation and commit of the
      artifact (`83d9c58`);
   3. (done) `freeze`, the independent freeze review, and the byte-identical commit (`a9287ec`);
-  4. `calibrate` once, then install, commit and the floor review;
-  5. `lock`, then install, commit and the lock review;
+  4. (done) `calibrate` once, the floor review, and the commit (`51b5c7d`);
+  5. (done) `lock`, the independent lock review, and the commit (`f2294ab`);
   6. `confirm` once;
   7. `report`;
   8. closure.
