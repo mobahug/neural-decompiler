@@ -5,9 +5,16 @@ is frozen and calibrated on the fake by its own runner — so 022's calibration 
 record is installed. The 023 constants are pointed at that world's 022 files. The quotas are one cue per stratum and
 one frame per template (3 cues, 3 frames) and ``B`` is 40. Right after ``extract`` the fake 022 table is deleted from
 every later stage, so ``freeze``, ``calibrate``, ``lock``, ``confirm`` and ``report`` are shown to run without it; a
-guard also makes any attempt to load it fail. On that world: every phase, every refusal, the extraction's stop and
-incident, the ledger isolation, the no-forward-pass extraction and lock, I7, stage 1 with the write-once Y2 table, the
-barrier and its tampering incident, stage 2, the canonical scoring and the report.
+guard also makes any attempt to load it fail. On that world: every phase and its refusals, among them
+- the extraction's precondition, its stop for review and its incidents (an identity, a failed re-check);
+- the ledger isolation and the no-forward-pass extraction and lock;
+- calibrate refusing an altered, foreign or untracked artifact; lock refusing a record that is missing, untracked or
+  not the candidate, and a confirmation file other than the calibrated one;
+- confirm refusing tampered, untracked or changed lock files before any prompt; I7;
+- stage 1 with the write-once Y2 table; the barrier and its incidents (a table changed on disk, a consistent rewrite
+  caught by the digests held in memory, a target key in the ledger); a Y2 table changed after the barrier;
+- stage 2 and a stage-2 identity incident that keeps every measurement;
+- the canonical scoring, the four results kept against a descriptive failure, and the report.
 """
 
 from __future__ import annotations
@@ -618,3 +625,186 @@ def test_a_y2_table_changed_before_the_barrier_is_an_incident_and_no_target_runs
     assert state["confirmation"]["incident"]["phase"] == "confirm" and (root / b0c.Y2_TABLE_OUTPUT).exists()  # the evidence is preserved
     with pytest.raises(b0c.PhaseError, match="confirm already started"):
         runner.confirm()
+
+
+# ---------------------------------------------------------------------------
+# The refusals and incidents the independent implementation review asked to see exercised.
+
+
+def _targets(runner) -> set[str]:
+    return {prompt.key for prompt in _confirmation(runner).target_prompts}
+
+
+def test_a_stage2_identity_failure_is_an_incident_that_keeps_every_measurement(world, base023, locked023, sandbox, monkeypatch):
+    root = sandbox(locked023)
+    original = b0c.target_gates
+
+    def failing(*args, **kwargs):
+        out = original(*args, **kwargs)
+        out["gates"]["I3"] = {"max": 1.0, "at": "planted"}
+        return out
+
+    monkeypatch.setattr(b0c, "target_gates", failing)
+    spy = ExecutionSpy(monkeypatch)
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2 and "I3" in logs[-1]
+    state = _state(runner)
+    results = state["confirmation"]
+    assert "I3" in results["incident"]["message"] and results["gates"]["I3"]["max"] == 1.0 and "conditions" not in results  # an incident carries no result
+    tensors = torch.load(runner.stage2_path)  # every fresh measurement was saved before the gates ran
+    assert {key: rc.tensor_digest(value) for key, value in tensors.items()} == results["stage2"]["tensors_sha256"]
+    assert Counter(spy.counts) == Counter({prompt.key: 1 for prompt in _confirmation(runner).all_prompts})
+    with pytest.raises(b0c.PhaseError, match="confirm already started"):
+        runner.confirm()
+    assert runner.report() == 0 and "Confirmation incident" in runner.report_path.read_text()
+
+
+def test_the_barrier_catches_a_consistent_rewrite_through_the_digests_held_in_memory(world, base023, locked023, sandbox, monkeypatch):
+    """The stage-1 record and the Y2 table are rewritten consistently with each other (the re-read record reproduces its
+    own digest and names the new table): only the digests stage 1 wrote, held in memory, can tell."""
+    root = sandbox(locked023)
+    original = b0c.barrier
+
+    def rewriting(root_, state, lock, confirmation, expected=None):
+        stage1 = state["confirmation"]["stage1"]
+        data, index_path = root_ / stage1["y2_table"]["data_path"], root_ / stage1["y2_table"]["index_path"]
+        index = json.loads(index_path.read_text())
+        blocks = ul.read_table(data, index)
+        meta = {key: value for key, value in index.items() if key not in ("format", "dtype", "blocks", "total_bytes", "file_sha256")}
+        new = ul.write_table(data, index_path, [(name, blocks[name] + 1e-6) for name in b0c.GROUPS], meta)
+        stage1["y2_table"].update(file_sha256=new["file_sha256"], index_sha256=rc.file_sha256(index_path))
+        stage1["digest"] = b0c.stage_one_digest(stage1)
+        assert b0c.verified_y2_blocks(root_, stage1, lock) is not None  # consistent on its own
+        return original(root_, state, lock, confirmation, expected)
+
+    monkeypatch.setattr(b0c, "barrier", rewriting)
+    spy = ExecutionSpy(monkeypatch)
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2 and "INCIDENT" in logs[-1]
+    assert "not the one stage 1 wrote" in _state(runner)["confirmation"]["incident"]["message"]
+    assert not set(spy.counts) & _targets(runner) and not runner.stage2_path.exists()  # no S2-TARGET prompt ran
+
+
+def test_a_target_key_in_the_ledger_at_the_barrier_is_an_incident(world, base023, locked023, sandbox, monkeypatch):
+    root = sandbox(locked023)
+    original = b0c.barrier
+
+    def planting(root_, state, lock, confirmation, expected=None):
+        state["executed_prompt_keys"] = sorted(set(state["executed_prompt_keys"]) | {confirmation.target_prompts[0].key})
+        return original(root_, state, lock, confirmation, expected)
+
+    monkeypatch.setattr(b0c, "barrier", planting)
+    spy = ExecutionSpy(monkeypatch)
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2
+    assert "S2-TARGET keys are in the ledger before the barrier" in _state(runner)["confirmation"]["incident"]["message"]
+    assert not set(spy.counts) & _targets(runner)
+
+
+def test_a_y2_table_changed_after_the_barrier_is_an_incident_that_keeps_the_measurements(world, base023, locked023, sandbox, monkeypatch):
+    root = sandbox(locked023)
+    original = ul.stage_two_022
+
+    def tampering(*args, **kwargs):
+        out = original(*args, **kwargs)
+        data = root / b0c.Y2_TABLE_OUTPUT
+        raw = bytearray(data.read_bytes())
+        raw[3] ^= 1
+        data.write_bytes(bytes(raw))
+        return out
+
+    monkeypatch.setattr(ul, "stage_two_022", tampering)
+    runner, logs = make_runner(root, world)
+    assert runner.confirm() == 2
+    results = _state(runner)["confirmation"]
+    assert results["incident"]["phase"] == "confirm" and "stage2" in results and "conditions" not in results and runner.stage2_path.exists()
+
+
+def test_lock_refuses_a_calibration_record_that_is_missing_untracked_or_not_the_candidate(world, base023, calibrated023, sandbox):
+    root = sandbox(calibrated023)
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("lock loaded the weights before its preconditions held")
+
+    installed = root / b0c.CALIBRATION_RELATIVE_PATH
+    original = installed.read_bytes()
+    runner, _ = make_runner(root, world, model_loader=refuse, tracked=lambda path: path != installed)
+    with pytest.raises(b0c.PhaseError, match="install the candidate calibration record"):
+        runner.lock()
+    runner, _ = make_runner(root, world, model_loader=refuse)
+    record = json.loads(original)
+    record["run_id"] = "another run"
+    record["content_sha256"] = rc.content_digest(record)  # a record that verifies on its own, but is not this run's candidate
+    installed.write_text(pm.canonical_json(record) + "\n")
+    with pytest.raises(b0c.PhaseError, match="not the candidate this run wrote"):
+        runner.lock()
+    installed.unlink()
+    with pytest.raises(b0c.PhaseError, match="install the candidate calibration record"):
+        runner.lock()
+    assert not runner.output("candidate-lock.json").exists()
+
+
+def test_calibrate_refuses_a_valid_foreign_or_untracked_exposed_cells_artifact(world, base023, frozen023, sandbox):
+    root = sandbox(frozen023)
+    data, index = root / b0c.CELLS_DATA_RELATIVE_PATH, root / b0c.CELLS_INDEX_RELATIVE_PATH
+    runner, _ = make_runner(root, world, tracked=lambda path: path != data)
+    with pytest.raises(b0c.PhaseError, match="install the candidate exposed cells"):
+        runner.calibrate()
+    runner, _ = make_runner(root, world)
+    inputs = runner._inputs()
+    units = b0c.exposed_units(inputs)
+    cells, loaded = b0c.read_cells(data, index, units=units, meta=b0c.cells_meta(units, runner._noun_keys(inputs), runner._record_022()))
+    meta = {key: value for key, value in loaded.items() if key not in ("format", "dtype", "blocks", "total_bytes", "file_sha256", "extraction", "content_sha256")}
+    b0c.write_cells(data, index, cells, meta, {**loaded["extraction"], "run_id": "another run"})  # the same cells, verifying, from another extraction
+    b0c.read_cells(data, index, units=units, meta=b0c.cells_meta(units, runner._noun_keys(inputs), runner._record_022()))
+    with pytest.raises(b0c.PhaseError, match="not the candidate this run extracted"):
+        runner.calibrate()
+    assert _state(runner)["phases"]["calibrate"]["status"] == "not_started" and not runner.candidate_calibration_path.exists()
+
+
+def test_confirm_refuses_tampered_untracked_or_changed_lock_files_before_any_prompt(world, base023, locked023, sandbox, monkeypatch):
+    """validate_lock on the installed files: each refusal comes before the model is loaded and before any prompt, and
+    leaves confirm unstarted."""
+    root = sandbox(locked023)
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("confirm loaded the model before the lock validated")
+
+    spy = ExecutionSpy(monkeypatch)
+    lock_path = root / b0c.LOCK_RELATIVE_PATH
+
+    def resealed(text):
+        lock = json.loads(text)
+        lock["conditions"]["Y1/cue_final"]["envelope"]["bound"] = 0.5
+        lock["content_sha256"] = rc.content_digest(lock)
+        return pm.canonical_json(lock) + "\n"
+
+    cases = [(b0c.PREREGISTRATION_RELATIVE_PATH, lambda text: text + "\nedited", "preregistration"),
+             (b0c.Y1_TABLE_INDEX_RELATIVE_PATH, lambda text: text.replace('"schema_version":1', '"schema_version": 1', 1), "Y1 table index"),
+             (b0c.LOCK_RELATIVE_PATH, lambda text: text.replace('"schema_version":1', '"schema_version":2', 1), "not a verified Experiment 023 lock"),
+             (b0c.LOCK_RELATIVE_PATH, resealed, "not the candidate this run wrote")]
+    for relative, edit, message in cases:
+        path = root / relative
+        original = path.read_text()
+        path.write_text(edit(original))
+        runner, _ = make_runner(root, world, model_loader=refuse)
+        with pytest.raises(b0c.PhaseError, match=message):
+            runner.confirm()
+        path.write_text(original)
+    data = root / b0c.Y1_TABLE_RELATIVE_PATH
+    raw = data.read_bytes()
+    data.write_bytes(raw[:7] + bytes([raw[7] ^ 1]) + raw[8:])
+    runner, _ = make_runner(root, world, model_loader=refuse)
+    with pytest.raises(b0c.PhaseError, match="committed Y1 table is not the one the lock binds"):
+        runner.confirm()
+    data.write_bytes(raw)
+    for overrides, message in (({"tracked": lambda path: path.name != "preregistration.md"}, "tracked and committed"),
+                               ({"changed_paths": lambda commit: ["src/neural_decompiler/block0_completion.py"]}, "scientific paths changed since the lock"),
+                               ({"changed_paths": lambda commit: None}, "not an ancestor")):
+        runner, _ = make_runner(root, world, model_loader=refuse, **overrides)
+        with pytest.raises(b0c.PhaseError, match=message):
+            runner.confirm()
+    assert not spy.counts and lock_path.exists()
+    state = _state(runner)
+    assert state["phases"]["confirm"]["status"] == "not_started" and state["executed_prompt_keys"] == []
+    assert not (root / b0c.Y2_TABLE_OUTPUT).exists()
