@@ -775,3 +775,154 @@ def load_confirmation_023(path: Path, inputs: ul.FrozenInputs, confirmation_022:
     if {int(token["token_id"]) for token in confirmation.tokens} & used_ids or {frame.text_template for frame in confirmation.frames} & used_texts:
         raise PhaseError("a new cue or frame was used by an earlier experiment")
     return confirmation
+
+
+# ---------------------------------------------------------------------------
+# The calibration (exposed only, once; no model): from the committed exposed-cells artifact alone (Task 5).
+
+KERNEL_KEYS = ("g", "defined", "gap", "SST", "R2_0", "R2_1", "R2_C", "ceiling_limited")
+
+
+class KernelCheckError(IncidentError):
+    """The vectorized kernel disagreed with the direct loop beyond the implementation tolerance: an incident, with its
+    location. No envelope exists yet, so nothing is written."""
+
+    def __init__(self, details: Mapping[str, Any]):
+        self.details = dict(details)
+        super().__init__(f"kernel/direct cross-check failed: {self.details.get('max_difference')} at {self.details.get('at')} above {TOLERANCES['kernel']:.0e}")
+
+
+def calibration_kernel(cells: torch.Tensor, units: ExposedUnits, indices: Mapping[str, torch.Tensor], draws: int, *, chunk: int = 500,
+                       log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Every draw of every condition through the canonical path: ``pool`` (E6 enforced) → ``statistics``."""
+    say = log or (lambda message: None)
+    out = {condition: {key: torch.empty(draws, dtype=torch.bool if key in ("defined", "ceiling_limited") else torch.float64) for key in KERNEL_KEYS}
+           for condition in CONDITIONS}
+    e6 = 0.0
+    for population in POPULATIONS:
+        for group in GROUPS:
+            condition = f"{population}/{group}"
+            for start in range(0, draws, chunk):
+                rows = range(start, min(draws, start + chunk))
+                pooled = pool(cells, draw_pairs(units, indices, population, group, rows))
+                e6 = max(e6, enforce_e6(pooled, f"{condition} draws {rows.start}–{rows.stop - 1}"))
+                stats = statistics(pooled)
+                for key in KERNEL_KEYS:
+                    out[condition][key][rows.start:rows.stop] = stats[key]
+            say(f"  {condition}: {draws} draws pooled")
+    return {"conditions": out, "e6_max": e6}
+
+
+def kernel_loop_check(cells: torch.Tensor, units: ExposedUnits, indices: Mapping[str, torch.Tensor], kernel: Mapping[str, Any],
+                      n_draws: int = CROSS_CHECK_DRAWS) -> dict[str, Any]:
+    """Implementation-only: on the first draws, ``SST``, ``g`` and the gap recomputed by an explicit loop over the drawn
+    pairs' cells (pure Python sums, the frozen rule written out again) against the vectorized kernel."""
+    worst = {"max_difference": 0.0, "at": "", "n_checked": 0}
+    for population in POPULATIONS:
+        for group in GROUPS:
+            condition = f"{population}/{group}"
+            pairs = draw_pairs(units, indices, population, group, range(min(n_draws, int(kernel["conditions"][condition]["g"].shape[0]))))
+            for b in range(int(pairs.shape[0])):
+                n = s = q = sse0 = sse1 = ssec = 0.0
+                for pair in pairs[b].tolist():
+                    row = cells[pair].tolist()
+                    n, s, q, sse0, sse1, ssec = n + row[0], s + row[1], q + row[2], sse0 + row[3], sse1 + row[4], ssec + row[5]
+                sst = q - s * s / n
+                defined = sst > 0 and sse0 - ssec >= GAP_MIN * sst
+                direct = {"SST": sst, "g": (sse0 - sse1) / (sse0 - ssec) if defined else math.nan, "gap": (sse0 - ssec) / sst if sst > 0 else math.nan}
+                for name, value in direct.items():
+                    difference = agreement(float(kernel["conditions"][condition][name][b]), value)
+                    worst["n_checked"] += 1
+                    if difference > worst["max_difference"]:
+                        worst.update({"max_difference": difference, "at": f"{condition}/draw {b}/{name}"})
+    worst.update({"tolerance": TOLERANCES["kernel"], "passed": worst["max_difference"] <= TOLERANCES["kernel"]})
+    if not worst["passed"]:
+        raise KernelCheckError(worst)
+    return rc.json_safe(worst)
+
+
+def undefined_counts(kernel: Mapping[str, Any]) -> dict[str, int]:
+    return {condition: int((~entries["defined"]).sum()) for condition, entries in kernel["conditions"].items()}
+
+
+def calibration_stop(counts: Mapping[str, int], draws: int) -> dict[str, Any]:
+    """250 or more undefined draws in any condition make its bound −∞: no envelope is written; stop for review."""
+    threshold = lower_rank(draws)
+    offending = {condition: count for condition, count in counts.items() if count >= threshold}
+    return {"stop": bool(offending), "offending": offending, "threshold": threshold, "counts": dict(counts)}
+
+
+def result_rates(values: torch.Tensor, defined: torch.Tensor, bound: float) -> dict[str, float]:
+    """The share of draws in each result under the frozen classification (vectorized ``classify``)."""
+    draws = int(values.shape[0])
+    guard = defined & (values < GUARD_MIN)
+    envelope = defined & ~guard & (values < bound)
+    passed = defined & ~guard & ~envelope
+    return {"NOT_INTERPRETABLE": int((~defined).sum()) / draws, "GUARD_FAILURE": int(guard.sum()) / draws, "ENVELOPE_ONLY_FAILURE": int(envelope.sum()) / draws,
+            "PASS": int(passed.sum()) / draws}
+
+
+def evaluate(kernel: Mapping[str, Any]) -> dict[str, Any]:
+    """Per condition: the envelope (element [249], undefined at −∞), its direction check, the guard-bound flag, the result
+    rates and a summary; then the descriptive joint rate. A reversed tail is an incident, before anything is written."""
+    out: dict[str, Any] = {"conditions": {}}
+    passes = []
+    for condition in CONDITIONS:
+        entries = kernel["conditions"][condition]
+        values, defined = entries["g"], entries["defined"]
+        envelope = lower_bound(values, defined)
+        direction = direction_check(envelope, values, defined)
+        if not direction["ok"]:
+            raise IncidentError(f"{condition}: the lower envelope {envelope['bound']} lies above the median of the defined draws {direction['median']}; a reversed tail")
+        kept = torch.sort(values[defined]).values
+        summary = {"defined": int(defined.sum()), "median": direction["median"], "min": float(kept[0]) if kept.numel() else None,
+                   "max": float(kept[-1]) if kept.numel() else None, "gap_median": ul.defined_median(entries["gap"], defined),
+                   "R2_1_median": ul.defined_median(entries["R2_1"], defined), "R2_C_median": ul.defined_median(entries["R2_C"], defined),
+                   "ceiling_limited_share": int(entries["ceiling_limited"].sum()) / int(values.shape[0])}
+        rates = result_rates(values, defined, envelope["bound"])
+        out["conditions"][condition] = {"envelope": envelope, "direction_check": direction, "guard_bound": bool(envelope["bound"] < GUARD_MIN), "rates": rates,
+                                        "summary": summary}
+        guard = defined & (values < GUARD_MIN)
+        passes.append(defined & ~guard & (values >= envelope["bound"]))
+    out["joint_rates"] = {"all_four_pass": float(torch.stack(passes).all(dim=0).double().mean()), "descriptive_only": True}
+    return rc.json_safe(out)
+
+
+def draw_arrays(kernel: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    return {f"{condition}/{key}": entries[key] for condition, entries in kernel["conditions"].items() for key in KERNEL_KEYS}
+
+
+def record_constants(draws: int) -> dict[str, Any]:
+    return {"B": int(draws), "draw_tag": DRAW_TAG, "cross_check_draws": CROSS_CHECK_DRAWS, "lower_rank": lower_rank(draws), "guard_min": GUARD_MIN, "gap_min": GAP_MIN,
+            "ceiling_limited_r2": CEILING_LIMITED_R2, "tolerances": dict(TOLERANCES), "cell_columns": list(CELL_COLUMNS), "cells_version": CELLS_VERSION,
+            "strata": list(STRATA), "slots": draw_slots(), "p0_mask": P0_MASK, "p1_mask": dict(P1_MASK), "results": list(RESULTS), "statistic": STATISTIC,
+            "conditions": list(CONDITIONS), "scope": SCOPE}
+
+
+def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], units: ExposedUnits, cells_files: Mapping[str, str],
+                       confirmation: Mapping[str, str], index_digests: Mapping[str, str], kernel_check: Mapping[str, Any], e6_max: float,
+                       undefined: Mapping[str, int], evaluated: Mapping[str, Any], array_digests: Mapping[str, str], draws: int) -> dict[str, Any]:
+    record = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "the exposed-only calibration record of Experiment 023 (design revision 2), from the committed exposed cells",
+        "design": dict(DESIGN), "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS),
+        "constants": record_constants(draws), "exposed_cells": dict(cells_files), "confirmation_023": dict(confirmation),
+        "pools": {"cues": {stratum: len(units.stratum_cues(stratum)) for stratum in STRATA}, "y2_like_frames": {t: len(units.y2_like[t]) for t in TEMPLATES},
+                  "y1_frames": {group: len(units.group_frames(group)) for group in GROUPS}},
+        "draws": {"B": int(draws), "index_sha256": dict(index_digests)}, "kernel_check": dict(kernel_check), "e6_max": float(e6_max),
+        "undefined_counts": dict(undefined), "conditions": dict(evaluated["conditions"]), "joint_rates": dict(evaluated["joint_rates"]),
+        "draw_arrays_sha256": dict(array_digests),
+    }
+    validate_json_safe(record)
+    record["content_sha256"] = rc.content_digest(record)
+    return record
+
+
+def verify_calibration_record(record: Mapping[str, Any], draws: int | None = None) -> None:
+    if record.get("experiment") != EXPERIMENT or record.get("content_sha256") != rc.content_digest(record):
+        raise PhaseError("not a verified Experiment 023 calibration record")
+    if record["constants"] != record_constants(draws if draws is not None else record["constants"]["B"]) or record["design"] != DESIGN or record["plan"] != PLAN:
+        raise PhaseError("the calibration record's constants, design or plan are not the frozen ones")
+    if record["module_blobs"] != FROZEN_BLOBS:
+        raise PhaseError("the calibration record was written against different frozen modules")
+    if set(record["conditions"]) != set(CONDITIONS):
+        raise PhaseError("the calibration record does not carry exactly the four conditions")

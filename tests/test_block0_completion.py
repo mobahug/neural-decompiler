@@ -123,11 +123,11 @@ def _toy_units():
     return b0c.ExposedUnits(cues, frames, y2_like)
 
 
-def _random_cells(n_pairs, seed=23, n=79):
+def _random_cells(n_pairs, seed=23, n=79, shift=0.7):
     generator = torch.Generator().manual_seed(seed)
     rows, raw = [], []
     for k in range(n_pairs):
-        y = torch.randn(n, generator=generator, dtype=torch.float64) * (0.5 + k % 3) - 4.0 + 0.7 * k
+        y = torch.randn(n, generator=generator, dtype=torch.float64) * (0.5 + k % 3) - 4.0 + shift * k
         p0 = y + torch.randn(n, generator=generator, dtype=torch.float64)
         p1 = y + 0.1 * torch.randn(n, generator=generator, dtype=torch.float64)
         c = y + 0.09 * torch.randn(n, generator=generator, dtype=torch.float64)
@@ -502,3 +502,82 @@ def test_the_real_tokenizer_freeze_takes_the_designs_expected_units_and_writes_n
         {template: list(texts[:6]) for template, texts in b0c.FRAME_CANDIDATES.items()}
     assert payload["rejected"] == [] and len(payload["exclusion"]["cue_token_ids"]) == 327 and len(payload["exclusion"]["frame_texts"]) == 144
     assert all(entry["p_t"] == entry["p_c"] + (1 if entry["template_id"] == ul.COORDINATED else 0) for entry in payload["frames"])
+
+
+# ---------------------------------------------------------------------------
+# Task 5: the calibration from the cells alone.
+
+
+def _toy_cells(units, seed=11, gap_scale=1.0):
+    cells, _ = _random_cells(units.n_pairs, seed=seed, shift=0.02)
+    if gap_scale != 1.0:  # shrink the explainable gap SSE0 − SSEC of every pair
+        cells[:, 3] = cells[:, 5] + gap_scale * (cells[:, 3] - cells[:, 5])
+    return cells
+
+
+def test_the_calibration_kernel_is_the_canonical_scoring_path_draw_by_draw():
+    units = _toy_units()
+    cells = _toy_cells(units)
+    indices = b0c.draw_indices(units, 30)
+    kernel = b0c.calibration_kernel(cells, units, indices, 30, chunk=7)
+    for population in b0c.POPULATIONS:
+        for group in b0c.GROUPS:
+            pairs = b0c.draw_pairs(units, indices, population, group, range(30))
+            for b in (0, 13, 29):
+                scored = b0c.score_selection(cells, pairs[b], None, "draw")  # the confirmation's path on the same selection
+                entries = kernel["conditions"][f"{population}/{group}"]
+                assert scored["interpretable"] == bool(entries["defined"][b]) and scored["SST"] == float(entries["SST"][b])
+                assert (scored["g"] if scored["g"] is not None else float("nan")) == pytest.approx(float(entries["g"][b]), abs=0.0, nan_ok=True)
+                assert scored["R2_C"] == float(entries["R2_C"][b])
+    check = b0c.kernel_loop_check(cells, units, indices, kernel, n_draws=5)
+    assert check["passed"] and check["n_checked"] == 4 * 5 * 3 and check["max_difference"] <= 1e-12 and kernel["e6_max"] <= 1e-12
+    kernel["conditions"]["Y2/coordinated"]["g"][3] += 1e-6  # a planted kernel error
+    with pytest.raises(b0c.KernelCheckError, match="Y2/coordinated/draw 3/g"):
+        b0c.kernel_loop_check(cells, units, indices, kernel, n_draws=5)
+
+
+def test_evaluate_sets_the_element_249_envelope_rates_and_the_joint_rate():
+    units = _toy_units()
+    cells = _toy_cells(units)
+    kernel = b0c.calibration_kernel(cells, units, b0c.draw_indices(units, 400), 400)
+    evaluated = b0c.evaluate(kernel)
+    for condition in b0c.CONDITIONS:
+        entry = evaluated["conditions"][condition]
+        values = kernel["conditions"][condition]["g"]
+        assert entry["envelope"] == {"kind": "lower", "rank": 10, "element": 9, "bound": float(torch.sort(values).values[9])}
+        assert entry["direction_check"]["ok"] and abs(sum(entry["rates"].values()) - 1.0) < 1e-12
+        assert entry["guard_bound"] == (entry["envelope"]["bound"] < 0.90)
+    assert 0.0 <= evaluated["joint_rates"]["all_four_pass"] <= 1.0 and evaluated["joint_rates"]["descriptive_only"]
+
+
+def test_too_many_undefined_draws_stop_the_calibration_for_review():
+    units = _toy_units()
+    cells = _toy_cells(units, gap_scale=1e-4)  # the ceiling barely beats Level 0: the gap rule fails nearly everywhere
+    kernel = b0c.calibration_kernel(cells, units, b0c.draw_indices(units, 40), 40)
+    counts = b0c.undefined_counts(kernel)
+    stop = b0c.calibration_stop(counts, 40)
+    assert stop["stop"] and stop["threshold"] == 1 and set(stop["offending"]) == set(b0c.CONDITIONS)
+    assert not b0c.calibration_stop({condition: 249 for condition in b0c.CONDITIONS}, 10_000)["stop"]
+    assert b0c.calibration_stop({**{condition: 0 for condition in b0c.CONDITIONS}, "Y2/cue_final": 250}, 10_000)["offending"] == {"Y2/cue_final": 250}
+
+
+def test_the_calibration_record_verifies_and_refuses_tampering():
+    units = _toy_units()
+    cells = _toy_cells(units)
+    indices = b0c.draw_indices(units, 40)
+    kernel = b0c.calibration_kernel(cells, units, indices, 40)
+    arrays = b0c.draw_arrays(kernel)
+    record = b0c.calibration_record(run_id="r", protocol_code_commit="a" * 40, digests={"x": "y"}, units=units, cells_files={"data_sha256": "d", "index_sha256": "i"},
+                                    confirmation={"content_sha256": "c"}, index_digests=b0c.draw_index_digests(indices),
+                                    kernel_check=b0c.kernel_loop_check(cells, units, indices, kernel, n_draws=2), e6_max=kernel["e6_max"],
+                                    undefined=b0c.undefined_counts(kernel), evaluated=b0c.evaluate(kernel),
+                                    array_digests={key: rc.tensor_digest(value) for key, value in arrays.items()}, draws=40)
+    b0c.verify_calibration_record(record, draws=40)
+    assert record["constants"]["lower_rank"] == 1 and record["pools"]["cues"] == {stratum: 4 for stratum in b0c.STRATA}
+    assert set(arrays) == {f"{condition}/{key}" for condition in b0c.CONDITIONS for key in b0c.KERNEL_KEYS}
+    tampered = json.loads(json.dumps(record))
+    tampered["conditions"]["Y1/cue_final"]["envelope"]["bound"] = 0.0
+    with pytest.raises(b0c.PhaseError, match="verified"):
+        b0c.verify_calibration_record(tampered)
+    with pytest.raises(b0c.PhaseError, match="constants"):
+        b0c.verify_calibration_record(record, draws=10_000)
