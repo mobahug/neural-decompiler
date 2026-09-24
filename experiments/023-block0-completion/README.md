@@ -36,7 +36,8 @@ statistics `(n, Σy, Σy², SSE0, SSE1, SSEC)`:
 - There is no aggregate label.
 - `R²₀`, `R²₁`, `R²_C` and a descriptive `ceiling_limited` flag (`R²_C < 0.80`) are reported.
 
-One implementation (`pool` → `statistics` → `classify`) scores both the calibration draws and the fresh conditions.
+One implementation (`pool` → `statistics` → `result_codes`) scores both the calibration draws and the fresh conditions: a
+fresh condition's result, the calibration's result rates and its joint rate all come from the same classification.
 
 **Scope:** new determiner-like, quantity and adjective cues (8 each) and 18 new frames (6 per template). There is no new
 claim about possessive or pronoun cues, whose stratum is exhausted.
@@ -66,23 +67,27 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
 - **`validate`** (no model; never opens the 022 table) checks the pins, the frozen inputs and 022's committed files.
   Once they exist it also checks the installed exposed cells (re-read against the metadata recomputed now), the
   confirmation file and the results state.
-- **`extract`** runs once, weights only, under the no-forward-pass guard. It reads 022's table and writes
-  `outputs/experiment-023/candidate-exposed-cells.f64/.json`. The candidate is installed byte-identically as
-  `exposed-cells.f64/.json`, committed, and checked before anything else. Its identities:
-  - E1: the table's tensor digests and orders;
-  - E2: the cells equal 022's stored cells bit for bit;
-  - E3: the cells, computed twice, are bit-identical;
-  - E4: `P1` recomputed from the weights (1e-9);
-  - E5: the cells against the per-noun table on the first 16 draws (1e-10);
-  - E6: the pooled `SST` (1e-10).
-
-  E1–E3 stop for review; E4–E6 are incidents.
+- **`extract`** runs once, weights only, under the no-forward-pass guard.
+  - It first requires 022's table file with its bound sha256. A missing or different file is refused before any state
+    is written; this is a precondition, and extract has not started.
+  - It then reads the table and writes `outputs/experiment-023/candidate-exposed-cells.f64/.json`. The candidate is
+    installed byte-identically as `exposed-cells.f64/.json`, committed, and checked before anything else.
+  - Its identities:
+    - E1: the table's tensor digests and orders;
+    - E2: the cells equal 022's stored cells bit for bit;
+    - E3: `S`, `Q` and `SSEC` equal an independent whole-table recomputation bit for bit;
+    - E4: `P1` recomputed from the weights (1e-9);
+    - E5: the cells against the per-noun table on the first 16 draws (1e-10);
+    - E6: the pooled `SST` (1e-10).
+  - E1–E3 stop for review; E4–E6 are incidents. The 020/022 re-check runs before the candidate is written; a failure is
+    an incident.
 
   The artifact holds 18,900 pairs × 8 columns (`n, S, Q, SSE0, SSE1, SSEC, mean, M2`; 1,209,600 bytes). Its index binds:
   - the canonical pair order, every cue's id and stratum, and every frame's template and group;
   - the column schema;
   - 022's table and record digests;
-  - the extraction module's blob, version and commit.
+  - the extraction module's blob, version and commit;
+  - its own `content_sha256`, verified on every read.
 - **`freeze`** (tokenizer only) takes the first 8 eligible cues per stratum and the first 6 eligible frames per template
   of the design's ordered lists. The exclusion adds 022's frozen units. It writes `confirmation-v1.json`, committed by
   hand; a shortfall writes nothing.
@@ -93,9 +98,15 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - the stop at 250 undefined draws;
   - the envelopes with their direction checks;
   - the rates and the candidate record, installed, committed and reviewed.
-- **`lock`** (no forward pass) builds the Y1 prediction table (`[1728, 2, 79]` then `[864, 2, 79]`, `(P0, P1)`) twice
-  and requires it bit-identical, with I5 exactly 0 and the block-0 algebra at 1e-12. It then writes the lock and the
-  preregistration; all four files are installed byte-identically, committed and reviewed.
+
+  The record binds the confirmation file whose counts it read. A rerun after a calibrate incident needs a new commit
+  that changes no scientific path since extract (for example a documentation commit recording an interruption); the
+  calibration is deterministic, so it reproduces. A code fix is a new protocol version.
+- **`lock`** (no forward pass) first requires the installed calibration record to be this run's committed candidate.
+  The record and the results state must bind the committed confirmation file. It then builds the Y1 prediction table
+  (`[1728, 2, 79]` then `[864, 2, 79]`, `(P0, P1)`) twice and requires it bit-identical, with I5 exactly 0 and the
+  block-0 algebra at 1e-12. After the 020/022 re-check it writes the lock and the preregistration. All four files are
+  installed byte-identically, committed and reviewed.
 - **`confirm`** runs once and is never resumed:
   - `validate_lock`, then I7: the Y1 table rebuilt bit for bit before any fresh prompt;
   - stage 1: 18 S1-REF and 18 S1-VALIDITY (descriptive) prompts, then the Y2 prediction table written once from the
@@ -105,14 +116,15 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - stage 2: 3,024 targets, each once, measuring `Δc`, `Δx1` and `Δx3`; everything is saved before any gate, and the Y2
     table is re-verified;
   - I1, I3 and I4;
-  - the four conditions, with the kernel checked against a direct recomputation;
+  - the four conditions, with the kernel checked against a direct recomputation. They are written to the state before
+    anything descriptive runs, and the phase then completes;
   - descriptive records: per-template and per-stratum `g`, the cheaper block-0 rules, `P1`'s `Δx3` error and block 0's
-    profile.
+    profile. A descriptive failure is recorded as such and never touches a result.
 
   An incident is recorded and stops the phase; nothing is retried.
 - **`report`** renders `outputs/experiment-023/report.md`.
 
-## Status — 2026-09-24: implemented; not run
+## Status — 2026-09-24: implemented and reviewed; not run
 
 - **Implementation.** Plan Tasks 1–6 are implemented in `src/neural_decompiler/block0_completion.py`, this runner and
   their tests:
@@ -121,9 +133,26 @@ HF_HUB_OFFLINE=1 uv run python experiments/023-block0-completion/run.py report
   - tier C, opt-in: the real tokenizer's freeze gives exactly the design's expected picks; E1–E3, E5 and E6 hold
     read-only on the real local 022 table; `P0`/`P1` and the prediction path reproduce 022's stored coalitions bit for
     bit on real exposed pairs.
+- **Independent implementation review (Task 7, read-only, on `c0f74b1`): NOT READY.** It found:
+  - one blocker: the four-way classification was written three times (the fresh `classify`, the calibration rates and
+    the joint rate), against hard requirement 1;
+  - three should-fix findings: confirm could lose scored results to a descriptive failure; lock did not bind the
+    calibrated confirmation file; several refusals and incidents were untested;
+  - minor findings.
+
+  The other three hard requirements (the stage-1 barrier, the exposed cells as provenance, the pinned 022 program) were
+  met. The fixes are:
+  - `7fcac8e`: one classification function (finding 1);
+  - `7d6bf06`: the results are written before any descriptive record (finding 2);
+  - `30da5d0`: the confirmation binding and a strict record check (findings 3, 5);
+  - `6e5f6ee`: the extract and lock preconditions and re-checks, the pins first, `--no-renames` (findings 6, 7, 11,
+    13; 8 documented);
+  - `bc72347`: E3 as an independent recomputation, the index's content digest, and the report's stop and tails
+    (findings 9, 10, 12; 15 documented);
+  - `e4b8f3e`: the missing tier-B tests (finding 4).
 - **Not run.** Nothing has been extracted, frozen, calibrated, locked or confirmed.
 - **Next steps, each only when authorized:**
-  1. the independent implementation review and tier C on the clean commit;
+  1. (done) the independent implementation review, its fixes, and tiers A/B/C on the final implementation commit;
   2. `extract`, then install, commit and the artifact's own checkpoint;
   3. `freeze`, then commit;
   4. `calibrate` once, then install, commit and the floor review;
