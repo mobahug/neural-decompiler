@@ -308,8 +308,11 @@ def test_the_guard_size_is_at_most_321_of_12870_with_or_without_ties():
     rng = random.Random(9)
     cases = [[rng.gauss(0, 1) for _ in range(16)], [float(rng.randint(0, 3)) for _ in range(16)], [float(i % 2) for i in range(16)]]
     for index, values in enumerate(cases):
+        import bisect
+
         sums = sorted(rr.exact_subset_sums(values, rr.PRODUCTION_GUARD)["sums"])
-        passing = sum(1 for value in sums if rr.en_decision(rr.upper_count(sums, value), rr.PRODUCTION_GUARD) == "PASS")
+        assert rr.upper_count(sums, sums[5_000]) == len(sums) - bisect.bisect_left(sums, sums[5_000])  # the counting rule, by bisection below
+        passing = sum(1 for value in sums if rr.en_decision(len(sums) - bisect.bisect_left(sums, value), rr.PRODUCTION_GUARD) == "PASS")
         assert passing <= 321
         if index == 0:
             assert passing == 321  # untied: exactly 321 assignments could pass (size 321/12,870)
@@ -610,6 +613,7 @@ def test_the_calibration_refuses_a_population_that_is_not_the_configured_one():
         rr.calibration_population(cells, units, W_E, bindings, config)
 
 
+@pytest.mark.slow
 def test_the_committed_023_artifact_gives_every_exposed_cue_mse_by_a_direct_loop():
     """The real calibration source, read through 023's reader (exposed values only; no floor is computed here)."""
     inputs = ul.load_frozen_inputs(ROOT)
@@ -725,3 +729,100 @@ def test_validate_lock_refuses_every_drift():
     with pytest.raises(rr.PhaseError, match="the model"):
         rr.verify_model_dependencies(lock["dependencies"]["model"], parameters_sha256="q" * 64, embedding_sha256=lock["dependencies"]["model"]["embedding_sha256"],
                                      what="the lock")
+
+
+# ---------------------------------------------------------------------------
+# Tier C (the pinned model, opt-in): weights-only score facts, and the measurement path on spent exposed pairs only.
+
+# Requirement 3: the only prompts any 024 test may execute — four exposed pairs spent by Experiments 020 and 022 (every
+# key is in 020's ledger), one per stratum and per template. No 024 candidate cue or key can reach the model.
+SPENT_REMEASURE_KEYS = ("cardinal-009-1|an|271", "quantifier-009-1|least|1878", "coordinated-adjective-009-1|black|2806", "quantifier-new-2|he|344")
+
+
+def _smoke_enabled() -> None:
+    import os
+
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+
+
+@pytest.mark.pythia_smoke
+def test_the_real_scores_match_the_design_and_five_e_cues_extrapolate():
+    """Weights only (every forward pass refused): the 40 expected picks' scores are design revision 2's (background item 8,
+    three decimals), every E above every N, and 5 of the 8 E cues above the largest calibration leave-one-out score. No
+    MSE, draw or floor is computed; nothing is written."""
+    _smoke_enabled()
+    from neural_decompiler import plural_mechanism as pm
+    from neural_decompiler.models import PYTHIA_70M, load_model
+
+    tokenizer, inputs, base, c023 = _real_freeze_inputs()
+    payload = rr.freeze_payload(tokenizer, pool=inputs.pool, exclusion_base=base, confirmation_023=c023,
+                                confirmation_023_file_sha256=rc.file_sha256(ROOT / b0c.CONFIRMATION_RELATIVE_PATH), config=rr.PRODUCTION)
+    confirmation = rr.confirmation_from_payload(payload, inputs.pool, rr.PRODUCTION)
+    W_E = pm.Weights.from_model(load_model(PYTHIA_70M)).W_E
+    units = b0c.exposed_units(inputs)
+    bindings = rr.score_bindings(W_E, inputs.pool, units)
+    assert len(bindings["noun_row_ids"]) == 158 and len(bindings["calibration_cue_ids"]) == 139
+    scores = dict(zip((token["word"] for token in confirmation.tokens), rr.full_scores(W_E, bindings, [token["token_id"] for token in confirmation.tokens])))
+    e = {word: scores[word] for word in rr.EXPECTED_PICKS["ordinary"]}
+    n = {word: scores[word] for word in rr.EXPECTED_PICKS["N"]}
+    assert round(e["lion"], 3) == 0.108 and round(e["horse"], 3) == 0.298 and round(sum(e.values()) / 8, 3) == 0.174 and min(e, key=e.get) == "lion"
+    assert round(n["honest"], 3) == -0.229 and round(n["nervous"], 3) == -0.045 and round(sum(n.values()) / 8, 3) == -0.146 and max(n, key=n.get) == "nervous"
+    assert min(e.values()) > max(n.values())
+    maximum = max(rr.calibration_scores(W_E, bindings))
+    assert round(maximum, 3) == 0.135 and sum(1 for value in e.values() if value > maximum) == 5
+
+
+@pytest.mark.pythia_smoke
+def test_the_measurement_path_reproduces_the_calibration_source_on_spent_pairs_only(monkeypatch, capsys):
+    """The one-canonical-MSE contract between calibration and confirm: re-measured through 022's ``stage_two_022`` and
+    024's cell function, four spent exposed pairs reproduce 023's committed ``n`` and ``SSE_C`` bit for bit. An explicit
+    allow-list guards the model: every key must be spent (in 020's ledger), no key or cue id may belong to 024's
+    candidates or would-be manifest (checked before the model loads), and any other capture is refused."""
+    _smoke_enabled()
+    from neural_decompiler import plural_mechanism as pm
+    from neural_decompiler.models import PYTHIA_70M, load_model
+
+    tokenizer, inputs, base, c023 = _real_freeze_inputs()
+    ledger = set(inputs.closure["ledger"])
+    candidate_ids = {ids[0] for word in (*rr.N_CANDIDATES, *(w for pair in rr.MEASURE_LEMMAS + rr.ORDINARY_LEMMAS for w in pair))
+                     if len(ids := pm._encode(tokenizer, " " + word)) == 1}
+    payload = rr.freeze_payload(tokenizer, pool=inputs.pool, exclusion_base=base, confirmation_023=c023,
+                                confirmation_023_file_sha256=rc.file_sha256(ROOT / b0c.CONFIRMATION_RELATIVE_PATH), config=rr.PRODUCTION)
+    manifest_024 = set(payload["manifest"]["S2-TARGET"])
+    units = b0c.exposed_units(inputs)
+    frames = {frame.frame_id: fi for fi, frame in enumerate(units.frames)}
+    pairs = []
+    for key in SPENT_REMEASURE_KEYS:
+        frame_id, word, token_id = key.split("|")
+        ci = next(i for i, (w, t, _) in enumerate(units.cues) if w == word and int(t) == int(token_id))
+        pairs.append((ci, frames[frame_id]))
+        assert key in ledger and key not in manifest_024 and int(token_id) not in candidate_ids  # before any model is loaded
+    allowed = set(SPENT_REMEASURE_KEYS)
+    original = pm.capture_prompt
+    executed_keys: list[str] = []
+
+    def guarded(model, prompt, sites):
+        if prompt.key not in allowed or int(prompt.cue_token_id) in candidate_ids:
+            raise AssertionError(f"a non-allow-listed prompt reached the model: {prompt.key}")
+        executed_keys.append(prompt.key)
+        return original(model, prompt, sites)
+
+    monkeypatch.setattr(pm, "capture_prompt", guarded)
+    model = load_model(PYTHIA_70M)
+    progs = ul.ModelPrograms.from_model(model, inputs)
+    raw = numpy.frombuffer((ROOT / b0c.CELLS_DATA_RELATIVE_PATH).read_bytes(), dtype="<f8").reshape(-1, 8)
+    locked = inputs.closure["exploration"]["locked_states"]
+    for ci, fi in pairs:
+        word, token_id, _ = units.cues[ci]
+        frame = units.frames[fi]
+        spent = rr.Confirmation024(dict(inputs.pool.reference_ids), (frame,), ({"word": word, "token_id": int(token_id), "class": "spent", "lemma": word, "form": "word"},),
+                                   "spent")
+        states = ul.y1_states(locked, (frame,))
+        tensors = ul.measurement_tensors(ul.stage_two_022(model, progs, spent, {"Y1": states, "Y2": {}}, executed=[]))
+        cells = rr.fresh_cue_cells(rr.target_units(spent), tensors, spent)
+        row = raw[ci * len(units.frames) + fi]
+        assert float(cells[0, 0, rr.COUNT]) == row[0] and float(cells[0, 0, rr.SSEC]) == row[5], (word, frame.frame_id)
+    assert executed_keys == list(SPENT_REMEASURE_KEYS)
+    with capsys.disabled():
+        print("\nspent keys re-measured (020's ledger; none a 024 candidate):", ", ".join(executed_keys))

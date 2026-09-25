@@ -352,11 +352,44 @@ def embedding_digest(W_E: torch.Tensor) -> str:
     return hashlib.sha256(json.dumps(list(array.shape)).encode("ascii") + b"|<f4|" + array.numpy().astype("<f4", copy=False).tobytes()).hexdigest()
 
 
+def named_tensors(model: Any) -> list[tuple[str, torch.Tensor]]:
+    """Every parameter of the model by name: ``named_parameters()`` for a torch module (the pinned checkpoint); for a
+    plain test double, every tensor reachable through its attributes, by attribute path."""
+    if hasattr(model, "named_parameters"):
+        return sorted(((name, tensor) for name, tensor in model.named_parameters()), key=lambda item: item[0])
+    found: list[tuple[str, torch.Tensor]] = []
+    seen: set[int] = set()
+
+    def walk(prefix: str, value: Any) -> None:
+        if isinstance(value, torch.Tensor):
+            found.append((prefix, value))
+            return
+        if id(value) in seen or callable(value) and not hasattr(value, "__dict__"):
+            return
+        seen.add(id(value))
+        if isinstance(value, (list, tuple)):
+            for index, item in enumerate(value):
+                walk(f"{prefix}.{index}", item)
+        elif isinstance(value, dict):
+            for key in sorted(value, key=str):
+                walk(f"{prefix}.{key}", value[key])
+        elif hasattr(value, "__dict__"):
+            for key in sorted(vars(value)):
+                if key not in ("hook_dict", "cfg"):
+                    walk(f"{prefix}.{key}" if prefix else key, vars(value)[key])
+
+    walk("", model)
+    return sorted(found, key=lambda item: item[0])
+
+
 def parameters_digest(model: Any) -> str:
     """sha256 over every named parameter of the loaded model (name, shape and float32 bytes, by name): the exact weights
     ``C``, the measurement and the score are computed from."""
     digest = hashlib.sha256()
-    for name, parameter in sorted(model.named_parameters(), key=lambda item: item[0]):
+    tensors = named_tensors(model)
+    if not tensors:
+        raise PhaseError("the model exposes no parameters to bind")
+    for name, parameter in tensors:
         array = parameter.detach().cpu().contiguous().to(torch.float32)
         digest.update(name.encode("utf-8") + b"|" + json.dumps(list(array.shape)).encode("ascii") + b"|" + array.numpy().astype("<f4", copy=False).tobytes())
     return digest.hexdigest()
@@ -459,6 +492,11 @@ def spearman(x: Sequence[float], y: Sequence[float]) -> float | None:
     if saa == 0.0 or sbb == 0.0:
         return None
     return sum(p * q for p, q in zip(a, b)) / math.sqrt(saa * sbb)
+
+
+def descriptive_spearman(x: Sequence[float], y: Sequence[float]) -> float | None:
+    """For descriptive records only: the canonical Spearman, or ``None`` for fewer than two values."""
+    return spearman(x, y) if len(x) >= 2 else None
 
 
 def spearman_direct(x: Sequence[float], y: Sequence[float]) -> float | None:
@@ -1108,7 +1146,7 @@ def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequenc
     line = ols(x, y)
     codes = [classify_primary(value, floor, null_bound) for value in values]
     pronoun_errors = [entry["log_mse"] - predict(line, entry["nounness"]) for entry in pronouns if entry["log_mse"] is not None]
-    within = {stratum: spearman([e["nounness_loo"] for e in entries if e["stratum"] == stratum], [e["mse"] for e in entries if e["stratum"] == stratum])
+    within = {stratum: descriptive_spearman([e["nounness_loo"] for e in entries if e["stratum"] == stratum], [e["mse"] for e in entries if e["stratum"] == stratum])
               for stratum in b0c.STRATA}
     return {
         "primary_floor": {"draws": config.draws, "tag": PRIMARY_TAG, "rank": rank, "element": rank - 1, "F_rho": floor, "undefined": undefined, "stop_at": rank,
@@ -1120,7 +1158,7 @@ def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequenc
         "effective_threshold": {"value": max(floor, null_bound), "binds": "null_975" if null_bound >= floor else "F_rho"},
         "line": line,
         "descriptive": {"calibration_rho": spearman(x, [entry["mse"] for entry in entries]), "within_stratum_rho": within,
-                        "pronoun_check": {"n": len(pronouns), "rho": spearman([e["nounness"] for e in pronouns], [e["mse"] for e in pronouns]),
+                        "pronoun_check": {"n": len(pronouns), "rho": descriptive_spearman([e["nounness"] for e in pronouns], [e["mse"] for e in pronouns]),
                                           "median_abs_log_error": _median([abs(v) for v in pronoun_errors]), "mean_signed_log_error": math.fsum(pronoun_errors) / len(pronoun_errors)},
                         "draw_rates": {name: codes.count(name) / len(codes) for name in PRIMARY_RESULTS},
                         "maximum_calibration_score": max(x)},
@@ -1376,3 +1414,417 @@ def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests:
 def verify_model_dependencies(recorded: Mapping[str, Any], *, parameters_sha256: str, embedding_sha256: str, what: str) -> None:
     now = {**dict(recorded), "parameters_sha256": parameters_sha256, "embedding_sha256": embedding_sha256}
     verify_dependencies(dict(recorded), now, f"{what} (the model)")
+
+
+# ---------------------------------------------------------------------------
+# Confirm (once; never resumed): I7, the measurement, the accounting, C recomputed from the saved Δx3, the identity
+# gates, the scoring (Task 6). The measured Δx3 builds only readout comparators (C here; its Level-1 variants in the
+# descriptive ladder) and feeds the I3 identity gate; it never enters the score, the thresholds, the guard's grouping
+# or any prediction.
+
+
+def reproduce_lock_quantities(W_E: torch.Tensor, record: Mapping[str, Any], confirmation: Confirmation024, lock: Mapping[str, Any]) -> dict[str, Any]:
+    """I7: the lock's weight-derived quantities recomputed from the weights and the committed record, before any
+    prompt, and compared bit for bit (floats compared exactly after the lock's JSON round trip)."""
+    fresh = json.loads(pm.canonical_json(rc.json_safe(fresh_quantities(W_E, record["score"], confirmation, record))))
+    differing = sorted(key for key in set(fresh) | set(lock["fresh"]) if fresh.get(key) != lock["fresh"].get(key))
+    return {"bitwise_equal": not differing, "differing": differing, "scores_sha256": fresh["scores_sha256"]}
+
+
+def target_units(confirmation: Confirmation024) -> ul.TableUnits:
+    """The measurement's pair order (``ul.stage_two_022``'s): cue token id, then ``frame_id``; one block per group."""
+    return ul.table_units(confirmation.tokens, confirmation.exposed_frames)
+
+
+def _changes(tensor: torch.Tensor, row: int, frame: pm.Frame) -> dict[int, torch.Tensor]:
+    return {frame.p_c: tensor[row, 0]} if frame.p_t == frame.p_c else {frame.p_c: tensor[row, 0], frame.p_t: tensor[row, 1]}
+
+
+def assert_measurements(tensors: Mapping[str, torch.Tensor], units: ul.TableUnits) -> None:
+    """Every Y1 measurement present and finite, in the table's shapes; the Y2 block empty (024 has no new frame)."""
+    for group in GROUPS:
+        rows = len(units.pairs[group])
+        for name in ("dc", "ceiling", "dx1", "dx3"):
+            tensor = tensors.get(f"Y1/{group}/{name}")
+            if tensor is None or int(tensor.shape[0]) != rows or not bool(torch.isfinite(tensor).all()):
+                raise IncidentError(f"a missing or non-finite stage-2 measurement in Y1/{group}/{name}")
+        for name in ("dc", "ceiling"):
+            if int(tensors.get(f"Y2/{group}/{name}", torch.empty(0)).shape[0]) != 0:
+                raise IncidentError("the Y2 block is not empty: 024 measures the exposed frames only")
+
+
+def recompute_c(progs: ul.ModelPrograms, units: ul.TableUnits, states: Mapping[str, rd.FrameState020], tensors: Mapping[str, torch.Tensor]) -> dict[str, Any]:
+    """``C`` recomputed from the saved (re-read) ``Δx3`` of every pair against the saved ``C``: bit for bit."""
+    worst: dict[str, Any] = {"max": 0.0, "at": "", "pairs": 0, "bitwise_equal": True}
+    for group, pairs in units.pairs.items():
+        dx3, saved = tensors[f"Y1/{group}/dx3"], tensors[f"Y1/{group}/ceiling"]
+        for row, (t, f) in enumerate(pairs):
+            frame = units.frames[f]
+            again = ul.contrast_of(progs, states[frame.frame_id], _changes(dx3, row, frame))
+            worst["pairs"] += 1
+            if not torch.equal(again, saved[row]):
+                worst["bitwise_equal"] = False
+                ul._worse(worst, float((again - saved[row]).abs().max()), f"{units.tokens[t]['word']}|{frame.frame_id}")
+    return rc.json_safe(worst)
+
+
+def target_gates(progs: ul.ModelPrograms, confirmation: Confirmation024, units: ul.TableUnits, states: Mapping[str, rd.FrameState020],
+                 tensors: Mapping[str, torch.Tensor]) -> dict[str, Any]:
+    """I1, I3 and I4 on every target pair, 023's formulas and nothing else: the block-0 decomposition against the
+    measured ``Δx1``; 022's full composition (layers 1–2 exact) against the measured ``Δx3``; its ``Δĉ`` against ``C``."""
+    gates = {name: {"max": 0.0, "at": ""} for name in ("I1", "I3", "I4")}
+    rows16: dict[str, Any] = {}
+    for group, pairs in units.pairs.items():
+        dc_block = {name: tensors[f"Y1/{group}/{name}"] for name in ("dx1", "dx3", "ceiling")}
+        for row, (t, f) in enumerate(pairs):
+            frame, token = units.frames[f], units.tokens[t]
+            state = states[frame.frame_id]
+            if frame.frame_id not in rows16:
+                rows16[frame.frame_id] = ul.reference_rows_017(progs.programs, state)
+            ctx = ul.pair_context(progs, frame, state, int(confirmation.reference_ids[frame.template_id]), int(token["token_id"]), token["word"], rows16[frame.frame_id])
+            factors, where = ctx.factors, f"{token['word']}|{frame.frame_id}"
+            dx1, dx3 = _changes(dc_block["dx1"], row, frame), _changes(dc_block["dx3"], row, frame)
+            i1 = float((factors.d_emb + factors.delta_e + factors.block0_pc.total - dx1[frame.p_c]).abs().max())
+            if factors.block0_pt is not None:
+                i1 = max(i1, float((factors.block0_pt.total - dx1[frame.p_t]).abs().max()))
+            ul._worse(gates["I1"], i1, where)
+            full = ul.compose_dx3(progs, ctx, b0c.FULL_MASK[group])
+            ul._worse(gates["I3"], ul.i3_error(full, dx3), where)
+            ul._worse(gates["I4"], float((ul.contrast_of(progs, state, full) - dc_block["ceiling"][row]).abs().max()), where)
+    return {name: rc.json_safe(entry) for name, entry in gates.items()}
+
+
+def enforce_gates(gates: Mapping[str, Mapping[str, Any]]) -> None:
+    for name in ("I1", "I3", "I4"):
+        value = gates[name]["max"]
+        if value is None or not value <= TOLERANCES[name]:
+            raise IncidentError(f"identity gate {name} failed at stage 2: {value} at {gates[name]['at']} against {TOLERANCES[name]:.0e}")
+
+
+def frames_by_id(confirmation: Confirmation024) -> list[pm.Frame]:
+    return sorted(confirmation.exposed_frames, key=lambda frame: frame.frame_id)
+
+
+def fresh_cue_cells(units: ul.TableUnits, tensors: Mapping[str, torch.Tensor], confirmation: Confirmation024) -> torch.Tensor:
+    """``[n_fresh, n_frames, 8]``: every fresh pair's cells (``y`` the measured ``Δc``, ``C`` the saved ceiling), cues in
+    the confirmation's frozen order, frames in ``frame_id`` order."""
+    where = {(int(units.tokens[t]["token_id"]), units.frames[f].frame_id): (group, row) for group, pairs in units.pairs.items() for row, (t, f) in enumerate(pairs)}
+    frames = frames_by_id(confirmation)
+    cells = torch.empty(len(confirmation.tokens), len(frames), len(b0c.CELL_COLUMNS), dtype=torch.float64)
+    for ci, token in enumerate(confirmation.tokens):
+        for fi, frame in enumerate(frames):
+            group, row = where[(int(token["token_id"]), frame.frame_id)]
+            cells[ci, fi] = fresh_pair_cells(tensors[f"Y1/{group}/dc"][row], tensors[f"Y1/{group}/ceiling"][row])
+    return cells
+
+
+def score(cells: torch.Tensor, confirmation: Confirmation024, lock: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
+    """The per-cue table, the primary ``ρ`` (with its cross-check) and its result, the exact E–N guard and the outcome —
+    everything that is written in one write with the completed phase. A cross-check failure is an incident."""
+    scores = {int(cue["token_id"]): float(cue["nounness"]) for cue in lock["fresh"]["cues"]}
+    if [int(token["token_id"]) for token in confirmation.tokens] != [int(cue["token_id"]) for cue in lock["fresh"]["cues"]]:
+        raise IncidentError("the fresh cues are not the lock's, in the lock's order")
+    mse = [cue_mse(cells[ci]) for ci in range(int(cells.shape[0]))]
+    if not all(math.isfinite(value) for value in mse):
+        raise IncidentError("a fresh cue's MSE is not finite")
+    x = [scores[int(token["token_id"])] for token in confirmation.tokens]
+    rho = spearman(x, mse)
+    difference = spearman_agreement(rho, spearman_direct(x, mse))
+    if not difference <= TOLERANCES["spearman"]:
+        raise CrossCheckError({"check": "spearman", "max_difference": difference, "at": "the fresh ρ"})
+    primary = classify_primary(rho, lock["primary"]["F_rho"], lock["primary"]["null_975"])
+    by_class = {cls: [value for token, value in zip(confirmation.tokens, mse) if token["class"] == cls] for cls in CLASSES}
+    if [unit["token_id"] for unit in lock["guard"]["units"]["E"]] != [int(t["token_id"]) for t in confirmation.class_tokens("E")] \
+            or [unit["token_id"] for unit in lock["guard"]["units"]["N"]] != [int(t["token_id"]) for t in confirmation.class_tokens("N")]:
+        raise IncidentError("the E and N cues are not the lock's, in the lock's order")
+    guard = en_guard(by_class["E"], by_class["N"], config.guard)
+    label = outcome(primary, guard["result"])
+    predicted = {int(cue["token_id"]): cue["predicted_log_mse"] for cue in lock["fresh"]["cues"]}
+    per_cue = [{"word": token["word"], "class": token["class"], "token_id": int(token["token_id"]), "nounness": scores[int(token["token_id"])], "mse": value,
+                "log_mse": log_mse(value), "predicted_log_mse": predicted[int(token["token_id"])]} for token, value in zip(confirmation.tokens, mse)]
+    return rc.json_safe({
+        "primary": {"statistic": STATISTIC, "rho": rho, "F_rho": lock["primary"]["F_rho"], "null_975": lock["primary"]["null_975"],
+                    "effective_threshold": lock["primary"]["effective_threshold"], "result": primary, "reading": SEMANTICS["primary"][primary]},
+        "guard": {**guard, "reading": SEMANTICS["guard"][guard["result"]]},
+        "outcome": {"label": label, "reading": SEMANTICS["outcomes"][label], "simple": SEMANTICS["simple"], "predictive": SEMANTICS["predictive"],
+                    "extrapolation": lock["fresh"]["extrapolation"]["sentence"]},
+        "per_cue": per_cue, "checks": {"spearman_direct_difference": difference, "n_cues": len(mse), "pairs_per_cue": int(cells.shape[1])},
+    })
+
+
+# ---------------------------------------------------------------------------
+# The descriptive records (after the result is written; no outcome force).
+
+
+def group_frame_indices(confirmation: Confirmation024) -> dict[str, list[int]]:
+    frames = frames_by_id(confirmation)
+    return {group: [i for i, frame in enumerate(frames) if (frame.template_id == ul.COORDINATED) == (group == "coordinated")] for group in GROUPS}
+
+
+def secondary(cells: torch.Tensor, units: ul.TableUnits, tensors: Mapping[str, torch.Tensor], confirmation: Confirmation024, lock: Mapping[str, Any]) -> dict[str, Any]:
+    """Per group Spearman, normalized MSE, Var(Δc), R²_C, bias and slope, and the line against the observed log MSE."""
+    x = [float(cue["nounness"]) for cue in lock["fresh"]["cues"]]
+    groups = group_frame_indices(confirmation)
+    per_group = {group: spearman(x, [cue_mse(cells[ci, indices]) for ci in range(len(x))]) if indices else None for group, indices in groups.items()}
+    nmse = [math.fsum(cells[ci, :, SSEC].tolist()) / math.fsum(cells[ci, :, SQUARES].tolist()) for ci in range(len(x))]
+    per_cue = []
+    where = {(int(units.tokens[t]["token_id"]), units.frames[f].frame_id): (group, row) for group, pairs in units.pairs.items() for row, (t, f) in enumerate(pairs)}
+    frames = frames_by_id(confirmation)
+    for ci, token in enumerate(confirmation.tokens):
+        pooled = b0c.pool(cells[ci], torch.arange(int(cells.shape[1])))
+        sst, n = float(pooled["SST"]), float(pooled["N"])
+        ys, cs = [], []
+        for frame in frames:
+            group, row = where[(int(token["token_id"]), frame.frame_id)]
+            ys += tensors[f"Y1/{group}/dc"][row].double().tolist()
+            cs += tensors[f"Y1/{group}/ceiling"][row].double().tolist()
+        bias = math.fsum(y - c for y, c in zip(ys, cs)) / len(ys)
+        slope = ols(cs, ys)["slope"] if len(set(cs)) > 1 else None
+        per_cue.append({"word": token["word"], "class": token["class"], "nmse": nmse[ci], "var_dc": sst / n, "R2_C": 1.0 - float(pooled["SSEC"]) / sst if sst > 0 else None,
+                        "bias": bias, "slope_dc_on_c": slope})
+    observed = [log_mse(cue_mse(cells[ci])) for ci in range(len(x))]
+    predicted = [float(cue["predicted_log_mse"]) for cue in lock["fresh"]["cues"]]
+    errors = [o - p for o, p in zip(observed, predicted)]
+    line = {"median_abs_log_error": _median([abs(e) for e in errors]), "mean_signed_log_error": math.fsum(errors) / len(errors),
+            "per_class": {cls: {"median_abs_log_error": _median([abs(e) for e, t in zip(errors, confirmation.tokens) if t["class"] == cls]),
+                                "mean_signed_log_error": math.fsum(e for e, t in zip(errors, confirmation.tokens) if t["class"] == cls) / max(1, len(confirmation.class_tokens(cls)))}
+                          for cls in CLASSES}}
+    return rc.json_safe({"spearman_by_group": per_group, "nmse_spearman": spearman(x, nmse), "per_cue": per_cue, "line": line})
+
+
+CONTRASTS = {
+    "noun effect": "mean(m_B, m_C, m_D, m_E) − m_N",
+    "measure effect among nouns": "mean(m_B, m_D) − mean(m_C, m_E)",
+    "plurality effect among nouns": "mean(m_B, m_C) − mean(m_D, m_E)",
+    "measure × plurality interaction (descriptive)": "(m_B − m_D) − (m_C − m_E)",
+}
+
+
+def _contrast_values(m: Mapping[str, float]) -> dict[str, float]:
+    return {"noun effect": (m["B"] + m["C"] + m["D"] + m["E"]) / 4 - m["N"], "measure effect among nouns": (m["B"] + m["D"]) / 2 - (m["C"] + m["E"]) / 2,
+            "plurality effect among nouns": (m["B"] + m["C"]) / 2 - (m["D"] + m["E"]) / 2,
+            "measure × plurality interaction (descriptive)": (m["B"] - m["D"]) - (m["C"] - m["E"])}
+
+
+def contrasts(per_cue: Sequence[Mapping[str, Any]], config: Configuration) -> dict[str, Any]:
+    """The class means of the per-cue log MSE and the four factorial contrasts, each with a deterministic cue-level
+    bootstrap interval (resamples within class, tag ``024|contrast``, elements ``[lower − 1]`` and ``[B − lower]``). No
+    explanation is declared a winner, and none of this can alter the outcome."""
+    logs = {cls: [float(cue["log_mse"]) for cue in per_cue if cue["class"] == cls] for cls in CLASSES}
+    means = {cls: math.fsum(values) / len(values) for cls, values in logs.items()}
+    resamples = {name: [] for name in CONTRASTS}
+    for b in range(config.contrast_resamples):
+        drawn = {cls: math.fsum(values[contrast_draw_index(b, cls, slot, len(values))] for slot in range(len(values))) / len(values) for cls, values in logs.items()}
+        for name, value in _contrast_values(drawn).items():
+            resamples[name].append(value)
+    lower = lower_rank(config.contrast_resamples)
+    out = {}
+    for name, value in _contrast_values(means).items():
+        ordered = sorted(resamples[name])
+        out[name] = {"definition": CONTRASTS[name], "value": value, "interval": [ordered[lower - 1], ordered[config.contrast_resamples - lower]]}
+    return {"class_means_log_mse": means, "contrasts": out, "resamples": config.contrast_resamples, "tag": CONTRAST_TAG, "elements": [lower - 1, config.contrast_resamples - lower],
+            "readings": ["a positive noun effect, with measure and plurality effects near 0, is consistent with the nounness account",
+                         "a measure effect with little plurality effect is consistent with measure semantics",
+                         "a plurality effect with little measure effect is consistent with plural morphology"],
+            "force": "descriptive only; no explanation is declared a winner; the outcome is unchanged"}
+
+
+def ladder(progs: ul.ModelPrograms, units: ul.TableUnits, states: Mapping[str, rd.FrameState020], tensors: Mapping[str, torch.Tensor],
+           confirmation: Confirmation024) -> dict[str, Any]:
+    """Per class, the share of ``Σ (Δc − C)²`` removed by making block-5 attention exact (C5), then block-4 attention too
+    (020's Level-1 chain, L1); and the Level-1 identity, ``max |L1 − Δc|``, against 2e-2 nats (reported, not a gate)."""
+    readout = progs.readout
+    classes = {int(token["token_id"]): token["class"] for token in confirmation.tokens}
+    sums = {cls: {"C": 0.0, "C5": 0.0, "L1": 0.0} for cls in CLASSES}
+    identity = {"max": 0.0, "at": ""}
+    for group, pairs in units.pairs.items():
+        for row, (t, f) in enumerate(pairs):
+            frame, token = units.frames[f], units.tokens[t]
+            state = states[frame.frame_id]
+            dx3 = _changes(tensors[f"Y1/{group}/dx3"], row, frame)
+            y, c = tensors[f"Y1/{group}/dc"][row].double(), tensors[f"Y1/{group}/ceiling"][row].double()
+            c5 = readout.contrast(state, readout.level1_detail(state, dict(dx3), l4_heads=False)["dh6"], progs.nouns)[progs.scorable].double()
+            l1 = readout.contrast(state, readout.level1_detail(state, dict(dx3), l4_heads=True)["dh6"], progs.nouns)[progs.scorable].double()
+            cls = classes[int(token["token_id"])]
+            sums[cls]["C"] += float(((y - c) ** 2).sum())
+            sums[cls]["C5"] += float(((y - c5) ** 2).sum())
+            sums[cls]["L1"] += float(((y - l1) ** 2).sum())
+            ul._worse(identity, float((l1 - y).abs().max()), f"{token['word']}|{frame.frame_id}")
+    shares = {cls: {"block5_attention": (s["C"] - s["C5"]) / s["C"] if s["C"] > 0 else None, "block4_attention": (s["C5"] - s["L1"]) / s["C"] if s["C"] > 0 else None,
+                    "sse": s} for cls, s in sums.items()}
+    return rc.json_safe({"per_class": shares, "level1_identity": {**identity, "tolerance": TOLERANCES["level1"], "within": identity.get("max") is not None
+                                                                   and identity["max"] <= TOLERANCES["level1"], "force": "descriptive only; not a gate"}})
+
+
+# ---------------------------------------------------------------------------
+# The results state and the phase rules (022's and 023's discipline).
+
+RESULTS_SCHEMA_VERSION = 1
+PHASES = ("validate", "freeze", "calibrate", "lock", "confirm", "report")
+STATE_PHASES = ("calibrate", "lock", "confirm", "report")
+
+
+def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, git_dirty: bool, versions: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
+    if not pm._COMMIT_SHA.fullmatch(protocol_code_commit or ""):
+        raise PhaseError("scientific execution requires a 40-character committed protocol/code SHA")
+    if git_dirty:
+        raise PhaseError("scientific execution requires a clean Git tree")
+    return {"schema_version": RESULTS_SCHEMA_VERSION, "experiment": EXPERIMENT, "run_id": pm.sha256_text(pm.canonical_json(dict(digests)) + protocol_code_commit + pm.utc_now())[:16],
+            "created_at": pm.utc_now(), "inputs": {key: digests[key] for key in DIGEST_KEYS}, "module_blobs": dict(FROZEN_BLOBS), "design": dict(DESIGN), "plan": dict(PLAN),
+            "configuration": config.to_json(), "protocol_code_commit": protocol_code_commit, "git_dirty": False,
+            "model": {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision}, "versions": dict(versions),
+            "phases": {phase: {"status": "not_started"} for phase in STATE_PHASES}, "executed_prompt_keys": [], "executed_noun_keys": [],
+            "calibration": {}, "confirmation_024": None, "lock": None, "confirmation": None, "report": None}
+
+
+def write_state_atomic(path: Path, state: Mapping[str, Any]) -> str:
+    """``rd.write_results_state``'s format (canonical JSON with its ``state_sha256``), written to a temporary file in the
+    same directory and moved into place in one ``os.replace``: a reader sees the old state or the new one, never a mix."""
+    payload = {key: value for key, value in state.items() if key != "state_sha256"}
+    validate_json_safe(payload)
+    digest = pm.sha256_text(pm.canonical_json(payload))
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix=".results-", suffix=".json", dir=path.parent)
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            stream.write(pm.canonical_json({**payload, "state_sha256": digest}) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    except BaseException:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+        raise
+    return digest
+
+
+def assert_phase_allowed(phase: str, state: Mapping[str, Any]) -> None:
+    status = {name: entry["status"] for name, entry in state["phases"].items()}
+    if phase == "calibrate":
+        calibration = state.get("calibration") or {}
+        if status["calibrate"] == "running" and calibration.get("incidents") and not calibration.get("record_sha256"):
+            return  # a rerun only after a recorded incident, at a new commit that changes no scientific path (the runner checks both)
+        if status["calibrate"] != "not_started":
+            raise PhaseError(f"calibrate is {status['calibrate']}; the calibration runs once in this protocol version (a stop for review is never retried automatically)")
+    elif phase == "lock":
+        if status["calibrate"] != "complete":
+            raise PhaseError(f"lock requires the completed calibrate phase (it is {status['calibrate']})")
+        if status["lock"] == "complete":
+            raise PhaseError("lock already written; a new candidate lock requires a new protocol version")
+        if state["phases"]["lock"].get("incidents"):
+            raise PhaseError("a lock identity incident is recorded; lock is refused until the reviewer decides (a new protocol version)")
+    elif phase == "confirm":
+        if status["lock"] != "complete":
+            raise PhaseError("confirm requires the lock phase")
+        if status["confirm"] != "not_started":
+            raise PhaseError("confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version")
+        if state["phases"]["confirm"].get("incidents"):
+            raise PhaseError("an I7 incident is recorded; confirm is refused until the reviewer decides (a new protocol version)")
+    elif phase == "report":
+        calibration = state.get("calibration") or {}
+        if status["calibrate"] not in ("complete", "stopped_for_review") and not calibration.get("incidents"):
+            raise PhaseError("report requires a calibrate phase that completed, stopped for review or recorded an incident")
+    else:
+        raise PhaseError(f"unknown phase {phase}")
+
+
+def assert_ledger_isolated(ledger: Sequence[str], forbidden: frozenset[str], what: str) -> None:
+    overlap = set(ledger) & forbidden
+    if overlap:
+        raise PhaseError(f"{what} holds {len(overlap)} forbidden keys, e.g. {sorted(overlap)[:2]}")
+
+
+# ---------------------------------------------------------------------------
+# The report.
+
+
+def _fmt(value: Any, digits: int = 4) -> str:
+    return "—" if value is None else f"{value:.{digits}f}" if isinstance(value, float) else str(value)
+
+
+def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None) -> str:
+    phases = ", ".join(f"{name} {entry['status']}" for name, entry in state["phases"].items())
+    commits = {name: entry.get("commit") or entry.get("confirm_commit") for name, entry in state["phases"].items() if entry.get("commit") or entry.get("confirm_commit")}
+    lines = ["# Experiment 024 — report", "", f"- Run `{state['run_id']}`; phase commits {commits}; phases: {phases}",
+             f"- Design revision {state['design']['revision']} (`{state['design']['commit']}`), plan revision {state['plan']['revision']} (`{state['plan']['commit']}`); "
+             f"configuration `{state['configuration']['name']}`", ""]
+    for name in STATE_PHASES:
+        for entry in state["phases"][name].get("incidents", []):
+            lines.append(f"- **{name} incident** at `{entry['commit']}`: {entry['message']}")
+    for entry in (state.get("calibration") or {}).get("incidents", []):
+        lines.append(f"- **Calibration incident** at `{entry['commit']}`: {entry['message']}")
+    confirmation = state.get("confirmation") or {}
+    incident = confirmation.get("incident")
+    if incident:
+        lines.append(f"- **Confirmation incident** at `{incident['commit']}`: {incident['message']} — the one-shot confirmation is consumed; nothing is retried")
+    stop = (state.get("calibration") or {}).get("stop")
+    if stop:
+        lines += ["", "## Calibration stopped for review (no record was written)", "", f"- {stop.get('reason')}; never retried automatically — the reviewer decides"]
+    if record is not None:
+        floor, null, descriptive = record["primary_floor"], record["null"], record["descriptive"]
+        lines += ["", f"## Calibration (exposed only; {record['constants']['configuration']['n_calibration']} cues; B = {floor['draws']}, P = {null['permutations']})", "",
+                  f"- F_ρ (element [{floor['element']}]) = {_full(floor['F_rho'])}; undefined draws {floor['undefined']} (stop at {floor['stop_at']}); median of the "
+                  f"defined draws {_full(floor['direction_check']['median'])}; tails {', '.join(f'{k} {_fmt(v, 4)}' for k, v in floor['tails'].items())}",
+                  f"- null₉₇.₅ (element [{null['element']}] of {null['permutations']} permutations of {null['n']} ranks) = {_full(null['null_975'])}",
+                  f"- Effective threshold max(F_ρ, null₉₇.₅) = {_full(record['effective_threshold']['value'])}, bound by {record['effective_threshold']['binds']}",
+                  f"- Draw rates (descriptive): " + ", ".join(f"{name} {rate:.4f}" for name, rate in descriptive["draw_rates"].items()),
+                  f"- Calibration ρ over the population (descriptive) {_fmt(descriptive['calibration_rho'])}; within strata "
+                  + ", ".join(f"{s} {_fmt(v)}" for s, v in descriptive["within_stratum_rho"].items()),
+                  f"- Pronoun out-of-fit check (descriptive): ρ {_fmt(descriptive['pronoun_check']['rho'])}, the line's median |log error| "
+                  f"{_fmt(descriptive['pronoun_check']['median_abs_log_error'])}, mean signed {_fmt(descriptive['pronoun_check']['mean_signed_log_error'])}",
+                  f"- The line (exposed-data-fitted, prospectively frozen; secondary): log MSE = {_full(record['line']['intercept'])} + {_full(record['line']['slope'])} · "
+                  f"nounness; residual sd {_full(record['line']['residual_sd'])}; the largest calibration score {_full(descriptive['maximum_calibration_score'])}"]
+    results = confirmation.get("results")
+    if results and incident:
+        lines += ["", "## The result", "", "- Not reported: an incident is recorded, and an incident carries no result."]
+    elif results:
+        primary, guard, label = results["primary"], results["guard"], results["outcome"]
+        lines += ["", "## The outcome", "", f"**`{label['label']}`** — {label['reading']}.", "", f"- {label['simple'].capitalize()}.",
+                  f"- {label['predictive'].capitalize()}.", f"- {label['extrapolation']}", "",
+                  "## The primary test", "", f"- ρ = {_full(primary['rho'])} against F_ρ {_full(primary['F_rho'])} and null₉₇.₅ {_full(primary['null_975'])}: "
+                  f"**{primary['result']}** — {primary['reading']}", "",
+                  "## The E–N disambiguation guard (exact one-sided permutation test)", ""]
+        if guard["K"] is None:
+            lines.append(f"- **{guard['result']}** — {guard['reading']}")
+        else:
+            lines += [f"- K = {guard['K']} of {guard['assignments']} assignments at or above the observed contrast (bound {guard['max_upper']}); exact p = {guard['p_exact']} "
+                      f"= {guard['p_value']:.6f}: **{guard['result']}** — {guard['reading']}",
+                      f"- D_EN = {_full(guard['D_EN'])} (ratio of geometric means {_fmt(guard['ratio_of_geometric_means'])}); the derived threshold t = "
+                      f"{_full(guard['threshold_D']) if guard['threshold_D'] is not None else '+∞'} (descriptive)",
+                      f"- E: mean MSE {_fmt(guard['groups']['E']['mean_mse'], 6)}, mean log MSE {_fmt(guard['groups']['E']['mean_log_mse'])}; N: mean MSE "
+                      f"{_fmt(guard['groups']['N']['mean_mse'], 6)}, mean log MSE {_fmt(guard['groups']['N']['mean_log_mse'])}"]
+        lines += ["", "- Not shown by any outcome:"] + [f"  - {item}" for item in SEMANTICS["not_shown"]]
+        lines += ["", "| class | word | nounness | MSE | log MSE | predicted log MSE |", "|---|---|---|---|---|---|"]
+        lines += [f"| {cue['class']} | {cue['word']} | {_fmt(cue['nounness'])} | {_fmt(cue['mse'], 6)} | {_fmt(cue['log_mse'])} | {_fmt(cue['predicted_log_mse'])} |"
+                  for cue in results["per_cue"]]
+        lines += ["", "## Descriptive records (no outcome force)", ""]
+        gates = confirmation.get("gates") or {}
+        lines.append("- Stage-2 identities (maxima): " + ", ".join(f"{name} {gates[name].get('max')} (tolerance {TOLERANCES[name]:.0e})" for name in sorted(gates)))
+        c_check = confirmation.get("c_recompute") or {}
+        lines.append(f"- C recomputed from the saved Δx3: bit for bit {c_check.get('bitwise_equal')} over {c_check.get('pairs')} pairs")
+        accounting = confirmation.get("accounting") or {}
+        lines.append(f"- Prompt accounting: {accounting}")
+        descriptives = confirmation.get("descriptives") or {}
+        second = descriptives.get("secondary")
+        if second:
+            lines.append(f"- Spearman by group: " + ", ".join(f"{g} {_fmt(v)}" for g, v in second["spearman_by_group"].items())
+                         + f"; normalized-MSE Spearman {_fmt(second['nmse_spearman'])}")
+            lines.append(f"- The line against the observed log MSE: median |log error| {_fmt(second['line']['median_abs_log_error'])}, mean signed "
+                         f"{_fmt(second['line']['mean_signed_log_error'])}")
+        contrast = descriptives.get("contrasts")
+        if contrast:
+            lines.append("- Class means of log MSE: " + ", ".join(f"{cls} {_fmt(value)}" for cls, value in contrast["class_means_log_mse"].items()))
+            for name, entry in contrast["contrasts"].items():
+                lines.append(f"- {name} ({entry['definition']}): {_fmt(entry['value'])} [{_fmt(entry['interval'][0])}, {_fmt(entry['interval'][1])}]")
+            lines.append(f"- {contrast['force']}")
+        steps = descriptives.get("ladder")
+        if steps:
+            for cls, entry in steps["per_class"].items():
+                lines.append(f"- Ladder {cls}: block-5 attention exact removes {_fmt(entry['block5_attention'])} of Σ(Δc − C)²; block-4 attention then "
+                             f"{_fmt(entry['block4_attention'])}")
+            lines.append(f"- Level-1 identity max |L1 − Δc| {_fmt(steps['level1_identity'].get('max'), 6)} against {TOLERANCES['level1']} (descriptive)")
+        for name, failure in sorted((descriptives.get("failures") or {}).items()):
+            lines.append(f"- The descriptive record {name} was not computed ({failure['type']}: {failure['message']}); it has no outcome force and the result stands")
+    lines.append("")
+    return "\n".join(lines)
