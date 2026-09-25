@@ -1,0 +1,19 @@
+[PASS] rr.outcome matches the lock's outcome table on all 12 (primary, guard) pairs: 12
+[PASS] threshold == max(F_ρ, null₉₇.₅) == null₉₇.₅ (null binds; F_ρ < null): (0.24411074612857814, 0.3136960600375234)
+[PASS] classify_primary(ρ = threshold) == PASS: PASS
+[PASS] classify_primary(ρ = threshold − 1 ulp) == GUARD_FAILURE: GUARD_FAILURE
+[PASS] classify_primary(ρ = F_ρ) == GUARD_FAILURE: GUARD_FAILURE
+[PASS] classify_primary(ρ = 1) == PASS: PASS
+[PASS] classify_primary(ρ = −1) == GUARD_FAILURE: GUARD_FAILURE
+[PASS] classify_primary(ρ undefined) == NOT_INTERPRETABLE: NOT_INTERPRETABLE
+[PASS] ENVELOPE_ONLY_FAILURE unreachable for these thresholds (null₉₇.₅ > F_ρ)
+[PASS] lock guard spec == PRODUCTION_GUARD.to_json() (8 + 8, 12,870, max_upper 321)
+[PASS] 321/12,870 ≤ 0.025 < 322/12,870 (exact)
+[PASS] en_decision(321) PASS, en_decision(322) FAIL, en_decision(12,870) FAIL
+[PASS] guard units: 8 E then 8 N, the freeze's order: ['honest', 'polite', 'rude', 'sleepy', 'wise', 'lucky', 'merry', 'nervous']
+[PASS] guard: 0 refused
+RULES PASS: 14/14 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=0 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/9caa7vpg
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/9caa7vpg

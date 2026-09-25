@@ -1,0 +1,36 @@
+[PASS] own MSE here (fsum of per-frame fsums) agrees with item 7's own MSE (≤ 1e-15 relative): bitwise 38/40
+   class mean MSE: {'N': 0.071356, 'B': 0.118908, 'D': 0.112712, 'C': 0.134027, 'E': 0.124994}
+   class mean log MSE: {'N': -2.656692, 'B': -2.138851, 'D': -2.224651, 'C': -2.022502, 'E': -2.088655}
+   noun effect: +0.538027  95% bootstrap [+0.394545, +0.677375]
+   measure effect among nouns: -0.126173  95% bootstrap [-0.252302, +0.004179]
+   plurality effect among nouns: +0.075976  95% bootstrap [-0.058253, +0.203467]
+   measure × plurality interaction (descriptive): +0.019647  95% bootstrap [-0.244106, +0.271456]
+   Spearman cue-final 0.585929, coordinated 0.697561; normalized-MSE Spearman 0.591932
+   mean per-cue R²_C by class: {'N': 0.9634, 'B': 0.9377, 'D': 0.9432, 'C': 0.9285, 'E': 0.9339} ; range 0.9077 – 0.9717
+   the frozen line: median |log error| 0.1227, mean signed +0.0928; extrapolated {'n': 23, 'median_abs': 0.10523683553560437, 'mean_signed': 0.033707600962157004}; within {'n': 17, 'median_abs': 0.17419146544452024, 'mean_signed': 0.17284705832932837}
+   largest positive residuals (observed − predicted log MSE): [('gallon', 'D', 0.7206), ('acre', 'D', 0.6306), ('rabbit', 'E', 0.4645), ('litres', 'B', 0.3993), ('lion', 'E', 0.3287), ('apples', 'C', 0.3109)]
+   most negative residuals: [('cluster', 'D', -0.2265), ('sleepy', 'N', -0.1943), ('bundles', 'B', -0.1859), ('wise', 'N', -0.1742)]
+[PASS] calibration maximum nounness_loo == 0.13502027836111233 (from the installed record): 0.13502027836111233
+[PASS] 23 of 40 fresh cues above the calibration maximum; own flags == the lock's; 5 of 8 E
+   above by class: {'N': 0, 'B': 6, 'D': 4, 'C': 8, 'E': 5}
+[PASS] pattern: noun effect clearly positive (interval excludes 0): [0.39454502326381435, 0.6773749888624114]
+[PASS] pattern: measure and plurality effects smaller than the noun effect, intervals include 0
+[PASS] pattern: the association present in both subsets (cue-final and coordinated Spearman > 0.3137): {'cue_final': 0.5859287054409006, 'coordinated': 0.697560975609756}
+[PASS] pattern: the frozen line under-predicts slightly on average (mean signed log error > 0, small): 0.09284187034320483
+[PASS] pattern: gallon and acre have large positive residuals (the two largest): (0.7206, 0.6306)
+[PASS] recorded descriptives hold exactly secondary, contrasts, ladder (no failures)
+[PASS] recorded class means of log MSE / contrast values / intervals reproduce (≤ 1e-12): 0.00e+00 0.00e+00 0.00e+00
+[PASS] recorded contrast elements [249, 9750], tag 024|contrast, 10,000 resamples
+[PASS] recorded cue-final / coordinated Spearman == own: {'coordinated': 0.697560975609756, 'cue_final': 0.5859287054409006}
+[PASS] recorded normalized-MSE Spearman == own: 0.5919324577861164
+[PASS] recorded per-cue R²_C and nmse reproduce (≤ 1e-9 abs / 1e-12 rel): R2 1.11e-16, nmse 2.24e-16
+[PASS] recorded extrapolation flags per cue == own
+[PASS] recorded line summary reproduces (median |err|, mean signed, extrapolated/within): {'median_abs_log_error': 0.12268655323762379, 'mean_signed_log_error': 0.09284187034320483}
+   recorded per-class line errors: {'B': {'mean_signed_log_error': 0.0827, 'median_abs_log_error': 0.1095}, 'C': {'mean_signed_log_error': 0.0755, 'median_abs_log_error': 0.1336}, 'D': {'mean_signed_log_error': 0.1252, 'median_abs_log_error': 0.083}, 'E': {'mean_signed_log_error': 0.1665, 'median_abs_log_error': 0.1371}, 'N': {'mean_signed_log_error': 0.0144, 'median_abs_log_error': 0.1463}}
+   recorded ladder per class: {'B': (0.3983, 0.6017), 'C': (0.4245, 0.5755), 'D': (0.3257, 0.6743), 'E': (0.2704, 0.7295), 'N': (0.4098, 0.5902)} Level-1 identity {'at': 'litres|cardinal-012-1', 'force': 'descriptive only; not a gate', 'max': 0.009929305188346005, 'tolerance': 0.02, 'within': True}
+S12 PASS: 16/16 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=0 disallowed=0 outside_write_events={'open': 3, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirmation_review024/s12_results.json
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/s1mmmfkz
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/s1mmmfkz

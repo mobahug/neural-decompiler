@@ -1,0 +1,38 @@
+outputs/experiment-024: ['calibration-arrays.pt', 'candidate-calibration.json', 'candidate-lock.json', 'candidate-preregistration.md', 'results.json']
+[PASS] exactly the five pre-confirm files (no stage2-measurements.pt, no report.md, no .results-*.json temp): ['calibration-arrays.pt', 'candidate-calibration.json', 'candidate-lock.json', 'candidate-preregistration.md', 'results.json']
+[PASS] no subdirectories
+[PASS] calibration-arrays.pt sha256 unchanged
+[PASS] candidate-calibration.json sha256 unchanged
+[PASS] candidate-lock.json sha256 unchanged
+[PASS] candidate-preregistration.md sha256 unchanged
+[PASS] results.json sha256 unchanged
+[PASS] state.confirmation is null
+[PASS] state.report is null
+[PASS] state_sha256 == 58891c24…
+[PASS] state ledgers empty
+   flagged lock path configuration.guard.p_value = "K / assignments (exact)"
+   flagged lock path constants.configuration.guard.p_value = "K / assignments (exact)"
+   flagged lock path constants.results = {"guard": ["NOT_INTERPRETABLE", "FAIL", "PASS"], "outcomes": ["NOT_INTERPRETABLE", "NOUNNESS_PREDICTION_NOT_ESTABLISHED"
+   flagged lock path constants.tolerances.mse = 1e-12
+   flagged lock path guard.spec.p_value = "K / assignments (exact)"
+[PASS] every lock key named like an outcome is definitional (spec text, label vocabulary, tolerance): ['configuration.guard.p_value', 'constants.configuration.guard.p_value', 'constants.results', 'constants.tolerances.mse', 'guard.spec.p_value']
+   lock.fresh keys: ['cues', 'embedding_sha256', 'extrapolation', 'maximum_calibration_score', 'mu_cue_sha256', 'mu_noun_sha256', 'scores_sha256'] ; per-cue keys: ['above_calibration_maximum', 'class', 'form', 'lemma', 'nounness', 'predicted_log_mse', 'token_id', 'word']
+[PASS] lock.fresh.cues carry only weight-derived fields
+   lock key paths mentioning mse/rho: ['constants.tolerances.mse', 'fresh.cues[].predicted_log_mse', 'primary.F_rho']
+   flagged state path calibration.checks.mse = {"at": "warm", "check": "mse", "max_difference": 2.1530905826901979e-16, "passed": true, "tolerance": 1e-12}
+   flagged state path configuration.guard.p_value = "K / assignments (exact)"
+[PASS] every state key named like an outcome is definitional or the calibration's exposed cross-check: ['calibration.checks.mse', 'configuration.guard.p_value']
+   tracked files scanned: 524; carrying a fresh 024 prompt-key suffix: ['experiments/024-readout-routing-nounness/confirmation-v1.json']
+[PASS] the only tracked file with fresh 024 prompt keys is the freeze (confirmation-v1.json): ['experiments/024-readout-routing-nounness/confirmation-v1.json']
+   tracked 024 files outside evidence/: ['experiments/024-readout-routing-nounness/README.md', 'experiments/024-readout-routing-nounness/calibration-v1.json', 'experiments/024-readout-routing-nounness/confirmation-v1.json', 'experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md', 'experiments/024-readout-routing-nounness/run.py']
+[PASS] no tracked 024 results, stage-2 or report file
+[PASS] the calibration record holds no fresh cue's MSE (no fresh id among its 139 + 36 cues)
+[PASS] the state's MSE cross-check location is an exposed cue, not a fresh one: warm
+[PASS] no stage-2 file for 024 anywhere under outputs/
+[PASS] guard: 0 refused
+ITEM9 PASS: 20/20 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=1 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/ph9xb24n
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/ph9xb24n
+GUARD subprocess: git ls-files -z

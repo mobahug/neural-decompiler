@@ -1,0 +1,93 @@
+[PASS] lock cue order == freeze cue order
+   templates: ['cardinal', 'coordinated', 'quantifier']
+[PASS] 72 cue-final + 36 coordinated frames
+[PASS] mapping covers 4,320 (cue, frame) pairs onto 2,880 + 1,440 distinct rows
+[PASS] prompt log keys map onto every row exactly once
+[PASS] one MSE per cue (40), all finite and > 0
+   own routes: fsum vs exact-rational: 29/40 bitwise equal, max rel diff 2.207e-16; fsum vs pair-order: max rel diff 2.075e-16
+[PASS] own row mapping == the canonical (rr.target_units) mapping for all 4,320 pairs
+   canonical rr.cue_mse vs own fsum route: 37/40 bitwise equal, max rel diff 2.075e-16; vs own exact route max rel 2.207e-16; vs own pair-order mimic: 40/40 bitwise equal
+[PASS] canonical per-cue MSE agrees numerically with own (max rel diff ≤ 1e-12): 2.075e-16
+[PASS] canonical rr.cue_mse == own pair-order mimic bit for bit (40/40)
+[PASS] the canonical cells count 79 nouns per pair and 108 pairs per cue
+
+   Per-cue table (frozen order; nounness from the lock; own MSE = fsum over the 8,532 cells / 8,532):
+   | # | class | word | token id | nounness (lock) | own MSE | own log MSE | canonical MSE − own |
+   | 1 | N | honest | 8274 | -0.22935071244762803 | 0.059384252667665414 | -2.8237261943654652 | +0.000e+00 |
+   | 2 | N | polite | 30405 | -0.1903187108201974 | 0.0735315966847728 | -2.6100400782705755 | +0.000e+00 |
+   | 3 | N | rude | 30446 | -0.12439741386297484 | 0.07062801450706915 | -2.6503284071405027 | +0.000e+00 |
+   | 4 | N | sleepy | 48849 | -0.13710941690038347 | 0.05763100808785483 | -2.853694521271928 | +0.000e+00 |
+   | 5 | N | wise | 15822 | -0.19440870921151793 | 0.05458326432555041 | -2.9080279574004098 | +0.000e+00 |
+   | 6 | N | lucky | 13476 | -0.13300627493744047 | 0.08630837300087872 | -2.4498286635726827 | +0.000e+00 |
+   | 7 | N | merry | 49570 | -0.11509060380825145 | 0.07470762801298396 | -2.5941730767557876 | +0.000e+00 |
+   | 8 | N | nervous | 11219 | -0.04507626505814516 | 0.09406999169611967 | -2.363716181271698 | +1.388e-17 |
+   | 9 | B | gallons | 42616 | 0.1651398612902963 | 0.10177924659932674 | -2.2849490600955877 | +0.000e+00 |
+   | 10 | B | ounces | 28409 | 0.0759690465528922 | 0.09877468702746693 | -2.3149139112296475 | +0.000e+00 |
+   | 11 | B | acres | 20046 | 0.1631186714045987 | 0.12028272647692104 | -2.1179102533691254 | +0.000e+00 |
+   | 12 | B | herds | 47862 | 0.3965740010055436 | 0.14395532981436288 | -1.9382522371535742 | +0.000e+00 |
+   | 13 | B | crowds | 24597 | 0.23715703273226257 | 0.14065954033386335 | -1.9614129160312264 | +0.000e+00 |
+   | 14 | B | bundles | 25663 | 0.2927946066382398 | 0.10159790030421209 | -2.2867324103484314 | +0.000e+00 |
+   | 15 | B | clusters | 9959 | 0.2617790108645215 | 0.11843221344696109 | -2.133414520505621 | +0.000e+00 |
+   | 16 | B | litres | 47026 | 0.006685069640962965 | 0.125779352727997 | -2.0732260759446017 | +0.000e+00 |
+   | 17 | D | gallon | 46740 | 0.04983962896221633 | 0.18342847700198345 | -1.695930458574371 | +2.776e-17 |
+   | 18 | D | ounce | 38831 | -0.06555391097164939 | 0.07718929877642075 | -2.5614944484453566 | +0.000e+00 |
+   | 19 | D | acre | 36982 | -0.031825820807209665 | 0.15077091361284164 | -1.8919937225635752 | +0.000e+00 |
+   | 20 | D | herd | 33361 | 0.30293746421868784 | 0.11666981219175741 | -2.148407451886611 | +0.000e+00 |
+   | 21 | D | crowd | 9539 | 0.19785964446846188 | 0.10615713181651415 | -2.242834906876725 | +0.000e+00 |
+   | 22 | D | bundle | 13204 | 0.14735202818805862 | 0.09116746576414878 | -2.3950571805891614 | +0.000e+00 |
+   | 23 | D | cluster | 7368 | 0.16347458133969206 | 0.08246754095317262 | -2.49535050605235 | +0.000e+00 |
+   | 24 | D | litre | 43803 | 0.04518919075932214 | 0.09384234038380697 | -2.366139134796522 | +0.000e+00 |
+   | 25 | C | apples | 28580 | 0.22296560088986245 | 0.15249012053451308 | -1.8806554684134467 | +0.000e+00 |
+   | 26 | C | horses | 12074 | 0.34591626318430735 | 0.1178995195825363 | -2.1379225462347615 | +0.000e+00 |
+   | 27 | C | doctors | 11576 | 0.31865040433065667 | 0.10769126378136132 | -2.2284868143460934 | +0.000e+00 |
+   | 28 | C | kings | 25346 | 0.20618955939604797 | 0.11549283741007724 | -2.158546764708787 | +0.000e+00 |
+   | 29 | C | rabbits | 29948 | 0.32395329800181705 | 0.17065207341805397 | -1.768128453582788 | +0.000e+00 |
+   | 30 | C | poets | 32976 | 0.3146659432933707 | 0.11704433728201677 | -2.1452024648398766 | +0.000e+00 |
+   | 31 | C | dragons | 41705 | 0.31820898038249223 | 0.1563121091475025 | -1.8559005708032272 | +0.000e+00 |
+   | 32 | C | lions | 44536 | 0.30971817587347183 | 0.13463676156962684 | -2.0051747819020225 | +0.000e+00 |
+   | 33 | E | apple | 19126 | 0.16746245512379346 | 0.11803165622364269 | -2.136802417413543 | +0.000e+00 |
+   | 34 | E | horse | 8815 | 0.29829447778124146 | 0.14279553981971432 | -1.946341463319939 | +0.000e+00 |
+   | 35 | E | doctor | 7345 | 0.21768061353376064 | 0.12193480163636257 | -2.104268789915006 | +0.000e+00 |
+   | 36 | E | king | 6963 | 0.11749007419039456 | 0.11327293209371488 | -2.177955044223778 | +0.000e+00 |
+   | 37 | E | rabbit | 17876 | 0.1286387706515007 | 0.157288993185851 | -1.8496704447555339 | +0.000e+00 |
+   | 38 | E | poet | 17502 | 0.16599880501353617 | 0.10170493437371517 | -2.2856794581890405 | +0.000e+00 |
+   | 39 | E | dragon | 22159 | 0.18822636757466396 | 0.11114721942597551 | -2.196899655295324 | +0.000e+00 |
+   | 40 | E | lion | 27405 | 0.10845152134948685 | 0.13377194341359427 | -2.01161884375749 | -2.776e-17 |
+   class mean MSE: {'N': 0.07135551612286187, 'B': 0.11890762459138889, 'D': 0.11271162256258072, 'C': 0.134027377840711, 'E': 0.12499350252157129}
+[PASS] no ties in either vector (40 distinct nounness, 40 distinct MSE): (0, 0)
+   ρ own (average ranks + Pearson, fsum) = 0.6108818011257036; exact rational 1 − 6Σd²/(n(n²−1)) = 1628/2665 = 0.6108818011257036 (Σd² = 4148); canonical rr.spearman = 0.6108818011257036; rr.spearman_direct = 0.6108818011257036
+[PASS] the MSE ranks are identical under the three own MSE routes and the canonical MSE
+[PASS] own ρ == canonical ρ (difference ≤ 1e-12); both == float(exact rational): |own − canonical| = 0.000e+00; |own − exact| = 0.000e+00
+[PASS] the locked effective threshold is 0.3136960600375234 = max(F_ρ, null₉₇.₅), bound by null₉₇.₅: (0.24411074612857814, 0.3136960600375234)
+[PASS] PRIMARY: ρ = 1628/2665 ≥ the locked threshold (exact rational comparison) → PASS: 1628/2665
+[PASS] guard units: 8 E then 8 N, the lock's E and N classes in frozen order
+   guard [own fsum MSE]: K = 1 of 12,870; D_EN = 20465703117234853/36028797018963968 = 0.5680373703974243; plain float 0.5680373703974242 (|diff| 1.110e-16); q = 2^52; ties with observed 1; margin to the next assignment 0.019509; min E log − max N log 0.078037
+   guard [own exact-rational MSE]: K = 1 of 12,870; D_EN = 2558212889654357/4503599627370496 = 0.5680373703974244; plain float 0.5680373703974242 (|diff| 2.220e-16); q = 2^52; ties with observed 1; margin to the next assignment 0.019509; min E log − max N log 0.078037
+   guard [canonical MSE]: K = 1 of 12,870; D_EN = 20465703117234853/36028797018963968 = 0.5680373703974243; plain float 0.5680373703974242 (|diff| 1.110e-16); q = 2^52; ties with observed 1; margin to the next assignment 0.019509; min E log − max N log 0.078037
+[PASS] K = 1 (only the observed assignment reaches D_EN), under all three MSE routes
+[PASS] PASS: K = 1 ≤ 321 (= ⌊0.025 · 12,870⌋)
+[PASS] D_EN (canonical MSE, own exact arithmetic) == 0.5680373703974243: 0.5680373703974243
+[PASS] D_EN (own MSE) == 0.5680373703974243 or within 1e-15: 0.5680373703974243
+[PASS] the exact rational equals the Fraction route; float cross-check within 1e-12
+[PASS] descriptive: every E log-MSE exceeds every N log-MSE: min E − max N = 0.078037
+   geometric means: E 0.123854, N 0.070180; ratio exp(D_EN) 1.764800; mean MSE E 0.124994, N 0.071356
+   canonical rr.en_guard: result PASS, K 1, D_EN 0.5680373703974243 = 20465703117234853/36028797018963968, threshold_D 0.32671524926158657
+[PASS] canonical rr.en_guard agrees (PASS, K 1, the same exact rational)
+[PASS] own transcription of the design's outcome table == lock['outcome']['table'] (row for row)
+   derived: primary PASS (ρ 0.6108818011257036 vs null₉₇.₅ 0.3136960600375234, F_ρ 0.24411074612857814); guard PASS (K 1); outcome NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS
+[PASS] derived outcome == NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS
+[PASS] rr.outcome(primary, guard) (canonical frozen hierarchy) gives the same label
+   margins: ρ − threshold = +0.297186; K bound slack = 320
+[PASS] recorded per-cue order == the frozen cue order
+[PASS] recorded per-cue MSE == canonical recomputation bit for bit (40/40); vs own fsum route max rel diff reported: own-vs-recorded bitwise 37/40, max rel 2.075e-16
+[PASS] recorded per-cue nounness == lock nounness; predicted_log_mse == lock's
+[PASS] recorded ρ 0.6108818011257036 == own ρ (≤ 1e-12) == float(1628/2665): 0.6108818011257036
+[PASS] recorded primary PASS, thresholds the lock's
+[PASS] recorded guard PASS, K 1, D_EN 0.5680373703974243, D_EN_exact == own exact rational (canonical MSE): 20465703117234853/36028797018963968…
+[PASS] recorded outcome label == derived
+S07 PASS: 32/32 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=18 disallowed=0 outside_write_events={'open': 3, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirmation_review024/s07_results.json
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/xwbdzh2u
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/xwbdzh2u

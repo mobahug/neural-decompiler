@@ -1,0 +1,44 @@
+[PASS] launcher AST: exactly one runner.confirm() call: [289]
+[PASS] launcher AST: the call is at module level (inside try only), in no loop and no function (so it cannot be re-invoked): []
+[PASS] launcher AST: no confirm call inside an except/finally handler (no retry)
+[PASS] launcher AST: the `if DRY:` block ends in sys.exit(0) and precedes the confirm call: [268]
+[PASS] launcher source: sentinel created with O_CREAT|O_EXCL before the audit hook and before torch is imported
+[PASS] launcher source: model loaded only through the counted loader (Runner(model_loader=_counted_load)); one load_model call site
+   CONFIRM_LAUNCHED: --confirm-once 2026-09-25T19:31:55.124135+00:00 pid 83432 | DRY_RUN_LAUNCHED: --dry-run 2026-09-25T19:31:21.176768+00:00 pid 83202
+[PASS] both sentinels exist, one line each, distinct pids
+[PASS] confirm record: pid == sentinel pid
+[PASS] dry-run record: pid == sentinel pid
+[PASS] confirm record: confirm_invocations 1, load_model 1: {'confirm_invocations': 1, 'load_model': 1, 'capture_prompt': 4320, 'run_patched': 0, 'run_capture': 4320, 'run_interventions': 0, 'prompt_log_errors': 0}
+[PASS] confirm record: capture_prompt 4320 == run_capture 4320 (capture_prompt's inner call), run_patched 0, run_interventions 0, log errors 0
+[PASS] confirm record: exit_status 0, no error, no traceback
+[PASS] confirm record: module-blob assertion agreed (before the model load)
+[PASS] confirm record: 4 torch threads, HF offline, no bytecode, repo .venv
+[PASS] confirm record: pinned model + revision + checkpoint sha256 3da38833…
+[PASS] confirm record: HEAD af160ce, clean tree, pre-confirm state hashes 58891c24… / 14459cdd…
+[PASS] confirm record: state_before phases/ledgers/no stage2
+[PASS] confirm record: no repository write outside outputs, no forbidden read, no hook error
+[PASS] dry run: confirm_invocations 0, load_model 0, every counter 0, no confirm_started_at: {'confirm_invocations': 0, 'load_model': 0, 'capture_prompt': 0, 'run_patched': 0, 'run_capture': 0, 'run_interventions': 0, 'prompt_log_errors': 0}
+[PASS] dry run: no output write at all
+[PASS] dry run prompt log: only the stub probe line: ['{"n": 1, "key": "dry-run|probe|0", "t": 1790364682.8191612}']
+[PASS] confirm.out: exactly one 'confirm: the one production invocation begins' line and one 'confirm complete' line
+[PASS] confirm.out: exactly one weight-loading progress bar (one model load): 1
+[PASS] dry_run.out: no load, no confirm
+[PASS] confirm.exit: launcher exit 0
+[PASS] dry run finished before the confirm launch
+[PASS] prompt log: 4320 lines numbered 1..4320
+   launcher start 2026-09-25T19:31:56.342911+00:00 | confirm_started_at 2026-09-25T19:31:56.643453+00:00 | phase started_at 2026-09-25T19:32:10+00:00 | first capture 2026-09-25T19:32:10.705076+00:00 | last capture 2026-09-25T19:35:01.147333+00:00 | completed_at 2026-09-25T19:37:04+00:00 | confirm_ended_at 2026-09-25T19:38:45.531056+00:00
+[PASS] first capture after confirm start and not before the phase's started_at (seconds resolution)
+[PASS] prompt log monotone in time
+   stage2 mtime 2026-09-25T19:35:01.288495+00:00 | results.json mtime 2026-09-25T19:38:44.949506+00:00
+[PASS] stage2 written after the last capture and before completed_at (result write); results.json last written before confirm_ended_at
+[PASS] calibrate runtime (same check) records 4 torch threads: {'backend': 'cpu', 'control_seed': 20260924, 'deterministic_algorithms': False, 'device': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'torch_num_threads': 4}
+[PASS] cached checkpoint sha256 now == 3da38833… == its blob name: 3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd
+[PASS] revert {phases.confirm, executed_prompt_keys, executed_noun_keys, confirmation} -> digest 58891c24…: 58891c2416684785cb52437069beebcaa198ea3674c6d4b9d8480c103aadc65d
+[PASS] ... and the file bytes sha256 14459cdd… exactly: 14459cdde6ec2d832c3965d5b0ebaadaf06cef6aa0b0460c3a31b29dd442b262
+[PASS] only these four fields differ (top level: confirmation, executed_*; within phases only 'confirm'): ['confirmation', 'executed_noun_keys', 'executed_prompt_keys', 'phases']
+[PASS] the committed lock evidence (HEAD) records 58891c24… as the post-lock state: ['HEAD:experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/README.md', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/post_commit_checks.py', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.out', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.py', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/verify_lock.out', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01.out', 'HEAD:experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01_state_integrity.py']
+   executed_noun_keys: 80 keys, e.g. ['future-reserve:ally', 'future-reserve:anchor', 'future-reserve:army']
+S02 PASS: 36/36 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=1 disallowed=0 outside_write_events={'open': 1, 'os.remove': 1}
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/gxx_1esq
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/gxx_1esq

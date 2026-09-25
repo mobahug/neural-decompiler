@@ -1,0 +1,56 @@
+[PASS] stage2-measurements.pt: 76,314,087 bytes: 76314087
+[PASS] stage2-measurements.pt: sha256 b21babe1…: b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93
+[PASS] torch.load(weights_only=True): a dict of 20 tensors: 20
+   Y1/coordinated/ceiling: shape [1440, 79] dtype torch.float64
+   Y1/coordinated/dc: shape [1440, 79] dtype torch.float64
+   Y1/coordinated/dx1: shape [1440, 2, 512] dtype torch.float64
+   Y1/coordinated/dx3: shape [1440, 2, 512] dtype torch.float64
+   Y1/coordinated/positions: shape [1440, 2] dtype torch.int64
+   Y1/cue_final/ceiling: shape [2880, 79] dtype torch.float64
+   Y1/cue_final/dc: shape [2880, 79] dtype torch.float64
+   Y1/cue_final/dx1: shape [2880, 2, 512] dtype torch.float64
+   Y1/cue_final/dx3: shape [2880, 2, 512] dtype torch.float64
+   Y1/cue_final/positions: shape [2880, 2] dtype torch.int64
+   Y2/coordinated/ceiling: shape [0, 79] dtype torch.float64
+   Y2/coordinated/dc: shape [0, 79] dtype torch.float64
+   Y2/coordinated/dx1: shape [0, 2, 512] dtype torch.float64
+   Y2/coordinated/dx3: shape [0, 2, 512] dtype torch.float64
+   Y2/coordinated/positions: shape [0, 2] dtype torch.int64
+   Y2/cue_final/ceiling: shape [0, 79] dtype torch.float64
+   Y2/cue_final/dc: shape [0, 79] dtype torch.float64
+   Y2/cue_final/dx1: shape [0, 2, 512] dtype torch.float64
+   Y2/cue_final/dx3: shape [0, 2, 512] dtype torch.float64
+   Y2/cue_final/positions: shape [0, 2] dtype torch.int64
+[PASS] tensor names, shapes and dtypes are exactly the expected 20
+[PASS] 4,320 pairs: 2,880 cue_final + 1,440 coordinated; Y2 empty
+[PASS] every float tensor entirely finite (no NaN left from the NaN-initialised blocks): []
+[PASS] cue-final positions: p_t == p_c in every row
+[PASS] cue-final dx1/dx3 slot 1 == slot 0 bit for bit
+[PASS] coordinated positions: p_t == p_c + 1 in every row
+[PASS] own re-implementation of the canonical tensor digest == rc.tensor_digest == the state's recorded digests (20/20): []
+[PASS] the state's stage2 path is this file
+   Y1/coordinated/ceiling: canonical 3ef63e0076530f12… own-sha512 fa4c3c0121fd447f034637e8…
+   Y1/coordinated/dc: canonical 190f48814bd2eac7… own-sha512 75ecbb140dd75eecd6eecc23…
+   Y1/coordinated/dx1: canonical 164bd6ed6acdca36… own-sha512 6335cd4e57b9c020ff59ec3d…
+   Y1/coordinated/dx3: canonical 422439494916fb25… own-sha512 997cb9f159e27b50be41fdbd…
+   Y1/coordinated/positions: canonical 606062edeb075b2d… own-sha512 a31c66ae2aa307b143b2d196…
+   Y1/cue_final/ceiling: canonical 35b563decaba7e0e… own-sha512 34c9a64a84ccaac3de326262…
+   Y1/cue_final/dc: canonical 4e15992dfe7eed7e… own-sha512 734c8ca5c7664463fe025dda…
+   Y1/cue_final/dx1: canonical 5b996e844643e213… own-sha512 926f037075e48463a0d5da98…
+   Y1/cue_final/dx3: canonical 10067fbff504bd88… own-sha512 438b2312956b3cfbbcc52cf5…
+   Y1/cue_final/positions: canonical 9973307c080d835d… own-sha512 c791fd7f7b2fda73116e4873…
+   own combined digest over the 20 tensors (sha256 of 'name=sha512' lines): e5bed5251d961b98d2e1dfc9674bc78aa5c992737cca7e68ab39ecb0ff204a3d
+   Y1/cue_final/dc: min -10.963013 max +5.141724 mean -3.777330
+   Y1/coordinated/dc: min -9.316040 max +2.476318 mean -3.538432
+   Y1/cue_final/ceiling: min -10.377079 max +4.137728 mean -3.812401
+   Y1/coordinated/ceiling: min -9.364863 max +1.390965 mean -3.505532
+   run.py lines: measure 550, save_durably 552, state write (stage2 digests) 555, accounting 559, torch.load re-read 563, recompute_c 567, target_gates 572, fresh_cue_cells(saved) 576, score 577
+[PASS] run.py: measure → save_durably → state write → accounting → re-read from disk → C recompute → gates → cells from the re-read tensors → score
+[PASS] rr.save_durably: flush + os.fsync(file) + fsync of the directory
+[PASS] launcher's first-write order: one results temp (ledger write) → stage2-measurements.pt → 8 more results temps (each file opened once): ['.results-fnoad11_.json', 'stage2-measurements.pt', '.results-cbhu0q3y.json', '.results-jj7dl25k.json', '.results-2fxi5bol.json', '.results-wq8myllr.json', '.results-tqff0e5n.json', '.results-xcvxm6sb.json', '.results-y6lnmjwk.json', '.results-lye76mkj.json']
+[PASS] stage2 mtime (19:35:01.29Z) precedes the result write's completed_at (19:37:04Z): 2026-09-25T19:35:01.288495+00:00
+S04 PASS: 15/15 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=0 disallowed=0 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/7oedl8u2
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/7oedl8u2

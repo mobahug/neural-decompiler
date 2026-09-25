@@ -1,0 +1,113 @@
+{
+ "mode": "--confirm-once",
+ "launcher_started_at": "2026-09-25T19:31:56.342911+00:00",
+ "pid": 83432,
+ "commit_expected": "af160cee0389bcdaf12bcbd92a8616f142777a52",
+ "sentinel": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm024/CONFIRM_LAUNCHED",
+ "module_blob_assertion": {
+  "expected_lock_blob": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "expected_constant": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "observed_rr_own_blob": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "git_hash_object_of_imported_file": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "git_head_blob": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "own_sha1_of_imported_file": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "imported_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py",
+  "import_spec_origin": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py",
+  "repository_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py",
+  "lock_module_path": "src/neural_decompiler/readout_routing.py",
+  "asserted_at": "2026-09-25T19:31:56.382988+00:00",
+  "agree": true
+ },
+ "environment": {
+  "python": "3.12.13",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "prefix": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv",
+  "packages": {
+   "torch": "2.14.0",
+   "transformers": "5.17.0",
+   "transformer-lens": "3.9.0",
+   "huggingface-hub": "1.31.0",
+   "numpy": "2.5.3",
+   "safetensors": "0.8.0",
+   "tokenizers": "0.23.2"
+  },
+  "torch_num_threads": 4,
+  "env": {
+   "HF_HUB_OFFLINE": "1",
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "GIT_OPTIONAL_LOCKS": "0"
+  },
+  "model": {
+   "id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+  },
+  "checkpoint": {
+   "path": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c/model.safetensors",
+   "blob": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+   "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd"
+  },
+  "git": {
+   "head": "af160cee0389bcdaf12bcbd92a8616f142777a52",
+   "status_porcelain": ""
+  },
+  "hashes": {
+   "lock_file": "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d",
+   "lock_content": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739",
+   "prereg_file": "007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54",
+   "state": "58891c2416684785cb52437069beebcaa198ea3674c6d4b9d8480c103aadc65d",
+   "state_file": "14459cdde6ec2d832c3965d5b0ebaadaf06cef6aa0b0460c3a31b29dd442b262"
+  },
+  "state_before": {
+   "phases": {
+    "calibrate": "complete",
+    "confirm": "not_started",
+    "lock": "complete",
+    "report": "not_started"
+   },
+   "ledger": 0,
+   "noun_ledger": 0,
+   "stage2_exists": false
+  }
+ },
+ "runner": {
+  "config": "production",
+  "root": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "results_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json",
+  "stage2_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/stage2-measurements.pt"
+ },
+ "confirm_started_at": "2026-09-25T19:31:56.643453+00:00",
+ "confirm_ended_at": "2026-09-25T19:38:45.531056+00:00",
+ "exit_status": 0,
+ "error": null,
+ "traceback": null,
+ "log_lines": 3,
+ "counts": {
+  "confirm_invocations": 1,
+  "load_model": 1,
+  "capture_prompt": 4320,
+  "run_patched": 0,
+  "run_capture": 4320,
+  "run_interventions": 0,
+  "prompt_log_errors": 0
+ },
+ "events": {
+  "repository_writes_outside_outputs": [],
+  "output_writes": {
+   ".results-fnoad11_.json": 1,
+   "stage2-measurements.pt": 1,
+   ".results-cbhu0q3y.json": 1,
+   ".results-jj7dl25k.json": 1,
+   ".results-2fxi5bol.json": 1,
+   ".results-wq8myllr.json": 1,
+   ".results-tqff0e5n.json": 1,
+   ".results-xcvxm6sb.json": 1,
+   ".results-y6lnmjwk.json": 1,
+   ".results-lye76mkj.json": 1
+  },
+  "forbidden_reads": [],
+  "relative_opens": 0,
+  "hook_errors": 0
+ },
+ "record_written_at": "2026-09-25T19:38:45.531536+00:00"
+}

@@ -1,0 +1,81 @@
+refused from the start: ['plural_mechanism.capture_prompt', 'plural_mechanism.run_patched', 'plural_mechanism.run_capture', 'plural_mechanism.run_interventions', 'plural_mechanism.record_execution', 'upstream_localization.stage_two_022', 'upstream_localization.measure_prompt', 'capture.run_capture', 'interventions.run_interventions']
+[PASS] pre-model block (510-525) incl. the full validate_lock passed: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] runtime check passed
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:28,  2.63it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 199.01it/s]
+model loaded in 3.6 s; module classes stubbed (20): ['torch.nn.modules.container.ModuleList', 'torch.nn.modules.dropout.Dropout', 'torch.nn.modules.linear.Linear', 'torch.nn.modules.normalization.LayerNorm', 'torch.nn.modules.sparse.Embedding', 'transformer_lens.hook_points.HookPoint', 'transformer_lens.model_bridge.bridge.TransformerBridge', 'transformer_lens.model_bridge.generalized_components.block.ParallelBlockBridge', 'transformer_lens.model_bridge.generalized_components.embedding.EmbeddingBridge', 'transformer_lens.model_bridge.generalized_components.joint_qkv_position_embeddings_attention.JointQKVPositionEmbeddingsAttentionBridge', 'transformer_lens.model_bridge.generalized_components.linear.LinearBridge', 'transformer_lens.model_bridge.generalized_components.mlp.MLPBridge', 'transformer_lens.model_bridge.generalized_components.normalization.NormalizationBridge', 'transformer_lens.model_bridge.generalized_components.rotary_embedding.RotaryEmbeddingBridge', 'transformer_lens.model_bridge.generalized_components.unembedding.UnembeddingBridge', 'transformers.activations.GELUActivation', 'transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXAttention', 'transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXLayer', 'transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXMLP', 'transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXRotaryEmbedding']
+__call__ overrides found in module class MROs: ['transformers.modeling_layers.GradientCheckpointingLayer']
+[PASS] verify_model_dependencies(parameters_digest(model)) passed: fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5
+[PASS] _check_nouns passed (79 scorable exposed nouns in pool order): 79
+[PASS] embedding digest check passed: 9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf
+[PASS] I7: reproduce_lock_quantities bitwise_equal True: {'bitwise_equal': True, 'differing': [], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[PASS] I7: nothing differing
+[PASS] I7: scores_sha256 == lock.fresh.scores_sha256 (a703ac16…): a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995
+GUARD COUNTS: {"load_model_invocations": 1, "module_calls_during_load": 0, "module_call_attempts_after_seal": 0, "forward_stub_hits": 0, "forward_classes_stubbed": 20, "instance_forwards_stubbed": 0, "capture_hits": 0, "capture_hits_by_name": {}}
+[PASS] 0 module calls after the seal, 0 forward stub hits, 0 capture hits
+[PASS] state untouched in memory: ledger empty, confirm not_started
+embedding parameters found: ['gpt_neox.embed_in._original_component.weight']
+[PASS] own-selected embedding parameter is bitwise progs.weights.W_E
+[PASS] own embedding digest == lock/record embedding_sha256: 9cd6f39b3adf
+[PASS] own parameters digest == lock parameters_sha256: fd953f1c7452
+[PASS] record ids: 158 noun rows, 139 calibration cue rows; own canonical digests match
+[PASS] lock.score == record.score
+[PASS] calibration cue ids == the record's 139 calibration_cues token ids in order
+[PASS] lock fresh cues == committed freeze cues (word, id, class, order)
+own float64 numpy route: max |own - lock| = 2.220e-16; own fsum route: 2.220e-16; smallest gap between neighbouring lock scores 3.559e-04
+[PASS] own numpy route agrees numerically (max abs diff < 1e-12): 2.220e-16
+[PASS] own fsum route agrees numerically (max abs diff < 1e-12): 2.220e-16
+[PASS] ordering identical (numpy route)
+[PASS] ordering identical (fsum route)
+bit-identical scores: numpy route 2/40, fsum route 2/40 (not required; numerical agreement is expected)
+[PASS] own tensor digest of the lock's 40 scores == lock.fresh.scores_sha256: a703ac16c01f
+digest of own numpy-route scores 01cb09f51ea6…, own fsum-route 50b1b900a04d… (numerical routes; byte identity not expected)
+[PASS] maximum calibration score == lock.fresh.maximum_calibration_score == 0.13502027836111233: 0.13502027836111233
+[PASS] own leave-one-out calibration scores agree numerically (< 1e-12): 1.943e-16
+[PASS] above-maximum flags: own == lock
+[PASS] 5 of 8 E above the maximum: apple, horse, doctor, poet, dragon: ['apple', 'horse', 'doctor', 'poet', 'dragon']
+[PASS] every E above every N (min E > max N): +0.108452 > -0.045076
+[PASS] 23 of 40 above the maximum (6 B, 4 D, 8 C, 5 E, 0 N): {'N': 0, 'B': 6, 'D': 4, 'C': 8, 'E': 5}
+[PASS] every predicted_log_mse == intercept + slope * nounness exactly in float64
+nearest fresh score to the calibration maximum: 6.382e-03
+[PASS] guard: 0 refused
+ITEM6 PASS: 30/30 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=27 outside_write_events={'open': 3, 'os.remove': 3, 'os.mkdir': 2, 'tempfile.mkdtemp': 1, 'os.utime': 1, 'os.link': 2, 'shutil.rmtree': 1, 'os.rmdir': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/0679ap2m
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-source
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/0679ap2m
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-link
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-source
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/torchinductor_gaborhorvath-ulenius
+GUARD outside write [tempfile.mkdtemp]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj
+GUARD outside write [os.utime]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-source
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-link
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj/probe-source
+GUARD outside write [shutil.rmtree]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj
+GUARD outside write [os.rmdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp6mf11bbj
+GUARD subprocess: git diff --no-renames --name-only be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/calibration-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/preregistration.md
+GUARD subprocess: git merge-base --is-ancestor be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git rev-parse HEAD
+GUARD subprocess: git status --porcelain

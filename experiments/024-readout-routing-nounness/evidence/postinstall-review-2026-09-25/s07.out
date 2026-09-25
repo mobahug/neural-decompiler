@@ -1,0 +1,45 @@
+[PASS] 40 cues x 108 exposed frames
+[PASS] 4,320 keys, all unique: 4320
+[PASS] own sorted keys == the committed manifest's S2-TARGET (stored order)
+[PASS] own sha256(canonical {'S2-TARGET': keys}) == lock.confirmation_024.manifest_sha256 (fcc437fc…): fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d
+[PASS] lock.confirmation_024.manifest_size == 4320
+[PASS] 40 distinct fresh token ids
+   020 ledger: 30132 keys; overlap with 024's 4,320: 0
+   020 confirmation set: 3060 keys; overlap with 024's 4,320: 0
+   022 manifest: 3060 keys; overlap with 024's 4,320: 0
+   023 manifest: 3060 keys; overlap with 024's 4,320: 0
+[PASS] own count by source: 30,132 + 3,060 + 3,060 + 3,060 = 39,312, pairwise disjoint
+[PASS] zero overlap between the 4,320 keys and the own spent union
+[PASS] no fresh token id appears in any spent key
+[PASS] runner._base().forbidden has 39,312 keys and equals the own union
+[PASS] canonical confirmation.manifest_keys() == own keys
+[PASS] forbidden & manifest == empty (canonical sets)
+[PASS] state.executed_prompt_keys == []
+[PASS] state.executed_noun_keys == []
+[PASS] rr.assert_ledger_isolated(empty ledger, forbidden | manifest) passes
+   outputs/experiment-005/results.json: 96 executed keys, 0 with a fresh 024 id
+   outputs/experiment-006/results.json: 36 executed keys, 0 with a fresh 024 id
+   outputs/experiment-007/results.json: 198 executed keys, 0 with a fresh 024 id
+   outputs/experiment-008/results.json: 774 executed keys, 0 with a fresh 024 id
+   outputs/experiment-009/results.json: 930 executed keys, 0 with a fresh 024 id
+   outputs/experiment-010/results.json: 72 executed keys, 0 with a fresh 024 id
+   outputs/experiment-011/results.json: 232 executed keys, 0 with a fresh 024 id
+   outputs/experiment-012/results.json: 252 executed keys, 0 with a fresh 024 id
+   outputs/experiment-013/results.json: 1134 executed keys, 0 with a fresh 024 id
+   outputs/experiment-014/results.json: 1296 executed keys, 0 with a fresh 024 id
+   outputs/experiment-015/results.json: 1458 executed keys, 0 with a fresh 024 id
+   outputs/experiment-016/results.json: 1782 executed keys, 0 with a fresh 024 id
+   outputs/experiment-017/results.json: 2106 executed keys, 0 with a fresh 024 id
+   outputs/experiment-018/results.json: 2430 executed keys, 0 with a fresh 024 id
+   outputs/experiment-019/results.json: 2916 executed keys, 0 with a fresh 024 id
+   outputs/experiment-020/results.json: 30132 executed keys, 0 with a fresh 024 id
+   outputs/experiment-021/results.json: 33192 executed keys, 0 with a fresh 024 id
+   outputs/experiment-022/results.json: 21960 executed keys, 0 with a fresh 024 id
+   outputs/experiment-023/results.json: 3060 executed keys, 0 with a fresh 024 id
+[PASS] no experiment ledger on this machine holds a key with a fresh 024 token id: 19
+[PASS] guard: 0 refused
+ITEM7 PASS: 17/17 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=18 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/r2cnjdf4
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/r2cnjdf4

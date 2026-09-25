@@ -1,0 +1,107 @@
+   experiment-001: no executed_prompt_keys
+   experiment-002: no executed_prompt_keys
+   experiment-003: no executed_prompt_keys
+   experiment-004: no executed_prompt_keys
+   experiment-005: {'ledger': 96, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-006: {'ledger': 36, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-007: {'ledger': 198, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-008: {'ledger': 774, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-009: {'ledger': 930, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-010: {'ledger': 72, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-011: {'ledger': 232, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-012: {'ledger': 252, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-013: {'ledger': 1134, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-014: {'ledger': 1296, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-015: {'ledger': 1458, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-016: {'ledger': 1782, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-017: {'ledger': 2106, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-018: {'ledger': 2430, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-019: {'ledger': 2916, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-020: {'ledger': 30132, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-021: {'ledger': 33192, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-022: {'ledger': 21960, 'key_hits': 0, 'frame_token_hits': 0}
+   experiment-023: {'ledger': 3060, 'key_hits': 0, 'frame_token_hits': 0}
+[PASS] no 024 manifest key (nor any (frame, token id) pair) in any executed ledger of experiments 005–023 on this machine
+[PASS] 020's explore runtime (the confirm runtime check's reference) has torch_num_threads 4: {'backend': 'cpu', 'control_seed': 20260924, 'deterministic_algorithms': False, 'device': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'torch_num_threads': 4}
+   --- confirm024/
+   439e2efa0f43d10ae5def47bc2195ebd8ca4ec47594a769d176e2a841a4aeda5         58  confirm024/CONFIRM_LAUNCHED
+   9d3874dd49121264cd1b44af28ce2ddfbfe7068b5f3ec7cadd441420b9ed8a17         53  confirm024/DRY_RUN_LAUNCHED
+   f6f46996f7d79edf75dcff63302359b3eb745253353fb9d75fd398bd2ac14e99         40  confirm024/confirm.exit
+   63fdc07a8d4a9d6fbde6a5b515c530fc0c5d632578ca350199625bbef71a4621       3935  confirm024/confirm.out
+   d9741815407e3207ba508a5266e6a4434066fea0bdca3c9ca5729a524f8f0ba9     337918  confirm024/confirm_prompts.jsonl
+   3ad7e3b5e1c467370979b8b4ae1a554b0fe7b34607cef464ce5466e4175b7cd8       4385  confirm024/confirm_record.json
+   d4f0891a564c93c87d922671ab7bcd7a4b6db96a2055c814a5b2128884e3a186       2874  confirm024/dry_run.out
+   e5798fa4cc2e6a87e6b26cfa76da6f3049a7f0cf424ab35888c0a745c4ac9378         60  confirm024/dry_run_prompts.jsonl
+   82307f8bf75cfb80d67aeed2b1113fe04d9848403f47d08e2fd27288e70b942b       4069  confirm024/dry_run_record.json
+   69285d36e4ba89cc4ad753c02dbe1cc313323e33b67d356ccf5cf44c1ab3e977      16363  confirm024/launch_confirm.py
+   7571f38022a5f111c88a756fa4de80e621f0bd4fee995ad8b1ea53fc942c12e4       3221  confirm024/preconfirm.out
+   9387d51e46f53f9cc2076bf25b554485fc7d674506f7f7c0b74d27e7b43cd4d6      11210  confirm024/preconfirm.py
+   ead95273a6567309339549702d365c359e2dcc1356350f705a6b97cbfd982d19       5452  confirm024/verify_confirm.json
+   da62e403abf9e43ab7cbc969e4154bf093ae5791dff4be715c69906ccdedfd03      27455  confirm024/verify_confirm.out
+   19e7dd9a1beff36f2ce6c7d6eb868a6031c527f4470f1c1996cfba568ec8de95      17767  confirm024/verify_confirm.py
+   --- postinstall_review024/
+   f4f378c0b646f1bf4d0b516150961cf9d1e0eb6cef59fc5a831be42320e246e3      16870  postinstall_review024/guard.py
+   22576c01722a875053c3e12deca1d3ba6b083ef2ae14b7d2778e095900e231d5       8964  postinstall_review024/s01.out
+   fbd63f9e15467ff299d3edb6e0cb800bcf727a1f4b1bc5f582d4145aa07f3c6e       6536  postinstall_review024/s01_git.py
+   f70d04eb78610c40e9a0a5abd89d99f3cdea7f768ae87068a3b20b0e437ab963       4975  postinstall_review024/s02.out
+   050fd9648aa933f5ddf919ade5991342674346cba3f918143ce661e1a3c532e0       6393  postinstall_review024/s02_bytes.py
+   8e20add9899a9610ddc46dec96445ce5d491d1c458b7a09e31676637517202ad       4747  postinstall_review024/s03.out
+   52458ee962b811a2ccb4341061084a4bdb3aedf18cfb99ff400bafebb64f7cca       2765  postinstall_review024/s03_validate.py
+   81d8a2a6ea9d3551887e3456161ef208726a70897b172623711629aefb04788c       7547  postinstall_review024/s04.out
+   701fd52586841a8a946b42ffa64c60f35ba299fdb79b5790699aa52419e0b32b       7990  postinstall_review024/s04_validate_lock.py
+   a7e83096e5a4846adf2df127a4470968388a3293d8b21871b07af1a31d7f5125       3692  postinstall_review024/s04a.out
+   11778f3b3453fc25824f574053f294b433cb692094fa02915ceb23dbc30bf025       7265  postinstall_review024/s04a_static.py
+   3200456afa1cd67bfd8adb4c56cfd384825ee2ae6a09a523edb3e7e7b03c9d57       4211  postinstall_review024/s05.out
+   fd25558eb659906fae3ab3e458d946d346e6fa0db99d8d85903c5c71ca13c2e5       3765  postinstall_review024/s05_blob.py
+   aa8eba0108e4774c4b22c8083c8decb546da0e5f9abb6d1d1910bd05984b074b      10624  postinstall_review024/s06.out
+   0e58e967e4b449ad90e50ad6b9764635084bedd74248c5a2d6be6c57c22d0a99      13949  postinstall_review024/s06_i7.py
+   3ca0c199843a0ad2cd5938f3b4e324a7218c20a011158f83a2293f97c61ed637       3220  postinstall_review024/s07.out
+   3d26ae1b5f754c51fa3067b826e5e21f475b7021ae8646e547783dcedd5ff53a       5690  postinstall_review024/s07_manifest.py
+   1ae9cbc7969f48e49e125816ed7d29c7e15b949e8cfb0d47362354c05844a2c8       2891  postinstall_review024/s08.out
+   c93bef993c511b22357d5175f540cb927330b6482d33b61637f05f13ccfb0903       4817  postinstall_review024/s08_phase.py
+   669b9095321c227bd74ba73dfafc2023fd557222d18bcac7efe9e352bde84727       3734  postinstall_review024/s09.out
+   9c4132f31862bf3b76f170c9f0c579b9b17c47b5319913ac97777d37d620746f       7598  postinstall_review024/s09_no_outcome.py
+   aa28b94d4e0bfab97ef40bf9cdbcf81fe7e20db8612eb7fad283c70a9c8fb493       6949  postinstall_review024/s10.out
+   3af50cf5a51784c26c2f44a047182fb0dcf6213bfa224ca9ab5cd59de6f2f5f8      12137  postinstall_review024/s10_evidence.py
+   ddfa1c7f16a44fdbc961f9010a41f7be1aa8c3ca8a3b49de0e588bd00c020c47       1447  postinstall_review024/s11.out
+   727c79e98d3209622fcfcc998c4fcf4ad850aa21a4b8cec282816943fc32be04       3137  postinstall_review024/s11_rules.py
+   179f7c4940086fdd3d1724749e4f84e1a0df24175d929c413de1ea924c1dcb04       2695  postinstall_review024/s12.out
+   7bbdc9df59d10c1ebfdb439588e0428cafc5d288ce6def60e525eaa0f4d69666       5202  postinstall_review024/s12_sealed_load.py
+   --- confirmation_review024/
+   d9654403a059ec6664c3788dcb05ced71dcf10e9a8e47eaf71417a52cb6bf732      10939  confirmation_review024/rguard.py
+   9fb07372cf3e6d93d9fcfb3fef123a9b225b56faf867937195a9a10d140fa41c       4962  confirmation_review024/rseal.py
+   83a67698a58f6d18a641db44ff39202ae4fe0ca3c95e0de270534bff95aac76e      10309  confirmation_review024/s01.out
+   716fb38a284acd29cb871f0131c9757fa794d98383493b0bfc860e97a465b17c      11575  confirmation_review024/s01_integrity.py
+   50cce7cfc3ccfcf7d194e892c8c0b289d9e7b0d525491d13f4d8e619e514ef36       5318  confirmation_review024/s02.out
+   3cf535d9d86410becc9dce7e85f0af633b7ecbf2880be75917e052c18f49866c      12673  confirmation_review024/s02_oneshot.py
+   a6d3009ed69f9954ea1adacadbb359b454cfcb7ddb87e86b1d8856abb7626ce5       3187  confirmation_review024/s03.out
+   d87f181920a843b410e67695a22b8d74799c36fec7bde7cd0ae790a0c26500d9       9054  confirmation_review024/s03_accounting.py
+   6ed1132b29d1ab58cd671c9a147d38c68d0ff6716cc4d16ba9f68d894c1fd906       4689  confirmation_review024/s04.out
+   9d9995d6c7f1908d2dbd8af7b2f1b09c96d95ed1d0df082a013f381a5a87d20b       7700  confirmation_review024/s04_artifact.py
+   2c774ab03418b85d74eed02a40ca5a18896c588c1215d5156ecf0f649c97706c       6188  confirmation_review024/s05.out
+   c8daf70aabca945f259087a2e036b2a8aada089d7d2f7f7be341279e39d89f96      13740  confirmation_review024/s05_c_gates_ladder.py
+   f2f3bfeb066a0712437674ae59a5fd88a027bd0042116554e759bba02c5856f6       3965  confirmation_review024/s05_results.json
+   d08978106b4119d836f54050e7a7ceebef046fbf1b347a97c0d16031629ac2c0       9911  confirmation_review024/s07.out
+   4085d9d905007297640362c79392f6cadbce6fdb85a358fd294fc651114caeae      19964  confirmation_review024/s07_primary.py
+   4556c4efb3b664c0ad3303e69bd42f26a5d53d7d519857a3d5b06c6ee6454847      11722  confirmation_review024/s07_results.json
+   c428aadb517f187eb6506837dd469dfc868f3c27c8261c960ef44f9616f7ba48       4337  confirmation_review024/s11.out
+   bd4e388fd41cef4d58fae8706262759109fe47bea43035943bda9b719f4b510e       9378  confirmation_review024/s11_atomic.py
+   1f9ca860c47b51d456d1abb8000f34c9ea310861cd183e70e6fd0a4038bda772       4401  confirmation_review024/s12.out
+   d2a0313ebb02d71b6ce9847ab2cd41c2553b139a12a5dea7074036d772577d1d      13092  confirmation_review024/s12_descriptives.py
+   f386a6b652e3f45b8ba2e9997003016aaeec978592ed9aa05ce17c2fc1a27078       2865  confirmation_review024/s12_results.json
+   929a70ce82a49d724c0a8d42873d483547411a100cf411bfc8a2109df81a2275       1947  confirmation_review024/s14.out
+   2a463af5f8e1ae9e394c35d46d4c8b32a755faf06c7a2d3ae3ba8d38b08bf3a8       4612  confirmation_review024/s14_final.py
+[PASS] git status --porcelain --untracked-files=all is empty
+[PASS] HEAD == origin/main == ls-remote == af160ce (unchanged)
+   a4cd548fd9c6084d58224f072d6c529cf4e81f17650fb50ccbc1d2c97f20aece  outputs/experiment-024/calibration-arrays.pt
+   81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d  outputs/experiment-024/candidate-calibration.json
+   5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d  outputs/experiment-024/candidate-lock.json
+   007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54  outputs/experiment-024/candidate-preregistration.md
+   e636210c84a4f3f329e9a5fde5baa493d730b6bf77cb419273056e6c89085a7a  outputs/experiment-024/results.json
+   b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93  outputs/experiment-024/stage2-measurements.pt
+[PASS] outputs/experiment-024 holds exactly the six files, each sha256 unchanged: {'calibration-arrays.pt': 'a4cd548f', 'candidate-calibration.json': '81fb499e', 'candidate-lock.json': '5c2a9b90', 'candidate-preregistration.md': '007c9e6c', 'results.json': 'e636210c', 'stage2-measurements.pt': 'b21babe1'}
+[PASS] results.json and stage2-measurements.pt mtimes unchanged since confirm (19:38:44.949 / 19:35:01.288 UTC)
+S14 PASS: 6/6 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=4 disallowed=0 outside_write_events={'open': 1, 'os.remove': 1}
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/narwxhvq
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/narwxhvq

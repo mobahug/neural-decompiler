@@ -1,0 +1,27 @@
+sealed before the load: 499 module classes (forward and/or __call__), plus Module.__call__
+   classes with no forward implementation at all (torch's _forward_unimplemented): ['torch.nn.modules.container.ModuleList']
+[PASS] the load succeeded with every forward and module call refused from the start
+[PASS] 0 forward / __call__ / Module.__call__ attempts during the load: {'forward': 0, '__call__': 0, 'Module.__call__': 0}
+[PASS] every module class of the loaded model resolves forward to a pre-load refusing stub (or has no forward implementation)
+   loaded-model module classes: 20
+[PASS] I7 under the pre-load seal: bitwise_equal True, nothing differing: {'bitwise_equal': True, 'differing': [], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[PASS] still 0 attempts after the programs and I7: {'forward': 0, '__call__': 0, 'Module.__call__': 0}
+[PASS] guard: 0 refused
+SEALED-LOAD PASS: 6/6 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=21 outside_write_events={'open': 3, 'os.remove': 3, 'os.mkdir': 2, 'tempfile.mkdtemp': 1, 'os.utime': 1, 'os.link': 2, 'shutil.rmtree': 1, 'os.rmdir': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/7xbvnbkf
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-source
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/7xbvnbkf
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-link
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-source
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/torchinductor_gaborhorvath-ulenius
+GUARD outside write [tempfile.mkdtemp]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357
+GUARD outside write [os.utime]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-source
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-link
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357/probe-source
+GUARD outside write [shutil.rmtree]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357
+GUARD outside write [os.rmdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpmruem357
+GUARD subprocess: git rev-parse HEAD
+GUARD subprocess: git status --porcelain

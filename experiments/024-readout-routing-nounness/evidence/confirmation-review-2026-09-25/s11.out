@@ -1,0 +1,32 @@
+   confirmation keys (final): ['accounting', 'c_recompute', 'completed_at', 'descriptives', 'gates', 'lock_sha256', 'results', 'stage2']
+[PASS] final confirmation holds stage2, accounting, c_recompute, gates, results, lock_sha256, completed_at, descriptives — and nothing else (no incident, no cross_check): ['accounting', 'c_recompute', 'completed_at', 'descriptives', 'gates', 'lock_sha256', 'results', 'stage2']
+[PASS] final state minus confirmation.descriptives → digest 37f2f88b… (the digest logged right after the one result write): 37f2f88b7f0fdde73ebbedc319fc5d9edcab59c35133a8cfa8b24c4e3201f9fd
+[PASS] confirm.out logs 'results sha256 37f2f88b…' on the 'confirm complete' line (run.py:606-607, after the write at :597)
+[PASS] that reconstructed result-write state already holds: results (ρ, guard, outcome), phases.confirm complete, gates, c_recompute, accounting
+[PASS] results.completed_at == phases.confirm.completed_at (same second: set in one statement block before the one write): 2026-09-25T19:37:04+00:00
+   Runner.confirm: state writes at [547, 555, 560, 569, 574, 597]; incident writers at [539, 585, 588, 591, 602]; save_durably at [552]; score at [577]; results assigned at [594]; _descriptives at [608]
+[PASS] the only assignment of confirmation['results'] is at :594, after score (:577) and before the single result write (:597); _descriptives (:608) after it
+[PASS] the normal path's writes: 547 (ledger+running), 555 (stage2 digests), 560 (accounting), 569 (C recompute), 574 (gates), 597 (result + complete)
+   _descriptives: writes at [628, 633]; assignments ["descriptives = state['confirmation'].setdefault('descriptives', {})", "per_cue = state['confirmation']['results']['per_cue']", 'descriptives[name] = rc.json_safe(compute())', "descriptives.setdefault('failures', {})[name] = {'type': type(error).__name__, 'message': str(error), 'at': pm.utc_now()}"]
+[PASS] _descriptives assigns only into state['confirmation']['descriptives'] (the setdefault dict) and its 'failures' entry: ["descriptives = state['confirmation'].setdefault('descriptives', {})", "per_cue = state['confirmation']['results']['per_cue']", 'descriptives[name] = rc.json_safe(compute())', "descriptives.setdefault('failures', {})[name] = {'type': type(error).__name__, 'message': str(error), 'at': pm.utc_now()}"]
+[PASS] launcher: 9 atomic results writes + 1 stage2 file, each opened exactly once, stage2 second
+   .results-fnoad11_.json → run.py:547 ledger + running
+   stage2-measurements.pt → run.py:552 save_durably(stage2)
+   .results-cbhu0q3y.json → run.py:555 stage2 digests
+   .results-jj7dl25k.json → run.py:560 accounting
+   .results-2fxi5bol.json → run.py:569 C recompute
+   .results-wq8myllr.json → run.py:574 gates
+   .results-tqff0e5n.json → run.py:597 ONE result write (ρ, guard, outcome, complete)
+   .results-xcvxm6sb.json → run.py:633 descriptives: secondary
+   .results-y6lnmjwk.json → run.py:633 descriptives: contrasts
+   .results-lye76mkj.json → run.py:633 descriptives: ladder
+[PASS] 9 results writes == 6 (normal path to the result) + 3 (secondary, contrasts, ladder) — no incident writer (+2 each) and no failure write ran
+[PASS] no temporary .results-*.json left in outputs/experiment-024 (every write completed its os.replace): []
+[PASS] rr.write_state_atomic: mkstemp in the same directory, fsync, os.replace, directory fsync
+   started_at 2026-09-25T19:32:10+00:00 | last capture 2026-09-25T19:35:01.147333+00:00 | stage2 mtime 2026-09-25T19:35:01.288495+00:00 | result write (completed_at) 2026-09-25T19:37:04+00:00 | results.json mtime (last descriptive write) 2026-09-25T19:38:44.949506+00:00 | launcher end 2026-09-25T19:38:45.531056+00:00
+[PASS] chronology: last capture < stage2 durable < result write (completed_at, second resolution) < last descriptive write < launcher end
+[PASS] no incident coexists with the result (confirmation.incident / cross_check / phase incidents / calibration incidents all absent): []
+S11 PASS: 14/14 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=0 disallowed=0 outside_write_events={'open': 1, 'os.remove': 1}
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/x3k4jra3
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/x3k4jra3

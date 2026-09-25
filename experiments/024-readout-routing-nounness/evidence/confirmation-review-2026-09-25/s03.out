@@ -1,0 +1,38 @@
+[PASS] freeze: 40 cues (8 per class N,B,D,C,E in that order), 40 distinct token ids
+[PASS] freeze: 108 distinct exposed frame ids
+[PASS] lock fresh cues == freeze cues (word, token id, class, order)
+[PASS] lock guard units: E then N in the frozen order
+[PASS] own manifest: 4,320 keys, all distinct
+[PASS] own manifest digest == fcc437fc… == lock.confirmation_024.manifest_sha256: fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d
+[PASS] own manifest == the freeze's stored manifest (sorted)
+[PASS] ledger: 4,320 entries, sorted, no duplicates
+[PASS] ledger set == manifest set (no missing, no extra): (0, 0)
+[PASS] prompt log: 4,320 captures; every manifest key exactly once; no extra key
+[PASS] prompt log order == frames by frame_id, then cues by token id (stage_two_022's loop order)
+[PASS] state accounting {manifest 4320, executed 4320, ledger 4320, equal True}: {'equal': True, 'executed': 4320, 'ledger': 4320, 'manifest': 4320}
+[PASS] state stage2.n_executed == 4320
+[PASS] launcher: capture_prompt == 4320 == prompt-log lines; run_patched 0; run_interventions 0
+[PASS] 020 results file sha256 == da63b8c2… (pinned)
+[PASS] 020 results state digest verifies (own) == 2e5485dc…
+   spent-key sources: {'020 ledger': 30132, '020 confirmation set': 3060, '022 manifest': 3060, '023 manifest': 3060} union 39312
+[PASS] spent sources: 30,132 + 3,060 + 3,060 + 3,060, pairwise disjoint, union 39,312
+[PASS] zero collision of the 4,320 manifest keys (and the ledger, and the prompt log) with the 39,312 spent keys
+[PASS] zero collision even on (frame_id, token_id) ignoring the word label
+[PASS] no fresh cue token id appears anywhere in the 39,312 spent keys: []
+[PASS] canonical forbidden set (Runner._base) == own union (39,312): (39312, 39312)
+[PASS] canonical manifest keys == own manifest
+[PASS] noun ledger == every pool noun's key (80, record_execution over pool.nouns); 79 of them scorable: ['selection-holdout:peach']
+[PASS] noun ledger holds no fresh noun of 020 (020's fresh nouns never scored)
+   digest manifest (canonical {'S2-TARGET': sorted}): fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d
+   digest manifest sorted list: 5f386b5353e5ad1fa021b606c63ef507fbe22fa34852c4ed24f91cde13efe627
+   digest ledger sorted list: 5f386b5353e5ad1fa021b606c63ef507fbe22fa34852c4ed24f91cde13efe627
+   digest prompt-log key sequence: 7654c0e532bee29271e2a95502c0558726cc101d029fff9418c7fa1bafbc0974
+   digest prompt-log sorted: 5f386b5353e5ad1fa021b606c63ef507fbe22fa34852c4ed24f91cde13efe627
+   digest spent-key union sorted: f6df781d200372e96bc7593a96537aff77a2acb81ed9918b96e246cab0337ae8
+   digest noun ledger: 6e272ef2cd19496025e42799d9ee094fedb5b5bf87eb2fd6e470c4baf4040434
+[PASS] own digests: ledger sorted == manifest sorted == prompt log sorted
+S03 PASS: 25/25 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=18 disallowed=0 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/qn7gewyz
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/qn7gewyz

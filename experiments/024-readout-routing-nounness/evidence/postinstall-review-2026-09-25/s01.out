@@ -1,0 +1,89 @@
+[PASS] HEAD == expected: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] origin/main == expected: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] ls-remote refs/heads/main == expected: ['af160cee0389bcdaf12bcbd92a8616f142777a52', 'refs/heads/main']
+[PASS] tree clean (porcelain incl. untracked empty): ''
+[PASS] no stash: ''
+[PASS] branch main
+[PASS] 3affe55 full sha: 3affe55cca991b8adbbff3b4e1b1c15339f4f058
+[PASS] be74d23 full sha: be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[PASS] af160ce == HEAD
+[PASS] 3affe55 has exactly one parent, be74d23: ['3affe55cca991b8adbbff3b4e1b1c15339f4f058', 'be74d23d086bd12d894db1f73e6a1b4160aeebd5']
+[PASS] af160ce has exactly one parent, 3affe55: ['af160cee0389bcdaf12bcbd92a8616f142777a52', '3affe55cca991b8adbbff3b4e1b1c15339f4f058']
+3affe55 paths: [('A', 'experiments/024-readout-routing-nounness/preregistration-lock.json'), ('A', 'experiments/024-readout-routing-nounness/preregistration.md')]
+[PASS] 3affe55 touches exactly the two lock paths, both added: [('A', 'experiments/024-readout-routing-nounness/preregistration-lock.json'), ('A', 'experiments/024-readout-routing-nounness/preregistration.md')]
+af160ce: 30 paths
+   M	experiments/024-readout-routing-nounness/README.md
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/README.md
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/SHA256SUMS
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/install.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/launch_lock.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/lock.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/lock_run.json
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/post_commit_checks.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/post_commit_checks.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/prelock.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/prelock.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/verify_lock.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/verify_lock.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/REVIEW.md
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/pytest_tierA.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/pytest_tierB_runner.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01_state_integrity.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r02.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r02_prereg_numbers.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r03.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r03_scores_i7.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r04.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r04_state_transition.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r05.out
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r05_outcome.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/review_guard.py
+   A	experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/review_pytest_guard.py
+[PASS] af160ce paths are only README + evidence/lock-2026-09-25/ + evidence/lock-review-2026-09-25/
+[PASS] af160ce: README modified, everything else added
+[PASS] rr.scientific_changes(af160ce paths) == []
+[PASS] rr.scientific_changes(3affe55 paths) == []
+git diff --no-renames --name-only be74d23 HEAD: 32 paths
+[PASS] diff be74d23..HEAD == union of the two commits' paths
+[PASS] rr.scientific_changes(diff be74d23..HEAD) == []
+[PASS] be74d23 is an ancestor of HEAD
+SCIENTIFIC_PATH_PREFIXES: ('src/', 'experiments/024-readout-routing-nounness/', 'experiments/023-block0-completion/', 'experiments/022-upstream-error-localization/', 'experiments/021-corrected-readout-confirmation/', 'experiments/020-readout-decompilation/', 'experiments/019-block2-routing/', 'experiments/018-block2-concentration/', 'experiments/017-transport-head-pattern/', 'experiments/016-frame-conditioned-qk/', 'experiments/015-attention-pattern-token-local/', 'experiments/014-neuron-1987-feature/', 'experiments/013-attention-paths-frozen-pattern/', 'experiments/012-layer-correction-token-local/', 'experiments/011-encoding-read-prospective/', 'experiments/010-read-direction-assembly/', 'experiments/009-head-transport-rule/', 'experiments/008-cue-suppression-localization/', 'experiments/007-supervised-cue-subspace/', 'experiments/006-low-rank-cue-decompilation/', 'experiments/005-regular-plural-mechanism/', 'screening/behavior-candidates/manifest-v1.json')
+NON_SCIENTIFIC_PATHS: ('experiments/024-readout-routing-nounness/confirmation-v1.json', 'experiments/024-readout-routing-nounness/calibration-v1.json', 'experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md', 'experiments/024-readout-routing-nounness/README.md', 'experiments/023-block0-completion/README.md', 'experiments/022-upstream-error-localization/calibration-v1.json', 'experiments/022-upstream-error-localization/preregistration-lock.json', 'experiments/022-upstream-error-localization/preregistration.md', 'experiments/022-upstream-error-localization/locked-y1-table.f64', 'experiments/022-upstream-error-localization/locked-y1-table.json', 'experiments/022-upstream-error-localization/README.md')
+NON_SCIENTIFIC_PREFIXES: ('experiments/024-readout-routing-nounness/evidence/', 'experiments/023-block0-completion/evidence/', 'experiments/022-upstream-error-localization/evidence/')
+[PASS] classifier on src/neural_decompiler/readout_routing.py -> scientific=True (expected True)
+[PASS] classifier on experiments/024-readout-routing-nounness/run.py -> scientific=True (expected True)
+[PASS] classifier on experiments/024-readout-routing-nounness/preregistration-lock.json -> scientific=False (expected False)
+[PASS] classifier on experiments/024-readout-routing-nounness/README.md -> scientific=False (expected False)
+[PASS] classifier on experiments/024-readout-routing-nounness/evidence/x/y.py -> scientific=False (expected False)
+[PASS] classifier on experiments/023-block0-completion/exposed-cells.f64 -> scientific=True (expected True)
+[PASS] classifier on experiments/023-block0-completion/confirmation-v1.json -> scientific=True (expected True)
+[PASS] classifier on experiments/022-upstream-error-localization/confirmation-v1.json -> scientific=True (expected True)
+[PASS] classifier on experiments/020-readout-decompilation/closure.json -> scientific=True (expected True)
+[PASS] classifier on docs/superpowers/specs/x.md -> scientific=False (expected False)
+[PASS] own reading classifies every diff path as non-scientific
+[PASS] lock.protocol_code_commit == be74d23 (full): be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[PASS] state.phases.lock.commit == be74d23 (full): be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[PASS] guard: 0 refused
+ITEM1 PASS: 33/33 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=15 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/34lrih0j
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/34lrih0j
+GUARD subprocess: git diff --no-renames --name-only be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git for-each-ref refs/stash
+GUARD subprocess: git ls-remote origin refs/heads/main
+GUARD subprocess: git merge-base --is-ancestor be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git rev-list --parents -n 1 3affe55cca991b8adbbff3b4e1b1c15339f4f058
+GUARD subprocess: git rev-list --parents -n 1 af160cee0389bcdaf12bcbd92a8616f142777a52
+GUARD subprocess: git rev-parse --abbrev-ref HEAD
+GUARD subprocess: git rev-parse 3affe55
+GUARD subprocess: git rev-parse HEAD
+GUARD subprocess: git rev-parse af160ce
+GUARD subprocess: git rev-parse be74d23
+GUARD subprocess: git rev-parse refs/remotes/origin/main
+GUARD subprocess: git show --no-renames --name-status --format= 3affe55cca991b8adbbff3b4e1b1c15339f4f058
+GUARD subprocess: git show --no-renames --name-status --format= af160cee0389bcdaf12bcbd92a8616f142777a52
+GUARD subprocess: git status --porcelain --untracked-files=all

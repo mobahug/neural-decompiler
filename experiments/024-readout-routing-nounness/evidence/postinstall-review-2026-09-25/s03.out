@@ -1,0 +1,38 @@
+[PASS] run.py loaded from the repository file: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/run.py
+capture entry points refused: ['plural_mechanism.capture_prompt', 'plural_mechanism.run_patched', 'plural_mechanism.run_capture', 'plural_mechanism.run_interventions', 'plural_mechanism.record_execution', 'upstream_localization.stage_two_022', 'upstream_localization.measure_prompt', 'capture.run_capture', 'interventions.run_interventions']
+[PASS] runner.config is rr.PRODUCTION
+[PASS] runner paths are the production ones: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json
+validate() returned 0 in 7.1 s
+  LOG: module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); calibration record verified; lock and preregistration verified
+[PASS] validate() returned 0
+[PASS] log reports the lock and preregistration verified
+[PASS] log reports the calibration record verified
+[PASS] log reports the confirmation (40 cues, 4320 keys)
+[PASS] log reports 12 module blobs verified
+[PASS] model loader never called
+[PASS] tokenizer loader never called
+[PASS] no capture entry point reached
+[PASS] guard: 0 refused
+ITEM3 PASS: 12/12 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=18 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/460tn948
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/460tn948
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/confirmation-v1.json

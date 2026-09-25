@@ -1,0 +1,164 @@
+{
+ "invocation": {
+  "confirm_started_at": "2026-09-25T19:31:56.643453+00:00",
+  "confirm_ended_at": "2026-09-25T19:38:45.531056+00:00",
+  "exit_status": 0,
+  "error": null
+ },
+ "state": {
+  "state_sha256": "076ab9f984f3ba6244b4df767d8c8fd7ebd40a634521a46a3b881d7da1604e92",
+  "file_sha256": "e636210c84a4f3f329e9a5fde5baa493d730b6bf77cb419273056e6c89085a7a",
+  "phases": {
+   "calibrate": "complete",
+   "confirm": "complete",
+   "lock": "complete",
+   "report": "not_started"
+  },
+  "incident": null,
+  "phase_incidents": null
+ },
+ "accounting": {
+  "state": {
+   "equal": true,
+   "executed": 4320,
+   "ledger": 4320,
+   "manifest": 4320
+  },
+  "digests": {
+   "manifest_sha256": "fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d",
+   "ledger_sorted_sha256": "5f386b5353e5ad1fa021b606c63ef507fbe22fa34852c4ed24f91cde13efe627",
+   "prompt_log_sequence_sha256": "7654c0e532bee29271e2a95502c0558726cc101d029fff9418c7fa1bafbc0974",
+   "manifest_sorted_sha256": "5f386b5353e5ad1fa021b606c63ef507fbe22fa34852c4ed24f91cde13efe627"
+  },
+  "prompt_log_lines": 4320,
+  "noun_ledger": 80
+ },
+ "stage2": {
+  "path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/stage2-measurements.pt",
+  "bytes": 76314087,
+  "file_sha256": "b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93",
+  "tensors_sha256": {
+   "Y1/cue_final/dc": "4e15992dfe7eed7ef5745c659171b76cb0d4bc089da17a614d298b55e3b1719b",
+   "Y1/cue_final/ceiling": "35b563decaba7e0e17fa6c9dc54ae4c4bd366e921d9202c3c3a4950d5bccc590",
+   "Y1/cue_final/dx1": "5b996e844643e2133701563533ab1f9978f8f313fe57c94a32bebed68dbf14b3",
+   "Y1/cue_final/dx3": "10067fbff504bd88beb4d0b7d7067c0a78b7602be71f60752ff1e062f1f9d099",
+   "Y1/cue_final/positions": "9973307c080d835dfdf07114d929f4f0a196f6e40a9ee146888e9b7909045397",
+   "Y1/coordinated/dc": "190f48814bd2eac7ca3d73facd190e6f6fda1151b80d725db671f5e0f78c43e0",
+   "Y1/coordinated/ceiling": "3ef63e0076530f12b302d094a9db6ec9c1d3d413aaa6ced5668f0e066770a445",
+   "Y1/coordinated/dx1": "164bd6ed6acdca36e8030da13f3b20f94eb0c04644d41ed4b62b93defd8283f2",
+   "Y1/coordinated/dx3": "422439494916fb25feed4a30b081f70046aab3f5a2c71009c2fe1224db586d46",
+   "Y1/coordinated/positions": "606062edeb075b2df038958c2c5b7f3ee25928ba63d255f5f72d2090cbc74da1",
+   "Y2/cue_final/dc": "86a734c18c5c99e30d195c8c0ecad8b3a9975c7c0b25e7cfcd306671071d512e",
+   "Y2/cue_final/ceiling": "86a734c18c5c99e30d195c8c0ecad8b3a9975c7c0b25e7cfcd306671071d512e",
+   "Y2/cue_final/dx1": "a5a513bfaf0cf46a64ffa0fae67e10d111d1b142e8a0e44068d51609f22b8023",
+   "Y2/cue_final/dx3": "a5a513bfaf0cf46a64ffa0fae67e10d111d1b142e8a0e44068d51609f22b8023",
+   "Y2/cue_final/positions": "912167b677a3a5e989045e8d3b7a037ca823c08287ae327c75a34e5b25dfb6eb",
+   "Y2/coordinated/dc": "86a734c18c5c99e30d195c8c0ecad8b3a9975c7c0b25e7cfcd306671071d512e",
+   "Y2/coordinated/ceiling": "86a734c18c5c99e30d195c8c0ecad8b3a9975c7c0b25e7cfcd306671071d512e",
+   "Y2/coordinated/dx1": "a5a513bfaf0cf46a64ffa0fae67e10d111d1b142e8a0e44068d51609f22b8023",
+   "Y2/coordinated/dx3": "a5a513bfaf0cf46a64ffa0fae67e10d111d1b142e8a0e44068d51609f22b8023",
+   "Y2/coordinated/positions": "912167b677a3a5e989045e8d3b7a037ca823c08287ae327c75a34e5b25dfb6eb"
+  },
+  "pairs": {
+   "cue_final": 2880,
+   "coordinated": 1440
+  },
+  "n_executed": 4320
+ },
+ "gates": {
+  "c_recompute": {
+   "at": "",
+   "bitwise_equal": true,
+   "max": 0.0,
+   "pairs": 4320
+  },
+  "gates": {
+   "I1": {
+    "at": "poets|cardinal-new-2",
+    "max": 1.5317713646822995e-05
+   },
+   "I3": {
+    "at": "merry|cardinal-016-4",
+    "max": 2.1161813141654138e-05
+   },
+   "I4": {
+    "at": "sleepy|coordinated-adjective-018-1",
+    "max": 6.424818726813442e-05
+   }
+  },
+  "tolerances": {
+   "I1": 0.0001,
+   "I3": 0.0001,
+   "I4": 0.001,
+   "spearman": 1e-12,
+   "en_float": 1e-12
+  }
+ },
+ "result": {
+  "rho": 0.6108818011257036,
+  "threshold": 0.3136960600375234,
+  "primary": "PASS",
+  "D_EN": 0.5680373703974243,
+  "D_EN_exact": "20465703117234853/36028797018963968",
+  "K": 1,
+  "p_value": 7.77000777000777e-05,
+  "guard": "PASS",
+  "label": "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS",
+  "by_class": {
+   "N": {
+    "n": 8,
+    "min": 0.05458326432555041,
+    "max": 0.09406999169611968,
+    "mean": 0.07135551612286187,
+    "mean_log": -2.656691885006131
+   },
+   "B": {
+    "n": 8,
+    "min": 0.09877468702746693,
+    "max": 0.14395532981436288,
+    "mean": 0.11890762459138889,
+    "mean_log": -2.138851423084727
+   },
+   "D": {
+    "n": 8,
+    "min": 0.07718929877642075,
+    "max": 0.18342847700198348,
+    "mean": 0.11271162256258073,
+    "mean_log": -2.224650976223084
+   },
+   "C": {
+    "n": 8,
+    "min": 0.10769126378136132,
+    "max": 0.17065207341805397,
+    "mean": 0.134027377840711,
+    "mean_log": -2.022502233103875
+   },
+   "E": {
+    "n": 8,
+    "min": 0.10170493437371517,
+    "max": 0.157288993185851,
+    "mean": 0.12499350252157129,
+    "mean_log": -2.0886545146087068
+   }
+  }
+ },
+ "descriptives_keys": [
+  "contrasts",
+  "ladder",
+  "secondary"
+ ],
+ "repository": {
+  "head": "af160cee0389bcdaf12bcbd92a8616f142777a52",
+  "origin": "af160cee0389bcdaf12bcbd92a8616f142777a52",
+  "remote": "af160cee0389bcdaf12bcbd92a8616f142777a52",
+  "clean": true,
+  "outputs": [
+   "calibration-arrays.pt",
+   "candidate-calibration.json",
+   "candidate-lock.json",
+   "candidate-preregistration.md",
+   "results.json",
+   "stage2-measurements.pt"
+  ]
+ }
+}

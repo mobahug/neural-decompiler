@@ -1,0 +1,61 @@
+[PASS] validate_lock (full, as confirm calls it) accepted the installed lock
+[PASS] the runtime check passed: {'device': 'cpu', 'backend': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'control_seed': 20260924, 'deterministic_algorithms': False, 'torch_num_threads': 4}
+[PASS] git_state: commit == HEAD, not dirty: {'commit': 'af160cee0389bcdaf12bcbd92a8616f142777a52', 'dirty': False}
+[PASS] commit (confirm_commit) == af160ce: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] tracked(lock) and tracked(preregistration) both True: {'lock': True, 'preregistration': True}
+[PASS] changed_paths(lock.protocol_code_commit) is 32 paths, none scientific: 32
+[PASS] record_sha == installed calibration-v1.json sha256 81fb499e…
+[PASS] confirmation_sha == committed confirmation-v1.json sha256 68510e1b…: 68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60
+[PASS] forbidden (spent) keys = 39,312: 39312
+[PASS] state ledger empty (prompt keys, noun keys)
+  runtime now: {'device': 'cpu', 'backend': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'control_seed': 20260924, 'deterministic_algorithms': False, 'torch_num_threads': 4}
+  020 explore runtime: {'backend': 'cpu', 'control_seed': 20260924, 'deterministic_algorithms': False, 'device': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'torch_num_threads': 4}
+[PASS] placeholder dependencies differ from the lock's only under 'model'
+[PASS] refused: tracked=False: the lock and the preregistration must be tracked and committed
+[PASS] live: runner.tracked(candidate files) is False (gitignored, same bytes): [False, False]
+[PASS] refused: tracked computed live from the untracked candidate paths: the lock and the preregistration must be tracked and committed
+[PASS] refused: dirty tree: confirm requires a clean Git tree
+[PASS] refused: lock commit not an ancestor (changed_paths=None): the lock commit is not an ancestor of the current commit
+[PASS] refused: a scientific path changed (readout_routing.py): scientific paths changed since the lock: ['src/neural_decompiler/readout_routing.py']
+[PASS] refused: a scientific path changed (run.py): scientific paths changed since the lock: ['experiments/024-readout-routing-nounness/run.py']
+[PASS] refused: 023 cells changed: scientific paths changed since the lock: ['experiments/023-block0-completion/exposed-cells.f64']
+[PASS] refused: edited preregistration: the installed preregistration is not the one this lock renders
+[PASS] refused: lock with a changed threshold (digest broken): the installed lock is not a verified Experiment 024 lock
+[PASS] refused: resealed lock with a replaced threshold: the installed lock is not the candidate this run wrote
+[PASS] refused: resealed lock with a forged state: the lock's thresholds or line are not the committed record's
+[PASS] refused: different noun order: the lock names a different noun order, semantics or outcome table
+[PASS] a non-production configuration against the real repository is refused: a non-production configuration may never run against the real repository
+[PASS] no capture entry point reached
+[PASS] guard: 0 refused
+ITEM4 PASS: 27/27 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=35 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/1ws9sbzn
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/1ws9sbzn
+GUARD subprocess: git diff --no-renames --name-only be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/calibration-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/confirmation-v1.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/preregistration.md
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/candidate-lock.json
+GUARD subprocess: git ls-files --error-unmatch /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/candidate-preregistration.md
+GUARD subprocess: git merge-base --is-ancestor be74d23d086bd12d894db1f73e6a1b4160aeebd5 HEAD
+GUARD subprocess: git rev-parse HEAD
+GUARD subprocess: git status --porcelain

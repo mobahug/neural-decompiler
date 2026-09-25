@@ -1,0 +1,53 @@
+[PASS] pool frames == the freeze's 108 exposed frame ids
+[PASS] own pair mapping == rr.target_units(confirmation).pairs; tokens and frames in the same order
+[PASS] group sizes 2,880 / 1,440 == the saved row counts
+[PASS] saved positions[row] == (p_c, p_t) of the mapped frame for all 4,320 rows
+[PASS] torch threads == 4 (as at confirm): 4
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:31,  2.37it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 178.85it/s]
+   load 0.7s; counts during the load {'Module.__call__': 0, 'forward': 0, '__call__ override': 0}
+   sealed 499 module classes; entry points refused: 16: ['calibration_rematerialize', 'capture_frame_020', 'capture_prompt', 'capture_reference', 'measure_prompt', 'record_execution', 'run_capture', 'run_interventions', 'run_patched', 'stage_one_022', 'stage_two_022']
+[PASS] the load made 0 Module.__call__ / forward / __call__-override calls: {'Module.__call__': 0, 'forward': 0, '__call__ override': 0}
+[PASS] every module class of the loaded model now resolves forward and __call__ to a refusing stub: []
+[PASS] pm.capture_prompt, pm.run_capture, pm.record_execution, ul.stage_two_022, ul.measure_prompt refused
+[PASS] parameters digest == the lock's (the pinned weights): fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5
+[PASS] embedding digest == the lock's
+[PASS] progs.scorable: the 79 scorable exposed nouns in the lock's order
+   C recompute 34.0s
+[PASS] C rebuilt from the saved Δx3 == saved C bit for bit on all 4,320 pairs (max |diff| 0.0): {'pairs': 4320, 'bitwise_equal_rows': 4320, 'max': 0.0, 'at': ''}
+   cue_final done (85.4s)
+   coordinated done (175.0s)
+[PASS] I1 max 1.5317713646822995e-05 at poets|cardinal-new-2 ≤ 1e-04
+[PASS] I3 max 2.1161813141654138e-05 at merry|cardinal-016-4 ≤ 1e-04
+[PASS] I4 max 6.424818726813442e-05 at sleepy|coordinated-adjective-018-1 ≤ 1e-03
+[PASS] Level-1 identity max |L1 − Δc| 0.009929305188346005 at litres|cardinal-012-1 ≤ 2e-2 (descriptive, not a gate): {'cue_final': 0.009929305188346005, 'coordinated': 0.006581686373075879}
+   ladder N: block-5 attention exact removes 0.409769 of Σ(Δc−C)², block-4 attention then 0.590211; left after L1 0.000020; SSE_C 4870.442108 (fsum 4870.442108)
+   ladder B: block-5 attention exact removes 0.398316 of Σ(Δc−C)², block-4 attention then 0.601672; left after L1 0.000012; SSE_C 8116.158824 (fsum 8116.158824)
+   ladder D: block-5 attention exact removes 0.325734 of Σ(Δc−C)², block-4 attention then 0.674253; left after L1 0.000013; SSE_C 7693.244510 (fsum 7693.244510)
+   ladder C: block-5 attention exact removes 0.424536 of Σ(Δc−C)², block-4 attention then 0.575453; left after L1 0.000011; SSE_C 9148.172702 (fsum 9148.172702)
+   ladder E: block-5 attention exact removes 0.270445 of Σ(Δc−C)², block-4 attention then 0.729543; left after L1 0.000012; SSE_C 8531.556508 (fsum 8531.556508)
+   rr.target_gates 86.3s: {'I1': {'max': 1.5317713646822995e-05, 'at': 'poets|cardinal-new-2'}, 'I3': {'max': 2.1161813141654138e-05, 'at': 'merry|cardinal-016-4'}, 'I4': {'max': 6.424818726813442e-05, 'at': 'sleepy|coordinated-adjective-018-1'}}
+[PASS] rr.target_gates maxima and locations == own loop's (exactly)
+[PASS] the seal held: 0 refused module calls / entry points during programs, C, gates, Level-1: {'Module.__call__': 0, 'forward': 0, '__call__ override': 0, 'entry points': 0}
+   recorded c_recompute {'at': '', 'bitwise_equal': True, 'max': 0.0, 'pairs': 4320}
+   recorded gates {'I1': {'at': 'poets|cardinal-new-2', 'max': 1.5317713646822995e-05}, 'I3': {'at': 'merry|cardinal-016-4', 'max': 2.1161813141654138e-05}, 'I4': {'at': 'sleepy|coordinated-adjective-018-1', 'max': 6.424818726813442e-05}}
+[PASS] recorded c_recompute agrees (bitwise_equal True, max 0.0, 4,320 pairs)
+[PASS] recorded gates == own maxima and locations exactly
+[PASS] recorded Level-1 identity == own: {'at': 'litres|cardinal-012-1', 'force': 'descriptive only; not a gate', 'max': 0.009929305188346005, 'tolerance': 0.02, 'within': True}
+[PASS] recorded ladder shares == own (bitwise, same accumulation order): {'N': (0.0, 0.0), 'B': (0.0, 0.0), 'D': (0.0, 0.0), 'C': (0.0, 0.0), 'E': (0.0, 0.0)}
+S05 PASS: 22/22 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=18 disallowed=0 outside_write_events={'open': 4, 'os.remove': 3, 'tempfile.mkdtemp': 1, 'os.mkdir': 2, 'os.utime': 1, 'os.link': 2, 'shutil.rmtree': 1, 'os.rmdir': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirmation_review024/s05_results.json
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/g6acs_dt
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-source
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-link
+GUARD outside write [os.link]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-source
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq
+GUARD outside write [os.mkdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/torchinductor_gaborhorvath-ulenius
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/g6acs_dt
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-link
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-source
+GUARD outside write [os.rmdir]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq
+GUARD outside write [os.utime]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq/probe-source
+GUARD outside write [shutil.rmtree]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq
+GUARD outside write [tempfile.mkdtemp]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpnocv67lq

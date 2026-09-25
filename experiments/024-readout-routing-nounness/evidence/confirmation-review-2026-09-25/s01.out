@@ -1,0 +1,53 @@
+[PASS] HEAD == af160ce: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] origin/main == HEAD: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] ls-remote origin refs/heads/main == HEAD: af160cee0389bcdaf12bcbd92a8616f142777a52
+[PASS] tree clean (status --porcelain --untracked-files=all empty): ''
+   log: af160ce evidence: experiment 024 lock — run record, guarded launcher, pre-lock, post-lock, pre-install and post-commit checks, independent lock review; README status | 3affe55 data: experiment 024 lock — preregistration-lock.json and preregistration.md, installed byte-identically | be74d23 evidence: experiment 024 calibration — run record, guarded launcher, pre-, post- and post-install checks, independent calibration review; README status | 1084efc data: experiment 024 calibration — calibration-v1.json, installed byte-identically | bf0049c evidence: experiment 024 freeze — run record, guarded launcher, post-freeze and post-commit checks, independent freeze review; README status | 566eb6f data: experiment 024 freeze — confirmation-v1.json, installed byte-identically
+[PASS] confirmation-v1.json: file sha256: 68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60
+[PASS] confirmation-v1.json: recorded content_sha256 == expected == own recomputation: 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87 / own 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87
+[PASS] confirmation-v1.json: tracked and HEAD blob == own blob of working file: 0ebacabed6605401c105569d8f985dabd4bb8d7d
+[PASS] calibration-v1.json: file sha256: 81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d
+[PASS] calibration-v1.json: recorded content_sha256 == expected == own recomputation: 09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8 / own 09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8
+[PASS] calibration-v1.json: tracked and HEAD blob == own blob of working file: d46c85a50dad0fb5f865bad012e18903ec824dd1
+[PASS] preregistration-lock.json: file sha256: 5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d
+[PASS] preregistration-lock.json: recorded content_sha256 == expected == own recomputation: a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739 / own a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739
+[PASS] preregistration-lock.json: tracked and HEAD blob == own blob of working file: 4d43f3a3a755329f695d41feb9d09045fffb31e5
+[PASS] preregistration.md file sha256: 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54
+[PASS] preregistration.md tracked and HEAD blob == own blob
+[PASS] outputs/candidate-calibration.json byte-identical to installed calibration-v1.json
+[PASS] outputs/candidate-lock.json byte-identical to installed preregistration-lock.json
+[PASS] outputs/candidate-preregistration.md byte-identical to installed preregistration.md
+[PASS] lock binds the installed calibration (file & content): {'content_sha256': '09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8', 'file_sha256': '81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d', 'path': 'experiments/024-readout-routing-nounness/calibration-v1.json'}
+[PASS] lock binds the installed confirmation (file & content): {'file_sha256': '68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60', 'content_sha256': '87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87', 'manifest_size': 4320, 'manifest_sha256': 'fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d'}
+[PASS] lock protocol_code_commit == be74d23…: be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[PASS] lock module path/blob: {'blob': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'path': 'src/neural_decompiler/readout_routing.py'}
+[PASS] results.json file sha256 e636210c…: e636210c84a4f3f329e9a5fde5baa493d730b6bf77cb419273056e6c89085a7a
+[PASS] state_sha256 recorded == own recomputation == 076ab9f9…: 076ab9f984f3ba6244b4df767d8c8fd7ebd40a634521a46a3b881d7da1604e92 / 076ab9f984f3ba6244b4df767d8c8fd7ebd40a634521a46a3b881d7da1604e92
+[PASS] file bytes == canonical_json(state + digest) + newline (own)
+   phases: {"calibrate": {"commit": "bf0049c85342d01caf9d6a830389ce1e72c05a71", "completed_at": "2026-09-25T13:08:45+00:00", "runtime": {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}, "started_at": "2026-09-25T13:08:19+00:00", "status": "complete"}, "confirm": {"completed_at": "2026-09-25T19:37:04+00:00", "confirm_commit": "af160cee0389bcdaf12bcbd92a8616f142777a52", "lock_sha256": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739", "started_at": "2026-09-25T19:32:10+00:00", "status": "complete"}, "lock": {"commit": "be74d23d086bd12d894db1f73e6a1b4160aeebd5", "completed_at": "2026-09-25T17:14:05+00:00", "status": "complete"}, "report": {"status": "not_started"}}
+[PASS] confirm complete
+[PASS] report not started (phase, state['report'], no report.md)
+[PASS] calibrate complete, lock complete
+[PASS] no incident / cross_check / stop / descriptive failure key anywhere in the state: []
+[PASS] confirm entry has exactly one start and one completion; confirm_commit == af160ce: {'completed_at': '2026-09-25T19:37:04+00:00', 'confirm_commit': 'af160cee0389bcdaf12bcbd92a8616f142777a52', 'lock_sha256': 'a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739', 'started_at': '2026-09-25T19:32:10+00:00', 'status': 'complete'}
+[PASS] I7 bitwise_equal True with nothing differing: {'bitwise_equal': True, 'differing': [], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[PASS] state protocol_code_commit is the calibrate commit, not changed: bf0049c85342d01caf9d6a830389ce1e72c05a71
+[PASS] state lock.content_sha256 == installed lock content
+[PASS] state confirmation.lock_sha256 == lock content
+[PASS] rr imported from the repository file: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+[PASS] module blob: lock == own sha1 == git HEAD == rr.own_blob() == e6cb3776…: {'lock': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'own': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'git': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'rr.own_blob': 'e6cb37767d1d06c6ff40804a88eab569723afdb5'}
+[PASS] the 12 pinned modules: rr.assert_frozen_blobs passes and own sha1 of each == FROZEN_BLOBS == lock.module_blobs: 12
+[PASS] rr.assert_phase_allowed('confirm', state) refuses now: confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version
+[PASS] lock also refused (already complete): lock already written; a new candidate lock requires a new protocol version
+[PASS] report is allowed next: True
+   changed since the lock commit be74d23: ['experiments/024-readout-routing-nounness/README.md', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/README.md', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/SHA256SUMS', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/install.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/launch_lock.py', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/lock.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/lock_run.json', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/post_commit_checks.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/post_commit_checks.py', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/preinstall.py', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/prelock.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/prelock.py', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/verify_lock.out', 'experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/verify_lock.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/REVIEW.md', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/pytest_tierA.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/pytest_tierB_runner.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r01_state_integrity.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r02.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r02_prereg_numbers.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r03.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r03_scores_i7.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r04.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r04_state_transition.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r05.out', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/r05_outcome.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/review_guard.py', 'experiments/024-readout-routing-nounness/evidence/lock-review-2026-09-25/review_pytest_guard.py', 'experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md']
+[PASS] lock commit is an ancestor of HEAD
+[PASS] rr.scientific_changes(diff be74d23..HEAD) == []: []
+[PASS] own classification: only the installed lock/preregistration, the README and evidence changed: []
+[PASS] no change under src/, tests/ or run.py since the lock commit: []
+[PASS] rr.scientific_changes since the calibrate commit == []: ('bf0049c', [])
+S01 PASS: 45/45 checks
+GUARD SUMMARY: refused=0 selftest_cases=17 (all as expected) subprocesses=21 disallowed=3 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/gsu8ouwh
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/gsu8ouwh

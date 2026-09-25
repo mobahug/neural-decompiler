@@ -1,0 +1,30 @@
+[ok] HEAD == origin/main == remote == af160ce: af160cee0389bcdaf12bcbd92a8616f142777a52 / af160cee0389bcdaf12bcbd92a8616f142777a52 / af160cee0389bcdaf12bcbd92a8616f142777a52
+[ok] working tree clean, no untracked file
+[ok] no stash
+[ok] configuration is the frozen production one
+[ok] stock validate passes (the installed lock and preregistration verified): module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); calibration record verified; lock and preregistration verified
+[ok] the phase rule permits confirm
+[ok] full validate_lock passes (tracked, clean, no scientific change since be74d23): 32 changed paths, none scientific
+[ok] confirm's runtime check passes (020's explore runtime and versions): {'device': 'cpu', 'backend': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'control_seed': 20260924, 'deterministic_algorithms': False, 'torch_num_threads': 4}
+[ok] calibrate and lock complete once, no incident
+[ok] confirm and report not started, no incident
+[ok] both ledgers empty
+[ok] no stage2-measurements.pt, no report, no temp file (exactly the five pre-confirm files): ['calibration-arrays.pt', 'candidate-calibration.json', 'candidate-lock.json', 'candidate-preregistration.md', 'results.json']
+[ok] no fresh outcome value: the state's confirmation and report are null
+[ok] the lock's fresh cues carry no observed quantity: ['above_calibration_maximum', 'class', 'form', 'lemma', 'nounness', 'predicted_log_mse', 'token_id', 'word']
+[ok] manifest: 4,320 unique keys, digest fcc437fc…
+[ok] zero collision with the 39,312 spent keys
+[ok] installed lock file sha256
+[ok] lock content sha256
+[ok] preregistration sha256
+[ok] results-state digest 58891c24…
+[ok] results file sha256 14459cdd…
+[ok] module blob: lock == rr.own_blob() == own sha1 == git hash-object == git HEAD == e6cb3776…: {'expected': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'observed': 'e6cb37767d1d06c6ff40804a88eab569723afdb5'}
+[ok] rr imported from the repository file: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+[ok] HF_HUB_OFFLINE=1 and PYTHONDONTWRITEBYTECODE=1
+[ok] 4 torch threads: 4
+[ok] the cached checkpoint of the pinned revision: sha256 == its LFS blob id 3da38833…: /Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c/model.safetensors
+[ok] the interpreter is the repository's .venv: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv
+environment: {"python": "3.12.13", "platform": "macOS-15.7.3-arm64-arm-64bit", "torch": "2.14.0", "versions": {"python": "3.12.13", "torch": "2.14.0", "transformer-lens": "3.9.0", "transformers": "5.17.0", "huggingface-hub": "1.31.0"}, "runtime": {"device": "cpu", "backend": "cpu", "dtype": "float32", "seed": 20260916, "control_seed": 20260924, "deterministic_algorithms": false, "torch_num_threads": 4}, "model": {"id": "EleutherAI/pythia-70m-deduped", "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"}}
+[ok] no repository write: []
+FAILURES: none

@@ -1,0 +1,52 @@
+expected: e6cb37767d1d06c6ff40804a88eab569723afdb5
+observed: e6cb37767d1d06c6ff40804a88eab569723afdb5  <- own sha1(b'blob <len>\0'+bytes)
+observed: e6cb37767d1d06c6ff40804a88eab569723afdb5  <- rr.own_blob()
+observed: e6cb37767d1d06c6ff40804a88eab569723afdb5  <- git rev-parse HEAD:src/neural_decompiler/readout_routing.py
+observed: e6cb37767d1d06c6ff40804a88eab569723afdb5  <- installed_lock['module']['blob']
+[PASS] all four equal the expected blob e6cb3776…
+[PASS] installed_lock['module']['path'] == src/neural_decompiler/readout_routing.py: src/neural_decompiler/readout_routing.py
+[PASS] rr.__file__ resolves to the repository file: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+[PASS] find_spec origin == the repository file (no shadow copy): /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+[PASS] blob at be74d23 == expected (unchanged since): e6cb37767d1d06c6ff40804a88eab569723afdb5
+[PASS] blob at 44c3c2b == expected (unchanged since): e6cb37767d1d06c6ff40804a88eab569723afdb5
+[PASS] no commit touched readout_routing.py after 44c3c2b
+[PASS] run.py: own blob == HEAD blob == be74d23 blob: 30433b23afa94fff4becc556eaaed21a70f4d748
+   readout_decompilation.py     caa73b40192f4c910dc63371bd19db75a3258339 ok
+   readout_calibration.py       9107da975128d9b0383f3b346695675104e4cde9 ok
+   head_pattern.py              386682fe0a47d093dfbee2507afc1df61811ab15 ok
+   frame_channels.py            c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8 ok
+   attention_patterns.py        3f5acd65397bd11723ba6fc2ec4253f1d5c81943 ok
+   layer_correction.py          04df0cc9a20093cc48ee5ef62da7f206bf1a3186 ok
+   plural_mechanism.py          d39da8a8d9931005d411258bcddbb7f9beed35e4 ok
+   encoding_read.py             cab99c942de970332e726a5626b584242d4cf600 ok
+   head_transport.py            936093a4e82c83e299a65a7c85529a7226f80c95 ok
+   models.py                    b1c6f03379af7e0918d0d1a6460a264651603fb2 ok
+   upstream_localization.py     465856962aa380747d1a4f1338d1d2762d03c9f9 ok
+   block0_completion.py         16d310fc7fab5599ec83b8bd8162fb9613f8dad2 ok
+[PASS] 12 pinned modules: own blob == FROZEN_BLOBS == HEAD == lock == record, imported from the repo
+[PASS] lock.module_blobs == rr.FROZEN_BLOBS (12 keys)
+[PASS] rr.assert_frozen_blobs() passes
+[PASS] guard: 0 refused
+ITEM5 PASS: 12/12 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=18 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/5vk4zlsu
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/5vk4zlsu
+GUARD subprocess: git log --format=%h %s 44c3c2b..HEAD -- src/neural_decompiler/readout_routing.py
+GUARD subprocess: git rev-parse 44c3c2b:src/neural_decompiler/readout_routing.py
+GUARD subprocess: git rev-parse HEAD:experiments/024-readout-routing-nounness/run.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/attention_patterns.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/block0_completion.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/encoding_read.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/frame_channels.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/head_pattern.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/head_transport.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/layer_correction.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/models.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/plural_mechanism.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/readout_calibration.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/readout_decompilation.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/readout_routing.py
+GUARD subprocess: git rev-parse HEAD:src/neural_decompiler/upstream_localization.py
+GUARD subprocess: git rev-parse be74d23:experiments/024-readout-routing-nounness/run.py
+GUARD subprocess: git rev-parse be74d23:src/neural_decompiler/readout_routing.py

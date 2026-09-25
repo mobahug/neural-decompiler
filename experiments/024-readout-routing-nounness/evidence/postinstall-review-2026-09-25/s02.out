@@ -1,0 +1,51 @@
+[PASS] preregistration-lock.json: working tree sha256 == expected: 5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d
+[PASS] preregistration-lock.json: working tree == git show HEAD:: 32729 bytes
+[PASS] preregistration-lock.json: working tree == git show 3affe55:
+[PASS] preregistration-lock.json: working tree == gitignored candidate outputs/experiment-024/candidate-lock.json: 5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d
+[PASS] preregistration-lock.json: own git blob of bytes == HEAD tree blob: 4d43f3a3a755329f695d41feb9d09045fffb31e5
+[PASS] preregistration-lock.json: no CR bytes, ends with exactly one newline
+[PASS] preregistration-lock.json: path absent at be74d23 (first added by 3affe55)
+[PASS] outputs/experiment-024/candidate-lock.json is untracked (gitignored candidate)
+[PASS] preregistration.md: working tree sha256 == expected: 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54
+[PASS] preregistration.md: working tree == git show HEAD:: 9558 bytes
+[PASS] preregistration.md: working tree == git show 3affe55:
+[PASS] preregistration.md: working tree == gitignored candidate outputs/experiment-024/candidate-preregistration.md: 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54
+[PASS] preregistration.md: own git blob of bytes == HEAD tree blob: 73757afeb0cfc240695c51ab3fd5a0110d45b5d0
+[PASS] preregistration.md: no CR bytes, ends with exactly one newline
+[PASS] preregistration.md: path absent at be74d23 (first added by 3affe55)
+[PASS] outputs/experiment-024/candidate-preregistration.md is untracked (gitignored candidate)
+[PASS] lock parses; every float finite: 96 floats
+[PASS] lock file == own canonical JSON (sorted keys, compact, UTF-8) + one newline
+[PASS] own content digest (content_sha256 key removed) == expected a39668bf…: a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739
+[PASS] lock.content_sha256 field == own content digest
+[PASS] no NaN/Infinity tokens in the lock text
+[PASS] canonical route rc.content_digest(lock) == own content digest
+[PASS] canonical route pm.canonical_json(lock)+'\n' == file text
+[PASS] preregistration.md == rr.render_preregistration(installed lock), byte for byte: 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54
+[PASS] state.lock.content_sha256 == lock content digest
+[PASS] state.lock.preregistration_sha256 == sha256(preregistration.md)
+[PASS] state.lock.calibration_content_sha256 == lock.calibration.content_sha256
+[PASS] state.lock.extrapolation == lock.fresh.extrapolation
+state.lock keys: ['calibration_content_sha256', 'candidate_path', 'content_sha256', 'extrapolation', 'preregistration_path', 'preregistration_sha256', 'written_at']
+[PASS] lock.calibration.file_sha256 == sha256 of committed calibration-v1.json: 81fb499edf02
+[PASS] lock.calibration.content_sha256 == own content digest of committed calibration-v1.json
+[PASS] lock.confirmation_024.file_sha256 == sha256 of committed confirmation-v1.json: 68510e1b902b
+[PASS] lock.confirmation_024.content_sha256 == own content digest of committed confirmation-v1.json
+[PASS] installed calibration-v1.json == candidate-calibration.json (bytes): 81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d
+lock top-level keys: ['calibration', 'configuration', 'confirmation_024', 'constants', 'content_sha256', 'dependencies', 'design', 'experiment', 'exposed_cells', 'fresh', 'guard', 'inputs', 'kind', 'line', 'module', 'module_blobs', 'noun_keys', 'outcome', 'plan', 'primary', 'protocol_code_commit', 'run_id', 'schema_version', 'score', 'semantics']
+[PASS] guard: 0 refused
+ITEM2 PASS: 34/34 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=10 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/3wk4i1u1
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/3wk4i1u1
+GUARD subprocess: git cat-file -e be74d23:experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git cat-file -e be74d23:experiments/024-readout-routing-nounness/preregistration.md
+GUARD subprocess: git ls-files --error-unmatch outputs/experiment-024/candidate-lock.json
+GUARD subprocess: git ls-files --error-unmatch outputs/experiment-024/candidate-preregistration.md
+GUARD subprocess: git rev-parse HEAD:experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git rev-parse HEAD:experiments/024-readout-routing-nounness/preregistration.md
+GUARD subprocess: git show 3affe55:experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git show 3affe55:experiments/024-readout-routing-nounness/preregistration.md
+GUARD subprocess: git show HEAD:experiments/024-readout-routing-nounness/preregistration-lock.json
+GUARD subprocess: git show HEAD:experiments/024-readout-routing-nounness/preregistration.md

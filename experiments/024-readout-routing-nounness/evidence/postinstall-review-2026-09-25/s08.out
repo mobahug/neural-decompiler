@@ -1,0 +1,32 @@
+[PASS] file sha256 == 14459cdd…: 14459cdde6ec2d832c3965d5b0ebaadaf06cef6aa0b0460c3a31b29dd442b262
+[PASS] own state digest == recorded state_sha256 == 58891c24…: 58891c2416684785cb52437069beebcaa198ea3674c6d4b9d8480c103aadc65d
+[PASS] file == canonical JSON (with state_sha256) + one newline (the atomic writer's format)
+[PASS] rd.load_results_state verifies it
+[PASS] rr.assert_phase_allowed('confirm', state) passes
+   calibrate: {"commit": "bf0049c85342d01caf9d6a830389ce1e72c05a71", "completed_at": "2026-09-25T13:08:45+00:00", "runtime": {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}, "started_at": "2026-09-25T13:08:19+00:00", "status": "complete"}
+   confirm: {"status": "not_started"}
+   lock: {"commit": "be74d23d086bd12d894db1f73e6a1b4160aeebd5", "completed_at": "2026-09-25T17:14:05+00:00", "status": "complete"}
+   report: {"status": "not_started"}
+[PASS] calibrate: complete, no incidents
+[PASS] lock: complete at be74d23, no incident
+[PASS] confirm: not_started, no incident
+[PASS] report: not_started
+[PASS] phase keys exactly {calibrate, lock, confirm, report} (canonical JSON stores them sorted)
+[PASS] calibration: no incidents, no stop, no cross-check failure: ['F_rho', 'arrays_sha256', 'candidate_path', 'checks', 'dependencies', 'line', 'null_975', 'record_content_sha256', 'record_sha256']
+[PASS] calibration.record_sha256 == installed calibration-v1.json sha256
+[PASS] state.confirmation_024 binding == the committed freeze (path, file, content): 68510e1b902b
+[PASS] state.configuration == PRODUCTION; module_blobs == FROZEN_BLOBS
+   state.protocol_code_commit bf0049c85342d01caf9d6a830389ce1e72c05a71; run_id b04ce3526306a981; git_dirty False
+[PASS] state.git_dirty False
+[PASS] state.run_id == lock.run_id: b04ce3526306a981
+[PASS] calibrate refused now (runs once): calibrate is complete; the calibration runs once in this protocol version (a stop for revi
+[PASS] lock refused now (runs once): lock already written; a new candidate lock requires a new protocol version
+[PASS] confirm refused on a state with confirm running: confirm already started; it runs once, never resumes, and a second attempt requi
+[PASS] confirm refused on a state with confirm with an I7 incident: an I7 incident is recorded; confirm is refused until the reviewer decides (a new
+[PASS] confirm refused on a state with lock not complete: confirm requires the lock phase
+[PASS] guard: 0 refused
+ITEM8 PASS: 22/22 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=0 outside_write_events={'open': 2, 'os.remove': 1}
+GUARD outside write [open]: /dev/null
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/yil8p784
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/yil8p784

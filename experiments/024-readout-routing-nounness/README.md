@@ -1,7 +1,7 @@
 # Experiment 024: Does an Operational Nounness Score Predict When the Frozen Downstream Routing Stops Holding?
 
-**Status (2026-09-25): implemented, frozen, calibrated and locked, each independently reviewed and committed; confirm
-next, only when separately authorized.**
+**Status (2026-09-25): implemented, frozen, calibrated, locked and confirmed, each phase run once and independently
+reviewed; `report` not yet run.**
 - **Implementation:** complete and independently reviewed (PASS WITH NOTES, no blockers; every finding addressed).
   Commits `6f80665`…`44c3c2b`.
 - **Freeze:** the production `freeze` ran exactly once at `44c3c2b`, tokenizer and text only. It was independently
@@ -25,8 +25,15 @@ next, only when separately authorized.**
   - `preregistration.md`: sha256 `007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54`.
 
   See [Lock](#lock-2026-09-25).
-- **Not run:** `confirm` and `report`. **No fresh 024 prompt has run**, and no fresh 024 outcome exists: no readout
-  error, ρ or E–N K of any 024 cue has been observed.
+- **Confirm:** the production `confirm` ran exactly once, at `af160ce`, with exit status 0 and no incident. It executed
+  all 4,320 frozen keys once each. It was independently reviewed (PASS WITH NOTES, no blockers), and the reviewer
+  derived the result from the saved measurements with its own code.
+  - **Primary:** ρ = `0.6108818011257036` ≥ `0.3136960600375234`, **PASS**.
+  - **E–N guard:** K = 1 of 12,870 (PASS iff K ≤ 321), **PASS**.
+  - **Frozen outcome: `NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`.**
+
+  See [Confirm](#confirm-2026-09-25).
+- **Not run:** `report`.
 
 Implements the design
 [`docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md`](../../docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md)
@@ -219,3 +226,88 @@ The independent review was PASS WITH NOTES, with no blockers. The exact candidat
    values would give `e494736a…`.
 6. **The launcher's record is a self-report.** Its sha256 is recorded here, and the review corroborated zero prompts
    from the state itself: undoing only the lock's entries reproduces the pre-lock state byte for byte.
+
+## Confirm (2026-09-25)
+
+**The run.** The production `confirm` was invoked exactly once, at `af160ce`, through an external guarded launcher.
+- Before the model loaded, the launcher asserted the module blob directly: `rr.own_blob()` equals the lock's
+  `module.blob`, `e6cb37767d1d06c6ff40804a88eab569723afdb5`.
+- Confirm ran from 19:31:56 to 19:38:45 UTC and exited with status 0. No incident occurred and nothing was retried.
+- 1 model load; I7 reproduced bit for bit before the first prompt.
+- All **4,320 frozen keys (40 cues × 108 frames) were executed exactly once**, with 0 collisions with the 39,312 spent
+  keys.
+- Every validity check passed:
+  - C recomputed from the saved Δx3 bit for bit on all 4,320 pairs;
+  - I1 1.53e-5, I3 2.12e-5 and I4 6.42e-5, against 1e-4, 1e-4 and 1e-3.
+- The measurements `outputs/experiment-024/stage2-measurements.pt` (76,314,087 bytes, sha256
+  `b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93`) and the results state (`076ab9f9…`, file
+  `e636210c…`) are preserved unchanged and gitignored. Their hashes are recorded in the evidence.
+- Evidence: [`evidence/confirm-2026-09-25/`](evidence/confirm-2026-09-25/README.md).
+- The independent reviews:
+  - post-install: [`evidence/postinstall-review-2026-09-25/REVIEW.md`](evidence/postinstall-review-2026-09-25/REVIEW.md);
+  - confirmation:
+    [`evidence/confirmation-review-2026-09-25/REVIEW.md`](evidence/confirmation-review-2026-09-25/REVIEW.md).
+
+  Both are PASS WITH NOTES, with no blockers.
+
+**The preregistered result:**
+
+| test | observed | locked requirement | result |
+|---|---|---|---|
+| primary: Spearman ρ between the frozen nounness score and the fresh per-cue MSE (40 cues) | `0.6108818011257036` (= 1628/2665) | ρ ≥ `0.3136960600375234` | **PASS** |
+| E–N disambiguation: `D_EN = mean(log MSE_E) − mean(log MSE_N)`, exact one-sided permutation test | `D_EN = 0.5680373703974243`; K = 1 of 12,870 | K ≤ 321 | **PASS** |
+| **frozen outcome** | **`NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`** | | |
+
+**What the PASS means.** The prospective association exceeded the locked primary threshold.
+- The frozen rule was ρ ≥ max(F_ρ, null₉₇.₅), with F_ρ = `0.24411074612857814` and null₉₇.₅ = `0.3136960600375234`.
+  The null bound.
+- The stored reading "at least as strongly as the exposed-like relationship" is not the formal interpretation. F_ρ is
+  the 2.5th percentile of the exposed-like draws, so the rule says the association was not unusually weak, not that it
+  matched the exposed relationship.
+- The preregistration is not edited.
+
+The guard: every one of the eight ordinary singular nouns (E) had a larger log MSE than every one of the eight non-noun
+controls (N). The observed split is the unique most extreme of the 12,870 assignments.
+
+**The claim, in its scope.** On 40 fresh cues, the frozen operational weight-derived nounness score prospectively
+predicted larger error in the frozen block-4/5 attention/readout approximation. The association passed the
+preregistered E-vs-N disambiguation guard against simple plurality-only and measure-only explanations.
+- **The guard's formal scope is limited to those two preregistered simple alternatives.** E and N differ in other
+  lexical and semantic properties besides nounness: all eight N cues are adjectives, and the E cues are concrete,
+  mostly animate nouns.
+- **What was observed is the error of a previously frozen approximation of the downstream readout**, not rerouting
+  measured directly.
+- **The scope:** 108 exposed frames, 79 nouns, one checkpoint (Pythia-70M-deduped), 8 cues per class. 23 of the 40
+  cues lie beyond the calibration's nounness range, so the test is partly an extrapolation.
+- **Not claimed:**
+  - that nounness causes rerouting, or that rerouting was measured directly;
+  - that the model detects nouns;
+  - that nounness is a general linguistic representation;
+  - that E-vs-N rules out all lexical or semantic confounds;
+  - that 024 explains all routing-regime changes, or establishes general algorithm choice.
+
+**Descriptive results (no outcome force; they cannot alter the result):**
+- **MSE by class** (mean): N 0.0714, B 0.1189, D 0.1127, C 0.1340, E 0.1250.
+- **Class contrasts on log MSE** (bootstrap intervals, elements [249] and [9750] of 10,000):
+
+  | contrast | value | interval |
+  |---|---|---|
+  | noun effect | +0.538 | [+0.395, +0.677] |
+  | measure effect among nouns | −0.126 | [−0.252, +0.004], spans zero |
+  | plurality effect among nouns | +0.076 | [−0.058, +0.203], spans zero |
+  | measure × plurality interaction | +0.020 | [−0.244, +0.271] |
+- **Subsets:** ρ is 0.586 on cue-final frames and 0.698 on coordinated frames; on normalized MSE it is 0.592.
+- **R²_C by class:** 0.93–0.96.
+- **The frozen exposed line:** it slightly under-predicts the fresh error, by a mean residual of +0.093 in log MSE (+0.034
+  over the 23 extrapolated cues, +0.173 over the 17 within range). Its largest residuals are gallon (+0.72) and acre
+  (+0.63), both singular measure nouns.
+- **Block-4 attention's share of the readout error:** 0.58–0.73 by class; block 5 carries the rest.
+- **The extrapolation flags:** 23 of 40 fresh cues lie beyond the calibration's nounness maximum (0 N, 6 B, 4 D, 8 C,
+  5 E).
+
+**Notes:**
+1. **Last-bit differences.** The reviewer's own per-cue MSE differs from the canonical value by at most 2.8e-17 in 3 of
+   40 cues, from the canonical summation order, which stays authoritative. Ranks, ρ and K are identical.
+2. **The noun ledger holds all 80 pool nouns**, as in Experiment 020, and no fresh noun.
+3. **Nothing is committed that the repository does not track.** It keeps no binary measurement artifact and has no
+   convention for backing up large artifacts externally, so the measurement file stays local, with its hash recorded.

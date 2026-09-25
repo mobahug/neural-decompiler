@@ -1,0 +1,155 @@
+{
+ "c_recompute": {
+  "at": "",
+  "bitwise_equal_rows": 4320,
+  "max": 0.0,
+  "pairs": 4320,
+  "unequal": []
+ },
+ "canonical_gates": {
+  "I1": {
+   "at": "poets|cardinal-new-2",
+   "max": 1.5317713646822995e-05
+  },
+  "I3": {
+   "at": "merry|cardinal-016-4",
+   "max": 2.1161813141654138e-05
+  },
+  "I4": {
+   "at": "sleepy|coordinated-adjective-018-1",
+   "max": 6.424818726813442e-05
+  }
+ },
+ "gates": {
+  "I1": {
+   "at": "poets|cardinal-new-2",
+   "max": 1.5317713646822995e-05
+  },
+  "I3": {
+   "at": "merry|cardinal-016-4",
+   "max": 2.1161813141654138e-05
+  },
+  "I4": {
+   "at": "sleepy|coordinated-adjective-018-1",
+   "max": 6.424818726813442e-05
+  }
+ },
+ "ladder": {
+  "B": {
+   "block4_attention": 0.6016721360459819,
+   "block5_attention": 0.3983155906983223,
+   "remaining_after_L1": 1.227325569580567e-05,
+   "sse": {
+    "C": 8116.1588241098425,
+    "C5": 4883.36622788313,
+    "L1": 0.09961169251606958
+   },
+   "sse_fsum": {
+    "C": 8116.15882410984,
+    "C5": 4883.366227883129,
+    "L1": 0.09961169251606965
+   }
+  },
+  "C": {
+   "block4_attention": 0.5754531100398158,
+   "block5_attention": 0.42453629163818735,
+   "remaining_after_L1": 1.0598321996800247e-05,
+   "sse": {
+    "C": 9148.17270189557,
+    "C5": 5264.441387767128,
+    "L1": 0.09695527997702737
+   },
+   "sse_fsum": {
+    "C": 9148.17270189557,
+    "C5": 5264.441387767137,
+    "L1": 0.09695527997702726
+   }
+  },
+  "D": {
+   "block4_attention": 0.6742534908569285,
+   "block5_attention": 0.3257336742999936,
+   "remaining_after_L1": 1.2834843077930118e-05,
+   "sse": {
+    "C": 7693.2445096315105,
+    "C5": 5187.295708220986,
+    "L1": 0.09874158604126788
+   },
+   "sse_fsum": {
+    "C": 7693.24450963151,
+    "C5": 5187.2957082209805,
+    "L1": 0.09874158604126795
+   }
+  },
+  "E": {
+   "block4_attention": 0.7295432589914062,
+   "block5_attention": 0.2704450836250423,
+   "remaining_after_L1": 1.1657383551545322e-05,
+   "sse": {
+    "C": 8531.556508112375,
+    "C5": 6224.23899482415,
+    "L1": 0.09945562650674865
+   },
+   "sse_fsum": {
+    "C": 8531.556508112371,
+    "C5": 6224.2389948241425,
+    "L1": 0.09945562650674872
+   }
+  },
+  "N": {
+   "block4_attention": 0.5902109625411728,
+   "block5_attention": 0.40976912215686445,
+   "remaining_after_L1": 1.9915301962802824e-05,
+   "sse": {
+    "C": 4870.442108482056,
+    "C5": 2874.685321173536,
+    "L1": 0.09699632528277022
+   },
+   "sse_fsum": {
+    "C": 4870.44210848206,
+    "C5": 2874.685321173535,
+    "L1": 0.09699632528277016
+   }
+  }
+ },
+ "level1_identity": {
+  "at": "litres|cardinal-012-1",
+  "max": 0.009929305188346005,
+  "per_group": {
+   "coordinated": 0.006581686373075879,
+   "cue_final": 0.009929305188346005
+  }
+ },
+ "parameters_sha256": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+ "seal": {
+  "entry_points": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_patched",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.record_execution",
+   "neural_decompiler.head_transport.capture_reference",
+   "neural_decompiler.read_assembly.capture_reference",
+   "neural_decompiler.readout_decompilation.capture_frame_020",
+   "neural_decompiler.upstream_localization.stage_two_022",
+   "neural_decompiler.upstream_localization.measure_prompt",
+   "neural_decompiler.upstream_localization.calibration_rematerialize",
+   "neural_decompiler.upstream_localization.stage_one_022"
+  ],
+  "load_counts": {
+   "Module.__call__": 0,
+   "__call__ override": 0,
+   "forward": 0
+  },
+  "refused": {
+   "Module.__call__": 0,
+   "__call__ override": 0,
+   "entry points": 0,
+   "forward": 0
+  },
+  "sealed_classes": 499
+ }
+}

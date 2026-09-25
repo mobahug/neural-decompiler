@@ -1,0 +1,89 @@
+[PASS] SHA256SUMS lists every archived file of lock-2026-09-25 except README.md and itself: ['README.md', 'SHA256SUMS']
+[PASS] SHA256SUMS entry launch_lock.py == sha256(archived file)
+[PASS] SHA256SUMS entry lock_run.json == sha256(archived file)
+[PASS] SHA256SUMS entry lock.out == sha256(archived file)
+[PASS] SHA256SUMS entry prelock.py == sha256(archived file)
+[PASS] SHA256SUMS entry prelock.out == sha256(archived file)
+[PASS] SHA256SUMS entry verify_lock.py == sha256(archived file)
+[PASS] SHA256SUMS entry verify_lock.out == sha256(archived file)
+[PASS] SHA256SUMS entry preinstall.py == sha256(archived file)
+[PASS] SHA256SUMS entry preinstall.out == sha256(archived file)
+[PASS] SHA256SUMS entry install.out == sha256(archived file)
+[PASS] SHA256SUMS entry post_commit_checks.py == sha256(archived file)
+[PASS] SHA256SUMS entry post_commit_checks.out == sha256(archived file)
+[PASS] lock_run.json: archived sha256 == b7a51118… == SHA256SUMS == scratch original
+[PASS] archived install.out == original install_…/install.out (bytes)
+[PASS] archived launch_lock.py == original lock_…/launch_lock.py (bytes)
+[PASS] archived lock.out == original lock_…/lock.out (bytes)
+[PASS] archived lock_run.json == original lock_…/lock_run.json (bytes)
+[PASS] archived post_commit_checks.out == original install_…/post_commit_checks.out (bytes)
+[PASS] archived post_commit_checks.py == original install_…/post_commit_checks.py (bytes)
+[PASS] archived preinstall.out == original install_…/preinstall.out (bytes)
+[PASS] archived preinstall.py == original install_…/preinstall.py (bytes)
+[PASS] archived prelock.out == original lock_…/prelock.out (bytes)
+[PASS] archived prelock.py == original lock_…/prelock.py (bytes)
+[PASS] archived verify_lock.out == original lock_…/verify_lock.out (bytes)
+[PASS] archived verify_lock.py == original lock_…/verify_lock.py (bytes)
+[PASS] every lock024/ and install_lock024/ original is archived
+[PASS] lock-review archive == lock_review024/ originals + REVIEW.md: ['REVIEW.md']
+[PASS] archived review pytest_tierA.out == original (bytes)
+[PASS] archived review pytest_tierB_runner.out == original (bytes)
+[PASS] archived review r01.out == original (bytes)
+[PASS] archived review r01_state_integrity.py == original (bytes)
+[PASS] archived review r02.out == original (bytes)
+[PASS] archived review r02_prereg_numbers.py == original (bytes)
+[PASS] archived review r03.out == original (bytes)
+[PASS] archived review r03_scores_i7.py == original (bytes)
+[PASS] archived review r04.out == original (bytes)
+[PASS] archived review r04_state_transition.py == original (bytes)
+[PASS] archived review r05.out == original (bytes)
+[PASS] archived review r05_outcome.py == original (bytes)
+[PASS] archived review review_guard.py == original (bytes)
+[PASS] archived review review_pytest_guard.py == original (bytes)
+   note: REVIEW.md has no scratch original (the reviewer's report with the decisions appended); checked for content below
+[PASS] experiment README states 5c2a9b903803536d… == verified value: 5c2a9b903803536d
+[PASS] experiment README states a39668bfa75e693a… == verified value: a39668bfa75e693a
+[PASS] experiment README states 007c9e6cd7c1b9bf… == verified value: 007c9e6cd7c1b9bf
+[PASS] experiment README states e6cb37767d1d06c6… == verified value: e6cb37767d1d06c6
+[PASS] experiment README states a703ac16c01f0960… == verified value: a703ac16c01f0960
+[PASS] experiment README states b7a51118ddb998fa… == verified value: b7a51118ddb998fa
+[PASS] experiment README states 0.31369606003752… == verified value: 0.31369606003752
+[PASS] experiment README states 0.24411074612857… == verified value: 0.24411074612857
+[PASS] experiment README states 0.13502027836111… == verified value: 0.13502027836111
+[PASS] evidence README states 5c2a9b903803536d… == verified value: 5c2a9b903803536d
+[PASS] evidence README states a39668bfa75e693a… == verified value: a39668bfa75e693a
+[PASS] evidence README states 007c9e6cd7c1b9bf… == verified value: 007c9e6cd7c1b9bf
+[PASS] evidence README states e6cb37767d1d06c6… == verified value: e6cb37767d1d06c6
+[PASS] evidence README states a703ac16c01f0960… == verified value: a703ac16c01f0960
+[PASS] evidence README states b7a51118ddb998fa… == verified value: b7a51118ddb998fa
+[PASS] evidence README states 0.31369606003752… == verified value: 0.31369606003752
+[PASS] evidence README states 0.24411074612857… == verified value: 0.24411074612857
+[PASS] evidence README states 0.13502027836111… == verified value: 0.13502027836111
+[PASS] evidence README states 58891c241668…
+[PASS] evidence README states fcc437fca973…
+[PASS] 58891c24… == the state's digest now
+[PASS] fcc437fc… == the lock's manifest_sha256
+[PASS] both READMEs name the effective threshold bound by the null
+[PASS] E–N guard: 12,870 assignments, PASS iff K ≤ 321 (README) == lock spec
+[PASS] lock_run.json: started 17:13:39.160, ended 17:14:05.116, exit 0, 1 load, 0 module calls, 0 refused, 0 captures
+[PASS] README's run window and exit status match lock_run.json
+[PASS] lock_run.json writes: the two candidates + one atomic temp state (.results-*.json)
+[PASS] state.phases.lock.completed_at (17:14:05) within the run window
+[PASS] README: 3affe55 touches exactly the two paths; review PASS WITH NOTES, no blockers
+[PASS] README: 5 of 8 E (apple, horse, doctor, poet, dragon); 23 of 40 (6 B, 4 D, 8 C, 5 E, 0 N)
+[PASS] README: status 'confirm next, only when separately authorized'; confirm and report not run
+[PASS] README: the confirm launcher must assert rr.own_blob() == installed_lock['module']['blob'] before the model loads
+   reconstructed pre-lock state digest 5ed26580be4c28310d072bf2c451dbeba01e4b1f8710b65072d25c9281d31252; file sha256 4b319d62733ddcec80397cf0a9dd62fee21399a1f6b854253ba5a264ae4d6e9f
+[PASS] undoing only the lock's entries reproduces the committed pre-lock state digest 5ed26580… (calibrate evidence, be74d23)
+[PASS] ... and its file sha256 4b319d62… (as the READMEs state)
+[PASS] checkpoint bytes sha256 == its LFS blob id 3da38833…
+[PASS] own embedding digest of the fp16 checkpoint rows (as float32) == lock embedding_sha256 9cd6f39b…: 9cd6f39b3adf
+   exact route: max |exact - lock| = 2.220e-16 (119.00 ulp); bit-identical 0/40; digest of the correctly rounded exact scores e494736a17516c7c18f600148ccb55f8326faf35b3c59f85e30f71bf5908809c
+[PASS] exact route agrees numerically with the lock (max abs diff < 1e-15): 2.220e-16
+[PASS] exact route: identical ordering
+[PASS] README claim: correctly rounded exact values give e494736a…: e494736a1751
+[PASS] guard: 0 refused
+ITEM10 PASS: 82/82 checks
+GUARD SUMMARY: refused=0 selftest_cases=18 (all as expected) subprocesses=0 outside_write_events={'open': 1, 'os.remove': 1}
+GUARD outside write [open]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/_xzh4t7x
+GUARD outside write [os.remove]: /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/_xzh4t7x
