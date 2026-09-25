@@ -243,7 +243,8 @@ def test_the_sha_indices_are_deterministic_and_fisher_yates_gives_permutations()
         assert sorted(rr.null_permutation(p, 40)) == list(range(40))
     assert rr.primary_draw_indices(3, 40, 139) == rr.primary_draw_indices(3, 40, 139) and all(0 <= i < 139 for row in rr.primary_draw_indices(3, 40, 139) for i in row)
     assert all(0 <= rr.contrast_draw_index(b, "E", slot, 8) < 8 for b in range(10) for slot in range(8))
-    assert rr.contrast_draw_index(0, "E", 0, 8) != rr.contrast_draw_index(0, "N", 0, 8) or rr.contrast_draw_index(1, "E", 0, 8) != rr.contrast_draw_index(1, "N", 0, 8)
+    assert [rr.contrast_draw_index(b, cls, slot, 8) for b, cls, slot in ((0, "E", 0), (0, "N", 0), (1, "B", 3), (9_999, "D", 7))] == [3, 6, 2, 0]
+    assert rr.contrast_draw_index(0, "E", 0, 8) == rr.sha_int("024|contrast|0|E|0") % 8 and rr.primary_draw_indices(1, 5, 139) == [[3, 138, 77, 69, 64]]
 
 
 def test_the_ranks_and_order_statistics():

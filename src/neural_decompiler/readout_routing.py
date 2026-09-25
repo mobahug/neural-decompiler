@@ -776,7 +776,8 @@ FREEZE_RULES = {
     "word": "' ' + w is a single token of the pinned tokenizer",
     "exclusion": "its id was never used as a cue by Experiments 005–023: 023's exclusion (b0c.exclusion, reproduced from the frozen inputs) plus 023's own cues "
                  "and its frames' cue ids",
-    "target_nouns": "its id is not a form (singular or plural) of any target noun of the pool",
+    "target_nouns": "its id is none of the token ids of any target noun's singular or plural forms (every piece of every pool noun's forms, as the "
+                    "design-time inventory counted them: 161 ids)",
     "frame_tokens": "its id occurs nowhere in the 108 exposed frames (their prefix and suffix tokens): the lesson of 023's ' shiny'",
     "lemmas": "a measure or ordinary lemma counts only when both its singular and its plural are eligible (and distinct)",
     "picks": "the first class-quota eligible entries of each ordered list, mechanically; B and C are the plurals, D and E the singulars of the picked lemmas",
@@ -1530,7 +1531,10 @@ def fresh_cue_cells(units: ul.TableUnits, tensors: Mapping[str, torch.Tensor], c
 
 def score(cells: torch.Tensor, confirmation: Confirmation024, lock: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
     """The per-cue table, the primary ``ρ`` (with its cross-check) and its result, the exact E–N guard and the outcome —
-    everything that is written in one write with the completed phase. A cross-check failure is an incident."""
+    everything that is written in one write with the completed phase. A cross-check failure is an incident. The
+    measurements are asserted finite before this runs, so a non-finite MSE can only come from an overflow in the sums:
+    that is treated as an incident rather than as a guard input (conservative); an MSE of exactly 0 stays a valid
+    value and makes the guard NOT_INTERPRETABLE, as the design says."""
     scores = {int(cue["token_id"]): float(cue["nounness"]) for cue in lock["fresh"]["cues"]}
     if [int(token["token_id"]) for token in confirmation.tokens] != [int(cue["token_id"]) for cue in lock["fresh"]["cues"]]:
         raise IncidentError("the fresh cues are not the lock's, in the lock's order")
@@ -1594,8 +1598,17 @@ def secondary(cells: torch.Tensor, units: ul.TableUnits, tensors: Mapping[str, t
                         "bias": bias, "slope_dc_on_c": slope})
     observed = [log_mse(cue_mse(cells[ci])) for ci in range(len(x))]
     predicted = [float(cue["predicted_log_mse"]) for cue in lock["fresh"]["cues"]]
+    above = [bool(cue["above_calibration_maximum"]) for cue in lock["fresh"]["cues"]]
+    for entry, flag in zip(per_cue, above):
+        entry["above_calibration_maximum"] = flag
     errors = [o - p for o, p in zip(observed, predicted)]
+
+    def summary(selected: list[float]) -> dict[str, Any]:
+        return {"n": len(selected), "median_abs_log_error": _median([abs(e) for e in selected]),
+                "mean_signed_log_error": math.fsum(selected) / len(selected) if selected else None}
+
     line = {"median_abs_log_error": _median([abs(e) for e in errors]), "mean_signed_log_error": math.fsum(errors) / len(errors),
+            "extrapolated": summary([e for e, flag in zip(errors, above) if flag]), "within_range": summary([e for e, flag in zip(errors, above) if not flag]),
             "per_class": {cls: {"median_abs_log_error": _median([abs(e) for e, t in zip(errors, confirmation.tokens) if t["class"] == cls]),
                                 "mean_signed_log_error": math.fsum(e for e, t in zip(errors, confirmation.tokens) if t["class"] == cls) / max(1, len(confirmation.class_tokens(cls)))}
                           for cls in CLASSES}}
@@ -1831,6 +1844,7 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None) ->
                       f"{_full(guard['threshold_D']) if guard['threshold_D'] is not None else '+∞'} (descriptive)",
                       f"- E: mean MSE {_fmt(guard['groups']['E']['mean_mse'], 6)}, mean log MSE {_fmt(guard['groups']['E']['mean_log_mse'])}; N: mean MSE "
                       f"{_fmt(guard['groups']['N']['mean_mse'], 6)}, mean log MSE {_fmt(guard['groups']['N']['mean_log_mse'])}"]
+        lines += ["", "- Fresh cues by class: " + "; ".join(f"{cls}: {', '.join(cue['word'] for cue in results['per_cue'] if cue['class'] == cls)}" for cls in CLASSES)]
         lines += ["", "- Not shown by any outcome:"] + [f"  - {item}" for item in SEMANTICS["not_shown"]]
         lines += ["", "| class | word | nounness | MSE | log MSE | predicted log MSE |", "|---|---|---|---|---|---|"]
         lines += [f"| {cue['class']} | {cue['word']} | {_fmt(cue['nounness'])} | {_fmt(cue['mse'], 6)} | {_fmt(cue['log_mse'])} | {_fmt(cue['predicted_log_mse'])} |"
@@ -1848,7 +1862,9 @@ def render_report(state: Mapping[str, Any], record: Mapping[str, Any] | None) ->
             lines.append(f"- Spearman by group: " + ", ".join(f"{g} {_fmt(v)}" for g, v in second["spearman_by_group"].items())
                          + f"; normalized-MSE Spearman {_fmt(second['nmse_spearman'])}")
             lines.append(f"- The line against the observed log MSE: median |log error| {_fmt(second['line']['median_abs_log_error'])}, mean signed "
-                         f"{_fmt(second['line']['mean_signed_log_error'])}")
+                         f"{_fmt(second['line']['mean_signed_log_error'])}; beyond the calibration range ({second['line']['extrapolated']['n']} cues) "
+                         f"median |log error| {_fmt(second['line']['extrapolated']['median_abs_log_error'])}, within it "
+                         f"{_fmt(second['line']['within_range']['median_abs_log_error'])}")
         contrast = descriptives.get("contrasts")
         if contrast:
             lines.append("- Class means of log MSE: " + ", ".join(f"{cls} {_fmt(value)}" for cls, value in contrast["class_means_log_mse"].items()))

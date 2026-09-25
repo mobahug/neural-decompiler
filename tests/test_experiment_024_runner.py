@@ -619,14 +619,21 @@ def test_a_descriptive_failure_after_the_result_keeps_the_result_unchanged(world
 
 @pytest.mark.parametrize("primary, guard, label", [("NOT_INTERPRETABLE", "PASS", "NOT_INTERPRETABLE"),
                                                    ("GUARD_FAILURE", "PASS", "NOUNNESS_PREDICTION_NOT_ESTABLISHED"),
+                                                   ("ENVELOPE_ONLY_FAILURE", "PASS", "NOUNNESS_PREDICTION_NOT_ESTABLISHED"),
                                                    ("PASS", "FAIL", "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED"),
+                                                   ("PASS", "NOT_INTERPRETABLE", "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED"),
                                                    ("PASS", "PASS", "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS")])
 def test_every_outcome_is_written_with_its_reading_and_reported(world, base024, locked024, sandbox, monkeypatch, primary, guard, label):
-    """The two decisions forced (their computations are tested in tier A); the hierarchy, the single write and the report
-    are the runner's real ones."""
+    """The primary decision forced; the guard's decision forced, or — for NOT_INTERPRETABLE — reached by giving the last
+    E cue an MSE of 0 in the guard's input (its computations are tested in tier A). The hierarchy, the single write and
+    the report are the runner's real ones."""
     root = sandbox(locked024)
     monkeypatch.setattr(rr, "classify_primary", lambda rho, floor, null: primary)
-    monkeypatch.setattr(rr, "en_decision", lambda k, spec: guard)
+    if guard == "NOT_INTERPRETABLE":
+        original = rr.en_guard
+        monkeypatch.setattr(rr, "en_guard", lambda e_mse, n_mse, spec: original(list(e_mse)[:-1] + [0.0], n_mse, spec))
+    else:
+        monkeypatch.setattr(rr, "en_decision", lambda k, spec: guard)
     runner, logs = make_runner(root, world, FAKE)
     assert runner.confirm() == 0, logs[-3:]
     results = _state(runner)["confirmation"]["results"]
