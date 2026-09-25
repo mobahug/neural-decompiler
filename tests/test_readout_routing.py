@@ -747,13 +747,20 @@ def _smoke_enabled() -> None:
 
 
 @pytest.mark.pythia_smoke
-def test_the_real_scores_match_the_design_and_five_e_cues_extrapolate():
-    """Weights only (every forward pass refused): the 40 expected picks' scores are design revision 2's (background item 8,
-    three decimals), every E above every N, and 5 of the 8 E cues above the largest calibration leave-one-out score. No
-    MSE, draw or floor is computed; nothing is written."""
+def test_the_real_scores_match_the_design_and_five_e_cues_extrapolate(monkeypatch):
+    """Weights only (every forward pass refused for the whole test): the 40 expected picks' scores are design revision
+    2's (background item 8, three decimals), every E above every N, and 5 of the 8 E cues above the largest calibration
+    leave-one-out score. No MSE, draw or floor is computed; nothing is written."""
     _smoke_enabled()
     from neural_decompiler import plural_mechanism as pm
     from neural_decompiler.models import PYTHIA_70M, load_model
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("a forward pass was attempted in a weights-only test")
+
+    for name in ("capture_prompt", "run_patched", "run_capture", "run_interventions"):
+        if hasattr(pm, name):
+            monkeypatch.setattr(pm, name, refuse)
 
     tokenizer, inputs, base, c023 = _real_freeze_inputs()
     payload = rr.freeze_payload(tokenizer, pool=inputs.pool, exclusion_base=base, confirmation_023=c023,
@@ -774,9 +781,10 @@ def test_the_real_scores_match_the_design_and_five_e_cues_extrapolate():
 
 
 @pytest.mark.pythia_smoke
-def test_the_measurement_path_reproduces_the_calibration_source_on_spent_pairs_only(monkeypatch, capsys):
-    """The one-canonical-MSE contract between calibration and confirm: re-measured through 022's ``stage_two_022`` and
-    024's cell function, four spent exposed pairs reproduce 023's committed ``n`` and ``SSE_C`` bit for bit. An explicit
+def test_the_measurement_path_reproduces_the_calibration_source_on_spent_pairs_only(monkeypatch, capsys, tmp_path):
+    """The one-canonical-MSE contract between calibration and confirm: re-measured through 022's ``stage_two_022``, saved,
+    re-read and passed through 024's cell function, four spent exposed pairs reproduce 023's committed ``n`` and
+    ``SSE_C`` bit for bit, ``C`` recomputes from the saved ``Δx3`` bit for bit and I1, I3 and I4 hold. An explicit
     allow-list guards the model: every key must be spent (in 020's ledger), no key or cue id may belong to 024's
     candidates or would-be manifest (checked before the model loads), and any other capture is refused."""
     _smoke_enabled()
@@ -819,8 +827,14 @@ def test_the_measurement_path_reproduces_the_calibration_source_on_spent_pairs_o
         spent = rr.Confirmation024(dict(inputs.pool.reference_ids), (frame,), ({"word": word, "token_id": int(token_id), "class": "spent", "lemma": word, "form": "word"},),
                                    "spent")
         states = ul.y1_states(locked, (frame,))
-        tensors = ul.measurement_tensors(ul.stage_two_022(model, progs, spent, {"Y1": states, "Y2": {}}, executed=[]))
-        cells = rr.fresh_cue_cells(rr.target_units(spent), tensors, spent)
+        saved = tmp_path / f"stage2-{ci}-{fi}.pt"
+        torch.save(ul.measurement_tensors(ul.stage_two_022(model, progs, spent, {"Y1": states, "Y2": {}}, executed=[])), saved)
+        tensors = torch.load(saved)  # confirm's path: the saved measurements, re-read
+        units_spent = rr.target_units(spent)
+        rr.assert_measurements(tensors, units_spent)
+        assert rr.recompute_c(progs, units_spent, states, tensors)["bitwise_equal"]  # C from the saved Δx3, bit for bit
+        rr.enforce_gates(rr.target_gates(progs, spent, units_spent, states, tensors))  # I1, I3, I4 on the real model
+        cells = rr.fresh_cue_cells(units_spent, tensors, spent)
         row = raw[ci * len(units.frames) + fi]
         assert float(cells[0, 0, rr.COUNT]) == row[0] and float(cells[0, 0, rr.SSEC]) == row[5], (word, frame.frame_id)
     assert executed_keys == list(SPENT_REMEASURE_KEYS)

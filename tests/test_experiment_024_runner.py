@@ -175,20 +175,31 @@ def locked024(world, base023, base024, calibrated024, tmp_path_factory):
 
 @pytest.fixture(scope="module")
 def confirmed024(world, base023, base024, locked024, tmp_path_factory):
+    """One real confirmation on the fake, with every forward counted and every state write observed (what each write
+    carried: the confirmation keys, the results' keys and the confirm phase's status)."""
     counts: Counter[str] = Counter()
+    writes: list[dict] = []
 
     def step(runner, logs, root, patch):
         original = pm.capture_prompt
+        original_write = runner_module.Runner._write
 
         def spy(model, prompt, sites):
             counts[prompt.key] += 1
             return original(model, prompt, sites)
 
+        def recording(self, state):
+            confirmation = state.get("confirmation") or {}
+            writes.append({"confirmation": sorted(confirmation), "results": sorted(confirmation.get("results") or {}),
+                           "status": state["phases"]["confirm"]["status"]})
+            return original_write(self, state)
+
         patch.setattr(pm, "capture_prompt", spy)
+        patch.setattr(runner_module.Runner, "_write", recording)
         assert runner.confirm() == 0, logs[-4:]
 
     root = _stage(world, base023, base024, tmp_path_factory, "confirmed024", locked024, step)
-    return {"root": root, "counts": counts}
+    return {"root": root, "counts": counts, "writes": writes}
 
 
 @pytest.fixture
@@ -444,6 +455,17 @@ def test_confirm_runs_every_target_once_and_writes_the_result_in_one_write(world
     assert results["outcome"]["label"] in rr.OUTCOMES and results["primary"]["result"] in rr.PRIMARY_RESULTS and results["guard"]["result"] in rr.GUARD_RESULTS
     assert results["outcome"]["label"] == rr.outcome(results["primary"]["result"], results["guard"]["result"])
     assert results["guard"]["assignments"] == 70 and results["guard"]["max_upper"] == 1 and len(results["per_cue"]) == 20
+    # Requirement 6: the result appears in exactly one write, the one that also completes the phase, after the saved
+    # measurements, the accounting, the C recomputation and the gates; the descriptive records come only after it.
+    writes = confirmed024["writes"]
+    first = next(index for index, write in enumerate(writes) if "results" in write["confirmation"])
+    assert all(write["status"] != "complete" and "results" not in write["confirmation"] for write in writes[:first])
+    assert writes[first]["status"] == "complete" and {"primary", "guard", "outcome", "per_cue", "checks"} <= set(writes[first]["results"])
+    seen = [key for write in writes[:first] for key in write["confirmation"]]
+    order = [seen.index(key) for key in ("stage2", "accounting", "c_recompute", "gates")]
+    assert order == sorted(order) and "descriptives" not in writes[first]["confirmation"]
+    assert all(write["status"] == "complete" and write["results"] == writes[first]["results"] for write in writes[first:])
+    assert any("descriptives" in write["confirmation"] for write in writes[first + 1:])
     lock = json.loads((root / rr.LOCK_RELATIVE_PATH).read_text())
     saved = torch.load(runner.stage2_path)
     assert {key: rc.tensor_digest(value) for key, value in saved.items()} == state["confirmation"]["stage2"]["tensors_sha256"]
