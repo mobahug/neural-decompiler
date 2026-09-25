@@ -341,3 +341,156 @@ def test_the_outcome_table_is_exhaustive():
     assert set(rr.SEMANTICS["outcomes"]) == set(rr.OUTCOMES) and set(rr.SEMANTICS["primary"]) == set(rr.PRIMARY_RESULTS)
     sentence = rr.EXTRAPOLATION_SENTENCE.format(k=5, n=8, maximum=0.135)
     assert sentence.startswith("5 of the 8 E cues") and "prospective extrapolation test" in sentence and "design motivation only" in sentence
+
+
+# ---------------------------------------------------------------------------
+# Task 3: the tokenizer-only freeze (a stub tokenizer that reproduces the design's eligibility pattern, tier A; the real
+# tokenizer, tier C).
+
+MULTI_TOKEN = ("clumsy", "grumpy", "thirsty", "pints", "quarts", "flocks", "swarms", "bunches", "heaps", "mounds", "handfuls", "liters", "crates", "baskets", "carton",
+               "cartons", "tigers", "castles", "pencils", "queens", "baker", "bakers", "lemons", "bananas", "violins", "wizards")
+
+
+def _stub_world(used=("eager", "fierce", "brave", "dozen", "dozens"), noun_words=(("dog", "dogs"), ("cat", "cats"))):
+    from types import SimpleNamespace
+
+    from test_upstream_localization import StubTokenizer
+
+    from neural_decompiler import plural_mechanism as pm
+
+    class Tokenizer(StubTokenizer):
+        SPLIT = {" " + word: (" " + word[:2], word[2:]) for word in MULTI_TOKEN}
+
+    tokenizer = Tokenizer()
+    one, two = tokenizer.id(" one"), tokenizer.id(" two")
+    frames = (pm._build_new_frame(tokenizer, "cardinal", "The teacher counted {cue}", {"sg": one, "pl": two}, "cardinal-1"),
+              pm._build_new_frame(tokenizer, "quantifier", "The farmer lists {cue}", {"sg": one, "pl": two}, "quantifier-1"),
+              pm._build_new_frame(tokenizer, "coordinated-adjective", "The crate and basket held {cue} tight", {"sg": one, "pl": two}, "coordinated-adjective-1"))
+    nouns = tuple(_Noun(tokenizer.id(" " + sg), tokenizer.id(" " + pl)) for sg, pl in noun_words)
+    pool = SimpleNamespace(nouns=nouns, frames=frames, reference_ids={"cardinal": one, "quantifier": one, "coordinated-adjective": one})
+    ids = sorted(tokenizer.id(" " + word) for word in used)
+    base = {"cue_token_ids": ids, "cue_token_ids_sha256": pm.sha256_text(pm.canonical_json(ids)), "sources": [{"source": "stub"}]}
+    c023 = {"cues": [{"word": "general", "token_id": tokenizer.id(" general")}], "frames": [{"cue_ids": {"sg": one, "pl": two}}],
+            "exclusion": {"cue_token_ids_sha256": base["cue_token_ids_sha256"]}, "content_sha256": "3" * 64}
+    return tokenizer, pool, base, c023
+
+
+def _freeze(tokenizer, pool, base, c023, config=rr.PRODUCTION):
+    return rr.freeze_payload(tokenizer, pool=pool, exclusion_base=base, confirmation_023=c023, confirmation_023_file_sha256="f" * 64, config=config,
+                             model={"model_id": "stub", "revision": "x"})
+
+
+def test_the_freeze_takes_the_first_eligible_entries_and_records_every_reason(tmp_path):
+    from neural_decompiler import plural_mechanism as pm
+
+    tokenizer, pool, base, c023 = _stub_world()
+    payload = _freeze(tokenizer, pool, base, c023)
+    by_class = {cls: [entry["word"] for entry in payload["cues"] if entry["class"] == cls] for cls in rr.CLASSES}
+    assert by_class == {"N": list(rr.EXPECTED_PICKS["N"]), "D": list(rr.EXPECTED_PICKS["measure"]), "B": [w + "s" for w in rr.EXPECTED_PICKS["measure"]],
+                        "E": list(rr.EXPECTED_PICKS["ordinary"]), "C": [w + "s" for w in rr.EXPECTED_PICKS["ordinary"]]}
+    assert [entry["class"] for entry in payload["cues"]] == [cls for cls in rr.CLASSES for _ in range(8)]
+    assert all(entry["lemma"] == entry["word"].removesuffix("s") for entry in payload["cues"] if entry["class"] in ("B", "C"))
+    reasons = {entry["candidate"]: entry["reason"] for entry in payload["rejected"]}
+    assert "already used" in reasons["eager"] and "2 tokens" in reasons["clumsy"] and "already used" in reasons["brave"]
+    assert "exposed frame" in reasons["teacher/teachers"] and "exposed frame" in reasons["farmer/farmers"] and "already used" in reasons["dozen/dozens"]
+    assert "exposed frame" in reasons["crate/crates"] and "2 tokens" in reasons["crate/crates"] and "2 tokens" in reasons["tiger/tigers"]
+    assert payload["reserves"]["measure"] == ["barrel/barrels", "bucket/buckets", "sack/sacks"]
+    assert payload["reserves"]["ordinary"] == ["soldier/soldiers", "sailor/sailors", "priest/priests", "knight/knights", "onion/onions", "carrot/carrots",
+                                               "pirate/pirates", "tourist/tourists", "statue/statues"]
+    assert payload["reserves"]["N"][0] == "anxious" and len(payload["reserves"]["N"]) == 23
+    assert payload["exclusion"]["sources"][-1]["source"] == "confirmation-023" and tokenizer.id(" general") in payload["exclusion"]["cue_token_ids"]
+    assert payload["counts"] == {"classes": {cls: 8 for cls in rr.CLASSES}} and len(payload["manifest"]["S2-TARGET"]) == 40 * 3
+    assert payload["picks_match_expected"] is True and payload["configuration"] == rr.PRODUCTION.to_json() and payload["rules"] == rr.FREEZE_RULES
+    path = tmp_path / "confirmation-v1.json"
+    path.write_text(pm.canonical_json(payload) + "\n")
+    excluded = rr.exclusion(base, c023, "f" * 64)
+    confirmation = rr.load_confirmation_024(path, pool, excluded, rr.PRODUCTION)
+    assert len(confirmation.target_prompts) == 120 and confirmation.frames == () and confirmation.manifest_keys() == set(payload["manifest"]["S2-TARGET"])
+    assert [token["word"] for token in confirmation.class_tokens("E")] == list(rr.EXPECTED_PICKS["ordinary"])
+
+
+def test_a_deviation_or_a_shortfall_raises_before_anything_exists_to_write():
+    tokenizer, pool, base, c023 = _stub_world(used=("eager", "fierce", "brave", "dozen", "dozens", "honest"))
+    with pytest.raises(rr.FreezeDeviation, match="honest"):
+        _freeze(tokenizer, pool, base, c023)  # honest used before: N would become polite … anxious — the expected 40 are not what froze
+    tokenizer, pool, base, c023 = _stub_world(noun_words=(("apple", "apples"),))
+    with pytest.raises(rr.FreezeDeviation, match="ordinary"):
+        _freeze(tokenizer, pool, base, c023)  # apple a target-noun form: the ordinary lemmas shift
+    tokenizer, pool, base, c023 = _stub_world()
+    tokenizer.SPLIT.update({" " + plural: (" " + plural[:2], plural[2:]) for _, plural in rr.MEASURE_LEMMAS})
+    with pytest.raises(rr.FreezeShortfall, match="list measure: 0 eligible of 8"):
+        _freeze(tokenizer, pool, base, c023)
+    tokenizer, pool, base, c023 = _stub_world()
+    with pytest.raises(rr.PhaseError, match="does not reproduce"):
+        _freeze(tokenizer, pool, base, dict(c023, exclusion={"cue_token_ids_sha256": "0" * 64}))
+
+
+def test_a_tampered_stale_or_foreign_confirmation_file_is_refused(tmp_path):
+    import dataclasses as dc
+
+    from neural_decompiler import plural_mechanism as pm
+
+    tokenizer, pool, base, c023 = _stub_world()
+    payload = _freeze(tokenizer, pool, base, c023)
+    excluded = rr.exclusion(base, c023, "f" * 64)
+    mutations = (lambda p: p["cues"][0].update(word="other"), lambda p: p["manifest"]["S2-TARGET"].pop(), lambda p: p.update(picks_match_expected=False),
+                 lambda p: p.update(experiment="023"), lambda p: p["configuration"].update(draws=40), lambda p: p["cues"][0].update(token_id=p["cues"][1]["token_id"]))
+    for mutate in mutations:
+        changed = json.loads(pm.canonical_json(payload))
+        mutate(changed)
+        changed["content_sha256"] = rc.content_digest(changed)
+        (tmp_path / "bad.json").write_text(pm.canonical_json(changed) + "\n")
+        with pytest.raises(rr.PhaseError):
+            rr.load_confirmation_024(tmp_path / "bad.json", pool, excluded, rr.PRODUCTION)
+    (tmp_path / "ok.json").write_text(pm.canonical_json(payload) + "\n")
+    later = rr.exclusion(dict(base, sources=[{"source": "stub"}, {"source": "later"}]), c023, "f" * 64)
+    with pytest.raises(rr.PhaseError, match="exclusion recorded at the freeze"):
+        rr.load_confirmation_024(tmp_path / "ok.json", pool, later, rr.PRODUCTION)
+    test_config = dc.replace(rr.PRODUCTION, name="another")
+    with pytest.raises(rr.PhaseError, match="different configuration"):
+        rr.load_confirmation_024(tmp_path / "ok.json", pool, excluded, test_config)
+
+
+def _real_freeze_inputs():
+    from transformers import AutoTokenizer
+
+    from neural_decompiler.models import PYTHIA_70M
+
+    tokenizer = AutoTokenizer.from_pretrained(PYTHIA_70M.model_id, revision=PYTHIA_70M.revision, local_files_only=True)
+    inputs = ul.load_frozen_inputs(ROOT)
+    c022_path = ROOT / ul.CONFIRMATION_RELATIVE_PATH
+    c022 = json.loads(c022_path.read_text())
+    c023 = json.loads((ROOT / b0c.CONFIRMATION_RELATIVE_PATH).read_text())
+    return tokenizer, inputs, b0c.exclusion(inputs, c022, rc.file_sha256(c022_path)), c023
+
+
+@pytest.mark.pythia_smoke
+def test_the_real_tokenizer_freeze_takes_the_designs_expected_picks_and_writes_nothing():
+    """Task 3's contract, tokenizer and committed files only, in memory: the mechanical picks are design revision 2's
+    expected 40, the reserves and the ✗ marks are the design's, and nothing is written (the freeze phase is a later,
+    separately authorized step)."""
+    import os
+
+    if os.environ.get("NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE") != "1":
+        pytest.skip("set NEURAL_DECOMPILER_RUN_PYTHIA_SMOKE=1 to run")
+    target = ROOT / rr.CONFIRMATION_RELATIVE_PATH
+    existed = target.exists()
+    tokenizer, inputs, base, c023 = _real_freeze_inputs()
+    payload = rr.freeze_payload(tokenizer, pool=inputs.pool, exclusion_base=base, confirmation_023=c023,
+                                confirmation_023_file_sha256=rc.file_sha256(ROOT / b0c.CONFIRMATION_RELATIVE_PATH), config=rr.PRODUCTION)
+    assert target.exists() == existed
+    assert payload["picks"] == {key: list(words) for key, words in rr.EXPECTED_PICKS.items()}
+    assert len(payload["exclusion"]["cue_token_ids"]) == 351 and len(base["cue_token_ids"]) == 327
+    assert len(payload["target_noun_form_ids"]["ids"]) == 161 and len(payload["frame_token_ids"]["ids"]) == 316
+    assert payload["reserves"]["measure"] == ["barrel/barrels", "bucket/buckets", "sack/sacks"]
+    assert payload["reserves"]["ordinary"] == ["soldier/soldiers", "sailor/sailors", "priest/priests", "knight/knights", "onion/onions", "carrot/carrots",
+                                               "pirate/pirates", "tourist/tourists", "statue/statues"]
+    assert len(payload["reserves"]["N"]) == 23 and payload["reserves"]["N"][0] == "anxious"
+    reasons = {entry["candidate"]: entry["reason"] for entry in payload["rejected"]}
+    assert set(reasons) == {"eager", "fierce", "clumsy", "grumpy", "thirsty", "brave", "pint/pints", "quart/quarts", "flock/flocks", "swarm/swarms", "bunch/bunches",
+                            "heap/heaps", "mound/mounds", "handful/handfuls", "liter/liters", "dozen/dozens", "crate/crates", "basket/baskets", "carton/cartons",
+                            "teacher/teachers", "tiger/tigers", "castle/castles", "pencil/pencils", "farmer/farmers", "queen/queens", "baker/bakers", "lemon/lemons",
+                            "banana/bananas", "violin/violins", "wizard/wizards"}
+    for lemma in ("teacher/teachers", "farmer/farmers", "crate/crates", "basket/baskets"):
+        assert "a token of an exposed frame" in reasons[lemma]
+    assert len(payload["manifest"]["S2-TARGET"]) == 4_320 and payload["counts"] == {"classes": {cls: 8 for cls in rr.CLASSES}}

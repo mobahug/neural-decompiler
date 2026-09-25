@@ -728,3 +728,215 @@ SEMANTICS = {
     "precedence": {"primary": list(PRIMARY_RESULTS), "guard": list(GUARD_RESULTS), "outcomes": list(OUTCOMES)},
     "extrapolation": EXTRAPOLATION_SENTENCE,
 }
+
+
+# ---------------------------------------------------------------------------
+# The freeze: tokenizer, text rules and committed files only; no model output (Task 3).
+
+CONFIRMATION_SCHEMA_VERSION = 1
+FREEZE_RULES = {
+    "word": "' ' + w is a single token of the pinned tokenizer",
+    "exclusion": "its id was never used as a cue by Experiments 005–023: 023's exclusion (b0c.exclusion, reproduced from the frozen inputs) plus 023's own cues "
+                 "and its frames' cue ids",
+    "target_nouns": "its id is not a form (singular or plural) of any target noun of the pool",
+    "frame_tokens": "its id occurs nowhere in the 108 exposed frames (their prefix and suffix tokens): the lesson of 023's ' shiny'",
+    "lemmas": "a measure or ordinary lemma counts only when both its singular and its plural are eligible (and distinct)",
+    "picks": "the first class-quota eligible entries of each ordered list, mechanically; B and C are the plurals, D and E the singulars of the picked lemmas",
+    "deviation": "picks that differ from the design's expected picks write nothing and stop for review; no reserve is ever substituted",
+    "score": "the nounness score is never computed at the freeze and never selects, rejects, reorders or classifies a candidate",
+}
+
+
+class FreezeShortfall(ul.FreezeShortfall):
+    """A list yields fewer eligible entries than its quota: nothing is written; stop for review (not an incident)."""
+
+
+class FreezeDeviation(RuntimeError):
+    """The mechanical picks differ from the design's expected picks: nothing is written and no state is created; stop for
+    review. The power analysis and the extrapolation statement were computed for the expected 40 words."""
+
+
+def exclusion(base: Mapping[str, Any], confirmation_023: Mapping[str, Any], confirmation_023_file_sha256: str) -> dict[str, Any]:
+    """Experiment 023's freeze exclusion — ``b0c.exclusion`` recomputed from the frozen inputs and 022's committed
+    confirmation, which must reproduce the digest 023's committed confirmation recorded — plus 023's 24 cue ids and its
+    frames' cue ids."""
+    if base["cue_token_ids_sha256"] != confirmation_023["exclusion"]["cue_token_ids_sha256"]:
+        raise PhaseError("Experiment 023's freeze exclusion does not reproduce from the frozen inputs now")
+    ids = set(int(i) for i in base["cue_token_ids"]) | {int(cue["token_id"]) for cue in confirmation_023["cues"]}
+    ids |= {int(token_id) for frame in confirmation_023["frames"] for token_id in frame["cue_ids"].values()}
+    source = {"source": "confirmation-023", "loader": "json: Experiment 023's committed confirmation file",
+              "files": [{"path": b0c.CONFIRMATION_RELATIVE_PATH, "file_sha256": confirmation_023_file_sha256}], "content_sha256": confirmation_023["content_sha256"],
+              "tokens": len(confirmation_023["cues"]), "frames": len(confirmation_023["frames"])}
+    ordered = sorted(ids)
+    return {"cue_token_ids": ordered, "cue_token_ids_sha256": pm.sha256_text(pm.canonical_json(ordered)), "sources": list(base["sources"]) + [source]}
+
+
+def target_noun_form_ids(pool: Any) -> list[int]:
+    return sorted({int(token_id) for noun in pool.nouns for token_id in (*noun.sg_ids, *noun.pl_ids)})
+
+
+def frame_token_ids(pool: Any) -> list[int]:
+    return sorted({int(token_id) for frame in pool.frames for token_id in (*frame.prefix_ids, *frame.suffix_ids)})
+
+
+def _digested(ids: Sequence[int]) -> dict[str, Any]:
+    ordered = sorted(int(i) for i in ids)
+    return {"ids": ordered, "sha256": pm.sha256_text(pm.canonical_json(ordered))}
+
+
+def _status(tokenizer: Any, word: str, blocked: Mapping[str, frozenset[int]], picked: set[int]) -> tuple[int | None, str]:
+    ids = pm._encode(tokenizer, " " + word)
+    if len(ids) != 1:
+        return None, f"{len(ids)} tokens with a leading space"
+    token_id = int(ids[0])
+    for key, reason in (("exclusion", "already used as a cue by Experiments 005–023"), ("target_forms", "a form of a target noun"),
+                        ("frame_tokens", "a token of an exposed frame")):
+        if token_id in blocked[key]:
+            return None, f"token id {token_id}: {reason}"
+    if token_id in picked:
+        return None, f"token id {token_id}: already picked"
+    return token_id, "eligible"
+
+
+def select_cues(tokenizer: Any, blocked: Mapping[str, frozenset[int]], config: Configuration) -> dict[str, Any]:
+    """The mechanical selection over the whole ordered lists (every entry's status recorded): the first quota eligible
+    entries of each, then a shortfall check and the expected-picks check — both before anything is written."""
+    quota = config.class_quota
+    picked: set[int] = set()
+    rejected: list[dict[str, Any]] = []
+    words: list[tuple[str, int, int]] = []
+    reserves: dict[str, list[str]] = {"N": [], "measure": [], "ordinary": []}
+    for rank, word in enumerate(N_CANDIDATES):
+        token_id, reason = _status(tokenizer, word, blocked, picked)
+        if token_id is None:
+            rejected.append({"list": "N", "candidate": word, "rank": rank, "reason": reason})
+        elif len(words) < quota:
+            words.append((word, token_id, rank))
+            picked.add(token_id)
+        else:
+            reserves["N"].append(word)
+    lemmas: dict[str, list[tuple[str, int, str, int, int]]] = {"measure": [], "ordinary": []}
+    for name, pairs in (("measure", MEASURE_LEMMAS), ("ordinary", ORDINARY_LEMMAS)):
+        for rank, (singular, plural) in enumerate(pairs):
+            token_s, reason_s = _status(tokenizer, singular, blocked, picked)
+            token_p, reason_p = _status(tokenizer, plural, blocked, picked)
+            if token_s is None or token_p is None or token_s == token_p:
+                rejected.append({"list": name, "candidate": f"{singular}/{plural}", "rank": rank, "reason": f"{singular}: {reason_s}; {plural}: {reason_p}"})
+            elif len(lemmas[name]) < quota:
+                lemmas[name].append((singular, token_s, plural, token_p, rank))
+                picked |= {token_s, token_p}
+            else:
+                reserves[name].append(f"{singular}/{plural}")
+    for name, count in (("N", len(words)), ("measure", len(lemmas["measure"])), ("ordinary", len(lemmas["ordinary"]))):
+        if count < quota:
+            raise FreezeShortfall(f"list {name}: {count} eligible of {quota}")
+    picks = {"N": tuple(word for word, _, _ in words), "measure": tuple(entry[0] for entry in lemmas["measure"]),
+             "ordinary": tuple(entry[0] for entry in lemmas["ordinary"])}
+    differing = {key: {"picked": list(picks[key]), "expected": list(config.expected(key))} for key in picks if picks[key] != config.expected(key)}
+    if differing:
+        raise FreezeDeviation(f"the mechanical picks differ from the design's expected picks: {differing}")
+    cues = [{"word": word, "token_id": token_id, "class": "N", "lemma": word, "form": "word", "candidate_rank": rank} for word, token_id, rank in words]
+    for cls, name, plural in (("B", "measure", True), ("D", "measure", False), ("C", "ordinary", True), ("E", "ordinary", False)):
+        cues += [{"word": p if plural else s, "token_id": tp if plural else ts, "class": cls, "lemma": s, "form": "plural" if plural else "singular",
+                  "candidate_rank": rank} for s, ts, p, tp, rank in lemmas[name]]
+    return {"cues": cues, "reserves": reserves, "rejected": rejected, "picks": {key: list(value) for key, value in picks.items()}}
+
+
+def freeze_payload(tokenizer: Any, *, pool: Any, exclusion_base: Mapping[str, Any], confirmation_023: Mapping[str, Any], confirmation_023_file_sha256: str,
+                   config: Configuration, model: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """The confirmation file's content: the 40 cues, every rule's inputs and the 4,320-key manifest. A shortfall or a
+    deviation raises before anything exists to write."""
+    excluded = exclusion(exclusion_base, confirmation_023, confirmation_023_file_sha256)
+    forms, tokens = target_noun_form_ids(pool), frame_token_ids(pool)
+    blocked = {"exclusion": frozenset(excluded["cue_token_ids"]), "target_forms": frozenset(forms), "frame_tokens": frozenset(tokens)}
+    selection = select_cues(tokenizer, blocked, config)
+    payload = {
+        "experiment": EXPERIMENT, "schema_version": CONFIRMATION_SCHEMA_VERSION,
+        "kind": "the fresh cues of Experiment 024, frozen from the tokenizer and the text rules alone; no model output", "design": dict(DESIGN), "plan": dict(PLAN),
+        "model": dict(model or {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision}), "configuration": config.to_json(),
+        "classes": dict(CLASS_CONTENT), "candidates": {"N": list(N_CANDIDATES), "measure": [list(pair) for pair in MEASURE_LEMMAS],
+                                                        "ordinary": [list(pair) for pair in ORDINARY_LEMMAS]},
+        "rules": dict(FREEZE_RULES), "exclusion": excluded, "target_noun_form_ids": _digested(forms), "frame_token_ids": _digested(tokens),
+        "reference_cue_ids": {template: int(token_id) for template, token_id in pool.reference_ids.items()}, "exposed_frame_ids": [frame.frame_id for frame in pool.frames],
+        "cues": selection["cues"], "reserves": selection["reserves"], "rejected": selection["rejected"], "picks": selection["picks"],
+        "expected_picks": config.to_json()["expected_picks"], "picks_match_expected": True,
+    }
+    confirmation = confirmation_from_payload(payload, pool, config, verify=False)
+    payload["counts"] = confirmation.counts()
+    payload["manifest"] = confirmation.manifest()
+    payload["content_sha256"] = rc.content_digest(payload)
+    return payload
+
+
+@dataclass(frozen=True)
+class Confirmation024:
+    reference_ids: Mapping[str, int]
+    exposed_frames: tuple[pm.Frame, ...]  # the 108 exposed frames, in the pool's order
+    tokens: tuple[dict[str, Any], ...]  # the fresh cues in frozen order (class order N, B, D, C, E; list order within a class)
+    content_sha256: str
+    frames: tuple[pm.Frame, ...] = ()  # no new frame: ``ul.stage_two_022``'s Y2 block is empty by construction
+
+    def class_tokens(self, cls: str) -> tuple[dict[str, Any], ...]:
+        return tuple(token for token in self.tokens if token["class"] == cls)
+
+    @property
+    def target_prompts(self) -> tuple[pm.Prompt, ...]:
+        return tuple(pm.Prompt(frame, int(token["token_id"]), token["word"]) for frame in self.exposed_frames for token in self.tokens)
+
+    @property
+    def all_prompts(self) -> tuple[pm.Prompt, ...]:
+        return self.target_prompts
+
+    def manifest(self) -> dict[str, Any]:
+        return {"S2-TARGET": sorted(prompt.key for prompt in self.target_prompts)}
+
+    def manifest_keys(self) -> frozenset[str]:
+        return frozenset(prompt.key for prompt in self.target_prompts)
+
+    def counts(self) -> dict[str, dict[str, int]]:
+        return {"classes": {cls: len(self.class_tokens(cls)) for cls in CLASSES}}
+
+
+def confirmation_from_payload(payload: Mapping[str, Any], pool: Any, config: Configuration, *, verify: bool = True) -> Confirmation024:
+    tokens = tuple({"word": entry["word"], "token_id": int(entry["token_id"]), "class": entry["class"], "lemma": entry["lemma"], "form": entry["form"]}
+                   for entry in payload["cues"])
+    confirmation = Confirmation024(dict(pool.reference_ids), tuple(pool.frames), tokens, str(payload.get("content_sha256", "")))
+    if verify:
+        if payload.get("experiment") != EXPERIMENT or payload.get("schema_version") != CONFIRMATION_SCHEMA_VERSION:
+            raise PhaseError("not an Experiment 024 confirmation file")
+        if payload["content_sha256"] != rc.content_digest(payload):
+            raise PhaseError("the confirmation file's content digest does not verify")
+        if payload.get("configuration") != config.to_json():
+            raise PhaseError("the confirmation file was frozen under a different configuration")
+        if payload["manifest"] != confirmation.manifest() or payload.get("counts") != confirmation.counts():
+            raise PhaseError("the confirmation file's manifest or counts are not the ones its cues define")
+        if confirmation.counts() != {"classes": {cls: config.class_quota for cls in CLASSES}} or len({token["token_id"] for token in tokens}) != config.n_fresh:
+            raise PhaseError(f"the confirmation file does not hold {config.class_quota} distinct cues per class")
+        expected = config.to_json()["expected_picks"]
+        if payload.get("picks_match_expected") is not True or payload.get("picks") != expected or payload.get("expected_picks") != expected:
+            raise PhaseError("the confirmation file's picks are not the design's expected picks")
+        if [token["lemma"] for token in confirmation.class_tokens("N")] != expected["N"] \
+                or [token["lemma"] for token in confirmation.class_tokens("D")] != expected["measure"] \
+                or [token["lemma"] for token in confirmation.class_tokens("B")] != expected["measure"] \
+                or [token["lemma"] for token in confirmation.class_tokens("E")] != expected["ordinary"] \
+                or [token["lemma"] for token in confirmation.class_tokens("C")] != expected["ordinary"]:
+            raise PhaseError("the confirmation file's classes are not the expected lemmas in order")
+        if payload["exposed_frame_ids"] != [frame.frame_id for frame in pool.frames] or dict(payload["reference_cue_ids"]) != {k: int(v) for k, v in pool.reference_ids.items()}:
+            raise PhaseError("the confirmation file names a different exposed pool")
+    return confirmation
+
+
+def load_confirmation_024(path: Path, pool: Any, excluded_now: Mapping[str, Any], config: Configuration) -> Confirmation024:
+    """The committed freeze artifact, verified: digest, configuration, manifest, composition, the expected picks, and the
+    rules' inputs recomputed now — no fresh id used before, a target-noun form or a frame token."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    confirmation = confirmation_from_payload(payload, pool, config)
+    if payload["exclusion"]["cue_token_ids_sha256"] != excluded_now["cue_token_ids_sha256"] or payload["exclusion"]["sources"] != excluded_now["sources"]:
+        raise PhaseError("the exclusion recorded at the freeze differs from the one the frozen inputs give now")
+    forms, tokens = _digested(target_noun_form_ids(pool)), _digested(frame_token_ids(pool))
+    if payload["target_noun_form_ids"] != forms or payload["frame_token_ids"] != tokens:
+        raise PhaseError("the target-noun forms or the exposed frames' tokens differ from those at the freeze")
+    blocked = set(excluded_now["cue_token_ids"]) | set(forms["ids"]) | set(tokens["ids"])
+    if {int(token["token_id"]) for token in confirmation.tokens} & blocked:
+        raise PhaseError("a fresh cue id is excluded, a target-noun form or an exposed frame's token")
+    return confirmation
