@@ -1,0 +1,31 @@
+src/neural_decompiler/readout_routing.py: HEAD blob e6cb37767d1d working e6cb37767d1d same
+experiments/024-readout-routing-nounness/run.py: HEAD blob 30433b23afa9 working 30433b23afa9 same
+src/neural_decompiler/block0_completion.py: HEAD blob 16d310fc7fab working 16d310fc7fab same
+src/neural_decompiler/upstream_localization.py: HEAD blob 465856962aa3 working 465856962aa3 same
+run.Runner.freeze: 68 names; forbidden hits: []
+run.Runner._base: 56 names; forbidden hits: []
+run.Runner._inputs: 19 names; forbidden hits: []
+run._load_tokenizer: 10 names; forbidden hits: []
+run._manifest_keys_022: 6 names; forbidden hits: []
+rr.freeze_payload: 62 names; forbidden hits: []
+rr.exclusion: 29 names; forbidden hits: []
+rr.target_noun_form_ids: 13 names; forbidden hits: []
+rr.frame_token_ids: 13 names; forbidden hits: []
+rr._digested: 14 names; forbidden hits: []
+rr._status: 19 names; forbidden hits: []
+rr.select_cues: 63 names; forbidden hits: []
+rr.confirmation_from_payload: 51 names; forbidden hits: []
+rr.load_confirmation_024: 28 names; forbidden hits: []
+rr.Confirmation024.manifest: 10 names; forbidden hits: []
+rr.Confirmation024.counts: 9 names; forbidden hits: []
+rr.Confirmation024.target_prompts: 13 names; forbidden hits: []
+rr.Configuration.to_json: 36 names; forbidden hits: []
+rr.verify_023_inputs: 29 names; forbidden hits: []
+b0c.exclusion: 34 names; forbidden hits: []
+b0c.load_confirmation_023: 36 names; forbidden hits: []
+b0c.verify_022_inputs: 30 names; forbidden hits: []
+ul.extract_exclusion: 80 names; forbidden hits: []
+
+forbidden names on the freeze path: none
+
+Runner.freeze calls: ['self._base', 'path.exists', 'self.tokenizer_loader', 'rr.confirmation_from_payload', 'path.parent.mkdir', 'path.write_text', 'rr.load_confirmation_024', 'self.log', 'PhaseError', 'confirmation.manifest_keys', 'PhaseError', 'pytest_free_guard', 'rr.freeze_payload', 'self.log', 'pm.canonical_json', 'len', 'rc.file_sha256', 'rc.file_sha256', 'len']

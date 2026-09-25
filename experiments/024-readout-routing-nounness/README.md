@@ -1,7 +1,15 @@
 # Experiment 024: Does an Operational Nounness Score Predict When the Frozen Downstream Routing Stops Holding?
 
-**Status: IMPLEMENTED; no scientific phase has run.** The next step is the production `freeze`, only when separately
-authorized.
+**Status (2026-09-25): implemented and reviewed; frozen, reviewed and committed; calibration next.**
+- **Implementation:** complete and independently reviewed (PASS WITH NOTES, no blockers; every finding addressed).
+  Commits `6f80665`…`44c3c2b`.
+- **Freeze:** the production `freeze` ran exactly once at `44c3c2b`, tokenizer and text only, and was independently
+  reviewed (PASS WITH NOTES, no blockers). See [Freeze](#freeze-2026-09-25).
+- **Committed artifact:** the exact freeze file is `confirmation-v1.json`, installed byte for byte in `566eb6f`.
+  - file sha256 `68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60`;
+  - content sha256 `87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87`.
+- **Not run:** `calibrate`, `lock`, `confirm` and `report`. **No fresh 024 prompt has run**, and no readout error of any
+  024 cue has been observed.
 
 Implements the design
 [`docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md`](../../docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md)
@@ -68,3 +76,44 @@ words, how much the frozen block-4/5 attention readout errs in the 108 exposed f
 5. **`report`**.
 
 The local outputs stay in `outputs/experiment-024/`.
+
+## Freeze (2026-09-25)
+
+**The run.** The production `freeze` ran once at `44c3c2b`, from 09:34:55 to 09:35:05 UTC, with exit status 0, under a
+guarded launcher: 0 model loads, 0 module calls, 0 captures, and the only repository write was the confirmation file.
+- Evidence: [`evidence/freeze-2026-09-25/`](evidence/freeze-2026-09-25/README.md).
+- The independent review (PASS WITH NOTES, no blockers):
+  [`evidence/freeze-review-2026-09-25/REVIEW.md`](evidence/freeze-review-2026-09-25/REVIEW.md).
+
+**The 40 frozen cues:**
+- **N:** honest, polite, rude, sleepy, wise, lucky, merry, nervous.
+- **B / D:** gallons / gallon, ounces / ounce, acres / acre, herds / herd, crowds / crowd, bundles / bundle,
+  clusters / cluster, litres / litre.
+- **C / E:** apples / apple, horses / horse, doctors / doctor, kings / king, rabbits / rabbit, poets / poet,
+  dragons / dragon, lions / lion.
+
+These are the design's expected picks, chosen mechanically; no reserve was needed.
+
+**Eligibility.**
+- 30 rejections, each with its reason.
+- Exclusions: 351 earlier cue ids, 161 target-noun forms and 316 exposed-frame tokens. None overlaps the 40 cues.
+
+**The manifest.** 4,320 keys (40 cues × 108 exposed frames), sha256 `fcc437fc…`, with 0 overlap with the 39,312 spent
+keys.
+
+**Review notes, preserved as the protocol decisions of 2026-09-25:**
+1. **No scores in the freeze.** The freeze intentionally contains no nounness scores. It is tokenizer and text only:
+   the population was fixed before the weights were consulted.
+2. **Nounness is bound later, as the approved design says.**
+   - Calibration binds the embedding, the reference populations and the centroids.
+   - The lock binds the 40 scores, the extrapolation count and the outcome semantics.
+   - Confirm re-derives them all before any fresh prompt.
+3. **One canonical score implementation.** An independent implementation agreed with the canonical module to about
+   2.2e-16 but not byte for byte. The protocol relies on the canonical module for the score digest (`a703ac16…` is the
+   expected value).
+4. **The preregistered extrapolation statement is unchanged:** 5 of the 8 E cues lie above the calibration maximum
+   (+0.135020).
+5. **A descriptive pre-outcome note.** Before any outcome, 23 of the 40 cues lie above the calibration maximum (6 B, 4 D,
+   8 C, 5 E, 0 N). This has no outcome force and does not alter the design.
+6. **Extra reads.** The additional file reads the review identified during the freeze were integrity checks only. None
+   fed the selection.

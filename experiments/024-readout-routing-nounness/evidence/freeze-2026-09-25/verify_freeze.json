@@ -1,0 +1,391 @@
+{
+ "part1": {
+  "file_sha256": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60",
+  "content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+  "cues": {
+   "N": [
+    [
+     "honest",
+     8274
+    ],
+    [
+     "polite",
+     30405
+    ],
+    [
+     "rude",
+     30446
+    ],
+    [
+     "sleepy",
+     48849
+    ],
+    [
+     "wise",
+     15822
+    ],
+    [
+     "lucky",
+     13476
+    ],
+    [
+     "merry",
+     49570
+    ],
+    [
+     "nervous",
+     11219
+    ]
+   ],
+   "B": [
+    [
+     "gallons",
+     42616
+    ],
+    [
+     "ounces",
+     28409
+    ],
+    [
+     "acres",
+     20046
+    ],
+    [
+     "herds",
+     47862
+    ],
+    [
+     "crowds",
+     24597
+    ],
+    [
+     "bundles",
+     25663
+    ],
+    [
+     "clusters",
+     9959
+    ],
+    [
+     "litres",
+     47026
+    ]
+   ],
+   "D": [
+    [
+     "gallon",
+     46740
+    ],
+    [
+     "ounce",
+     38831
+    ],
+    [
+     "acre",
+     36982
+    ],
+    [
+     "herd",
+     33361
+    ],
+    [
+     "crowd",
+     9539
+    ],
+    [
+     "bundle",
+     13204
+    ],
+    [
+     "cluster",
+     7368
+    ],
+    [
+     "litre",
+     43803
+    ]
+   ],
+   "C": [
+    [
+     "apples",
+     28580
+    ],
+    [
+     "horses",
+     12074
+    ],
+    [
+     "doctors",
+     11576
+    ],
+    [
+     "kings",
+     25346
+    ],
+    [
+     "rabbits",
+     29948
+    ],
+    [
+     "poets",
+     32976
+    ],
+    [
+     "dragons",
+     41705
+    ],
+    [
+     "lions",
+     44536
+    ]
+   ],
+   "E": [
+    [
+     "apple",
+     19126
+    ],
+    [
+     "horse",
+     8815
+    ],
+    [
+     "doctor",
+     7345
+    ],
+    [
+     "king",
+     6963
+    ],
+    [
+     "rabbit",
+     17876
+    ],
+    [
+     "poet",
+     17502
+    ],
+    [
+     "dragon",
+     22159
+    ],
+    [
+     "lion",
+     27405
+    ]
+   ]
+  },
+  "overlaps": {
+   "earlier_cue_ids": 0,
+   "target_noun_forms": 0,
+   "exposed_frame_tokens": 0
+  },
+  "manifest": {
+   "count": 4320,
+   "unique": 4320,
+   "canonical_sorted": true,
+   "equals_the_cues_times_frames": true,
+   "every_key_a_fresh_cue": true,
+   "every_frame_exposed": true,
+   "collision_with_spent_sets": 0,
+   "spent_keys_checked": 39312,
+   "no_024_ledger": true
+  },
+  "manifest_sha256": "fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d",
+  "rejected": 30,
+  "reserves": {
+   "N": 23,
+   "measure": 3,
+   "ordinary": 9
+  }
+ },
+ "part2": {
+  "parameters_sha256": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+  "embedding_sha256": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf",
+  "noun_row_ids_sha256": "08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871",
+  "calibration_cue_ids_sha256": "106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf",
+  "mu_noun_sha256": "87930f0150e7263963d593303defd63f87f601f6892717c61d2f20c704f151d2",
+  "mu_cue_sha256": "f8cca95464092089dae6cd668d3e29bd26a89131b0f5994c35f6503a282121c4",
+  "scores": {
+   "N": [
+    [
+     "honest",
+     -0.22935071244762803
+    ],
+    [
+     "polite",
+     -0.1903187108201974
+    ],
+    [
+     "rude",
+     -0.12439741386297484
+    ],
+    [
+     "sleepy",
+     -0.13710941690038347
+    ],
+    [
+     "wise",
+     -0.19440870921151793
+    ],
+    [
+     "lucky",
+     -0.13300627493744047
+    ],
+    [
+     "merry",
+     -0.11509060380825145
+    ],
+    [
+     "nervous",
+     -0.04507626505814516
+    ]
+   ],
+   "B": [
+    [
+     "gallons",
+     0.1651398612902963
+    ],
+    [
+     "ounces",
+     0.0759690465528922
+    ],
+    [
+     "acres",
+     0.1631186714045987
+    ],
+    [
+     "herds",
+     0.3965740010055436
+    ],
+    [
+     "crowds",
+     0.23715703273226257
+    ],
+    [
+     "bundles",
+     0.2927946066382398
+    ],
+    [
+     "clusters",
+     0.2617790108645215
+    ],
+    [
+     "litres",
+     0.006685069640962965
+    ]
+   ],
+   "D": [
+    [
+     "gallon",
+     0.04983962896221633
+    ],
+    [
+     "ounce",
+     -0.06555391097164939
+    ],
+    [
+     "acre",
+     -0.031825820807209665
+    ],
+    [
+     "herd",
+     0.30293746421868784
+    ],
+    [
+     "crowd",
+     0.19785964446846188
+    ],
+    [
+     "bundle",
+     0.14735202818805862
+    ],
+    [
+     "cluster",
+     0.16347458133969206
+    ],
+    [
+     "litre",
+     0.04518919075932214
+    ]
+   ],
+   "C": [
+    [
+     "apples",
+     0.22296560088986245
+    ],
+    [
+     "horses",
+     0.34591626318430735
+    ],
+    [
+     "doctors",
+     0.31865040433065667
+    ],
+    [
+     "kings",
+     0.20618955939604797
+    ],
+    [
+     "rabbits",
+     0.32395329800181705
+    ],
+    [
+     "poets",
+     0.3146659432933707
+    ],
+    [
+     "dragons",
+     0.31820898038249223
+    ],
+    [
+     "lions",
+     0.30971817587347183
+    ]
+   ],
+   "E": [
+    [
+     "apple",
+     0.16746245512379346
+    ],
+    [
+     "horse",
+     0.29829447778124146
+    ],
+    [
+     "doctor",
+     0.21768061353376064
+    ],
+    [
+     "king",
+     0.11749007419039456
+    ],
+    [
+     "rabbit",
+     0.1286387706515007
+    ],
+    [
+     "poet",
+     0.16599880501353617
+    ],
+    [
+     "dragon",
+     0.18822636757466396
+    ],
+    [
+     "lion",
+     0.10845152134948685
+    ]
+   ]
+  },
+  "scores_sha256": "a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995",
+  "calibration_maximum": 0.13502027836111233,
+  "E_above": [
+   "apple",
+   "horse",
+   "doctor",
+   "poet",
+   "dragon"
+  ],
+  "module_calls_during_load": 0
+ }
+}

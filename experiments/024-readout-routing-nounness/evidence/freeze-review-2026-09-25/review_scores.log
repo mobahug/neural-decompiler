@@ -1,0 +1,32 @@
+model loaded: revision e93a9faa9c77e5d09219f6c868bfc7a1bd65593c; module calls during the load: 0
+  [ok] zero module calls during the load
+  [ok] parameters digest (rr.parameters_digest) starts fd953f1c: fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5 over 113 named tensors
+  [ok] embedding digest (rr.embedding_digest of pm.Weights.from_model(model).W_E) starts 9cd6f39b: 9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf; W_E (50304, 512) torch.float32
+  [ok] own embedding digest == rr.embedding_digest
+  [ok] model.safetensors content sha256 == its LFS blob name: 3da388330e454915
+  [ok] 79 scorable nouns (pool order) == 023 exposed-cells index nouns (order)
+  [ok] 158 noun-row ids == rr.noun_row_ids(pool)
+  [ok] noun-row id list digest starts 08fb9b4f: 08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871
+  [ok] 139 calibration cues (index order, 3 strata) == rr.calibration_cues(b0c.exposed_units(inputs)): {'determiner-like': 45, 'quantity': 45, 'adjective': 49}
+  [ok] calibration-cue id list digest starts 106cfecc: 106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf
+  [ok] no fresh cue id is in μ_noun's or μ_cue's rows
+  [ok] μ_noun digest (rc.tensor_digest) starts 87930f01: 87930f0150e7263963d593303defd63f87f601f6892717c61d2f20c704f151d2
+  [ok] μ_cue digest (rc.tensor_digest) starts f8cca954: f8cca95464092089dae6cd668d3e29bd26a89131b0f5994c35f6503a282121c4
+  [ok] own centroids within 1e-15 of rr's and of an exactly rounded (fsum) mean: 0.0e+00, 0.0e+00
+  [ok] own 40 scores agree with rr.full_scores within 1e-12: max |Δ| 2.22e-16
+  [ok] 40-score digest (rc.tensor_digest of rr's float64 vector, file cue order) starts a703ac16: a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995 (own implementation's vector digest 01cb09f51ea65bc1…, bit-identical: False)
+  [ok] own 139 leave-one-out scores agree with rr.calibration_scores within 1e-12: max |Δ| 1.94e-16
+  [ok] calibration maximum (max LOO over the 139) ≈ +0.135020: +0.135020278 (paper, adjective)
+  [ok] exactly 5 of 8 E cues above the calibration maximum: ['apple', 'horse', 'doctor', 'poet', 'dragon']
+  [ok] every E above every N: min E +0.108452 vs max N -0.045076
+  fresh cues above the calibration maximum: 23 of 40: [('gallons', 'B'), ('acres', 'B'), ('herds', 'B'), ('crowds', 'B'), ('bundles', 'B'), ('clusters', 'B'), ('herd', 'D'), ('crowd', 'D'), ('bundle', 'D'), ('cluster', 'D'), ('apples', 'C'), ('horses', 'C'), ('doctors', 'C'), ('kings', 'C'), ('rabbits', 'C'), ('poets', 'C'), ('dragons', 'C'), ('lions', 'C'), ('apple', 'E'), ('horse', 'E'), ('doctor', 'E'), ('poet', 'E'), ('dragon', 'E')]
+  N: min -0.229351 max -0.045076 mean -0.146095 | honest -0.229351, polite -0.190319, rude -0.124397, sleepy -0.137109, wise -0.194409, lucky -0.133006, merry -0.115091, nervous -0.045076
+  B: min +0.006685 max +0.396574 mean +0.199902 | gallons +0.165140, ounces +0.075969, acres +0.163119, herds +0.396574, crowds +0.237157, bundles +0.292795, clusters +0.261779, litres +0.006685
+  D: min -0.065554 max +0.302937 mean +0.101159 | gallon +0.049840, ounce -0.065554, acre -0.031826, herd +0.302937, crowd +0.197860, bundle +0.147352, cluster +0.163475, litre +0.045189
+  C: min +0.206190 max +0.345916 mean +0.295034 | apples +0.222966, horses +0.345916, doctors +0.318650, kings +0.206190, rabbits +0.323953, poets +0.314666, dragons +0.318209, lions +0.309718
+  E: min +0.108452 max +0.298294 mean +0.174030 | apple +0.167462, horse +0.298294, doctor +0.217681, king +0.117490, rabbit +0.128639, poet +0.165999, dragon +0.188226, lion +0.108452
+  [ok] design item 8: E +0.108 (lion) … +0.298 (horse), mean +0.174; N −0.229 (honest) … −0.045 (nervous), mean −0.146
+  gap min E − max N +0.153528 (design +0.154); mean difference +0.320125 (design +0.320); cos to μ_noun E +0.220 N +0.046 (design +0.220/+0.046); cos to μ_cue E +0.046 N +0.192 (design +0.046/+0.192); plural shift B−D +0.099 (design +0.10), C−E +0.121 (design +0.12)
+  [ok] no forward and no capture after the load
+  [ok] no write under the repository attempted
+FAILS: 0

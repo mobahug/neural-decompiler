@@ -1,0 +1,19 @@
+{
+ "started_at": "2026-09-25T09:34:55.674374+00:00",
+ "ended_at": "2026-09-25T09:35:05.811719+00:00",
+ "exit_status": 0,
+ "error": null,
+ "invocations": 1,
+ "events": {
+  "module_calls": 0,
+  "load_model": 0,
+  "capture_calls": 0,
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "confirmation_writes": 1
+ },
+ "logs": [
+  "froze 40 cues to /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/024-readout-routing-nounness/confirmation-v1.json (content sha256 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87, file sha256 68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60); commit it by hand and stop for the freeze review before calibrate"
+ ],
+ "config": "production"
+}

@@ -1,0 +1,10 @@
+tracked blob 0ebacabed6605401c105569d8f985dabd4bb8d7d; HEAD bytes == working bytes: True; file sha256 68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60; content sha256 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87 (recomputed 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87)
+stock validate: exit 0; module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); no calibration record installed
+mechanical rebuild in memory byte-identical to the committed file: True
+  N: honest 8274, polite 30405, rude 30446, sleepy 48849, wise 15822, lucky 13476, merry 49570, nervous 11219
+  B: gallons 42616, ounces 28409, acres 20046, herds 47862, crowds 24597, bundles 25663, clusters 9959, litres 47026
+  D: gallon 46740, ounce 38831, acre 36982, herd 33361, crowd 9539, bundle 13204, cluster 7368, litre 43803
+  C: apples 28580, horses 12074, doctors 11576, kings 25346, rabbits 29948, poets 32976, dragons 41705, lions 44536
+  E: apple 19126, horse 8815, doctor 7345, king 6963, rabbit 17876, poet 17502, dragon 22159, lion 27405
+manifest: 4320 keys, 4320 unique, sha256 fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d, overlap with the 39312 spent keys 0; every key a frozen 024 cue: True
+outputs/experiment-024 exists: False; repository writes refused: []
