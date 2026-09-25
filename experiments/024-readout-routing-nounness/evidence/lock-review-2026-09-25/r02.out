@@ -1,0 +1,6 @@
+backticked tokens: 31 not a lock string value: []
+number tokens outside backticks: 149 distinct: 141
+not a lock float repr or lock integer: ['+0.135020', '020', '023', '024', '4']
+derivable: {'+0.135020': True, '16': True}
+RESULT: ok
+guard: {'refused_writes': [], 'refused_reads': [], 'opens_under_root_for_write': 0}

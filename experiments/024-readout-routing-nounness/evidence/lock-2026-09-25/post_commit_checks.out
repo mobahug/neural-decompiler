@@ -1,0 +1,40 @@
+HEAD 3affe55cca991b8adbbff3b4e1b1c15339f4f058; parent be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[ok] the artifact commit's parent is the lock-run commit be74d23
+[ok] the commit touches exactly the two lock paths: ['experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md']
+[ok] working tree clean
+[ok] git show HEAD:preregistration-lock.json == working == reviewed candidate, sha256 exact: 5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d
+[ok] git show HEAD:preregistration.md == working == reviewed candidate, sha256 exact: 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54
+[ok] installed lock content sha256 (stored == recomputed == expected)
+[ok] render_preregistration(installed lock) == committed preregistration.md, byte for byte
+[ok] configuration is the frozen production one
+[ok] stock validate passes (and verifies the installed lock and preregistration): module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); calibration record verified; lock and preregistration verified
+[ok] confirm's state preconditions and phase rule pass (_state_for('confirm'))
+[ok] the ledger is isolated from the spent keys and the manifest (and is empty)
+[ok] full validate_lock passes at the new commit (tracked, clean, lock commit an ancestor, no scientific change): {'commit': '3affe55cca991b8adbbff3b4e1b1c15339f4f058', 'dirty': False}
+[ok] tracked-file enforcement is live (untracked lock files are refused): the lock and the preregistration must be tracked and committed
+[ok] the lock-run commit is be74d23
+[ok] the only paths changed since be74d23 are the two installed lock files: ['experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md']
+[ok] confirm's runtime check passes (020's explore runtime and versions): {'device': 'cpu', 'backend': 'cpu', 'dtype': 'float32', 'seed': 20260916, 'control_seed': 20260924, 'deterministic_algorithms': False, 'torch_num_threads': 4}
+[ok] rr is imported from the repository file: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+[ok] module blob: own sha1 == rr.own_blob() == git HEAD == installed lock module.blob == e6cb3776…: {'expected': 'e6cb37767d1d06c6ff40804a88eab569723afdb5', 'observed': 'e6cb37767d1d06c6ff40804a88eab569723afdb5'}
+[ok] 40 scores in the frozen order
+[ok] 40-score digest a703ac16…
+[ok] calibration maximum 0.13502027836111233 (== the record's largest leave-one-out score): 0.13502027836111233
+[ok] above-maximum flags == score > maximum
+[ok] exactly 5 of 8 E above it: apple, horse, doctor, poet, dragon: ['apple', 'horse', 'doctor', 'poet', 'dragon']
+[ok] every E score above every N score: +0.108452 > -0.045076
+[ok] predictions == the frozen line
+[ok] primary: F_rho 0.24411074612857814, null 0.3136960600375234, threshold 0.3136960600375234 bound by the null: {'binds': 'null_975', 'value': 0.3136960600375234}
+[ok] threshold rule: ρ = t passes, the next float below fails (pure rule, no data)
+[ok] E–N guard: 8 + 8, 12,870 assignments, K ≤ 321 passes, ties against the guard, exact arithmetic: K = #{assignments S : D(S) ≥ D_EN}, the observed one included (ties count against the guard); PASS iff K ≤ max_upper
+[ok] E–N decision: K = 321 PASS, K = 322 FAIL, K = 12,870 (all tied) FAIL (pure rule, no data)
+[ok] guard units: the frozen 8 E then 8 N
+[ok] outcome hierarchy exactly as reviewed (the lock's table == rr.OUTCOME_TABLE == the reviewed rows)
+[ok] rr.outcome == the reviewed hierarchy on all 12 (primary, guard) pairs
+[ok] manifest: 4,320 unique keys, digest fcc437fc… (lock == recomputed from the committed freeze)
+[ok] zero overlap with the 39,312 spent keys
+[ok] results state unchanged by the install (digest and file)
+[ok] confirm and report not started; no confirmation or report
+[ok] zero fresh-key execution: ledger empty; no stage-2 file; no report
+[ok] no repository write: []
+FAILURES: none

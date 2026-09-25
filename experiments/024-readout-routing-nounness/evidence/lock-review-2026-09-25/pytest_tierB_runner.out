@@ -1,0 +1,61 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0 -- /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python
+tiers: no tier (explicit selection); pass --tier to intersect; current experiment: 024
+rootdir: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler
+configfile: pyproject.toml
+plugins: jaxtyping-0.3.11, xdist-3.8.0, typeguard-4.6.0, anyio-4.15.1
+collecting ... collected 31 items
+tiers over the 31 collected: A 0 | B 31 (slow 0, current 31) | D historical 0 | pinned-model contract 0; selected 31 (tier none)
+
+tests/test_experiment_024_runner.py::test_parser_has_exactly_the_six_phases_no_option_and_production_only PASSED [  3%]
+tests/test_experiment_024_runner.py::test_validate_loads_no_model_and_refuses_a_tampered_calibration_source_or_pin PASSED [  6%]
+tests/test_experiment_024_runner.py::test_freeze_is_tokenizer_only_and_its_stops_write_nothing PASSED [  9%]
+tests/test_experiment_024_runner.py::test_calibrate_is_weights_only_reads_the_committed_cells_and_runs_once PASSED [ 12%]
+tests/test_experiment_024_runner.py::test_calibrate_refuses_a_foreign_calibration_source_or_an_uncommitted_confirmation PASSED [ 16%]
+tests/test_experiment_024_runner.py::test_the_calibration_stop_writes_no_record_and_is_never_retried PASSED [ 19%]
+tests/test_experiment_024_runner.py::test_a_calibration_cross_check_failure_is_an_incident_bound_to_its_commit PASSED [ 22%]
+tests/test_experiment_024_runner.py::test_lock_is_weights_only_binds_the_scores_and_the_outcome_and_runs_once PASSED [ 25%]
+tests/test_experiment_024_runner.py::test_lock_refuses_a_foreign_record_or_drifted_weights_before_writing PASSED [ 29%]
+tests/test_experiment_024_runner.py::test_a_failed_recheck_at_lock_is_an_incident_and_writes_no_lock PASSED [ 32%]
+tests/test_experiment_024_runner.py::test_a_forbidden_key_in_the_ledger_is_refused PASSED [ 35%]
+tests/test_experiment_024_runner.py::test_confirm_runs_every_target_once_and_writes_the_result_in_one_write PASSED [ 38%]
+tests/test_experiment_024_runner.py::test_i7_refuses_a_drift_before_any_fresh_prompt PASSED [ 41%]
+tests/test_experiment_024_runner.py::test_confirm_refuses_drifted_weights_before_any_prompt PASSED [ 45%]
+tests/test_experiment_024_runner.py::test_confirm_refuses_tampered_untracked_or_changed_lock_files_before_the_model PASSED [ 48%]
+tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[c_recompute] PASSED [ 51%]
+tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[gate] PASSED [ 54%]
+tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[accounting] PASSED [ 58%]
+tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[cross_check] PASSED [ 61%]
+tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[recheck] PASSED [ 64%]
+tests/test_experiment_024_runner.py::test_a_descriptive_failure_after_the_result_keeps_the_result_unchanged[failure] PASSED [ 67%]
+tests/test_experiment_024_runner.py::test_a_descriptive_failure_after_the_result_keeps_the_result_unchanged[interruption] PASSED [ 70%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[NOT_INTERPRETABLE-PASS-NOT_INTERPRETABLE] PASSED [ 74%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[GUARD_FAILURE-PASS-NOUNNESS_PREDICTION_NOT_ESTABLISHED] PASSED [ 77%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[ENVELOPE_ONLY_FAILURE-PASS-NOUNNESS_PREDICTION_NOT_ESTABLISHED] PASSED [ 80%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-FAIL-ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED] PASSED [ 83%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-NOT_INTERPRETABLE-ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED] PASSED [ 87%]
+tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-PASS-NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS] PASSED [ 90%]
+tests/test_experiment_024_runner.py::test_the_state_is_written_atomically_in_the_state_format PASSED [ 93%]
+tests/test_experiment_024_runner.py::test_validate_verifies_an_installed_lock_and_its_preregistration PASSED [ 96%]
+tests/test_experiment_024_runner.py::test_a_failed_result_write_is_an_incident_and_never_leaves_a_result PASSED [100%]
+[review guard] refused writes: []; refused reads: []
+
+
+============================= slowest 15 durations =============================
+66.40s setup    tests/test_experiment_024_runner.py::test_validate_loads_no_model_and_refuses_a_tampered_calibration_source_or_pin
+30.93s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-NOT_INTERPRETABLE-ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED]
+30.03s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-PASS-NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS]
+25.98s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[NOT_INTERPRETABLE-PASS-NOT_INTERPRETABLE]
+25.89s setup    tests/test_experiment_024_runner.py::test_confirm_runs_every_target_once_and_writes_the_result_in_one_write
+25.69s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[ENVELOPE_ONLY_FAILURE-PASS-NOUNNESS_PREDICTION_NOT_ESTABLISHED]
+25.62s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[GUARD_FAILURE-PASS-NOUNNESS_PREDICTION_NOT_ESTABLISHED]
+25.55s call     tests/test_experiment_024_runner.py::test_every_outcome_is_written_with_its_reading_and_reported[PASS-FAIL-ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED]
+20.89s call     tests/test_experiment_024_runner.py::test_a_failed_result_write_is_an_incident_and_never_leaves_a_result
+18.58s call     tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[cross_check]
+18.54s call     tests/test_experiment_024_runner.py::test_a_descriptive_failure_after_the_result_keeps_the_result_unchanged[failure]
+18.50s call     tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[gate]
+18.28s call     tests/test_experiment_024_runner.py::test_a_descriptive_failure_after_the_result_keeps_the_result_unchanged[interruption]
+17.91s call     tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[recheck]
+8.38s call     tests/test_experiment_024_runner.py::test_a_post_measurement_incident_keeps_every_measurement_and_carries_no_result[accounting]
+======================== 31 passed in 408.36s (0:06:48) ========================
+exit 0

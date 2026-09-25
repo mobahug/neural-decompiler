@@ -1,0 +1,5 @@
+reconstructed pre-lock state digest: 5ed26580be4c28310d072bf2c451dbeba01e4b1f8710b65072d25c9281d31252
+reconstructed pre-lock file sha256:   4b319d62733ddcec80397cf0a9dd62fee21399a1f6b854253ba5a264ae4d6e9f
+committed evidence names 5ed26580… and file 4b319d62…: True True
+RESULT: ok — the lock run changed only state['lock'] and state['phases']['lock']
+guard: {'refused_writes': [], 'refused_reads': [], 'opens_under_root_for_write': 0}

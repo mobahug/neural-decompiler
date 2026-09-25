@@ -1,0 +1,13 @@
+$ cp outputs/experiment-024/candidate-lock.json experiments/024-readout-routing-nounness/preregistration-lock.json
+$ cp outputs/experiment-024/candidate-preregistration.md experiments/024-readout-routing-nounness/preregistration.md
+$ cmp (candidate vs installed)
+lock: identical
+preregistration: identical
+$ shasum -a 256
+5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d  outputs/experiment-024/candidate-lock.json
+5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d  experiments/024-readout-routing-nounness/preregistration-lock.json
+007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54  outputs/experiment-024/candidate-preregistration.md
+007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54  experiments/024-readout-routing-nounness/preregistration.md
+$ git status --porcelain
+?? experiments/024-readout-routing-nounness/preregistration-lock.json
+?? experiments/024-readout-routing-nounness/preregistration.md

@@ -1,0 +1,7 @@
+12 (primary, guard) pairs; disagreements with the design table: []
+classify_primary at the bound thresholds: {'just below null': 'GUARD_FAILURE', 'at null': 'PASS', 'at F (below null)': 'GUARD_FAILURE', 'None': 'NOT_INTERPRETABLE'}
+envelope-only band empty (F < null): True
+callers inside rr: {'en_decision': ['en_guard_logs'], 'classify_primary': ['evaluate_calibration', 'score'], 'en_guard': ['score'], 'outcome': ['score']}
+run.py references to outcome/classify/en_guard/label assignment: []
+_descriptives writes only descriptives/failures: True
+RESULT: ok ; guard: {'refused_writes': [], 'refused_reads': [], 'opens_under_root_for_write': 0}

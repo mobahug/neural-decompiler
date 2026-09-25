@@ -1,0 +1,25 @@
+{
+ "started_at": "2026-09-25T17:13:39.160407+00:00",
+ "ended_at": "2026-09-25T17:14:05.116371+00:00",
+ "exit_status": 0,
+ "error": null,
+ "invocations": 1,
+ "sealed": true,
+ "events": {
+  "load_model": 1,
+  "module_calls_while_loading": 0,
+  "module_calls_refused": 0,
+  "capture_calls": 0,
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "output_writes": [
+   "candidate-lock.json",
+   "candidate-preregistration.md",
+   ".results-79jpzp5e.json"
+  ]
+ },
+ "logs": [
+  "candidate lock /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/candidate-lock.json (content sha256 a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739) and /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/candidate-preregistration.md. Install both byte-identical as experiments/024-readout-routing-nounness/preregistration-lock.json and experiments/024-readout-routing-nounness/preregistration.md, commit, and stop for the independent lock review before confirm."
+ ],
+ "config": "production"
+}

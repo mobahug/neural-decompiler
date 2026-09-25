@@ -1,0 +1,5 @@
+tiers over the 35 collected: A 30 | B 35 (slow 2, current 0) | D historical 0 | pinned-model contract 3; selected 30 (tier A)
+..............................                                           [100%]
+[review guard] refused writes: []; refused reads: []
+
+30 passed, 5 deselected in 1.67s

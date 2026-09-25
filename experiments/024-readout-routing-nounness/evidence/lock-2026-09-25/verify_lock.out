@@ -1,0 +1,38 @@
+candidate lock: file sha256 5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d; content sha256 a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739
+candidate preregistration: file sha256 007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54; 107 lines
+state sha256 58891c2416684785cb52437069beebcaa198ea3674c6d4b9d8480c103aadc65d; phases {'calibrate': 'complete', 'confirm': 'not_started', 'lock': 'complete', 'report': 'not_started'}; lock commit be74d23; ledger 0
+[ok] lock content digest
+[ok] state binds this candidate lock and preregistration
+[ok] preregistration is the one this lock renders
+[ok] lock/confirm/report: lock complete once, confirm and report not started; ledger empty
+[ok] design, plan, configuration, constants, module blobs
+[ok] the lock binds the rr module blob at the run commit: e6cb37767d1d06c6ff40804a88eab569723afdb5
+[ok] calibration binding
+[ok] freeze binding, counts and manifest: fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d
+[ok] calibration source and dependencies == the record's
+[ok] score bindings == the record's
+[ok] primary: F_rho, null_975, effective threshold (null binds), line
+[ok] primary statistic text and precedence
+[ok] E–N guard spec: K = #{assignments S : D(S) ≥ D_EN}, the observed one included (ties count against the guard); PASS iff K ≤ max_upper
+[ok] E and N cues in order
+[ok] outcome table and readings; semantics
+[ok] secondary definitions bound (semantics text + constants + module blob)
+[ok] 40 cues in the canonical frozen order
+[ok] score digest a703ac16…
+[ok] predictions = the frozen line
+[ok] calibration maximum
+[ok] flags = score > maximum
+[ok] 5 of 8 E above; the sentence
+[ok] every E above every N: +0.108452 > -0.045076
+  N: min -0.229351 max -0.045076 mean -0.146095; above the maximum 0 of 8
+  B: min +0.006685 max +0.396574 mean +0.199902; above the maximum 6 of 8
+  D: min -0.065554 max +0.302937 mean +0.101159; above the maximum 4 of 8
+  C: min +0.206190 max +0.345916 mean +0.295034; above the maximum 8 of 8
+  E: min +0.108452 max +0.298294 mean +0.174030; above the maximum 5 of 8
+  descriptive: 23 of 40 above the maximum (no outcome force)
+[ok] manifest recomputed: 4,320 unique keys, digest bound
+[ok] model dependencies (parameters, embedding) reproduce
+[ok] I7 rehearsal: the lock's quantities regenerate bit for bit: {'bitwise_equal': True, 'differing': [], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[ok] module calls during the load: {'during_load': 0}
+[ok] no repository write: []
+FAILURES: none

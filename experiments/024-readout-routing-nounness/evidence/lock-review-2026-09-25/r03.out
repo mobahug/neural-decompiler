@@ -1,0 +1,120 @@
+====================================================================================================
+inputs: frozen-input chain (read only; the runner's _base/_confirmation replicated without a Runner)
+[ok] lock.inputs == the frozen-input digests computed now (rr.base_digests over 020/022/023)
+[ok] 020 readout binding: exposed-states digest and frozen-input digests recomputed now
+[ok] non-model dependencies recomputed now == the lock's
+[ok] the confirmation object's cues == the freeze's, in order
+[ok] lock.noun_keys == the 79 scorable exposed nouns in pool order
+[ok] score id lists: record == pool-derived (158 noun rows, 139 calibration cues) == calibration entries' ids
+[ok] id-list digests (own canonical sha256) == lock/record
+====================================================================================================
+tokenizer (no model): every fresh and calibration cue word is ' ' + w -> exactly [its token id]
+[ok] 40 fresh + 139 calibration words tokenize to their bound single ids :: []
+====================================================================================================
+ITEM 4 (a): exact reconstruction from the raw checkpoint bytes (no model object)
+[ok] checkpoint file sha256 == its content-addressed LFS blob id 3da38833… (pinned revision's snapshot)
+[ok] embed_in.weight: F16 [50304, 512]
+[ok] fp16 × 2^24 is integral everywhere (exact integer representation)
+[ok] lock fresh cues == the freeze's 40, in the freeze's order
+   lock vs exact (60 digits): max |diff| 2.196e-16; max 119.35 ulp; 0/40 lock values equal the correctly rounded exact value
+[ok] every lock score within 1e-15 of the exact score
+   record LOO scores vs exact: max |diff| 1.938e-16
+[ok] every record leave-one-out score within 1e-15 of the exact value
+[ok] ordering of the 40 lock scores == ordering of the exact scores (identical permutation) :: smallest gap between neighbours 3.559e-04
+   exact calibration maximum 0.1350202783611122510596136 at 'paper' (id 2929); next 0.113079449152
+[ok] calibration maximum: record max == 0.13502027836111233 == float(exact max) (within 1e-16)
+[ok] above-calibration flags: lock == exact comparison, for all 40 :: closest fresh score to the maximum is 6.382e-03 away
+[ok] exactly 5 of 8 E above it: apple, horse, doctor, poet, dragon
+[ok] every E above every N (exact) :: min E 0.10845152 > max N -0.045076265
+[ok] descriptively 23 of 40 above the maximum (no outcome force)
+   class N: min -0.229351 max -0.045076 mean -0.146095; above the maximum 0 of 8
+   class B: min +0.006685 max +0.396574 mean +0.199902; above the maximum 6 of 8
+   class D: min -0.065554 max +0.302937 mean +0.101159; above the maximum 4 of 8
+   class C: min +0.206190 max +0.345916 mean +0.295034; above the maximum 8 of 8
+   class E: min +0.108452 max +0.298294 mean +0.174030; above the maximum 5 of 8
+   per cue (word, class, lock nounness, exact − lock, above):
+     N honest      8274 -0.22935071244762803 -3.15e-17 
+     N polite     30405 -0.19031871082019741 -3.22e-17 
+     N rude       30446 -0.12439741386297484 -8.71e-17 
+     N sleepy     48849 -0.13710941690038347 -1.01e-16 
+     N wise       15822 -0.19440870921151793 -2.70e-17 
+     N lucky      13476 -0.13300627493744047 -3.56e-17 
+     N merry      49570 -0.11509060380825145 -5.89e-17 
+     N nervous    11219 -0.04507626505814516 -2.38e-17 
+     B gallons    42616 +0.16513986129029631 -5.39e-17 above
+     B ounces     28409 +0.07596904655289220 -8.27e-17 
+     B acres      20046 +0.16311867140459871 -9.28e-17 above
+     B herds      47862 +0.39657400100554357 -1.48e-16 above
+     B crowds     24597 +0.23715703273226257 -7.11e-17 above
+     B bundles    25663 +0.29279460663823981 -1.73e-16 above
+     B clusters    9959 +0.26177901086452149 -8.32e-17 above
+     B litres     47026 +0.00668506964096297 -1.04e-16 
+     D gallon     46740 +0.04983962896221633 -7.86e-17 
+     D ounce      38831 -0.06555391097164939 -4.72e-17 
+     D acre       36982 -0.03182582080720966 -7.58e-17 
+     D herd       33361 +0.30293746421868784 -3.15e-17 above
+     D crowd       9539 +0.19785964446846188 -1.03e-16 above
+     D bundle     13204 +0.14735202818805862 -6.36e-17 above
+     D cluster     7368 +0.16347458133969206 -8.56e-17 above
+     D litre      43803 +0.04518919075932214 -4.66e-17 
+     C apples     28580 +0.22296560088986245 -1.11e-16 above
+     C horses     12074 +0.34591626318430735 -2.00e-16 above
+     C doctors    11576 +0.31865040433065667 -5.97e-17 above
+     C kings      25346 +0.20618955939604797 -8.04e-17 above
+     C rabbits    29948 +0.32395329800181705 -8.13e-17 above
+     C poets      32976 +0.31466594329337072 -1.29e-16 above
+     C dragons    41705 +0.31820898038249223 -1.74e-16 above
+     C lions      44536 +0.30971817587347183 -1.62e-16 above
+     E apple      19126 +0.16746245512379346 -5.00e-17 above
+     E horse       8815 +0.29829447778124146 -2.20e-16 above
+     E doctor      7345 +0.21768061353376064 -5.48e-17 above
+     E king        6963 +0.11749007419039456 -1.34e-16 
+     E rabbit     17876 +0.12863877065150070 -5.29e-17 
+     E poet       17502 +0.16599880501353617 -7.10e-17 above
+     E dragon     22159 +0.18822636757466396 -7.03e-17 above
+     E lion       27405 +0.10845152134948685 -1.59e-16 
+====================================================================================================
+ITEM 4 (b): independent float64 numpy route on the raw checkpoint
+   numpy float64 route vs lock: max |diff| 2.220e-16; exactly equal 2/40
+[ok] numpy float64 route agrees with the lock within 1e-14 and orders identically
+====================================================================================================
+ITEM 4 (c) / ITEM 10: the runner's loader, sealed; canonical byte identity; the I7 rehearsal
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 1447.29it/s]
+   guard counts after the load: {'module_call_during_load': 0, 'module_call_refused': 0, 'forward_refused': 0, 'capture_refused': 0, 'load_model': 1} ; sealed module classes: 20
+[ok] torch.nn.Module.__call__ during the load: 0 :: {'module_call_during_load': 0, 'module_call_refused': 0, 'forward_refused': 0, 'capture_refused': 0, 'load_model': 1}
+[ok] parameters digest: canonical == own implementation == bound fd953f1c… :: 113 named parameters
+[ok] embedding digest: canonical == own == bound 9cd6f39b…
+[ok] the loader's W_E (float32) == the raw fp16 checkpoint rows, bit for bit
+[ok] ModelPrograms.from_model ran with every forward refused; its W_E == Weights.from_model W_E :: {'module_call_during_load': 0, 'module_call_refused': 0, 'forward_refused': 0, 'capture_refused': 0, 'load_model': 1}
+[ok] _check_nouns replicated: scorable nouns == pool single-token nouns (79)
+[ok] rr.score_bindings recomputed from the weights == record.score == lock.score
+[ok] canonical rr.fresh_quantities now == lock.fresh (JSON round trip, every key) :: []
+[ok] score digest: canonical rc.tensor_digest == own float64 digest of the lock values == a703ac16…
+   own float64 digest of the correctly rounded EXACT scores: e494736a17516c7c18f600148ccb55f8326faf35b3c59f85e30f71bf5908809c (differs: numerical, not byte, identity)
+[ok] centroid digests (mu_noun, mu_cue) recomputed canonically == lock
+[ok] I7 rehearsal: rr.reproduce_lock_quantities bitwise_equal, nothing differing :: {'bitwise_equal': True, 'differing': [], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[ok] I7 rehearsal covers predictions, flags, maximum, 5/8 and the sentence (all inside lock.fresh)
+[ok] I7 detects a one-ulp drift in a bound score (bitwise_equal False, differing ['cues']) :: {'bitwise_equal': False, 'differing': ['cues'], 'scores_sha256': 'a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995'}
+[ok] a wrong parameter digest is refused (PhaseError before any prompt) :: the lock (the model) was written against different scientific dependencies: ['parameters_sha256']
+====================================================================================================
+ITEM 3 / 6: validate_lock dry run on the candidate as if installed byte-identically (pure call; no install, no confirm)
+[ok] validate_lock the exact candidate, clean tree, no change since the lock: accepted :: accepted
+[ok] validate_lock with the installation commit's own paths changed (lock, preregistration, README, evidence): accepted :: accepted
+[ok] validate_lock src/…/readout_routing.py changed since the lock: refused :: scientific paths changed since the lock: ['src/neural_decompiler/readout_routing.py']
+[ok] validate_lock the runner run.py changed since the lock: refused :: scientific paths changed since the lock: ['experiments/024-readout-routing-nounness/run.py']
+[ok] validate_lock 023's exposed cells changed since the lock: refused :: scientific paths changed since the lock: ['experiments/023-block0-completion/exposed-cells.f64']
+[ok] validate_lock a renamed-away scientific file (both paths listed): refused :: scientific paths changed since the lock: ['src/neural_decompiler/readout_routing.py']
+[ok] validate_lock lock commit not an ancestor: refused :: the lock commit is not an ancestor of the current commit
+[ok] validate_lock dirty tree: refused :: confirm requires a clean Git tree
+[ok] validate_lock untracked lock files: refused :: the lock and the preregistration must be tracked and committed
+[ok] validate_lock an edited preregistration: refused :: the installed preregistration is not the one this lock renders
+[ok] validate_lock a resealed lock with a replaced threshold: refused :: the installed lock is not the candidate this run wrote
+[ok] validate_lock … even with a forged state that binds it: refused :: the lock's thresholds or line are not the committed record's
+[ok] validate_lock … or with a forged record carrying the same threshold (record file digest no longer matches): refused :: the lock was written against a different calibration record
+[ok] validate_lock under a non-production configuration: refused :: the lock was written under a different configuration
+====================================================================================================
+guard counts: {'module_call_during_load': 0, 'module_call_refused': 0, 'forward_refused': 0, 'capture_refused': 0, 'load_model': 1}
+[ok] no module call, forward or capture was attempted after the load
+audit events: {'refused_writes': [], 'refused_reads': [], 'opens_under_root_for_write': 0}
+[ok] no write under the repository was attempted
+FAILURES: none

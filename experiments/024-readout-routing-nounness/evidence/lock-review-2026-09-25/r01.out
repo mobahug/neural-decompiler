@@ -1,0 +1,168 @@
+====================================================================================================
+ITEM 1: repository and protocol state
+[ok] HEAD == be74d23… :: be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[ok] origin/main (local ref) == HEAD :: be74d23d086bd12d894db1f73e6a1b4160aeebd5
+[ok] ls-remote origin refs/heads/main == HEAD :: ['be74d23d086bd12d894db1f73e6a1b4160aeebd5', 'refs/heads/main']
+[ok] working tree clean (git status --porcelain empty) :: ''
+[ok] no stash
+   git worktree list: worktree /Users/gaborhorvath-ulenius/myprojects/neural-decompiler | HEAD be74d23d086bd12d894db1f73e6a1b4160aeebd5 | branch refs/heads/main |  | worktree /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.worktrees/behavior-candidate-screening | HEAD b561bc61d369be73de07424a92c397655360dd1b | branch refs/heads/codex/behavior-candidate-screening
+[ok] freeze file sha256 68510e1b… (working tree == HEAD blob)
+[ok] freeze content sha256 87f8aff1… (own canonical digest)
+[ok] calibration file sha256 81fb499e… (working tree == HEAD blob)
+[ok] calibration content sha256 09bf093e… (own canonical digest)
+[ok] freeze and record bytes are canonical JSON + newline
+[ok] candidate-calibration.json is byte-identical to the committed record
+   history of experiments/024-readout-routing-nounness/confirmation-v1.json: ['566eb6f data: experiment 024 freeze — confirmation-v1.json, installed byte-identically']
+[ok] confirmation-v1.json committed exactly once
+   history of experiments/024-readout-routing-nounness/calibration-v1.json: ['1084efc data: experiment 024 calibration — calibration-v1.json, installed byte-identically']
+[ok] calibration-v1.json committed exactly once
+[ok] lock / preregistration not installed in the repository
+[ok] results state: own state digest == recorded == 58891c24… :: 58891c2416684785cb52437069beebcaa198ea3674c6d4b9d8480c103aadc65d
+[ok] results file bytes are canonical JSON + newline
+[ok] phases: calibrate complete, lock complete, confirm/report not_started :: {'calibrate': 'complete', 'confirm': 'not_started', 'lock': 'complete', 'report': 'not_started'}
+[ok] no incident anywhere (calibration, lock, confirm, report); no stop
+[ok] calibrate commit bf0049c…, lock commit be74d23…
+[ok] executed_prompt_keys and executed_noun_keys empty; confirmation and report null
+[ok] state binds the candidate lock and preregistration
+[ok] state's calibration binding == committed record file/content
+[ok] state's confirmation_024 == committed freeze
+[ok] outputs/experiment-024 holds exactly the five expected files (no stage2 / measurement / temp file) :: ['calibration-arrays.pt', 'candidate-calibration.json', 'candidate-lock.json', 'candidate-preregistration.md', 'results.json']
+====================================================================================================
+ITEM 2: candidate integrity and rendering
+[ok] candidate lock file sha256 5c2a9b90…
+[ok] candidate lock content sha256 (own canonical, key removed) a39668bf…
+[ok] candidate lock bytes == canonical JSON + single newline
+[ok] every float in the lock finite; no NaN/Infinity token :: 96 floats
+[ok] candidate preregistration file sha256 007c9e6c…
+[ok] canonical route: pm.sha256_text(pm.canonical_json(lock without key)) == content
+[ok] preregistration bytes == rr.render_preregistration(lock) (UTF-8, byte for byte)
+[ok] state preregistration digest == pm.sha256_text(text)
+[ok] prereg: header run id / commit / design / plan / configuration
+[ok] prereg: calibration digests
+[ok] prereg: confirmation / manifest
+[ok] prereg: 023 cells digests
+[ok] prereg: model / embedding / 020 states digests
+[ok] prereg: primary F_ρ, null, effective threshold parse back exactly to the lock's floats
+[ok] prereg: guard E and N words == lock units, in order
+[ok] prereg: guard C(16, 8) = 12870; max_upper 321; 321/12870
+[ok] prereg: outcome table rows == lock outcome table
+[ok] prereg: extrapolation sentence == lock's; +0.135020 == the bound maximum at 6 decimals
+[ok] prereg: line intercept / slope / residual sd / n parse back exactly
+[ok] prereg: all 40 table rows: class, word, token id, nounness, prediction, flag == the lock's (floats parse back bit-exactly)
+   number tokens not equal to a lock float (context-checked above): {'+0.135020': 1, '020': 1, '023': 2, '024': 1, '4': 2}
+[ok] prereg: no unexplained number (only structural integers and the +0.135020 rendering remain) :: []
+====================================================================================================
+ITEM 3 (file side): bindings
+[ok] lock.calibration == committed record (path, file, content)
+[ok] lock.confirmation_024 == committed freeze (path, file, content) + counts + manifest
+[ok] 023 exposed cells: data file d2ee71e5…, index file 62818147…, index content d38305cb… (own hashes)
+[ok] 023 cells files unchanged in git since 023 (committed, clean)
+[ok] lock.dependencies == record.dependencies (whole block)
+[ok] model digests bound: parameters fd953f1c…, embedding 9cd6f39b…
+   readout_decompilation.py     own caa73b40192f4c910dc63371bd19db75a3258339 head caa73b40192f4c910dc63371bd19db75a3258339 ok
+   readout_calibration.py       own 9107da975128d9b0383f3b346695675104e4cde9 head 9107da975128d9b0383f3b346695675104e4cde9 ok
+   head_pattern.py              own 386682fe0a47d093dfbee2507afc1df61811ab15 head 386682fe0a47d093dfbee2507afc1df61811ab15 ok
+   frame_channels.py            own c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8 head c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8 ok
+   attention_patterns.py        own 3f5acd65397bd11723ba6fc2ec4253f1d5c81943 head 3f5acd65397bd11723ba6fc2ec4253f1d5c81943 ok
+   layer_correction.py          own 04df0cc9a20093cc48ee5ef62da7f206bf1a3186 head 04df0cc9a20093cc48ee5ef62da7f206bf1a3186 ok
+   plural_mechanism.py          own d39da8a8d9931005d411258bcddbb7f9beed35e4 head d39da8a8d9931005d411258bcddbb7f9beed35e4 ok
+   encoding_read.py             own cab99c942de970332e726a5626b584242d4cf600 head cab99c942de970332e726a5626b584242d4cf600 ok
+   head_transport.py            own 936093a4e82c83e299a65a7c85529a7226f80c95 head 936093a4e82c83e299a65a7c85529a7226f80c95 ok
+   models.py                    own b1c6f03379af7e0918d0d1a6460a264651603fb2 head b1c6f03379af7e0918d0d1a6460a264651603fb2 ok
+   upstream_localization.py     own 465856962aa380747d1a4f1338d1d2762d03c9f9 head 465856962aa380747d1a4f1338d1d2762d03c9f9 ok
+   block0_completion.py         own 16d310fc7fab5599ec83b8bd8162fb9613f8dad2 head 16d310fc7fab5599ec83b8bd8162fb9613f8dad2 ok
+[ok] all 12 pinned module blobs: own sha1 == git HEAD blob == FROZEN_BLOBS == lock == record
+[ok] lock.module: readout_routing.py blob e6cb3776… == own sha1 of the file == git blob at HEAD == git blob at the lock commit :: e6cb37767d1d06c6ff40804a88eab569723afdb5
+[ok] the imported rr module is the repository file (editable install) :: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py
+   last commit touching readout_routing.py or run.py: 44c3c2b 2026-09-25T11:40:43+03:00 fix: experiment 024 — the extrapolation flags in the secondary analyses, the fresh cues in the report, exact rule text, more outcome paths
+   paths changed between the calibrate commit and HEAD: ['experiments/024-readout-routing-nounness/README.md', 'experiments/024-readout-routing-nounness/calibration-v1.json', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/README.md', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/calibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/calibrate_run.json', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/launch_calibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/post_install_checks.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/post_install_checks.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/precalibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/precalibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/verify_calibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/verify_calibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/REVIEW.md', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/own_mse.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/own_scores.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/rguard.py']
+[ok] no scientific path changed between the calibrate commit and the lock commit (rr.scientific_changes)
+[ok] the lock commit changed nothing since (HEAD == lock commit)
+[ok] lock inputs == record inputs == state inputs
+[ok] lock design / plan / configuration / constants / score / line
+[ok] lock.semantics == rr.SEMANTICS; outcome table == rr.OUTCOME_TABLE; readings
+[ok] lock kind / experiment / schema / run id
+[ok] secondary definitions frozen in the bound code: CONTRASTS, contrast tag, bootstrap elements
+   SCIENTIFIC_PATH_PREFIXES: ('src/', 'experiments/024-readout-routing-nounness/', 'experiments/023-block0-completion/', 'experiments/022-upstream-error-localization/', 'experiments/021-corrected-readout-confirmation/', 'experiments/020-readout-decompilation/', 'experiments/019-block2-routing/', 'experiments/018-block2-concentration/', 'experiments/017-transport-head-pattern/', 'experiments/016-frame-conditioned-qk/', 'experiments/015-attention-pattern-token-local/', 'experiments/014-neuron-1987-feature/', 'experiments/013-attention-paths-frozen-pattern/', 'experiments/012-layer-correction-token-local/', 'experiments/011-encoding-read-prospective/', 'experiments/010-read-direction-assembly/', 'experiments/009-head-transport-rule/', 'experiments/008-cue-suppression-localization/', 'experiments/007-supervised-cue-subspace/', 'experiments/006-low-rank-cue-decompilation/', 'experiments/005-regular-plural-mechanism/', 'screening/behavior-candidates/manifest-v1.json')
+   NON_SCIENTIFIC_PATHS: ('experiments/024-readout-routing-nounness/confirmation-v1.json', 'experiments/024-readout-routing-nounness/calibration-v1.json', 'experiments/024-readout-routing-nounness/preregistration-lock.json', 'experiments/024-readout-routing-nounness/preregistration.md', 'experiments/024-readout-routing-nounness/README.md', 'experiments/023-block0-completion/README.md', 'experiments/022-upstream-error-localization/calibration-v1.json', 'experiments/022-upstream-error-localization/preregistration-lock.json', 'experiments/022-upstream-error-localization/preregistration.md', 'experiments/022-upstream-error-localization/locked-y1-table.f64', 'experiments/022-upstream-error-localization/locked-y1-table.json', 'experiments/022-upstream-error-localization/README.md')
+   NON_SCIENTIFIC_PREFIXES: ('experiments/024-readout-routing-nounness/evidence/', 'experiments/023-block0-completion/evidence/', 'experiments/022-upstream-error-localization/evidence/')
+   scientific_changes([src/neural_decompiler/readout_routing.py]) -> SCIENTIFIC
+   scientific_changes([src/neural_decompiler/upstream_localization.py]) -> SCIENTIFIC
+   scientific_changes([experiments/024-readout-routing-nounness/run.py]) -> SCIENTIFIC
+   scientific_changes([experiments/023-block0-completion/exposed-cells.f64]) -> SCIENTIFIC
+   scientific_changes([experiments/023-block0-completion/confirmation-v1.json]) -> SCIENTIFIC
+   scientific_changes([experiments/020-readout-decompilation/closure.json]) -> SCIENTIFIC
+   scientific_changes([experiments/024-readout-routing-nounness/preregistration-lock.json]) -> non-scientific
+   scientific_changes([experiments/024-readout-routing-nounness/preregistration.md]) -> non-scientific
+   scientific_changes([experiments/024-readout-routing-nounness/README.md]) -> non-scientific
+   scientific_changes([experiments/024-readout-routing-nounness/evidence/lock-2026-09-25/x.json]) -> non-scientific
+   scientific_changes([experiments/024-readout-routing-nounness/confirmation-v1.json]) -> non-scientific
+   scientific_changes([experiments/024-readout-routing-nounness/calibration-v1.json]) -> non-scientific
+   scientific_changes([tests/test_readout_routing.py]) -> non-scientific
+   scientific_changes([docs/x.md]) -> non-scientific
+   scientific_changes([pyproject.toml]) -> non-scientific
+   scientific_changes([uv.lock]) -> non-scientific
+[ok] scientific_changes classifies the constructed paths as expected :: {}
+====================================================================================================
+ITEM 5: frozen predictor (file side)
+[ok] lock.line == committed record line (slope 1.2992017464639374, intercept −2.481260357420486, residual sd 0.2570037337349923, n 139)
+[ok] every predicted_log_mse == intercept + slope · nounness (float64, the same expression)
+   predictions vs exact rational intercept + slope·x: worst error 0.555 ulp
+[ok] predictions within 1 ulp of the exact rational value
+   exact OLS: slope 1.2992017464639374 (lock 1.2992017464639374, diff 0.00e+00); intercept -2.481260357420486 (diff 0.00e+00); residual sd 0.2570037337349923 (diff 0.00e+00)
+[ok] line agrees with the exact rational OLS of the record's entries to ≤ 1e-14
+[ok] record's log_mse == ln(mse) for every calibration entry
+   exposed Spearman (own, exact sums) 0.5296617364493499 vs record 0.5296617364493499
+[ok] exposed Spearman 0.5296617364493499 (record) reproduced by own implementation within 1e-15
+[ok] no fresh observed MSE anywhere in the lock (no key mse/log_mse/rho/K in fresh cues)
+====================================================================================================
+ITEM 6: primary binding (thresholds from the committed record and the arrays)
+[ok] record F_ρ 0.24411074612857814, null₉₇.₅ 0.3136960600375234, effective 0.3136960600375234 binds null_975, undefined 0
+[ok] lock primary == record thresholds
+[ok] state calibration arrays digests == record arrays digests
+[ok] calibration-arrays.pt: own digests == record arrays_sha256 (draw_rho, draw_defined, draw_indices, null_rho, null_permutations) :: {'draw_defined': '76b5b97082b66ea03f4d27ef68a61a92b12528861ade0eeef00f28db031fac09', 'draw_indices': '955930cef2c6e3a4052944b8dafdd9ded3dfc87d15af46a79b9b8e48bd2baabd', 'draw_rho': '7c03376c7c05cdb9a95660f955a72e44023bb1d71dbabf5f9dfe1293f3d88f58', 'null_permutations': 'a68f72910c090678198880ae551e86281745615052a4daaca01b40fa75e48548', 'null_rho': '92e6302944d2adbfdc4aa897ea85ea1698adfaa66100c1b614c0bfc39c200665'}
+[ok] calibration-arrays.pt file sha256 a4cd548f… (unchanged baseline)
+[ok] draws: 10,000, all defined
+[ok] F_ρ == sorted(draw_rho)[249]; null₉₇.₅ == sorted(null_rho)[97499]
+[ok] own regeneration of the 10,000 × 40 SHA-indexed draw indices == the saved array
+   own exact-sum Spearman of every draw vs the saved draw_rho: max |diff| 0.000e+00
+[ok] every draw's Spearman reproduced (own implementation) within 1e-14
+[ok] own Fisher–Yates regeneration of all 100,000 permutations == the saved array
+   closed-form 1 − 6Σd²/(n(n²−1)) vs the saved null_rho: max |diff| 1.110e-16
+[ok] null Spearman values reproduced by the closed form within 1e-15
+   exact null₉₇.₅ as a rational from the order statistic of Σd²: 0.3136960600375234 (record 0.3136960600375234)
+[ok] null₉₇.₅ equals the exact rational order statistic to ≤ 1e-16
+[ok] direction check: F_ρ ≤ median of the defined draws :: median 0.5285171092272343
+====================================================================================================
+ITEM 7 (file side): E–N guard binding
+[ok] guard units E == the freeze's 8 E cues in frozen order; N == the 8 N cues
+[ok] guard spec == rr.PRODUCTION_GUARD.to_json() == GuardSpec.derive(8, 8); 321/12870 ≤ 0.025 < 322/12870
+[ok] enumeration structure: 12,870 distinct size-8 subsets, observed (0…7) first, complement pairing is an involution without fixed points
+====================================================================================================
+ITEM 9: the fresh manifest and its isolation
+[ok] 108 frames × 40 cues = 4,320 keys, all unique
+[ok] own manifest digest == lock manifest_sha256 fcc437fc… :: fcc437fca9730b8599333eeac95807786570f0d03bd01e49f52daec76ed4e32d
+[ok] the freeze file's stored manifest == own reconstruction in canonical (sorted) order
+[ok] 020 results file is the closed one (da63b8c2…)
+   spent sets: 020 ledger 30132, 020 confirmation 3060, 022 manifest 3060, 023 manifest 3060; union 39312
+[ok] spent union is 39,312 keys :: 39312
+[ok] zero collision between the 4,320 fresh keys and the 39,312 spent keys
+[ok] no fresh cue token id occurs as the cue token of any spent key
+[ok] the 024 ledger (executed_prompt_keys) holds none of them (empty)
+====================================================================================================
+ITEM 12: no fresh outcome leakage
+   tracked files containing a fresh prompt key: ['experiments/024-readout-routing-nounness/confirmation-v1.json']
+[ok] the only tracked file containing any fresh key is the freeze (its manifest)
+[ok] no untracked, non-ignored file in the repository
+   stage2-named files anywhere under outputs/ (names only): ['outputs/experiment-022/stage2-measurements.pt', 'outputs/experiment-023/stage2-measurements.pt', 'outputs/experiment-021/stage2-tables.pt']
+[ok] no stage-2 measurement file for 024 anywhere under outputs/
+   files under outputs/ modified since the freeze commit: [('outputs/experiment-024/candidate-preregistration.md', '2026-09-25T20:14:05'), ('outputs/experiment-024/calibration-arrays.pt', '2026-09-25T16:08:32'), ('outputs/experiment-024/results.json', '2026-09-25T20:14:05'), ('outputs/experiment-024/candidate-lock.json', '2026-09-25T20:14:05'), ('outputs/experiment-024/candidate-calibration.json', '2026-09-25T16:08:45')]
+[ok] since the freeze, only outputs/experiment-024 files were written under outputs/
+   files added/modified in commits from the freeze to HEAD: ['experiments/024-readout-routing-nounness/README.md', 'experiments/024-readout-routing-nounness/calibration-v1.json', 'experiments/024-readout-routing-nounness/confirmation-v1.json', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/README.md', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/calibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/calibrate_run.json', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/launch_calibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/post_install_checks.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/post_install_checks.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/precalibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/precalibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/verify_calibrate.out', 'experiments/024-readout-routing-nounness/evidence/calibrate-2026-09-25/verify_calibrate.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/REVIEW.md', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/own_mse.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/own_scores.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_state.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_stats.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.json', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.out', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/review_weights.py', 'experiments/024-readout-routing-nounness/evidence/calibration-review-2026-09-25/rguard.py', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/README.md', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/freeze_run.json', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/launch_freeze.py', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/post_commit_checks.out', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/post_commit_checks.py', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/verify_freeze.json', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/verify_freeze.md', 'experiments/024-readout-routing-nounness/evidence/freeze-2026-09-25/verify_freeze.py', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/REVIEW.md', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_freeze.json', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_freeze.log', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_freeze.py', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_scores.json', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_scores.log', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/review_scores.py', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/rguard.py', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/scan_outputs.log', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/scan_outputs.py', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/static_freeze_path.log', 'experiments/024-readout-routing-nounness/evidence/freeze-review-2026-09-25/static_freeze_path.py']
+   024 evidence lines naming a fresh cue together with an outcome word: [] (0 total)
+[ok] the state carries no fresh measurement, Δc, Δx3, MSE, ρ or K
+[ok] the candidate lock and preregistration carry no fresh outcome (no ρ value, K or MSE of a fresh cue)
+====================================================================================================
+guard events: {'refused_writes': [], 'refused_reads': [], 'opens_under_root_for_write': 0}
+[ok] no write under the repository was attempted by this script
+FAILURES: none
