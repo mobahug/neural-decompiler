@@ -2,16 +2,19 @@
 
 **Date:** 2026-09-24
 
-**Status:** Revision 1, for design review. It follows:
+**Status:** Revision 2, for design review. It follows:
 - Experiment 023's closure (`b45a646`);
 - the post-closure diagnostic of 023's spent data;
 - the exposed-only design spike for 024;
 - the reviewer's decisions: Option C as the primary test and Option A as a secondary discriminating analysis, with the
-  seven pre-design points settled.
+  seven pre-design points settled;
+- the review of revision 1 (`dbfbfce`). Its final-picks power check showed that a world where only plural morphology
+  matters would pass the primary test. Revision 2 adds an E-versus-N disambiguation guard, and a frozen outcome that
+  combines the guard with the unchanged primary result. Nothing else changes scientifically.
 
-No code, runner, freeze, calibration or fresh prompt exists yet. The diagnostic and the spike measured no new cue. They
-used spent data, the weights and the tokenizer only; every forward pass was refused, and nothing was written into the
-repository.
+No code, runner, freeze, calibration or fresh prompt exists yet. The diagnostic, the spike and the design checks
+measured no new cue. They used spent data, the weights and the tokenizer only; every forward pass was refused, and
+nothing was written into the repository.
 
 ## Background: what Experiment 023 settled (confirmed)
 
@@ -60,20 +63,55 @@ for its hypothesis.
    - The 36 pronoun cues, never in the fit: +0.42.
    - 023's 24 spent cues over all 108 frames: +0.50, with the exposed-fitted line's median |log error| 0.10.
    - Leave-one-cue-out median |log error|: 0.15.
-6. **Power, from simulations using the expected picks' scores** (not an outcome), with the exposed residual spread:
+6. **Power, from simulations using the expected picks' scores** (not an outcome). Each simulation draws every cue's
+   `log MSE` from the exposed line plus normal noise with the exposed residual spread (0.257), 20,000 simulations per
+   row. The primary uses the design-diagnostic bound 0.315; the E–N guard (below) uses its exact rule.
 
-   | if | probability that the fresh Spearman ≥ 0.315 |
-   |---|---|
-   | the exposed nounness relation holds | 0.999 (median ρ 0.65) |
-   | only plural morphology matters (only B and C elevated) | 0.983 (median ρ 0.52) |
-   | only measure semantics matters (only B and D elevated) | 0.090 |
-   | there is no effect | 0.028 |
+   | if | P(primary `PASS`) | P(E–N guard `PASS`) | P(both: the strongest outcome) |
+   |---|---|---|---|
+   | the exposed nounness relation holds | 0.999 | 0.834 | 0.833 |
+   | only plural morphology matters (B and C on the line, the others at the N level) | 0.982 | 0.025 | 0.025 |
+   | only measure semantics matters (B and D on the line, the others at the N level) | 0.093 | 0.024 | 0.009 |
+   | there is no effect | 0.025 | 0.025 | 0.004 |
 
-   **The primary test cannot separate nounness from plurality.** Plural forms score higher than their own singulars:
-   on average +0.10 across the B/D lemma pairs and +0.12 across the C/E pairs. Only the lemma-paired secondary
-   contrasts separate the two: the plurality effect, and D/E against N.
+   - **The primary test alone cannot separate nounness from plurality.** Plural forms score higher than their own
+     singulars: on average +0.10 across the B/D lemma pairs and +0.12 across the C/E pairs. Revision 2 adds the
+     E-versus-N guard for this reason.
+   - In the plurality-only and measure-only worlds, E and N have the same distribution. The guard's pass rate there
+     is at most its exact size, 2.494 %, whatever the primary does.
+   - **Sensitivity.** The guard's power is 0.75 at 0.9 times the line's slope, about 0.60 at 0.75 times, 0.61 at the
+     within-stratum slope (0.98, fitted with a separate intercept for each exposed stratum), and 0.32 at half the
+     slope. Resampling the line's leave-one-cue-out errors instead of normal noise gives 0.824 under the line and
+     0.024 in the plurality-only world.
 
 7. **Ordinary plural nouns have never been measured as cues.** The crucial control is genuinely prospective.
+8. **The E and N picks on the score** (a design check for revision 2):
+   - **Every E is above every N.**
+     - E: +0.108 (lion) to +0.298 (horse), mean +0.174.
+     - N: −0.229 (honest) to −0.045 (nervous), mean −0.146.
+     - The gap between the classes is +0.154. The mean difference, +0.320, is 2.6 times the C/E plural shift.
+     - The reserves keep the separation.
+   - **Both parts of the score separate the two classes.** Cosine to `μ_noun`: +0.220 for E against +0.046 for N.
+     Cosine to `μ_cue`: +0.046 against +0.192.
+   - **Frequency proxy, descriptive only.** By token id, the E words are the more frequent (median id 17,689 against
+     23,113). In the spike, higher ids went with larger error, so this proxy does not favour `E > N`.
+   - **Expected contrast under the line.** `D_EN` is 1.299 × 0.320 = +0.416, an MSE ratio of 1.52. Its spread is 0.129
+     from the cue noise, and 0.142 with the slope's uncertainty. With the within-stratum slope, the expectation is
+     +0.315.
+   - **The E prediction is an extrapolation.**
+     - Five of the eight E scores lie above every calibration cue's (maximum +0.135), and E reaches +0.30.
+     - Post hoc, 023's five spent cues above that maximum (piles, masses, stacks, scores, batches; +0.14 to +0.22)
+       were predicted with a median |log error| of 0.11.
+9. **The exact enumeration** (a design check for revision 2):
+   - `itertools.combinations(range(16), 8)` gives 12,870 distinct subsets of size 8, with the observed assignment
+     first. Complementation pairs them (6,435 pairs), and each complement's exact sum is the total minus the subset's.
+   - **Untied data.** On 200 random untied data sets, the threshold is the 12,550th ascending value. Exactly 321 of
+     the 12,870 assignments would pass if each were the observed one. On 100 simulated nounness-world data sets, the
+     exact and float64 decisions agree.
+   - **Tied data.** In no tied data set would more than 321 assignments pass. The sets tested: all values equal, two
+     values, small integers, and 300 random tie-laden sets. With all 16 values equal, `t = +∞` and the guard fails.
+   - **Why the arithmetic is exact.** A constructed case shows float64 tying the observed sum with 6,863 other
+     assignments, 3,432 of which are strictly below it in exact arithmetic (float64 `K` 9,867, exact `K` 6,435).
 
 ## The frozen objects
 
@@ -116,6 +154,10 @@ The hypothesis is **predictive and associational**: higher operational nounness 
 working mechanistic reading, that noun-like cue representations redistribute downstream attention more so that the
 frozen reference routing no longer holds, is not what is tested. 024 does not claim that nounness causes attention
 redistribution.
+
+**Disambiguation.** The score is higher for plural forms than for their singulars, so a primary `PASS` alone could
+reflect plural morphology. A frozen guard compares ordinary singular nouns with the non-noun controls (E against N,
+below). It decides whether the association can be read as nounness beyond simple plurality or measure class.
 
 ## Populations and fresh units
 
@@ -198,7 +240,88 @@ The two thresholds serve different purposes, and both come from calibration, nev
 - `F_ρ` asks that the fresh result is not unusually weak compared with the frozen exposed relationship.
 - `null₉₇.₅` requires predictive information beyond chance.
 
-The preregistered guard is the one-sided 97.5 % null. The 99.5 % value is never used.
+The preregistered null guard is the one-sided 97.5 % null. The 99.5 % value is never used.
+
+## The E-versus-N disambiguation guard (frozen)
+
+**Why.** Plural forms score higher than their own singulars. So a world where only plural morphology matters would pass
+the primary test with probability 0.98 in the design simulation. The guard compares the two classes that are both
+singular and non-measure:
+- **E**, the 8 ordinary singular nouns, against **N**, the 8 non-noun controls.
+- Nounness predicts `E > N`. Plural morphology alone and measure semantics alone predict no difference, since neither
+  class is plural and neither is a measure word.
+
+It is an interpretation guard on the primary result, not a separately searched second hypothesis. It uses the
+primary's per-cue MSE, with no fitted coefficient and no calibration.
+
+**Statistic:**
+
+`D_EN = mean(log MSE_E) − mean(log MSE_N)`
+
+- `log` is the natural logarithm, in float64, of the per-cue MSE defined for the primary statistic.
+- The 16 values are ordered E first, then N, each class in its frozen order.
+
+**Exact null (enumerated, no Monte Carlo):**
+- **The enumeration.** It covers every assignment of the 16 observed values to two groups of 8:
+  `itertools.combinations(range(16), 8)`, all `C(16, 8) = 12,870` subsets. The observed assignment, positions 0–7,
+  comes first.
+- **Each assignment's value.** For an assignment `S`, `D(S)` is the mean over `S` minus the mean over its complement.
+  - Since `D(S) = (2 · Σ_S − Σ_all) / 8`, ordering by `D` is ordering by the sum over `S`.
+  - The complement's `D` is `−D(S)`.
+- **Exact sums.** Every float64 value is a dyadic rational, so the sums are computed in exact rational arithmetic.
+  - Ties are then exact, and the result cannot depend on the order of summation.
+  - Float64 sums can create false ties or break real ones; the design check constructs a false tie.
+
+**Rule:**
+- **`K`** is the number of the 12,870 assignments with `D(S) ≥ D_EN`, the observed one included. `K / 12,870` is the
+  exact one-sided p-value.
+- **The guard passes iff `K ≤ 321`**, where 321 = ⌊0.025 · 12,870⌋.
+  - Equivalently, `D_EN ≥ t`, the one-sided 97.5 % threshold: the smallest enumerated value with at most 321
+    assignments at or above it.
+  - Without a tie there, `t` is the 12,550th ascending enumerated value (zero-based element `[12549]`).
+- **Size.** If the E and N values are exchangeable (the class makes no difference), at most 321 of the 12,870 equally
+  likely assignments reach `t`.
+  - The size is therefore at most 321 / 12,870 = 2.494 %, and ties can only lower it.
+  - A bound of 322 would give 2.502 %, above 2.5 %.
+- **Massive ties.** If no enumerated value has 321 or fewer assignments at or above it, `t = +∞` and the guard fails.
+  This is possible only with massive ties, such as all 16 values equal.
+- **Frozen before any measurement:** the statistic, the enumeration, the bound 321 and the tie rule.
+  - The value of `t` is computed at confirm from the 16 observed values, because an exact permutation null is
+    conditional on them.
+  - Nothing is chosen after the outcome.
+
+**Results:**
+- `NOT_INTERPRETABLE`: one of the 16 MSE values is not finite and positive, so its log is undefined.
+- `FAIL`: `K > 321`.
+- `PASS`: `K ≤ 321`.
+
+**Reported descriptively** in every case:
+- each group's mean MSE and mean `log MSE`;
+- the ratio of geometric means, `exp(D_EN)`;
+- `D_EN`, `t`, `K` and the exact p-value.
+
+## Outcome (frozen)
+
+The primary result and the E–N guard combine into one frozen outcome, in precedence order:
+
+| primary result | E–N guard | outcome |
+|---|---|---|
+| an incident | — | no result |
+| `NOT_INTERPRETABLE` | any | `NOT_INTERPRETABLE` |
+| `GUARD_FAILURE` or `ENVELOPE_ONLY_FAILURE` | any (descriptive only) | `NOUNNESS_PREDICTION_NOT_ESTABLISHED` |
+| `PASS` | `FAIL` or `NOT_INTERPRETABLE` | `ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED` |
+| `PASS` | `PASS` | `NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS` |
+
+- **Recorded:** the primary's four-way result, the guard's result and the outcome.
+  - The guard is computed whatever the primary result.
+  - When the primary is not `PASS`, the guard cannot change the outcome.
+- **Two guards.** The primary's `GUARD_FAILURE` is its null guard (`ρ < null₉₇.₅`), not the E–N guard.
+- **No multiplicity adjustment.** The strongest outcome needs both tests, and requiring the guard can only make it
+  harder to reach.
+- **False positives.** If only plurality, or only measure semantics, affected the error, E and N would be
+  exchangeable. The strongest outcome's false-positive rate would then be at most the guard's size, 2.494 %.
+- **Predictive, not causal.** Every outcome is predictive and associational. None establishes that nounness causally
+  changes attention.
 
 ## Calibration (exposed only, once; no forward pass)
 
@@ -242,6 +365,9 @@ slope, intercept and residual standard deviation.
 The design diagnostics give `F_ρ ≈ 0.257` and `null₉₇.₅ ≈ 0.315`, so the null guard binds; the exact values come from
 calibration. The candidate record is installed byte-identically, committed and reviewed before `lock`.
 
+The E–N guard needs no calibration. Its exact null is built from the 16 fresh values at confirm, and nothing in it is
+fitted.
+
 ## Freeze (tokenizer only; no model output)
 
 - Applies the eligibility and class rules to the ordered lists.
@@ -259,6 +385,9 @@ The lock binds:
 - each fresh cue's nounness score (float64, with a digest), computed from the pinned embedding matrix;
 - the secondary line's prediction for each cue;
 - `F_ρ` and `null₉₇.₅` from the committed record;
+- the E–N guard's rule: the E and N cues in order, the natural log, the enumeration, the bound 321 and the tie rule.
+  The rule has no calibrated value;
+- the outcome table;
 - the semantics, the manifest, the exposed-state digest, the module blobs, the design and plan, and the confirmation
   file and calibration record digests.
 
@@ -277,11 +406,19 @@ There is no prediction table: the outcome needs measurement, and the predictor i
    - I1: the block-0 decomposition against the measured `Δx1`, 1e-4;
    - I3: 022's full composition against the measured `Δx3`, relative 1e-4;
    - I4: the full composition's `Δĉ` against `C`, 1e-3 nats.
-5. `C` from the saved `Δx3`, then the per-cue MSE, the primary `ρ` and its result. The results are written, together
-   with the completed phase, before anything descriptive runs.
+5. **The results.** In order:
+   - `C` from the saved `Δx3`;
+   - the per-cue MSE;
+   - the primary `ρ` and its result;
+   - the E–N guard and its result;
+   - the outcome.
+
+   They are written, together with the completed phase, before anything descriptive runs.
 6. The secondary analyses and the descriptive records.
 
-## Secondary analyses (frozen; no authority to redefine the primary result)
+## Secondary analyses (frozen; no authority over the primary result, the E–N guard or the outcome)
+
+They cannot rescue a failed primary or guard result, and they cannot redefine the outcome after confirmation.
 
 Reported for every cue and class:
 - Spearman on cue-final frames only (per-cue MSE over the 72 cue-final frames) and on coordinated frames only (36).
@@ -321,6 +458,8 @@ identity tolerance of 2e-2 nats, is reported. It is not a gate.
 | the prompt accounting | exact | incident |
 | the exposed-cells artifact at calibration (index, content and data digests) | exact | refused |
 | the Spearman implementation against a direct recomputation | 1e-12 | incident |
+| the E–N enumeration: 12,870 distinct subsets of size 8, each complement's exact sum equal to the total minus the subset's | exact | incident |
+| `D_EN` in exact arithmetic against a direct float64 mean difference | 1e-12 | incident |
 | the Level-1 identity | 2e-2 nats | descriptive only |
 
 ## Phases and leakage boundaries
@@ -342,33 +481,54 @@ Like 023, the frozen-input loader also reads the hash-pinned 020 results state, 
 - **Hard identities** (I1, I3, I4, the `C` recomputation, the accounting): an incident, with no result.
 - **Stops for review, not incidents:** a freeze shortfall, and a calibration stop (250 or more undefined draws, or a
   reversed direction check).
-- **`NOT_INTERPRETABLE`:** only if `ρ` is undefined.
+- **`NOT_INTERPRETABLE`:**
+  - for the primary, only if `ρ` is undefined;
+  - for the E–N guard, only if one of its 16 MSE values is not finite and positive.
 - An interruption of `confirm` spends the protocol version.
 - Nothing is retried at an incident's commit.
 
 ## Interpretation (frozen)
 
-- **`PASS`:** higher operational nounness prospectively predicted larger error of the frozen block-4/5 attention readout
-  on unseen cue words. The prediction was at least as strong as the exposed-like relationship and beyond chance.
-- **`ENVELOPE_ONLY_FAILURE`:** the score carries predictive information beyond chance, but less than the exposed
-  relationship would lead one to expect.
-- **`GUARD_FAILURE`:** no evidence that the score predicts the readout error on fresh cues beyond chance.
+- **`NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`:**
+  - Higher operational nounness prospectively predicted larger error of the frozen block-4/5 attention readout on 40
+    unseen cue words, at least as strongly as the exposed-like relationship and beyond chance.
+  - In addition, the ordinary singular nouns had larger error than the non-noun controls beyond chance. Neither plural
+    morphology alone nor measure semantics alone predicts that.
+- **`ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED`:**
+  - The score predicted the error, but the result does not separate nounness from plural morphology or measure
+    semantics.
+  - The secondary contrasts describe the shape of the effect, with no winner.
+  - A guard failure is not evidence against nounness: under the frozen line the guard fails in about one simulation
+    in six.
+- **`NOUNNESS_PREDICTION_NOT_ESTABLISHED`:** the primary requirement failed, and the primary's result says how:
+  - `ENVELOPE_ONLY_FAILURE`: the score carries predictive information beyond chance, but less than the exposed
+    relationship would lead one to expect;
+  - `GUARD_FAILURE`: no evidence that the score predicts the readout error on fresh cues beyond chance.
+
+  The E–N guard is reported descriptively only.
 - **`NOT_INTERPRETABLE`:** no result.
-- **What a `PASS` does not show:**
+- **What even the strongest outcome does not show:**
   - that nounness causes the attention change;
   - that the score measures linguistic nounhood;
-  - which lexical property drives the error, and in particular nounness as against plurality (the secondary contrasts
-    inform this, with no winner);
+  - which part of the score matters: similarity to the target nouns or dissimilarity to the exposed cues (both separate
+    E from N);
+  - that no other property that differs between ordinary nouns and these adjectives explains `E > N`;
   - generality beyond the 108 exposed frames, the 79 nouns and this checkpoint.
 
 ## Interpretation limits
 
 - The score is operational, relative to the 79 target nouns and the 139 exposed cues.
-- **The primary association cannot separate nounness from plurality.** The score is higher for plural forms than for
-  the singulars of the same lemmas, and a plural-morphology-only world would pass the primary test with probability
-  0.98 in the design simulation. The lemma-paired contrasts are the discriminating analysis: a positive plurality
-  effect, or D/E at the level of N. A `PASS` alone says that the score predicts the error, not which of the two
-  properties does.
+- **The primary association alone cannot separate nounness from plurality.**
+  - The score is higher for plural forms than for the singulars of the same lemmas.
+  - A plural-morphology-only world passes the primary test with probability 0.98 in the design simulation.
+  - The E–N guard is the disambiguation. It rules out only the two simple explanations it was built for, since E and N
+    differ in more than nounness.
+- **The guard's power is adequate at the frozen line, not generous:**
+  - 0.83 if the exposed line holds;
+  - about 0.60 at three quarters of its slope, or at the within-stratum slope;
+  - 0.32 at half the slope.
+
+  Five of the eight E scores lie above every calibration cue's, so the E prediction extrapolates the line.
 - The classes are curated by hand from ordered lists, frozen before any measurement.
 - There are 8 cues per class, one checkpoint and the exposed frames only.
 - The comparator is 020's frozen readout.
@@ -395,6 +555,24 @@ Like 023, the frozen-input loader also reads the hash-pinned 020 results state, 
 8. **No measured spike.** No cue is measured during design.
 9. **Background.** The post-hoc material stays hypothesis-generation background only.
 
+**Reviewer decisions on revision 1 (2026-09-25):**
+1. **Not approved unchanged.** The final-picks power check exposed an identifiability problem: a plurality-only world
+   passes the primary test with high probability.
+2. **The primary stays.** The 40-cue Spearman and its threshold `ρ ≥ max(F_ρ, null₉₇.₅)` are unchanged.
+3. **The E-versus-N disambiguation guard.**
+   - `D_EN` on the primary's per-cue MSE, one-sided.
+   - Its null is the exact enumeration of all 12,870 assignments, not Monte Carlo.
+   - It is an interpretation guard, not a separately searched hypothesis.
+4. **The outcome semantics** as frozen above. Every outcome stays predictive and associational.
+5. **The factorial contrasts stay secondary.** They cannot rescue a failed primary or guard, or redefine the outcome.
+6. **Checks before revision 2**, from spent data, embeddings and simulation only, with no cue measured:
+   - the expected contrast under the frozen line;
+   - the guard's power in the four worlds;
+   - the picks' separation on the score;
+   - the exact enumeration and tie semantics.
+
+   Their results are background items 6, 8 and 9.
+
 ## Implementation boundary (for the plan, after approval)
 
 - **New module:** planned as `src/neural_decompiler/readout_routing.py`.
@@ -405,8 +583,12 @@ Like 023, the frozen-input loader also reads the hash-pinned 020 results state, 
   023's committed artifact is the calibration source.
 - **Committed:** the confirmation file, the calibration record, the lock and the preregistration. The results state and
   the measurements stay in `outputs/experiment-024/`, and closure commits the evidence.
-- **Tests:** a tier-B fake-world runner test, tier-A pure tests of the score, the Spearman implementation, the draws
-  and the null, and tier-C contracts: the real-tokenizer freeze picks and the real score values.
+- **Tests:**
+  - a tier-B fake-world runner test;
+  - tier-A pure tests of the score, the Spearman implementation, the draws and the null;
+  - tier-A pure tests of the E–N guard: the enumeration, the exact arithmetic, the bound, the tie rule, the all-equal
+    case and a float-tie case;
+  - tier-C contracts: the real-tokenizer freeze picks and the real score values.
 
 ## Stopping condition
 
@@ -425,3 +607,6 @@ Stop after this revision for design review. Then, each step only when authorized
 
 - Revision 1 (2026-09-24): after 023's closure, the post-closure diagnostic, the exposed-only design spike and the
   reviewer's choice of Option C primary with Option A secondary.
+- Revision 2 (2026-09-25): after the review of revision 1. It adds the E-versus-N disambiguation guard, with its exact
+  enumerated null, and the frozen outcome that combines the guard with the unchanged primary result. Nothing else
+  changes scientifically.
