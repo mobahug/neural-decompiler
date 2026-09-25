@@ -1,0 +1,343 @@
+"""Experiment 024's module (tier A unless marked): the constants and the immutable production configuration, the pins
+and inherited inputs, the canonical per-cue MSE, the score, Spearman, the line, the SHA indices, the primary
+classification, the exact E–N guard and the outcome; the freeze, the calibration, the lock and the confirmation's
+pure steps; the pinned-model contracts (tier C, opt-in; spent data only)."""
+
+from __future__ import annotations
+
+import dataclasses
+import itertools
+import json
+import math
+import random
+import shutil
+from fractions import Fraction
+from pathlib import Path
+
+import numpy
+import pytest
+import torch
+
+from neural_decompiler import block0_completion as b0c
+from neural_decompiler import readout_calibration as rc
+from neural_decompiler import readout_routing as rr
+from neural_decompiler import upstream_localization as ul
+
+ROOT = Path(__file__).parents[1]
+
+
+# ---------------------------------------------------------------------------
+# Task 1: constants, the production configuration, the pins and the inherited inputs.
+
+
+def test_constants_are_the_design_values():
+    assert rr.DESIGN == {"path": "docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md", "revision": 2, "commit": "9d03dee"}
+    assert rr.PLAN == {"path": "docs/superpowers/plans/2026-09-25-experiment-024-readout-routing-nounness-plan.md", "revision": 1, "commit": "608088c"}
+    assert rr.EXPERIMENT == "024" and rr.EXPERIMENT_DIR == "experiments/024-readout-routing-nounness"
+    assert rr.CLASSES == ("N", "B", "D", "C", "E") and rr.GROUPS == ("cue_final", "coordinated") and rr.PRONOUN_STRATUM == "possessive-or-pronoun"
+    assert (rr.PRIMARY_TAG, rr.NULL_TAG, rr.CONTRAST_TAG) == ("024|primary", "024|null", "024|contrast")
+    assert rr.TOLERANCES == {"I1": 1e-4, "I3": 1e-4, "I4": 1e-3, "C_recompute": 0.0, "I7": 0.0, "spearman": 1e-12, "en_float": 1e-12, "mse": 1e-12, "level1": 2e-2}
+    assert rr.PRIMARY_RESULTS == ("NOT_INTERPRETABLE", "GUARD_FAILURE", "ENVELOPE_ONLY_FAILURE", "PASS")
+    assert rr.GUARD_RESULTS == ("NOT_INTERPRETABLE", "FAIL", "PASS")
+    assert rr.OUTCOMES == ("NOT_INTERPRETABLE", "NOUNNESS_PREDICTION_NOT_ESTABLISHED", "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED",
+                           "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS")
+    assert "SIMPLE" in rr.OUTCOMES[-1] and "simple" in rr.SEMANTICS["simple"] and "unique causal factor" in rr.SEMANTICS["simple"]
+
+
+def test_candidate_lists_are_the_design_lists_verbatim():
+    assert len(rr.N_CANDIDATES) == 37 and rr.N_CANDIDATES[:10] == ("eager", "fierce", "honest", "polite", "rude", "sleepy", "wise", "lucky", "merry", "nervous")
+    assert rr.N_CANDIDATES[-3:] == ("latest", "earliest", "brave")
+    assert len(rr.MEASURE_LEMMAS) == 24 and rr.MEASURE_LEMMAS[0] == ("gallon", "gallons") and rr.MEASURE_LEMMAS[10] == ("bunch", "bunches")
+    assert rr.MEASURE_LEMMAS[-3:] == (("crate", "crates"), ("basket", "baskets"), ("carton", "cartons"))
+    assert len(rr.ORDINARY_LEMMAS) == 28 and rr.ORDINARY_LEMMAS[4] == ("teacher", "teachers") and rr.ORDINARY_LEMMAS[-1] == ("statue", "statues")
+    assert all(plural in (singular + "s", singular + "es") for singular, plural in rr.MEASURE_LEMMAS + rr.ORDINARY_LEMMAS)
+    assert rr.EXPECTED_PICKS == {"N": ("honest", "polite", "rude", "sleepy", "wise", "lucky", "merry", "nervous"),
+                                 "measure": ("gallon", "ounce", "acre", "herd", "crowd", "bundle", "cluster", "litre"),
+                                 "ordinary": ("apple", "horse", "doctor", "king", "rabbit", "poet", "dragon", "lion")}
+
+
+def test_the_production_configuration_is_the_design_and_cannot_be_mutated():
+    config = rr.PRODUCTION
+    assert (config.name, config.class_quota, config.n_fresh, config.draws, config.null_permutations, config.contrast_resamples) == ("production", 8, 40, 10_000,
+                                                                                                                                    100_000, 10_000)
+    assert config.calibration_counts == (("determiner-like", 45), ("quantity", 45), ("adjective", 49)) and config.n_calibration == 139
+    assert (config.n_pronoun, config.n_frames, config.n_nouns, config.cross_check_draws) == (36, 108, 79, 16)
+    assert {key: words for key, words in config.expected_picks} == rr.EXPECTED_PICKS and config.guard is rr.PRODUCTION_GUARD
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        config.class_quota = 4  # type: ignore[misc]
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        rr.PRODUCTION_GUARD.max_upper = 322  # type: ignore[misc]
+    assert json.loads(json.dumps(config.to_json()))["guard"]["max_upper"] == 321
+
+
+def test_production_e_n_guard_contract_is_derived_independently():
+    """Requirement 2: production binds n_E = n_N = 8, C(16, 8) = 12,870 and the largest passing K = 321 — checked against an
+    independent enumeration count and the exact 321/322 boundary, not only against the module's own derivation."""
+    assert rr.PRODUCTION_GUARD == rr.GuardSpec(n_e=8, n_n=8, assignments=12_870, max_upper=321)
+    assert sum(1 for _ in itertools.combinations(range(16), 8)) == 12_870 == math.factorial(16) // (math.factorial(8) ** 2)
+    assert Fraction(321, 12_870) <= Fraction(25, 1000) < Fraction(322, 12_870)
+    assert rr.GuardSpec.derive(8, 8) == rr.PRODUCTION_GUARD
+    assert rr.en_decision(321, rr.PRODUCTION_GUARD) == "PASS" and rr.en_decision(322, rr.PRODUCTION_GUARD) == "FAIL"
+    assert rr.GuardSpec.derive(4, 4) == rr.GuardSpec(4, 4, 70, 1)  # the fake world's sizes, derived by the same rule
+    with pytest.raises(ValueError, match="inconsistent guard"):
+        dataclasses.replace(rr.PRODUCTION, guard=rr.GuardSpec(8, 8, 12_870, 322))
+    with pytest.raises(ValueError, match="full E and N classes"):
+        dataclasses.replace(rr.PRODUCTION, class_quota=4)
+    with pytest.raises(ValueError, match="expected picks"):
+        dataclasses.replace(rr.PRODUCTION, guard=rr.GuardSpec.derive(4, 4), class_quota=4)  # the design's picks are eight per list
+
+
+def test_the_reused_programs_are_pinned_by_blob_and_a_change_refuses(monkeypatch):
+    assert rr.module_blobs() == rr.FROZEN_BLOBS
+    assert rr.FROZEN_BLOBS["upstream_localization.py"] == "465856962aa380747d1a4f1338d1d2762d03c9f9"
+    assert rr.FROZEN_BLOBS["block0_completion.py"] == "16d310fc7fab5599ec83b8bd8162fb9613f8dad2"
+    assert {name: blob for name, blob in rr.FROZEN_BLOBS.items() if name not in ("upstream_localization.py", "block0_completion.py")} == ul.FROZEN_BLOBS
+    assert {name: blob for name, blob in rr.FROZEN_BLOBS.items() if name != "block0_completion.py"} == b0c.FROZEN_BLOBS
+    monkeypatch.setitem(rr.FROZEN_BLOBS, "block0_completion.py", "0" * 40)
+    with pytest.raises(rr.PhaseError, match="frozen modules changed"):
+        rr.assert_frozen_blobs()
+
+
+def test_the_pins_are_literal_and_not_inherited(monkeypatch):
+    monkeypatch.setitem(b0c.FROZEN_BLOBS, "readout_decompilation.py", "0" * 40)
+    monkeypatch.setitem(ul.FROZEN_BLOBS, "readout_decompilation.py", "0" * 40)
+    assert rr.FROZEN_BLOBS["readout_decompilation.py"] == "caa73b40192f4c910dc63371bd19db75a3258339" and rr.assert_frozen_blobs()
+
+
+def _copy_023(tmp_path: Path) -> Path:
+    for relative in rr.INHERITED_023_PATHS.values():
+        (tmp_path / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / relative, tmp_path / relative)
+    return tmp_path
+
+
+def test_experiment_023_inputs_verify_and_tampering_refuses(tmp_path):
+    """Requirement 4: the calibration source is the reviewed 023 artifact, by file and content digest."""
+    root = _copy_023(tmp_path)
+    digests = rr.verify_023_inputs(root)
+    assert set(digests) == set(rr.DIGEST_KEYS[-7:]) and digests["023_cells_data_file"] == "d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4"
+    assert rr.calibration_source()["index_content_sha256"] == "d38305cb86624a4a1b7e70d21f85ed1b57c26e1d2f59f3ec7dbf2a940f582d16"
+    data = root / b0c.CELLS_DATA_RELATIVE_PATH
+    raw = bytearray(data.read_bytes())
+    raw[100] ^= 1
+    data.write_bytes(bytes(raw))
+    with pytest.raises(rr.PhaseError, match="cells data"):
+        rr.verify_023_inputs(root)
+    shutil.copyfile(ROOT / b0c.CELLS_DATA_RELATIVE_PATH, data)
+    index = root / b0c.CELLS_INDEX_RELATIVE_PATH
+    payload = json.loads(index.read_text())
+    payload["cells_version"] = "resealed"
+    payload["content_sha256"] = rc.content_digest(payload)  # verifies on its own, but is not the reviewed file
+    index.write_text(json.dumps(payload))
+    with pytest.raises(rr.PhaseError, match="cells index"):
+        rr.verify_023_inputs(root)
+    shutil.copyfile(ROOT / b0c.CELLS_INDEX_RELATIVE_PATH, index)
+    (root / b0c.LOCK_RELATIVE_PATH).unlink()
+    with pytest.raises(rr.PhaseError, match="lock"):
+        rr.verify_023_inputs(root)
+
+
+# ---------------------------------------------------------------------------
+# Task 2: the canonical computations.
+
+
+def _cells(rows: int, seed: int = 3) -> tuple[torch.Tensor, list[torch.Tensor], list[torch.Tensor]]:
+    generator = torch.Generator().manual_seed(seed)
+    ys = [torch.randn(79, generator=generator, dtype=torch.float64) for _ in range(rows)]
+    cs = [y + 0.3 * torch.randn(79, generator=generator, dtype=torch.float64) for y in ys]
+    return torch.stack([rr.fresh_pair_cells(y, c) for y, c in zip(ys, cs)]), ys, cs
+
+
+def test_the_fresh_cells_are_023s_cell_function_and_the_mse_is_sse_c_over_n():
+    cells, ys, cs = _cells(6)
+    for row, (y, c) in enumerate(zip(ys, cs)):
+        assert torch.equal(cells[row], b0c.pair_cells(y, c, c, c))
+        assert cells[row, rr.SSEC] == cells[row, b0c.CELL_COLUMNS.index("SSE0")] == cells[row, b0c.CELL_COLUMNS.index("SSE1")]
+        assert cells[row, rr.COUNT] == 79.0 and math.isclose(float(cells[row, rr.SSEC]), float(((y - c) ** 2).sum()), rel_tol=1e-15)
+    expected = math.fsum(float(((y - c) ** 2).sum()) for y, c in zip(ys, cs)) / (6 * 79)
+    assert math.isclose(rr.cue_mse(cells), expected, rel_tol=1e-14)
+    assert rr.cue_mse(cells[torch.randperm(6)]) == rr.cue_mse(cells)  # exactly rounded sums: the row order cannot change it
+    assert abs(rr.cue_mse(cells) - rr.cue_mse_torch(cells)) <= 1e-12 * rr.cue_mse(cells)
+    hand = torch.zeros(2, 8, dtype=torch.float64)
+    hand[:, rr.COUNT], hand[:, rr.SSEC] = torch.tensor([79.0, 79.0], dtype=torch.float64), torch.tensor([7.9, 23.7], dtype=torch.float64)
+    assert rr.cue_mse(hand) == pytest.approx(0.2, rel=1e-15)
+
+
+def test_log_mse_is_defined_only_for_a_finite_positive_value():
+    assert rr.log_mse(math.e) == 1.0 and rr.log_mse(1.0) == 0.0
+    for bad in (0.0, -1.0, math.nan, math.inf, None):
+        assert rr.log_mse(bad) is None
+
+
+class _Noun:
+    def __init__(self, sg, pl, single=True):
+        self.sg_ids, self.pl_ids, self.single_token = (sg,), (pl,), single
+
+
+def test_the_score_is_the_cosine_difference_with_a_direct_leave_one_out_centroid():
+    generator = torch.Generator().manual_seed(24)
+    W_E = torch.randn(40, 6, generator=generator, dtype=torch.float32)
+    pool = type("Pool", (), {"nouns": (_Noun(1, 2), _Noun(3, 4, single=False), _Noun(5, 6))})()
+    units = type("Units", (), {"cues": (("a", 10, "determiner-like"), ("p", 11, "possessive-or-pronoun"), ("b", 12, "quantity"), ("c", 13, "adjective"),
+                                        ("d", 14, "adjective"))})()
+    assert rr.noun_row_ids(pool) == [1, 2, 5, 6] and rr.calibration_cues(units) == [("a", 10, "determiner-like"), ("b", 12, "quantity"), ("c", 13, "adjective"),
+                                                                                  ("d", 14, "adjective")]
+    bindings = rr.score_bindings(W_E, pool, units)
+    assert bindings["calibration_cue_ids"] == [10, 12, 13, 14] and bindings["embedding_sha256"] == rr.embedding_digest(W_E.clone())
+    mu_noun = W_E[[1, 2, 5, 6]].double().mean(0)
+    loo = rr.calibration_scores(W_E, bindings)
+    for k, token_id in enumerate([10, 12, 13, 14]):
+        others = [i for i in [10, 12, 13, 14] if i != token_id]
+        e = W_E[token_id].double()
+        direct = float(e @ mu_noun / (e.norm() * mu_noun.norm())) - float(e @ W_E[others].double().mean(0) / (e.norm() * W_E[others].double().mean(0).norm()))
+        assert loo[k] == pytest.approx(direct, abs=1e-15)
+        assert loo[k] == rr.nounness(W_E[token_id], mu_noun, rr.centroid(W_E, others))  # the direct mean of the others, bit for bit
+    full = rr.full_scores(W_E, bindings, [11, 20])
+    assert full[0] == rr.nounness(W_E[11], mu_noun, rr.centroid(W_E, [10, 12, 13, 14]))
+    e = torch.tensor([1.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=torch.float64)
+    assert rr.nounness(e, e, torch.tensor([0.0, 1.0, 0, 0, 0, 0], dtype=torch.float64)) == 1.0
+
+
+def test_spearman_uses_average_ranks_and_is_undefined_for_a_constant_vector():
+    assert rr.average_ranks([3.0, 1.0, 2.0, 2.0]) == [4.0, 1.0, 2.5, 2.5]
+    assert rr.spearman([1, 2, 3, 4], [1, 3, 2, 4]) == pytest.approx(0.8, abs=1e-15)
+    assert rr.spearman([1, 2, 2, 3], [1, 2, 3, 4]) == pytest.approx(4.5 / math.sqrt(4.5 * 5.0), abs=1e-15)
+    assert rr.spearman([1, 1, 1], [1, 2, 3]) is None and rr.spearman([1, 2, 3], [5, 5, 5]) is None
+    with pytest.raises(ValueError):
+        rr.spearman([1.0, math.nan], [1.0, 2.0])
+    rng = random.Random(7)
+    worst = 0.0
+    for _ in range(200):
+        x = [round(rng.gauss(0, 1), 1) for _ in range(40)]  # rounded: plenty of ties
+        y = [math.exp(rng.gauss(-2, 0.4)) for _ in range(40)]
+        rho = rr.spearman(x, y)
+        assert rho == rr.spearman(x, [math.log(v) for v in y])  # a monotone transform leaves ρ unchanged
+        order = list(range(40))
+        rng.shuffle(order)
+        assert rho == rr.spearman([x[i] for i in order], [y[i] for i in order])  # exact sums: the pair order cannot change it
+        worst = max(worst, rr.spearman_agreement(rho, rr.spearman_direct(x, y)))
+    assert worst <= rr.TOLERANCES["spearman"]
+    assert rr.spearman_agreement(None, None) == 0.0 and rr.spearman_agreement(0.1, None) == math.inf
+
+
+def test_the_line_is_exact_ols_and_no_rounded_design_diagnostic_is_in_the_code():
+    line = rr.ols([0.0, 1.0, 2.0, 3.0], [1.0, 3.0, 5.0, 7.5])
+    assert line["slope"] == 2.15 and line["intercept"] == pytest.approx(0.9, abs=1e-15) and line["n"] == 4
+    assert line["residual_sd"] == pytest.approx(math.sqrt(0.075 / 2), abs=1e-15)
+    rng = numpy.random.default_rng(5)
+    x = rng.normal(-0.2, 0.15, 139)
+    y = 1.3 * x - 2.5 + rng.normal(0, 0.25, 139)
+    line = rr.ols(x.tolist(), y.tolist())
+    slope, intercept = numpy.polyfit(x, y, 1)
+    assert abs(line["slope"] - slope) <= 1e-12 and abs(line["intercept"] - intercept) <= 1e-12
+    assert rr.predict(line, 0.1) == line["intercept"] + line["slope"] * 0.1
+    source = Path(rr.__file__).read_text()
+    for rounded in ("1.299", "2.481", "0.257", "0.315", "0.530", "0.834", "0.416"):
+        assert rounded not in source, rounded  # the exact values come from calibration, never from the design's prose
+
+
+def test_the_sha_indices_are_deterministic_and_fisher_yates_gives_permutations():
+    assert rr.sha_int("024|primary|0|0") % 139 == rr.primary_draw_index(0, 0, 139) == 3
+    assert rr.null_permutation(0, 10) == [5, 2, 4, 1, 8, 9, 6, 0, 7, 3]
+    for p in range(200):
+        assert sorted(rr.null_permutation(p, 40)) == list(range(40))
+    assert rr.primary_draw_indices(3, 40, 139) == rr.primary_draw_indices(3, 40, 139) and all(0 <= i < 139 for row in rr.primary_draw_indices(3, 40, 139) for i in row)
+    assert all(0 <= rr.contrast_draw_index(b, "E", slot, 8) < 8 for b in range(10) for slot in range(8))
+    assert rr.contrast_draw_index(0, "E", 0, 8) != rr.contrast_draw_index(0, "N", 0, 8) or rr.contrast_draw_index(1, "E", 0, 8) != rr.contrast_draw_index(1, "N", 0, 8)
+
+
+def test_the_ranks_and_order_statistics():
+    assert (rr.lower_rank(10_000), rr.null_rank(100_000), rr.lower_rank(40), rr.null_rank(400)) == (250, 97_500, 1, 390)
+    assert rr.lower_rank(10_000) - 1 == 249 and 10_000 - rr.lower_rank(10_000) == 9_750  # the bootstrap's two elements
+    assert rr.order_statistic([0.3, None, 0.1, 0.2], 1) == -math.inf and rr.order_statistic([0.3, None, 0.1, 0.2], 2) == 0.1
+    assert rr.defined_median([0.3, None, 0.1, 0.2]) == 0.2 and rr.defined_median([None]) is None
+
+
+def test_the_primary_classification_precedence():
+    assert rr.classify_primary(None, 0.26, 0.31) == "NOT_INTERPRETABLE"
+    assert rr.classify_primary(0.30, 0.26, 0.31) == "GUARD_FAILURE"
+    assert rr.classify_primary(0.31, 0.26, 0.31) == "PASS"  # with F < null the null binds and no envelope-only failure can occur
+    assert rr.classify_primary(0.40, 0.45, 0.31) == "ENVELOPE_ONLY_FAILURE" and rr.classify_primary(0.45, 0.45, 0.31) == "PASS"
+    with pytest.raises(rr.IncidentError):
+        rr.classify_primary(0.4, math.nan, 0.31)
+    with pytest.raises(rr.IncidentError):
+        rr.classify_primary(math.inf, 0.26, 0.31)
+
+
+def _arranged(values: list[float], rank: int) -> list[float]:
+    """The 16 values rearranged so that the observed E assignment is the one whose exact sum has the given descending
+    rank (1 = the largest) among all 12,870 assignments."""
+    exact = rr.exact_subset_sums(values, rr.PRODUCTION_GUARD)
+    order = sorted(range(12_870), key=lambda row: -exact["sums"][row])
+    chosen = list(itertools.combinations(range(16), 8))[order[rank - 1]]
+    return [values[i] for i in chosen] + [values[i] for i in range(16) if i not in chosen]
+
+
+def test_the_exact_guard_passes_at_321_and_fails_at_322_through_the_full_computation():
+    rng = random.Random(24)
+    values = [rng.gauss(-2.4, 0.4) for _ in range(16)]
+    for rank, result in ((1, "PASS"), (321, "PASS"), (322, "FAIL"), (12_870, "FAIL")):
+        guard = rr.en_guard_logs(_arranged(values, rank), rr.PRODUCTION_GUARD)
+        assert (guard["K"], guard["result"]) == (rank, result)
+        assert guard["p_exact"] == f"{rank}/12870" and guard["checks"]["assignments"] == 12_870 and guard["checks"]["complement_identity"]
+    assert rr.en_guard_logs(_arranged(values, 321), rr.PRODUCTION_GUARD)["threshold_D"] == rr.en_guard_logs(_arranged(values, 321), rr.PRODUCTION_GUARD)["D_EN"]
+
+
+def test_an_all_tied_population_fails_and_e_below_n_fails():
+    tied = rr.en_guard([0.08] * 8, [0.08] * 8, rr.PRODUCTION_GUARD)
+    assert (tied["K"], tied["result"], tied["threshold"], tied["D_EN"]) == (12_870, "FAIL", "+inf", 0.0)
+    assert rr.en_guard([0.05] * 8, [0.1] * 8, rr.PRODUCTION_GUARD)["K"] == 12_870
+    above = rr.en_guard([0.2 + 0.01 * i for i in range(8)], [0.05 + 0.001 * i for i in range(8)], rr.PRODUCTION_GUARD)
+    assert (above["K"], above["result"]) == (1, "PASS") and above["ratio_of_geometric_means"] > 1.0
+    assert above["groups"]["E"]["mean_mse"] == pytest.approx(0.235) and above["groups"]["N"]["mean_log_mse"] < above["groups"]["E"]["mean_log_mse"]
+
+
+def test_the_known_float64_adversarial_case_gets_the_exact_tie_count():
+    """Requirement 1's regression case: float64 subset sums tie the observed assignment with 6,863 others, 3,432 of which
+    are strictly below it; ordinary float summation would count K = 9,867 where the exact count is 6,435."""
+    logs = [1.0, 2.0 ** -60] + [0.0] * 6 + [1.0] + [0.0] * 7
+    floats = [sum(logs[i] for i in subset) for subset in itertools.combinations(range(16), 8)]
+    assert sum(1 for value in floats if value >= floats[0]) == 9_867  # the float route: wrong
+    guard = rr.en_guard_logs(logs, rr.PRODUCTION_GUARD)
+    assert guard["K"] == 6_435 and guard["result"] == "FAIL"
+    exact = rr.exact_subset_sums(logs, rr.PRODUCTION_GUARD)
+    assert sum(1 for value in exact["sums"] if value == exact["sums"][0]) == 3_432  # the genuine ties, the observed included
+
+
+def test_the_guard_size_is_at_most_321_of_12870_with_or_without_ties():
+    rng = random.Random(9)
+    cases = [[rng.gauss(0, 1) for _ in range(16)], [float(rng.randint(0, 3)) for _ in range(16)], [float(i % 2) for i in range(16)]]
+    for index, values in enumerate(cases):
+        sums = sorted(rr.exact_subset_sums(values, rr.PRODUCTION_GUARD)["sums"])
+        passing = sum(1 for value in sums if rr.en_decision(rr.upper_count(sums, value), rr.PRODUCTION_GUARD) == "PASS")
+        assert passing <= 321
+        if index == 0:
+            assert passing == 321  # untied: exactly 321 assignments could pass (size 321/12,870)
+            assert rr.en_guard_logs(values, rr.PRODUCTION_GUARD)["checks"]["float_difference"] <= 1e-12
+
+
+def test_the_guard_refuses_wrong_sizes_and_is_not_interpretable_without_a_positive_mse(monkeypatch):
+    with pytest.raises(rr.PhaseError, match="8 \\+ 8"):
+        rr.en_guard([0.1] * 7, [0.1] * 9, rr.PRODUCTION_GUARD)
+    guard = rr.en_guard([0.1] * 7 + [0.0], [0.1] * 8, rr.PRODUCTION_GUARD)
+    assert guard["result"] == "NOT_INTERPRETABLE" and guard["K"] is None and guard["log_mse"][7] is None
+    fake = rr.GuardSpec.derive(4, 4)
+    assert rr.en_guard([0.3, 0.4, 0.5, 0.6], [0.1, 0.11, 0.12, 0.13], fake)["K"] == 1 and rr.en_guard([0.3, 0.4, 0.5, 0.6], [0.1, 0.11, 0.12, 0.13], fake)["result"] == "PASS"
+    monkeypatch.setitem(rr.TOLERANCES, "en_float", -1.0)
+    with pytest.raises(rr.GuardCheckError, match="plain float64"):
+        rr.en_guard([0.2] * 8, [0.1] * 8, rr.PRODUCTION_GUARD)
+
+
+def test_the_outcome_table_is_exhaustive():
+    table = {("NOT_INTERPRETABLE", guard): "NOT_INTERPRETABLE" for guard in rr.GUARD_RESULTS}
+    table.update({(primary, guard): "NOUNNESS_PREDICTION_NOT_ESTABLISHED" for primary in ("GUARD_FAILURE", "ENVELOPE_ONLY_FAILURE") for guard in rr.GUARD_RESULTS})
+    table.update({("PASS", "FAIL"): "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED", ("PASS", "NOT_INTERPRETABLE"): "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED",
+                  ("PASS", "PASS"): "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS"})
+    assert len(table) == 12
+    for (primary, guard), expected in table.items():
+        assert rr.outcome(primary, guard) == expected
+    with pytest.raises(ValueError):
+        rr.outcome("PASS", "MAYBE")
+    assert set(rr.SEMANTICS["outcomes"]) == set(rr.OUTCOMES) and set(rr.SEMANTICS["primary"]) == set(rr.PRIMARY_RESULTS)
+    sentence = rr.EXTRAPOLATION_SENTENCE.format(k=5, n=8, maximum=0.135)
+    assert sentence.startswith("5 of the 8 E cues") and "prospective extrapolation test" in sentence and "design motivation only" in sentence

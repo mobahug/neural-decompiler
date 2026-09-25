@@ -1,0 +1,730 @@
+"""Experiment 024: does an operational nounness score predict when the frozen downstream routing stops holding?
+
+Implements design revision 2 (``9d03dee``) through implementation plan revision 1 (``608088c``) and the reviewer's six
+implementation requirements (exact E–N arithmetic; immutable production guard constants; a spent-only tier-C
+measurement; bound scientific data dependencies; a pre-write freeze deviation; the confirmation's write order).
+
+**The primary test.** The Spearman correlation across 40 never-executed cue words between a frozen, weight-derived
+operational nounness score and each cue's readout MSE over the 108 exposed frames × 79 nouns:
+
+    nounness(w) = cos(E_w, μ_noun) − cos(E_w, μ_cue)
+    MSE(cue)    = Σ SSE_C / Σ n over the cue's 108 pairs, SSE_C = Σ_nouns (Δc − C)²
+
+where ``C`` is Experiment 020's frozen Level-0 readout fed the measured ``Δx3`` (``ul.contrast_of``). It passes iff
+``ρ ≥ max(F_ρ, null₉₇.₅)``, with the four-way results; ``F_ρ`` comes from SHA-indexed draws of the 139 exposed
+calibration cues (023's committed exposed cells) and ``null₉₇.₅`` from SHA-indexed permutations.
+
+**The E–N disambiguation guard.** An exact one-sided permutation test of ``D_EN = mean(log MSE_E) − mean(log MSE_N)``
+over all ``C(16, 8) = 12,870`` assignments, in exact integer arithmetic on the observed binary64 values: it passes iff
+at most 321 assignments reach the observed contrast (ties included).
+
+**The outcome** combines the two in a frozen hierarchy. Every outcome is predictive and associational.
+
+The module *calls* Experiment 022's ``upstream_localization`` (the measurement, ``C``, the composition used by the
+identity gates) and Experiment 023's ``block0_completion`` (the exposed-cells artifact reader and the cell function),
+both pinned by git blob with the ten modules 022 pinned; it never edits them. One implementation each of the per-cue
+MSE, the score, the Spearman correlation, the OLS line, the E–N guard and the outcome serves every phase.
+
+The per-cue MSE sums its pairs with ``math.fsum`` (an exactly rounded, order-independent sum) rather than the plan's
+torch sum: the calibration's artifact rows and the confirmation's stacked cells then give the same number whatever
+their memory layout.
+"""
+
+from __future__ import annotations
+
+import bisect
+import hashlib
+import itertools
+import json
+import math
+import os
+import tempfile
+from dataclasses import dataclass, field
+from fractions import Fraction
+from pathlib import Path
+from typing import Any, Callable, Mapping, Sequence
+
+import torch
+
+from neural_decompiler import attention_patterns as atp
+from neural_decompiler import block0_completion as b0c
+from neural_decompiler import encoding_read as er
+from neural_decompiler import frame_channels as fch
+from neural_decompiler import head_pattern as hp
+from neural_decompiler import head_transport as ht
+from neural_decompiler import layer_correction as lc
+from neural_decompiler import models as models_module
+from neural_decompiler import plural_mechanism as pm
+from neural_decompiler import readout_calibration as rc
+from neural_decompiler import readout_decompilation as rd
+from neural_decompiler import upstream_localization as ul
+from neural_decompiler.behavior import validate_json_safe
+
+PhaseError = pm.PhaseError
+IncidentError = pm.IncidentError
+
+# ---------------------------------------------------------------------------
+# Paths, design, plan.
+
+EXPERIMENT = "024"
+EXPERIMENT_DIR = "experiments/024-readout-routing-nounness"
+CONFIRMATION_RELATIVE_PATH = f"{EXPERIMENT_DIR}/confirmation-v1.json"
+CALIBRATION_RELATIVE_PATH = f"{EXPERIMENT_DIR}/calibration-v1.json"
+LOCK_RELATIVE_PATH = f"{EXPERIMENT_DIR}/preregistration-lock.json"
+PREREGISTRATION_RELATIVE_PATH = f"{EXPERIMENT_DIR}/preregistration.md"
+DESIGN = {"path": "docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md", "revision": 2, "commit": "9d03dee"}
+PLAN = {"path": "docs/superpowers/plans/2026-09-25-experiment-024-readout-routing-nounness-plan.md", "revision": 1, "commit": "608088c"}
+
+# ---------------------------------------------------------------------------
+# The frozen dependencies, by git blob (sha1(b"blob <len>\0" + bytes), computed without git): the ten modules
+# Experiment 022 pinned, 022's own module and 023's. Written out literally — never inherited — so that a change in any
+# of them makes every phase refuse rather than silently redefine ``C``, the measurement or the calibration source.
+
+FROZEN_BLOBS = {
+    "readout_decompilation.py": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "readout_calibration.py": "9107da975128d9b0383f3b346695675104e4cde9",
+    "head_pattern.py": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "frame_channels.py": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "attention_patterns.py": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "layer_correction.py": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "plural_mechanism.py": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "encoding_read.py": "cab99c942de970332e726a5626b584242d4cf600",
+    "head_transport.py": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "models.py": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "upstream_localization.py": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "block0_completion.py": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+}
+_FROZEN_MODULES = {"readout_decompilation.py": rd, "readout_calibration.py": rc, "head_pattern.py": hp, "frame_channels.py": fch, "attention_patterns.py": atp,
+                   "layer_correction.py": lc, "plural_mechanism.py": pm, "encoding_read.py": er, "head_transport.py": ht, "models.py": models_module,
+                   "upstream_localization.py": ul, "block0_completion.py": b0c}
+
+# Experiment 023's committed, independently reviewed files that 024 reads (the calibration source) or binds (023's
+# closure anchor): each file's sha256 and, for JSON, its content digest.
+INHERITED_023_PATHS = {"cells_data": b0c.CELLS_DATA_RELATIVE_PATH, "cells_index": b0c.CELLS_INDEX_RELATIVE_PATH, "confirmation": b0c.CONFIRMATION_RELATIVE_PATH,
+                       "lock": b0c.LOCK_RELATIVE_PATH}
+INHERITED_023 = {
+    "cells_data_file_sha256": "d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4",
+    "cells_index_file_sha256": "628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe",
+    "cells_index_content_sha256": "d38305cb86624a4a1b7e70d21f85ed1b57c26e1d2f59f3ec7dbf2a940f582d16",
+    "confirmation_file_sha256": "5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4",
+    "confirmation_content_sha256": "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed",
+    "lock_file_sha256": "4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c",
+    "lock_content_sha256": "97ca520f342e212d5172b1476e9d5a80c6c2622f80a4f99f4e15e0a399007117",
+}
+
+# ---------------------------------------------------------------------------
+# The fresh classes and the ordered candidate lists (verbatim from design revision 2; each lemma's two forms written
+# out, never generated by a rule).
+
+CLASSES = ("N", "B", "D", "C", "E")
+CLASS_CONTENT = {
+    "N": "non-noun controls: adjectives and determiner-like words with no common noun use (single words)",
+    "B": "plural measure and quantity nouns (the plurals of the measure lemmas)",
+    "D": "singular measure and quantity nouns (the singulars of the same measure lemmas)",
+    "C": "ordinary plural nouns (the plurals of the ordinary lemmas)",
+    "E": "ordinary singular nouns (the singulars of the same ordinary lemmas)",
+}
+N_CANDIDATES = ("eager", "fierce", "honest", "polite", "rude", "sleepy", "wise", "lucky", "merry", "nervous", "anxious", "cheerful", "clumsy", "curious", "grumpy",
+                "jealous", "lonely", "nasty", "careful", "careless", "famous", "friendly", "gorgeous", "hungry", "thirsty", "weary", "wicked", "ugly", "vivid", "vague",
+                "rapid", "rigid", "clever", "fuzzy", "latest", "earliest", "brave")
+MEASURE_LEMMAS = (("gallon", "gallons"), ("ounce", "ounces"), ("acre", "acres"), ("pint", "pints"), ("quart", "quarts"), ("herd", "herds"), ("flock", "flocks"),
+                  ("swarm", "swarms"), ("crowd", "crowds"), ("bundle", "bundles"), ("bunch", "bunches"), ("heap", "heaps"), ("mound", "mounds"), ("cluster", "clusters"),
+                  ("handful", "handfuls"), ("litre", "litres"), ("liter", "liters"), ("dozen", "dozens"), ("barrel", "barrels"), ("bucket", "buckets"), ("sack", "sacks"),
+                  ("crate", "crates"), ("basket", "baskets"), ("carton", "cartons"))
+ORDINARY_LEMMAS = (("apple", "apples"), ("horse", "horses"), ("doctor", "doctors"), ("king", "kings"), ("teacher", "teachers"), ("rabbit", "rabbits"), ("poet", "poets"),
+                   ("tiger", "tigers"), ("castle", "castles"), ("pencil", "pencils"), ("dragon", "dragons"), ("lion", "lions"), ("farmer", "farmers"),
+                   ("soldier", "soldiers"), ("sailor", "sailors"), ("priest", "priests"), ("queen", "queens"), ("baker", "bakers"), ("knight", "knights"),
+                   ("lemon", "lemons"), ("banana", "bananas"), ("onion", "onions"), ("carrot", "carrots"), ("violin", "violins"), ("wizard", "wizards"),
+                   ("pirate", "pirates"), ("tourist", "tourists"), ("statue", "statues"))
+EXPECTED_PICKS = {
+    "N": ("honest", "polite", "rude", "sleepy", "wise", "lucky", "merry", "nervous"),
+    "measure": ("gallon", "ounce", "acre", "herd", "crowd", "bundle", "cluster", "litre"),
+    "ordinary": ("apple", "horse", "doctor", "king", "rabbit", "poet", "dragon", "lion"),
+}
+PRONOUN_STRATUM = "possessive-or-pronoun"
+
+# ---------------------------------------------------------------------------
+# The E–N guard's constants and the configuration. Production is a literal, immutable object; a test world may use a
+# smaller configuration only by passing it explicitly (the runner's ``config``), never by patching these.
+
+
+@dataclass(frozen=True)
+class GuardSpec:
+    """The exact one-sided permutation test's sizes: ``assignments = C(n_E + n_N, n_E)`` and the largest passing count
+    ``max_upper = ⌊0.025 · assignments⌋`` (integer arithmetic), so the size is at most 2.5 %."""
+
+    n_e: int
+    n_n: int
+    assignments: int
+    max_upper: int
+
+    @staticmethod
+    def derive(n_e: int, n_n: int) -> "GuardSpec":
+        assignments = math.comb(int(n_e) + int(n_n), int(n_e))
+        return GuardSpec(int(n_e), int(n_n), assignments, (25 * assignments) // 1000)
+
+    def to_json(self) -> dict[str, Any]:
+        return {"n_E": self.n_e, "n_N": self.n_n, "assignments": self.assignments, "max_upper": self.max_upper, "alpha": "0.025, one-sided",
+                "statistic": "D_EN = mean(log MSE_E) − mean(log MSE_N)", "log": "natural", "order": "E first, then N, each class in its frozen order",
+                "enumeration": "itertools.combinations(range(n_E + n_N), n_E); the observed assignment is the first",
+                "arithmetic": "exact: every binary64 log MSE as its exact dyadic rational (as_integer_ratio), subset sums in Python integers",
+                "rule": "K = #{assignments S : D(S) ≥ D_EN}, the observed one included (ties count against the guard); PASS iff K ≤ max_upper",
+                "p_value": "K / assignments (exact)", "undefined": "NOT_INTERPRETABLE iff an MSE is not finite and positive"}
+
+
+PRODUCTION_GUARD = GuardSpec(n_e=8, n_n=8, assignments=12_870, max_upper=321)
+
+
+@dataclass(frozen=True)
+class Configuration:
+    """Every size the protocol fixes. ``PRODUCTION`` is the design's; a test world passes its own explicitly, and every
+    artifact records the configuration it was written under (a lock under one is refused under another)."""
+
+    name: str
+    class_quota: int
+    draws: int  # B, the primary floor's SHA-indexed draws
+    null_permutations: int  # P, the null's SHA-indexed permutations
+    contrast_resamples: int  # the secondary bootstrap
+    cross_check_draws: int
+    calibration_counts: tuple[tuple[str, int], ...]  # stratum -> number of exposed calibration cues
+    n_pronoun: int
+    n_frames: int
+    n_nouns: int
+    expected_picks: tuple[tuple[str, tuple[str, ...]], ...]  # "N" / "measure" / "ordinary" -> the design's first picks
+    guard: GuardSpec
+
+    def __post_init__(self) -> None:
+        if self.guard != GuardSpec.derive(self.guard.n_e, self.guard.n_n):
+            raise ValueError(f"inconsistent guard sizes {self.guard}")
+        if self.guard.n_e != self.class_quota or self.guard.n_n != self.class_quota:
+            raise ValueError("the E–N guard compares the full E and N classes")
+        if tuple(stratum for stratum, _ in self.calibration_counts) != b0c.STRATA:
+            raise ValueError("the calibration population is the three exposed strata, in 023's order")
+        if tuple(key for key, _ in self.expected_picks) != ("N", "measure", "ordinary") or any(len(words) != self.class_quota for _, words in self.expected_picks):
+            raise ValueError("expected picks: N, measure and ordinary, one quota each")
+
+    @property
+    def n_fresh(self) -> int:
+        return len(CLASSES) * self.class_quota
+
+    @property
+    def n_calibration(self) -> int:
+        return sum(count for _, count in self.calibration_counts)
+
+    def expected(self, key: str) -> tuple[str, ...]:
+        return dict(self.expected_picks)[key]
+
+    def to_json(self) -> dict[str, Any]:
+        return {"name": self.name, "class_quota": self.class_quota, "n_fresh": self.n_fresh, "draws": self.draws, "null_permutations": self.null_permutations,
+                "contrast_resamples": self.contrast_resamples, "cross_check_draws": self.cross_check_draws,
+                "calibration_counts": dict(self.calibration_counts), "n_calibration": self.n_calibration, "n_pronoun": self.n_pronoun, "n_frames": self.n_frames,
+                "n_nouns": self.n_nouns, "expected_picks": {key: list(words) for key, words in self.expected_picks}, "guard": self.guard.to_json()}
+
+
+PRODUCTION = Configuration(
+    name="production", class_quota=8, draws=10_000, null_permutations=100_000, contrast_resamples=10_000, cross_check_draws=16,
+    calibration_counts=(("determiner-like", 45), ("quantity", 45), ("adjective", 49)), n_pronoun=36, n_frames=108, n_nouns=79,
+    expected_picks=tuple((key, tuple(words)) for key, words in EXPECTED_PICKS.items()), guard=PRODUCTION_GUARD)
+
+# ---------------------------------------------------------------------------
+# Tags, tolerances, results.
+
+PRIMARY_TAG = "024|primary"
+NULL_TAG = "024|null"
+CONTRAST_TAG = "024|contrast"
+TOLERANCES = {
+    "I1": 1e-4,  # block-0 decomposition against the measured Δx1, max abs
+    "I3": 1e-4,  # 022's full composition against the measured Δx3, relative
+    "I4": 1e-3,  # the full composition's Δĉ against C, max abs (nats)
+    "C_recompute": 0.0,  # C recomputed from the saved Δx3 against the confirm-time C: bit for bit
+    "I7": 0.0,  # the lock's weight-derived quantities recomputed before any prompt: bit for bit
+    "spearman": 1e-12,  # the canonical Spearman against the independent route
+    "en_float": 1e-12,  # D_EN in exact arithmetic against a plain float64 mean difference
+    "mse": 1e-12,  # the canonical per-cue MSE against a torch float64 sum, relative
+    "level1": 2e-2,  # 020's Level-1 identity, descriptive only
+}
+GROUPS = ("cue_final", "coordinated")
+PRIMARY_RESULTS = ("NOT_INTERPRETABLE", "GUARD_FAILURE", "ENVELOPE_ONLY_FAILURE", "PASS")
+GUARD_RESULTS = ("NOT_INTERPRETABLE", "FAIL", "PASS")
+OUTCOMES = ("NOT_INTERPRETABLE", "NOUNNESS_PREDICTION_NOT_ESTABLISHED", "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED",
+            "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS")
+STATISTIC = ("ρ = Spearman(nounness, MSE) across the fresh cues; MSE = Σ SSE_C / Σ n over the cue's exposed pairs, SSE_C = Σ_nouns (Δc − C)²; ranks ascending with "
+             "ties at the average rank, then the Pearson correlation of the two rank vectors in float64")
+C_DEFINITION = ("C: Experiment 020's frozen Level-0 readout fed the measured Δx3 (ul.contrast_of): block 3 recomputed exactly with the MLP at the frame's operating "
+                "point; block-4 attention frozen at the reference; block-5 heads as the reference rows times the value changes; exact LN_final; the noun read over the "
+                "79 scorable exposed nouns")
+
+# ---------------------------------------------------------------------------
+# Frozen dependencies and inherited inputs.
+
+
+def module_blobs() -> dict[str, str]:
+    return {name: rc.program_blob_sha1(Path(module.__file__)) for name, module in _FROZEN_MODULES.items()}
+
+
+def assert_frozen_blobs() -> dict[str, str]:
+    """Every pinned module — 022's and 023's included — is byte for byte the pinned one."""
+    actual = module_blobs()
+    differing = sorted(name for name, blob in FROZEN_BLOBS.items() if actual.get(name) != blob)
+    if differing:
+        raise PhaseError(f"frozen modules changed: {differing}; Experiment 024 runs the pinned programs only")
+    return actual
+
+
+def own_blob() -> str:
+    return rc.program_blob_sha1(Path(__file__))
+
+
+def verify_023_inputs(root: Path) -> dict[str, str]:
+    """Experiment 023's committed exposed cells (the calibration source), confirmation and lock: each is the reviewed
+    file (sha256) and, for JSON, verifies against its reviewed content digest."""
+    out: dict[str, str] = {}
+    for kind, content in (("cells_data", False), ("cells_index", True), ("confirmation", True), ("lock", True)):
+        relative = INHERITED_023_PATHS[kind]
+        path = Path(root) / relative
+        if not path.exists() or rc.file_sha256(path) != INHERITED_023[f"{kind}_file_sha256"]:
+            raise PhaseError(f"Experiment 023's committed {kind.replace('_', ' ')} file {relative} is missing or not the reviewed file")
+        out[f"023_{kind}_file"] = INHERITED_023[f"{kind}_file_sha256"]
+        if content:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if payload.get("content_sha256") != rc.content_digest(payload) or payload["content_sha256"] != INHERITED_023[f"{kind}_content_sha256"]:
+                raise PhaseError(f"Experiment 023's {kind.replace('_', ' ')} file does not verify against its reviewed content digest")
+            out[f"023_{kind}_content"] = INHERITED_023[f"{kind}_content_sha256"]
+    return out
+
+
+DIGEST_KEYS = (*b0c.DIGEST_KEYS, "023_cells_data_file", "023_cells_index_file", "023_cells_index_content", "023_confirmation_file", "023_confirmation_content",
+               "023_lock_file", "023_lock_content")
+
+
+def base_digests(inputs: ul.FrozenInputs, digests_022: Mapping[str, str], digests_023: Mapping[str, str]) -> dict[str, str]:
+    return {**{key: inputs.digests[key] for key in rc.DIGEST_KEYS}, **dict(digests_022), **dict(digests_023)}
+
+
+def calibration_source() -> dict[str, Any]:
+    """What every record binds of the calibration source: 023's reviewed exposed-cells files."""
+    return {"data_path": b0c.CELLS_DATA_RELATIVE_PATH, "index_path": b0c.CELLS_INDEX_RELATIVE_PATH, "data_sha256": INHERITED_023["cells_data_file_sha256"],
+            "index_sha256": INHERITED_023["cells_index_file_sha256"], "index_content_sha256": INHERITED_023["cells_index_content_sha256"],
+            "cells_version": b0c.CELLS_VERSION, "columns": list(b0c.CELL_COLUMNS)}
+
+
+# ---------------------------------------------------------------------------
+# 1. Cells and the per-cue MSE (one implementation, shared by calibration and confirm).
+
+COUNT = b0c.CELL_COLUMNS.index("n")
+SUM = b0c.CELL_COLUMNS.index("S")
+SQUARES = b0c.CELL_COLUMNS.index("Q")
+SSEC = b0c.CELL_COLUMNS.index("SSEC")
+
+
+def fresh_pair_cells(y: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+    """A fresh pair's cells by 023's own cell function (``b0c.pair_cells``): 024 has no ``P0`` or ``P1``, so ``C``
+    stands in for both and the SSE0/SSE1 columns equal SSEC; only ``n``, ``SSEC`` and (descriptively) ``S``, ``Q`` are
+    read."""
+    return b0c.pair_cells(y, c, c, c)
+
+
+def cue_mse(cells: torch.Tensor) -> float:
+    """``Σ SSE_C / Σ n`` over one cue's pairs (``[pairs, 8]`` cells in ``frame_id`` order), each sum exactly rounded
+    (``math.fsum``), so the value does not depend on the order or layout of the rows."""
+    return math.fsum(float(v) for v in cells[:, SSEC].tolist()) / math.fsum(float(v) for v in cells[:, COUNT].tolist())
+
+
+def cue_mse_torch(cells: torch.Tensor) -> float:
+    """The cross-check route: plain torch float64 sums."""
+    return float(cells[:, SSEC].double().sum() / cells[:, COUNT].double().sum())
+
+
+def log_mse(value: float | None) -> float | None:
+    """The natural logarithm; defined only for a finite, positive MSE."""
+    if value is None or not math.isfinite(float(value)) or float(value) <= 0.0:
+        return None
+    return math.log(float(value))
+
+
+# ---------------------------------------------------------------------------
+# 2. The operational nounness score (weights only).
+
+
+def embedding_digest(W_E: torch.Tensor) -> str:
+    """sha256 over the shape and the little-endian float32 bytes of the input embedding matrix."""
+    array = W_E.detach().cpu().contiguous().to(torch.float32)
+    return hashlib.sha256(json.dumps(list(array.shape)).encode("ascii") + b"|<f4|" + array.numpy().astype("<f4", copy=False).tobytes()).hexdigest()
+
+
+def parameters_digest(model: Any) -> str:
+    """sha256 over every named parameter of the loaded model (name, shape and float32 bytes, by name): the exact weights
+    ``C``, the measurement and the score are computed from."""
+    digest = hashlib.sha256()
+    for name, parameter in sorted(model.named_parameters(), key=lambda item: item[0]):
+        array = parameter.detach().cpu().contiguous().to(torch.float32)
+        digest.update(name.encode("utf-8") + b"|" + json.dumps(list(array.shape)).encode("ascii") + b"|" + array.numpy().astype("<f4", copy=False).tobytes())
+    return digest.hexdigest()
+
+
+def noun_row_ids(pool: Any) -> list[int]:
+    """The ``μ_noun`` rows: the scorable exposed nouns in pool order (single-token), each singular then plural."""
+    return [int(token_id) for noun in pool.nouns if noun.single_token for token_id in (noun.sg_ids[0], noun.pl_ids[0])]
+
+
+def calibration_cues(units: b0c.ExposedUnits) -> list[tuple[str, int, str]]:
+    """The exposed cues of the three strata, in 023's canonical order: the calibration population and ``μ_cue``."""
+    return [(word, int(token_id), cls) for word, token_id, cls in units.cues if cls in b0c.STRATA]
+
+
+def centroid(W_E: torch.Tensor, ids: Sequence[int]) -> torch.Tensor:
+    return torch.stack([W_E[int(i)].double() for i in ids]).mean(0)
+
+
+def cosine(a: torch.Tensor, b: torch.Tensor) -> float:
+    return float(torch.dot(a, b) / (torch.linalg.vector_norm(a) * torch.linalg.vector_norm(b)))
+
+
+def nounness(e: torch.Tensor, mu_noun: torch.Tensor, mu_cue: torch.Tensor) -> float:
+    """``cos(E_w, μ_noun) − cos(E_w, μ_cue)`` in float64."""
+    e = e.double()
+    return cosine(e, mu_noun) - cosine(e, mu_cue)
+
+
+def score_bindings(W_E: torch.Tensor, pool: Any, units: b0c.ExposedUnits) -> dict[str, Any]:
+    """Everything the score depends on, bound by digest: the embedding matrix, the two id lists, the two centroids."""
+    noun_ids = noun_row_ids(pool)
+    cue_ids = [token_id for _, token_id, _ in calibration_cues(units)]
+    mu_noun, mu_cue = centroid(W_E, noun_ids), centroid(W_E, cue_ids)
+    return {"embedding_sha256": embedding_digest(W_E), "noun_row_ids": noun_ids, "noun_row_ids_sha256": pm.sha256_text(pm.canonical_json(noun_ids)),
+            "calibration_cue_ids": cue_ids, "calibration_cue_ids_sha256": pm.sha256_text(pm.canonical_json(cue_ids)), "mu_noun_sha256": rc.tensor_digest(mu_noun),
+            "mu_cue_sha256": rc.tensor_digest(mu_cue),
+            "definition": "nounness(w) = cos(E_w, μ_noun) − cos(E_w, μ_cue); E_w = W_E[id(' ' + w)] in float64; μ_noun = the mean of the 158 singular and plural rows "
+                          "of the 79 scorable exposed nouns; μ_cue = the mean of the 139 exposed calibration-cue rows, leave-one-out (a direct mean of the other 138) "
+                          "for a calibration cue; cos = ⟨a, b⟩ / (‖a‖ ‖b‖)"}
+
+
+def centroids(W_E: torch.Tensor, bindings: Mapping[str, Any]) -> tuple[torch.Tensor, torch.Tensor]:
+    return centroid(W_E, bindings["noun_row_ids"]), centroid(W_E, bindings["calibration_cue_ids"])
+
+
+def calibration_scores(W_E: torch.Tensor, bindings: Mapping[str, Any]) -> list[float]:
+    """The leave-one-out score of every calibration cue: ``μ_cue`` a direct mean of the other rows, in order."""
+    ids = list(bindings["calibration_cue_ids"])
+    mu_noun = centroid(W_E, bindings["noun_row_ids"])
+    return [nounness(W_E[token_id], mu_noun, centroid(W_E, ids[:k] + ids[k + 1:])) for k, token_id in enumerate(ids)]
+
+
+def full_scores(W_E: torch.Tensor, bindings: Mapping[str, Any], token_ids: Sequence[int]) -> list[float]:
+    """The score with the full ``μ_cue``: every fresh cue, and the pronoun cues (descriptive)."""
+    mu_noun, mu_cue = centroids(W_E, bindings)
+    return [nounness(W_E[int(token_id)], mu_noun, mu_cue) for token_id in token_ids]
+
+
+# ---------------------------------------------------------------------------
+# 3. Spearman (one implementation for every draw, permutation, fresh ρ and secondary Spearman).
+
+
+def _finite(values: Sequence[float]) -> list[float]:
+    out = [float(v) for v in values]
+    if not all(math.isfinite(v) for v in out):
+        raise ValueError("a Spearman input is not finite")
+    return out
+
+
+def average_ranks(values: Sequence[float]) -> list[float]:
+    """One-based ascending ranks; exactly equal values share the mean of their positions."""
+    values = _finite(values)
+    n = len(values)
+    order = sorted(range(n), key=lambda i: (values[i], i))
+    ranks = [0.0] * n
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and values[order[j + 1]] == values[order[i]]:
+            j += 1
+        rank = (i + j) / 2 + 1.0
+        for k in range(i, j + 1):
+            ranks[order[k]] = rank
+        i = j + 1
+    return ranks
+
+
+def spearman(x: Sequence[float], y: Sequence[float]) -> float | None:
+    """The Pearson correlation of the two average-rank vectors, in float64; ``None`` when either rank vector is constant.
+    The centred ranks are multiples of 1/2, so every sum below is exact and only the last division and square root
+    round."""
+    if len(x) != len(y) or len(x) < 2:
+        raise ValueError("Spearman needs two equally long vectors of at least two values")
+    ra, rb = average_ranks(x), average_ranks(y)
+    n = len(ra)
+    ma, mb = sum(ra) / n, sum(rb) / n
+    a, b = [r - ma for r in ra], [r - mb for r in rb]
+    saa, sbb = sum(v * v for v in a), sum(v * v for v in b)
+    if saa == 0.0 or sbb == 0.0:
+        return None
+    return sum(p * q for p, q in zip(a, b)) / math.sqrt(saa * sbb)
+
+
+def spearman_direct(x: Sequence[float], y: Sequence[float]) -> float | None:
+    """The independent route, for the cross-checks only: ranks by pairwise counting, sums by ``math.fsum``."""
+    x, y = _finite(x), _finite(y)
+
+    def ranks(values: list[float]) -> list[float]:
+        return [1.0 + sum(1 for w in values if w < v) + (sum(1 for w in values if w == v) - 1) / 2 for v in values]
+
+    ra, rb = ranks(x), ranks(y)
+    ma, mb = math.fsum(ra) / len(ra), math.fsum(rb) / len(rb)
+    saa = math.fsum((r - ma) ** 2 for r in ra)
+    sbb = math.fsum((r - mb) ** 2 for r in rb)
+    if saa == 0.0 or sbb == 0.0:
+        return None
+    return math.fsum((p - ma) * (q - mb) for p, q in zip(ra, rb)) / math.sqrt(saa * sbb)
+
+
+def spearman_agreement(canonical: float | None, direct: float | None) -> float:
+    if canonical is None and direct is None:
+        return 0.0
+    if canonical is None or direct is None:
+        return math.inf
+    return abs(canonical - direct)
+
+
+# ---------------------------------------------------------------------------
+# 4. The exposed-data OLS line (secondary; never in the primary statistic).
+
+
+def ols(x: Sequence[float], y: Sequence[float]) -> dict[str, Any]:
+    """``log MSE`` on nounness: slope ``Sxy/Sxx``, intercept ``ȳ − slope·x̄``, residual sd ``sqrt(Σr²/(n − 2))``; every sum
+    by ``math.fsum``. Full precision; never rounded."""
+    x, y = _finite(x), _finite(y)
+    n = len(x)
+    if n != len(y) or n < 3:
+        raise ValueError("the line needs at least three points")
+    mx, my = math.fsum(x) / n, math.fsum(y) / n
+    dx, dy = [v - mx for v in x], [v - my for v in y]
+    sxx = math.fsum(d * d for d in dx)
+    if sxx == 0.0:
+        raise ValueError("the line needs varying nounness")
+    slope = math.fsum(p * q for p, q in zip(dx, dy)) / sxx
+    intercept = my - slope * mx
+    residual_sd = math.sqrt(math.fsum((yi - (intercept + slope * xi)) ** 2 for xi, yi in zip(x, y)) / (n - 2))
+    return {"slope": slope, "intercept": intercept, "residual_sd": residual_sd, "n": n,
+            "formulas": "slope = Sxy/Sxx, intercept = ȳ − slope·x̄, residual sd = sqrt(Σ r² / (n − 2)); sums by math.fsum; y = log MSE, x = leave-one-out nounness"}
+
+
+def predict(line: Mapping[str, Any], x: float) -> float:
+    return float(line["intercept"]) + float(line["slope"]) * float(x)
+
+
+# ---------------------------------------------------------------------------
+# 5. SHA indices and 6. order statistics.
+
+
+def sha_int(text: str) -> int:
+    return int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:8], "big")
+
+
+def primary_draw_index(b: int, slot: int, n: int) -> int:
+    """``int.from_bytes(sha256(f"024|primary|{b}|{slot}")[:8], "big") % n``: a calibration cue, with replacement."""
+    return sha_int(f"{PRIMARY_TAG}|{b}|{slot}") % int(n)
+
+
+def primary_draw_indices(draws: int, slots: int, n: int) -> list[list[int]]:
+    return [[primary_draw_index(b, slot, n) for slot in range(slots)] for b in range(draws)]
+
+
+def null_permutation(p: int, n: int) -> list[int]:
+    """Fisher–Yates from the identity: for ``i`` from ``n − 1`` down to 1, ``j = sha(f"024|null|{p}|{i}") % (i + 1)``,
+    swap positions ``i`` and ``j``."""
+    perm = list(range(int(n)))
+    for i in range(int(n) - 1, 0, -1):
+        j = sha_int(f"{NULL_TAG}|{p}|{i}") % (i + 1)
+        perm[i], perm[j] = perm[j], perm[i]
+    return perm
+
+
+def contrast_draw_index(b: int, cls: str, slot: int, n: int) -> int:
+    return sha_int(f"{CONTRAST_TAG}|{b}|{cls}|{slot}") % int(n)
+
+
+def lower_rank(count: int) -> int:
+    """⌈0.025·count⌉ in integer arithmetic: 250 at 10,000 (element [249])."""
+    return (25 * int(count) + 999) // 1000
+
+
+def null_rank(count: int) -> int:
+    """⌈0.975·count⌉ in integer arithmetic: 97,500 at 100,000 (element [97499])."""
+    return (975 * int(count) + 999) // 1000
+
+
+def order_statistic(values: Sequence[float | None], rank: int) -> float:
+    """The ``rank``-th ascending value (1-based), an undefined value placed at −∞."""
+    tensor = torch.tensor([math.nan if v is None else float(v) for v in values], dtype=torch.float64)
+    return ul.order_statistic(tensor, ~torch.isnan(tensor), int(rank), undefined_at=-math.inf)
+
+
+def defined_median(values: Sequence[float | None]) -> float | None:
+    tensor = torch.tensor([math.nan if v is None else float(v) for v in values], dtype=torch.float64)
+    return ul.defined_median(tensor, ~torch.isnan(tensor))
+
+
+# ---------------------------------------------------------------------------
+# 7. The primary classification.
+
+
+def classify_primary(rho: float | None, floor: float, null: float) -> str:
+    """``NOT_INTERPRETABLE`` (ρ undefined) → ``GUARD_FAILURE`` (ρ < null₉₇.₅) → ``ENVELOPE_ONLY_FAILURE`` (ρ < F_ρ) →
+    ``PASS``: a PASS needs ``ρ ≥ max(F_ρ, null₉₇.₅)``."""
+    if any(not math.isfinite(float(bound)) for bound in (floor, null)):
+        raise IncidentError("a non-finite primary threshold")
+    if rho is None:
+        return "NOT_INTERPRETABLE"
+    if not math.isfinite(float(rho)):
+        raise IncidentError("a non-finite ρ")
+    if rho < null:
+        return "GUARD_FAILURE"
+    if rho < floor:
+        return "ENVELOPE_ONLY_FAILURE"
+    return "PASS"
+
+
+# ---------------------------------------------------------------------------
+# 8. The E–N disambiguation guard: an exact one-sided permutation test.
+
+
+class GuardCheckError(IncidentError):
+    """An implementation check of the exact enumeration failed: an incident, never a result."""
+
+
+def exact_integers(values: Sequence[float]) -> tuple[list[int], int]:
+    """Every finite binary64 value as an integer on one common dyadic scale: ``v_i = z_i / q`` exactly."""
+    ratios = [float(v).as_integer_ratio() for v in values]
+    q = max(den for _, den in ratios)
+    return [num * (q // den) for num, den in ratios], q
+
+
+def exact_subset_sums(logs: Sequence[float], spec: GuardSpec) -> dict[str, Any]:
+    """Every assignment's exact E-side sum: ``itertools.combinations(range(n_E + n_N), n_E)`` (the observed assignment,
+    positions ``0 … n_E − 1``, first) over the values as exact integers on one dyadic scale. Raises ``GuardCheckError``
+    unless the enumeration has ``spec.assignments`` distinct assignments and, for equal group sizes, every complement
+    carries the total minus the subset's sum."""
+    n_all = spec.n_e + spec.n_n
+    z, q = exact_integers(logs)
+    total = sum(z)
+    subsets = list(itertools.combinations(range(n_all), spec.n_e))
+    if len(subsets) != spec.assignments or len(set(subsets)) != spec.assignments or subsets[0] != tuple(range(spec.n_e)):
+        raise GuardCheckError(f"the enumeration does not give {spec.assignments} distinct assignments with the observed one first")
+    sums = [sum(z[i] for i in subset) for subset in subsets]
+    if spec.n_e == spec.n_n:
+        index = {subset: row for row, subset in enumerate(subsets)}
+        everything = frozenset(range(n_all))
+        if any(sums[index[tuple(sorted(everything - set(subset)))]] != total - sums[row] for row, subset in enumerate(subsets)):
+            raise GuardCheckError("an assignment's complement does not carry the total minus its exact sum")
+    return {"sums": sums, "total": total, "q": q, "n_subsets": len(subsets)}
+
+
+def upper_count(sums: Sequence[int], observed: int) -> int:
+    """``K``: the assignments whose exact sum is at or above the observed one (ties included, the observed counted)."""
+    return sum(1 for value in sums if value >= observed)
+
+
+def en_decision(k: int, spec: GuardSpec) -> str:
+    """PASS iff ``K ≤ max_upper`` (321 of 12,870 in production: 321/12,870 ≤ 0.025 < 322/12,870)."""
+    return "PASS" if int(k) <= spec.max_upper else "FAIL"
+
+
+def en_guard_logs(logs: Sequence[float], spec: GuardSpec) -> dict[str, Any]:
+    """The exact test on ``n_E + n_N`` finite ``log MSE`` values, E first."""
+    logs = [float(v) for v in logs]
+    if len(logs) != spec.n_e + spec.n_n or not all(math.isfinite(v) for v in logs):
+        raise PhaseError("the exact E–N test needs n_E + n_N finite values")
+    exact = exact_subset_sums(logs, spec)
+    sums, total, q = exact["sums"], exact["total"], exact["q"]
+    observed = sums[0]
+    k = upper_count(sums, observed)
+
+    def contrast(t: int) -> Fraction:
+        return Fraction(spec.n_n * t - spec.n_e * (total - t), spec.n_e * spec.n_n * q)
+
+    d_exact = contrast(observed)
+    plain = sum(logs[:spec.n_e]) / spec.n_e - sum(logs[spec.n_e:]) / spec.n_n
+    difference = abs(float(d_exact) - plain)
+    if not difference <= TOLERANCES["en_float"]:
+        raise GuardCheckError(f"D_EN in exact arithmetic differs from the plain float64 mean difference by {difference:.3e}")
+    ordered = sorted(sums)
+    threshold = next((value for value in sorted(set(sums)) if len(ordered) - bisect.bisect_left(ordered, value) <= spec.max_upper), None)
+    return {"result": en_decision(k, spec), "K": k, "assignments": spec.assignments, "max_upper": spec.max_upper, "p_exact": f"{k}/{spec.assignments}",
+            "p_value": k / spec.assignments, "D_EN": float(d_exact), "D_EN_exact": f"{d_exact.numerator}/{d_exact.denominator}",
+            "threshold_D": None if threshold is None else float(contrast(threshold)), "threshold": "+inf" if threshold is None else "finite",
+            "ratio_of_geometric_means": math.exp(float(d_exact)),
+            "checks": {"assignments": exact["n_subsets"], "complement_identity": spec.n_e == spec.n_n, "float_difference": difference}}
+
+
+def en_guard(e_mse: Sequence[float | None], n_mse: Sequence[float | None], spec: GuardSpec) -> dict[str, Any]:
+    """The guard on the observed per-cue MSE of the E cues then the N cues, each class in its frozen order: the natural
+    log of each (``log_mse``), then the exact test. ``NOT_INTERPRETABLE`` iff an MSE is not finite and positive."""
+    e_mse, n_mse = list(e_mse), list(n_mse)
+    if len(e_mse) != spec.n_e or len(n_mse) != spec.n_n:
+        raise PhaseError(f"the E–N guard is bound to {spec.n_e} + {spec.n_n} cues, not {len(e_mse)} + {len(n_mse)}")
+    logs = [log_mse(value) for value in e_mse + n_mse]
+    out: dict[str, Any] = {"spec": spec.to_json(), "mse": [None if v is None else float(v) for v in e_mse + n_mse], "log_mse": logs}
+    if any(value is None for value in logs):
+        return {**out, "result": "NOT_INTERPRETABLE", "K": None, "p_value": None, "D_EN": None}
+    groups = {name: {"mean_mse": math.fsum(values) / len(values), "mean_log_mse": math.fsum(log_values) / len(log_values)}
+              for name, values, log_values in (("E", e_mse, logs[:spec.n_e]), ("N", n_mse, logs[spec.n_e:]))}
+    return {**out, **en_guard_logs(logs, spec), "groups": groups}
+
+
+# ---------------------------------------------------------------------------
+# 9. The outcome and the frozen semantics.
+
+
+def outcome(primary: str, guard: str) -> str:
+    """The frozen hierarchy (an incident writes no result at all, so it never reaches this)."""
+    if primary not in PRIMARY_RESULTS or guard not in GUARD_RESULTS:
+        raise ValueError(f"unknown results {primary!r} / {guard!r}")
+    if primary == "NOT_INTERPRETABLE":
+        return "NOT_INTERPRETABLE"
+    if primary != "PASS":
+        return "NOUNNESS_PREDICTION_NOT_ESTABLISHED"
+    return "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS" if guard == "PASS" else "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED"
+
+
+EXTRAPOLATION_SENTENCE = ("{k} of the {n} E cues lie above the calibration population's maximum nounness ({maximum:+.6f}); the fresh test is a prospective "
+                          "extrapolation test there. Calibration supplied no evidence for that range, and the post-hoc behaviour of 023's five spent cues in it is "
+                          "design motivation only.")
+SEMANTICS = {
+    "primary": {
+        "NOT_INTERPRETABLE": "ρ cannot be defined (a constant rank vector); no result",
+        "GUARD_FAILURE": "ρ < null₉₇.₅: no evidence that the score predicts the readout error on fresh cues beyond chance",
+        "ENVELOPE_ONLY_FAILURE": "null₉₇.₅ ≤ ρ < F_ρ: the score carries predictive information beyond chance, but less than the exposed relationship would lead "
+                                 "one to expect",
+        "PASS": "ρ ≥ max(F_ρ, null₉₇.₅): higher operational nounness prospectively predicted larger error of the frozen block-4/5 attention readout, at least as "
+                "strongly as the exposed-like relationship and beyond chance",
+    },
+    "guard": {
+        "NOT_INTERPRETABLE": "an E or N MSE is not finite and positive; the guard cannot be computed",
+        "FAIL": "the ordinary singular nouns did not have larger error than the non-noun controls beyond chance (K > the bound); this is not evidence against "
+                "nounness",
+        "PASS": "the ordinary singular nouns had larger error than the non-noun controls beyond chance (an exact one-sided permutation test, K ≤ the bound)",
+    },
+    "outcomes": {
+        "NOT_INTERPRETABLE": "no result",
+        "NOUNNESS_PREDICTION_NOT_ESTABLISHED": "the primary requirement failed; its four-way result says how, and the E–N guard is descriptive only",
+        "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED": "the score predicted the error, but the result does not separate nounness from plural morphology "
+                                                                "or measure semantics; the secondary contrasts describe the shape of the effect, with no winner",
+        "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS":
+            "the frozen weight-derived score prospectively predicted the frozen readout's error on new lexical representations, including substantial "
+            "extrapolation beyond the exposed score range, and the ordinary singular nouns had larger error than the non-noun controls beyond chance — which "
+            "neither of the two preregistered simple alternatives (plural morphology alone, measure class alone) predicts",
+    },
+    "simple": "the guard eliminates the two preregistered simple alternatives, plurality-only and measure-class-only; it does not establish nounness as a unique "
+              "causal factor or eliminate every correlated lexical property",
+    "not_shown": ["that nounness causes the attention change", "that the score measures linguistic nounhood",
+                  "which part of the score matters: similarity to the target nouns or dissimilarity to the exposed cues (both separate E from N)",
+                  "that no other property that differs between ordinary nouns and these adjectives explains E > N",
+                  "that the exposed OLS line has been validated over the extrapolated range (the line is secondary)",
+                  "generality beyond the 108 exposed frames, the 79 nouns and this checkpoint"],
+    "predictive": "every outcome is predictive and associational; none establishes that nounness causally changes attention",
+    "secondary": "the secondary analyses (the per-group Spearman, normalized MSE, Var(Δc), R²_C, bias, slope, the line, the B/C/D/E factorial contrasts and the "
+                 "block-4/5 ladder) are computed after the outcome is written and can never rescue, alter or redefine it",
+    "incidents": "an incident carries no result; an identity incident never coexists with an outcome",
+    "precedence": {"primary": list(PRIMARY_RESULTS), "guard": list(GUARD_RESULTS), "outcomes": list(OUTCOMES)},
+    "extrapolation": EXTRAPOLATION_SENTENCE,
+}
