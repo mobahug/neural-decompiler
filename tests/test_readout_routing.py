@@ -494,3 +494,148 @@ def test_the_real_tokenizer_freeze_takes_the_designs_expected_picks_and_writes_n
     for lemma in ("teacher/teachers", "farmer/farmers", "crate/crates", "basket/baskets"):
         assert "a token of an exposed frame" in reasons[lemma]
     assert len(payload["manifest"]["S2-TARGET"]) == 4_320 and payload["counts"] == {"classes": {cls: 8 for cls in rr.CLASSES}}
+
+
+# ---------------------------------------------------------------------------
+# Task 4: the calibration from the committed exposed cells and the weights (synthetic, tier A; the real artifact's
+# exposed MSE, tier A; a synthetic full-scale dry run, slow).
+
+
+def toy_configuration(**overrides) -> rr.Configuration:
+    """A small, explicit test configuration (the only way a test world changes a size)."""
+    values = dict(name="toy", class_quota=4, draws=40, null_permutations=400, contrast_resamples=40, cross_check_draws=4,
+                  calibration_counts=(("determiner-like", 5), ("quantity", 5), ("adjective", 6)), n_pronoun=3, n_frames=6, n_nouns=79,
+                  expected_picks=(("N", ("a", "b", "c", "d")), ("measure", ("e", "f", "g", "h")), ("ordinary", ("i", "j", "k", "l"))),
+                  guard=rr.GuardSpec.derive(4, 4))
+    values.update(overrides)
+    return rr.Configuration(**values)
+
+
+def _toy_calibration_world(config, seed=11, constant_mse=False):
+    from neural_decompiler import plural_mechanism as pm
+
+    frames = tuple(pm.Frame("cardinal" if i % 3 else "coordinated-adjective", f"frame-{i}", (1, 2, 3), () if i % 3 else (9,), {"sg": 4, "pl": 5}, "t")
+                   for i in range(config.n_frames))
+    strata = [stratum for stratum, count in config.calibration_counts for _ in range(count)] + [rr.PRONOUN_STRATUM] * config.n_pronoun
+    cues = tuple((f"cue{i}", 100 + i, stratum) for i, stratum in enumerate(strata))
+    units = b0c.ExposedUnits(cues, frames, {})
+    generator = torch.Generator().manual_seed(seed)
+    W_E = torch.randn(300, 8, generator=generator, dtype=torch.float32)
+    pool = type("Pool", (), {"nouns": tuple(_Noun(10 + 2 * k, 11 + 2 * k) for k in range(4))})()
+    bindings = rr.score_bindings(W_E, pool, units)
+    cells = torch.zeros(len(cues) * config.n_frames, 8, dtype=torch.float64)
+    cells[:, rr.COUNT] = float(config.n_nouns)
+    scores = rr.full_scores(W_E, bindings, [token_id for _, token_id, _ in cues])
+    for ci, score in enumerate(scores):
+        level = 0.05 if constant_mse else math.exp(1.3 * score - 2.5)
+        noise = 1.0 if constant_mse else torch.exp(0.2 * torch.randn(config.n_frames, generator=generator, dtype=torch.float64))
+        cells[ci * config.n_frames:(ci + 1) * config.n_frames, rr.SSEC] = level * config.n_nouns * noise
+    return cells, units, W_E, bindings
+
+
+def _calibrate(config, cells, units, W_E, bindings):
+    population = rr.calibration_population(cells, units, W_E, bindings, config)
+    draws = rr.primary_draws(population["calibration"], config)
+    null = rr.null_distribution(config)
+    checks = {"mse": population["mse_check"], "spearman": rr.spearman_cross_check(population["calibration"], draws, config)}
+    evaluated = rr.evaluate_calibration(population["calibration"], population["pronouns"], draws, null, config)
+    return population, draws, null, checks, evaluated
+
+
+def test_the_calibration_computes_the_floor_the_null_and_the_exact_line():
+    config = toy_configuration()
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    population, draws, null, checks, evaluated = _calibrate(config, cells, units, W_E, bindings)
+    entries = population["calibration"]
+    assert len(entries) == 16 and len(population["pronouns"]) == 3 and checks["mse"]["passed"] and checks["spearman"]["n_checked"] == 5
+    assert [entry["token_id"] for entry in entries] == bindings["calibration_cue_ids"] and all(entry["log_mse"] == math.log(entry["mse"]) for entry in entries)
+    values = draws["values"]
+    assert len(values) == 40 and len(draws["indices"][0]) == 20 and all(0 <= i < 16 for row in draws["indices"] for i in row)
+    floor = evaluated["primary_floor"]
+    assert (floor["rank"], floor["element"]) == (1, 0) and floor["F_rho"] == sorted(v for v in values if v is not None)[0]
+    assert evaluated["null"]["rank"] == 390 and evaluated["null"]["null_975"] == sorted(null["values"])[389]
+    assert evaluated["effective_threshold"]["value"] == max(floor["F_rho"], evaluated["null"]["null_975"])
+    line = rr.ols([e["nounness_loo"] for e in entries], [e["log_mse"] for e in entries])
+    assert evaluated["line"] == line and 0.5 < line["slope"] < 2.5
+    assert math.isclose(sum(evaluated["descriptive"]["draw_rates"].values()), 1.0) and evaluated["descriptive"]["calibration_rho"] > 0
+    arrays = rr.calibration_arrays(draws, null)
+    record = rr.calibration_record(run_id="r", protocol_code_commit="c" * 40, digests={"x": "y"}, config=config, confirmation={"path": "p"}, bindings=bindings,
+                                   dependencies={"calibration_source": rr.calibration_source()}, population=population, evaluated=evaluated, checks=checks,
+                                   array_digests=rr.arrays_digests(arrays))
+    rr.verify_calibration_record(record, config)
+    assert record["configuration"]["name"] == "toy" and record["arrays_sha256"]["draw_indices"] == rc.tensor_digest(arrays["draw_indices"])
+    for mutate in (lambda r: r["line"].update(slope=r["line"]["slope"] * (1 + 1e-15)), lambda r: r["primary_floor"].update(element=5),
+                   lambda r: r["calibration_cues"].pop(), lambda r: r["effective_threshold"].update(binds="nothing")):
+        changed = json.loads(json.dumps(record))
+        mutate(changed)
+        changed["content_sha256"] = rc.content_digest(changed)
+        with pytest.raises(rr.PhaseError):
+            rr.verify_calibration_record(changed, config)
+    with pytest.raises(rr.PhaseError, match="configuration"):
+        rr.verify_calibration_record(record, rr.PRODUCTION)
+
+
+def test_the_calibration_stops_for_review_on_undefined_draws_or_a_reversed_direction(monkeypatch):
+    config = toy_configuration()
+    cells, units, W_E, bindings = _toy_calibration_world(config, constant_mse=True)
+    with pytest.raises(rr.CalibrationStop, match="undefined draws reach the stop"):
+        _calibrate(config, cells, units, W_E, bindings)
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    monkeypatch.setattr(rr, "order_statistic", lambda values, rank: 2.0)
+    with pytest.raises(rr.CalibrationStop, match="reversed direction"):
+        _calibrate(config, cells, units, W_E, bindings)
+
+
+def test_a_failed_cross_check_is_an_incident(monkeypatch):
+    config = toy_configuration()
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    monkeypatch.setitem(rr.TOLERANCES, "mse", -1.0)
+    with pytest.raises(rr.CrossCheckError, match="mse"):
+        rr.calibration_population(cells, units, W_E, bindings, config)
+    monkeypatch.setitem(rr.TOLERANCES, "mse", 1e-12)
+    monkeypatch.setattr(rr, "spearman_direct", lambda x, y: 2.0)
+    with pytest.raises(rr.CrossCheckError, match="spearman"):
+        _calibrate(config, cells, units, W_E, bindings)
+
+
+def test_the_calibration_refuses_a_population_that_is_not_the_configured_one():
+    config = toy_configuration()
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    with pytest.raises(rr.PhaseError, match="calibration population"):
+        rr.calibration_population(cells, units, W_E, bindings, toy_configuration(calibration_counts=(("determiner-like", 6), ("quantity", 5), ("adjective", 5))))
+    with pytest.raises(rr.PhaseError, match="frames per cue"):
+        rr.calibration_population(cells, units, W_E, bindings, toy_configuration(n_frames=7))
+    cells[3, rr.COUNT] = 78.0
+    with pytest.raises(rr.PhaseError, match="nouns"):
+        rr.calibration_population(cells, units, W_E, bindings, config)
+
+
+def test_the_committed_023_artifact_gives_every_exposed_cue_mse_by_a_direct_loop():
+    """The real calibration source, read through 023's reader (exposed values only; no floor is computed here)."""
+    inputs = ul.load_frozen_inputs(ROOT)
+    noun_keys = [noun.lexical_key for noun in inputs.pool.nouns if noun.single_token]
+    record_022 = json.loads((ROOT / ul.CALIBRATION_RELATIVE_PATH).read_text())
+    cells, units = rr.read_exposed_cells(ROOT, inputs, noun_keys, record_022)
+    mse, check = rr.exposed_cue_mse(cells, units)
+    assert len(mse) == 175 and check["passed"] and len(units.frames) == 108 and len(noun_keys) == 79
+    counts = {stratum: sum(1 for _, _, cls in units.cues if cls == stratum) for stratum in (*b0c.STRATA, rr.PRONOUN_STRATUM)}
+    assert counts == {"determiner-like": 45, "quantity": 45, "adjective": 49, rr.PRONOUN_STRATUM: 36}
+    raw = numpy.frombuffer((ROOT / b0c.CELLS_DATA_RELATIVE_PATH).read_bytes(), dtype="<f8").reshape(18_900, 8)
+    for ci in (0, 44, 90, 174):
+        rows = raw[ci * 108:(ci + 1) * 108]
+        assert mse[ci] == math.fsum(rows[:, 5]) / math.fsum(rows[:, 0])
+
+
+@pytest.mark.slow
+def test_a_synthetic_full_scale_calibration_dry_run_fits_in_time_and_memory():
+    """139 cues × 108 frames, B = 10,000 and P = 100,000 at the production sizes, with synthetic cells and embeddings
+    (no model, no real data): the whole calibration path runs and every order statistic is at its production element."""
+    import time
+
+    config = dataclasses.replace(rr.PRODUCTION, name="dry-run")
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    started = time.time()
+    population, draws, null, checks, evaluated = _calibrate(config, cells, units, W_E, bindings)
+    assert time.time() - started < 600
+    assert evaluated["primary_floor"]["element"] == 249 and evaluated["null"]["element"] == 97_499 and len(null["values"]) == 100_000
+    assert 0.28 < evaluated["null"]["null_975"] < 0.35 and checks["spearman"]["passed"]

@@ -940,3 +940,264 @@ def load_confirmation_024(path: Path, pool: Any, excluded_now: Mapping[str, Any]
     if {int(token["token_id"]) for token in confirmation.tokens} & blocked:
         raise PhaseError("a fresh cue id is excluded, a target-noun form or an exposed frame's token")
     return confirmation
+
+
+# ---------------------------------------------------------------------------
+# The scientific dependency record: everything ``C``, the measurement, the score and the calibration source are
+# computed from. Every record binds it; a later phase refuses any drift.
+
+MEASUREMENT = ("ul.stage_two_022 unchanged: one forward per S2-TARGET prompt through ul.measure_prompt (the measured Δc over the 79 scorable exposed nouns "
+               "against 020's locked reference contrasts, Δx1 and Δx3 at the changed positions); C = ul.contrast_of(progs, state, measured Δx3)")
+
+
+def scientific_dependencies(inputs: ul.FrozenInputs, *, parameters_sha256: str, embedding_sha256: str) -> dict[str, Any]:
+    locked = inputs.closure["exploration"]["locked_states"]
+    return {"module_blobs": dict(FROZEN_BLOBS), "C": C_DEFINITION, "measurement": MEASUREMENT,
+            "readout_020": {"module": "readout_decompilation.py", "blob": FROZEN_BLOBS["readout_decompilation.py"], "exposed_states_sha256": ul.exposed_states_digest(locked),
+                            "frozen_input_digests": {key: inputs.digests[key] for key in rc.DIGEST_KEYS}},
+            "model": {"model_id": models_module.PYTHIA_70M.model_id, "revision": models_module.PYTHIA_70M.revision, "parameters_sha256": parameters_sha256,
+                      "embedding_sha256": embedding_sha256},
+            "calibration_source": calibration_source()}
+
+
+def verify_dependencies(recorded: Mapping[str, Any], now: Mapping[str, Any], what: str) -> None:
+    """Any drift in a bound dependency refuses: nothing is silently redefined."""
+    differing = sorted(key for key in set(recorded) | set(now) if recorded.get(key) != now.get(key))
+    if differing:
+        raise PhaseError(f"{what} was written against different scientific dependencies: {differing}")
+
+
+# ---------------------------------------------------------------------------
+# The calibration (exposed only, once; the committed exposed cells and the weights; no forward pass) (Task 4).
+
+
+class CalibrationStop(RuntimeError):
+    """250 or more undefined draws, or a reversed direction: no record is written; stop for review (not an incident)."""
+
+    def __init__(self, details: Mapping[str, Any]):
+        self.details = dict(details)
+        super().__init__(str(details.get("reason")))
+
+
+class CrossCheckError(IncidentError):
+    """An implementation cross-check failed (the MSE or the Spearman route): an incident, with its location."""
+
+    def __init__(self, details: Mapping[str, Any]):
+        self.details = dict(details)
+        super().__init__(f"{details.get('check')} cross-check failed: {details.get('max_difference')} at {details.get('at')}")
+
+
+def read_exposed_cells(root: Path, inputs: ul.FrozenInputs, noun_keys: Sequence[str], record_022: Mapping[str, Any]) -> tuple[torch.Tensor, b0c.ExposedUnits]:
+    """023's committed exposed cells: the reviewed files (digests) re-read through 023's own reader, the index verified
+    against the meta recomputed from the frozen inputs and 022's committed record now."""
+    verify_023_inputs(root)
+    units = b0c.exposed_units(inputs)
+    data, index = Path(root) / b0c.CELLS_DATA_RELATIVE_PATH, Path(root) / b0c.CELLS_INDEX_RELATIVE_PATH
+    cells, loaded = b0c.read_cells(data, index, units=units, meta=b0c.cells_meta(units, noun_keys, record_022))
+    if loaded.get("content_sha256") != INHERITED_023["cells_index_content_sha256"] or loaded.get("file_sha256") != INHERITED_023["cells_data_file_sha256"]:
+        raise PhaseError("the exposed cells are not the reviewed 023 artifact")
+    return cells, units
+
+
+def exposed_cue_mse(cells: torch.Tensor, units: b0c.ExposedUnits) -> tuple[list[float], dict[str, Any]]:
+    """Every exposed cue's MSE from its 108 cue-major rows (frames by ``frame_id``), with the torch cross-check."""
+    n_frames = len(units.frames)
+    values, worst = [], {"check": "mse", "max_difference": 0.0, "at": ""}
+    for ci, (word, _, _) in enumerate(units.cues):
+        rows = cells[ci * n_frames:(ci + 1) * n_frames]
+        value = cue_mse(rows)
+        difference = abs(value - cue_mse_torch(rows)) / abs(value) if value else math.inf
+        if difference > worst["max_difference"]:
+            worst.update({"max_difference": difference, "at": word})
+        values.append(value)
+    worst.update({"tolerance": TOLERANCES["mse"], "passed": worst["max_difference"] <= TOLERANCES["mse"]})
+    if not worst["passed"]:
+        raise CrossCheckError(worst)
+    return values, worst
+
+
+def calibration_population(cells: torch.Tensor, units: b0c.ExposedUnits, W_E: torch.Tensor, bindings: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
+    """The 139 calibration cues (leave-one-out score, MSE, log MSE) and, descriptively, the pronoun cues (full-centroid
+    score): the sizes are the configuration's, the frames and nouns too."""
+    if len(units.frames) != config.n_frames or cells.shape[0] != len(units.cues) * config.n_frames:
+        raise PhaseError(f"the exposed cells do not cover {config.n_frames} frames per cue")
+    if not bool((cells[:, COUNT] == float(config.n_nouns)).all()):
+        raise PhaseError(f"an exposed cell does not count {config.n_nouns} nouns")
+    mse, check = exposed_cue_mse(cells, units)
+    counts = {stratum: sum(1 for _, _, cls in units.cues if cls == stratum) for stratum in b0c.STRATA}
+    if counts != dict(config.calibration_counts):
+        raise PhaseError(f"the calibration population is {counts}, not {dict(config.calibration_counts)}")
+    index = {int(token_id): ci for ci, (_, token_id, _) in enumerate(units.cues)}
+    loo = calibration_scores(W_E, bindings)
+    entries = []
+    for (word, token_id, stratum), score in zip(calibration_cues(units), loo):
+        value = mse[index[token_id]]
+        entries.append({"word": word, "token_id": token_id, "stratum": stratum, "nounness_loo": score, "mse": value, "log_mse": log_mse(value)})
+    pronoun_units = [(word, int(token_id)) for word, token_id, cls in units.cues if cls == PRONOUN_STRATUM]
+    if len(pronoun_units) != config.n_pronoun:
+        raise PhaseError(f"{len(pronoun_units)} pronoun cues, not {config.n_pronoun}")
+    pronoun_scores = full_scores(W_E, bindings, [token_id for _, token_id in pronoun_units])
+    pronouns = [{"word": word, "token_id": token_id, "nounness": score, "mse": mse[index[token_id]], "log_mse": log_mse(mse[index[token_id]])}
+                for (word, token_id), score in zip(pronoun_units, pronoun_scores)]
+    if any(entry["log_mse"] is None for entry in entries):
+        raise PhaseError("an exposed calibration cue has no finite positive MSE")
+    return {"calibration": entries, "pronouns": pronouns, "mse_check": check}
+
+
+def primary_draws(entries: Sequence[Mapping[str, Any]], config: Configuration) -> dict[str, Any]:
+    """``B`` SHA-indexed draws of ``n_fresh`` calibration cues with replacement; each draw's Spearman between the
+    leave-one-out score and the MSE (ties from repeated cues at the average rank)."""
+    x, y = [entry["nounness_loo"] for entry in entries], [entry["mse"] for entry in entries]
+    indices = primary_draw_indices(config.draws, config.n_fresh, len(entries))
+    values = [spearman([x[i] for i in row], [y[i] for i in row]) for row in indices]
+    return {"values": values, "indices": indices}
+
+
+def null_distribution(config: Configuration) -> dict[str, Any]:
+    """``P`` SHA-indexed Fisher–Yates permutations of ``n_fresh`` distinct ranks; each one's Spearman against the
+    identity ranking."""
+    n = config.n_fresh
+    identity = list(range(n))
+    digest = hashlib.sha256()
+    values = []
+    for p in range(config.null_permutations):
+        perm = null_permutation(p, n)
+        digest.update(bytes(perm) if n < 256 else json.dumps(perm).encode("ascii"))
+        values.append(spearman(identity, perm))
+    if any(value is None for value in values):
+        raise IncidentError("a null permutation's Spearman is undefined")
+    return {"values": values, "permutations_sha256": digest.hexdigest()}
+
+
+def spearman_cross_check(entries: Sequence[Mapping[str, Any]], draws: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
+    """The canonical Spearman against the independent route on the first draws and on the whole calibration population."""
+    x, y = [entry["nounness_loo"] for entry in entries], [entry["mse"] for entry in entries]
+    worst = {"check": "spearman", "max_difference": 0.0, "at": "", "n_checked": 0}
+    cases = [(f"draw {b}", [x[i] for i in row], [y[i] for i in row]) for b, row in enumerate(draws["indices"][:config.cross_check_draws])]
+    cases.append(("the calibration population", x, y))
+    for where, xs, ys in cases:
+        difference = spearman_agreement(spearman(xs, ys), spearman_direct(xs, ys))
+        worst["n_checked"] += 1
+        if difference > worst["max_difference"]:
+            worst.update({"max_difference": difference, "at": where})
+    worst.update({"tolerance": TOLERANCES["spearman"], "passed": worst["max_difference"] <= TOLERANCES["spearman"]})
+    if not worst["passed"]:
+        raise CrossCheckError(worst)
+    return worst
+
+
+def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequence[Mapping[str, Any]], draws: Mapping[str, Any], null: Mapping[str, Any],
+                         config: Configuration) -> dict[str, Any]:
+    """``F_ρ`` (element ``[lower_rank − 1]``, undefined draws at −∞; the stop at ``lower_rank`` undefined; the direction
+    check), ``null₉₇.₅`` (element ``[null_rank − 1]``), the effective threshold, the line and the descriptives."""
+    values = draws["values"]
+    rank = lower_rank(config.draws)
+    undefined = sum(1 for value in values if value is None)
+    if undefined >= rank:
+        raise CalibrationStop({"reason": f"{undefined} undefined draws reach the stop at {rank}", "undefined": undefined, "stop_at": rank})
+    floor = order_statistic(values, rank)
+    median = defined_median(values)
+    if median is None or not floor <= median:
+        raise CalibrationStop({"reason": f"a reversed direction: F_ρ {floor} above the median of the defined draws {median}", "floor": floor, "median": median})
+    defined = sorted(value for value in values if value is not None)
+    upper = config.draws - rank  # the draw distribution's upper tail element, descriptive
+    null_values = sorted(null["values"])
+    n_rank = null_rank(config.null_permutations)
+    null_bound = null_values[n_rank - 1]
+    x, y = [entry["nounness_loo"] for entry in entries], [entry["log_mse"] for entry in entries]
+    line = ols(x, y)
+    codes = [classify_primary(value, floor, null_bound) for value in values]
+    pronoun_errors = [entry["log_mse"] - predict(line, entry["nounness"]) for entry in pronouns if entry["log_mse"] is not None]
+    within = {stratum: spearman([e["nounness_loo"] for e in entries if e["stratum"] == stratum], [e["mse"] for e in entries if e["stratum"] == stratum])
+              for stratum in b0c.STRATA}
+    return {
+        "primary_floor": {"draws": config.draws, "tag": PRIMARY_TAG, "rank": rank, "element": rank - 1, "F_rho": floor, "undefined": undefined, "stop_at": rank,
+                          "direction_check": {"ok": True, "median": median},
+                          "tails": {"min": defined[0], "element_lower": floor, "median": median, "element_upper": sorted(values, key=lambda v: -math.inf if v is None else v)[upper],
+                                    "max": defined[-1]}},
+        "null": {"permutations": config.null_permutations, "n": config.n_fresh, "tag": NULL_TAG, "rank": n_rank, "element": n_rank - 1, "null_975": null_bound,
+                 "median": _median(null_values), "permutations_sha256": null["permutations_sha256"]},
+        "effective_threshold": {"value": max(floor, null_bound), "binds": "null_975" if null_bound >= floor else "F_rho"},
+        "line": line,
+        "descriptive": {"calibration_rho": spearman(x, [entry["mse"] for entry in entries]), "within_stratum_rho": within,
+                        "pronoun_check": {"n": len(pronouns), "rho": spearman([e["nounness"] for e in pronouns], [e["mse"] for e in pronouns]),
+                                          "median_abs_log_error": _median([abs(v) for v in pronoun_errors]), "mean_signed_log_error": math.fsum(pronoun_errors) / len(pronoun_errors)},
+                        "draw_rates": {name: codes.count(name) / len(codes) for name in PRIMARY_RESULTS},
+                        "maximum_calibration_score": max(x)},
+    }
+
+
+def _median(values: Sequence[float]) -> float | None:
+    ordered = sorted(values)
+    n = len(ordered)
+    if n == 0:
+        return None
+    return ordered[n // 2] if n % 2 else 0.5 * (ordered[n // 2 - 1] + ordered[n // 2])
+
+
+def record_constants(config: Configuration) -> dict[str, Any]:
+    return {"configuration": config.to_json(), "tags": {"primary": PRIMARY_TAG, "null": NULL_TAG, "contrast": CONTRAST_TAG},
+            "ranks": {"primary": lower_rank(config.draws), "null": null_rank(config.null_permutations), "contrast_lower": lower_rank(config.contrast_resamples),
+                      "contrast_upper_element": config.contrast_resamples - lower_rank(config.contrast_resamples)},
+            "tolerances": dict(TOLERANCES), "statistic": STATISTIC, "classes": dict(CLASS_CONTENT), "results": {"primary": list(PRIMARY_RESULTS), "guard": list(GUARD_RESULTS),
+                                                                                                             "outcomes": list(OUTCOMES)}}
+
+
+def calibration_arrays(draws: Mapping[str, Any], null: Mapping[str, Any]) -> dict[str, torch.Tensor]:
+    return {"draw_rho": torch.tensor([math.nan if v is None else v for v in draws["values"]], dtype=torch.float64),
+            "draw_defined": torch.tensor([v is not None for v in draws["values"]], dtype=torch.bool),
+            "draw_indices": torch.tensor(draws["indices"], dtype=torch.int64), "null_rho": torch.tensor(null["values"], dtype=torch.float64)}
+
+
+def arrays_digests(arrays: Mapping[str, torch.Tensor]) -> dict[str, str]:
+    return {key: rc.tensor_digest(value.to(torch.int64) if value.dtype == torch.bool else value) for key, value in sorted(arrays.items())}
+
+
+def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], config: Configuration, confirmation: Mapping[str, str],
+                       bindings: Mapping[str, Any], dependencies: Mapping[str, Any], population: Mapping[str, Any], evaluated: Mapping[str, Any],
+                       checks: Mapping[str, Any], array_digests: Mapping[str, str]) -> dict[str, Any]:
+    record = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "the exposed-only calibration record of Experiment 024 (design revision 2), from 023's committed exposed "
+                                                                "cells and the weights; no forward pass",
+        "design": dict(DESIGN), "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "inputs": dict(digests),
+        "module_blobs": dict(FROZEN_BLOBS), "constants": record_constants(config), "configuration": config.to_json(), "exposed_cells": calibration_source(),
+        "confirmation_024": dict(confirmation), "dependencies": dict(dependencies),
+        "score": {key: value for key, value in bindings.items()}, "calibration_cues": list(population["calibration"]), "pronoun_cues": list(population["pronouns"]),
+        "line": dict(evaluated["line"]), "primary_floor": dict(evaluated["primary_floor"]), "null": dict(evaluated["null"]),
+        "effective_threshold": dict(evaluated["effective_threshold"]), "checks": dict(checks), "descriptive": dict(evaluated["descriptive"]),
+        "arrays_sha256": dict(array_digests),
+    }
+    record = rc.json_safe(record)
+    validate_json_safe(record)
+    record["content_sha256"] = rc.content_digest(record)
+    return record
+
+
+def verify_calibration_record(record: Mapping[str, Any], config: Configuration) -> None:
+    """A record fit for the lock: its digest; the frozen constants, configuration, design, plan and modules; finite
+    thresholds at the frozen elements with a passed direction check and no stop; the calibration population's size; a
+    finite line recomputed exactly from its own 139 entries."""
+    if record.get("experiment") != EXPERIMENT or record.get("content_sha256") != rc.content_digest(record):
+        raise PhaseError("not a verified Experiment 024 calibration record")
+    if record["constants"] != record_constants(config) or record["configuration"] != config.to_json() or record["design"] != DESIGN or record["plan"] != PLAN:
+        raise PhaseError("the calibration record's constants, configuration, design or plan are not the frozen ones")
+    if record["module_blobs"] != FROZEN_BLOBS or record["exposed_cells"] != calibration_source() or record["dependencies"]["calibration_source"] != calibration_source():
+        raise PhaseError("the calibration record was written against different modules or a different calibration source")
+    floor, null = record["primary_floor"], record["null"]
+    if (floor.get("rank"), floor.get("element")) != (lower_rank(config.draws), lower_rank(config.draws) - 1) or not (floor.get("direction_check") or {}).get("ok"):
+        raise PhaseError("the calibration record's F_ρ is not the frozen order statistic with a passed direction check")
+    if int(floor.get("undefined", config.draws)) >= lower_rank(config.draws):
+        raise PhaseError("the calibration record's undefined draws reach the stop")
+    if (null.get("rank"), null.get("element")) != (null_rank(config.null_permutations), null_rank(config.null_permutations) - 1):
+        raise PhaseError("the calibration record's null is not the frozen order statistic")
+    for value in (floor.get("F_rho"), null.get("null_975"), record["line"].get("slope"), record["line"].get("intercept")):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise PhaseError("the calibration record carries a non-finite threshold or line")
+    entries = record["calibration_cues"]
+    if len(entries) != config.n_calibration or [entry["token_id"] for entry in entries] != record["score"]["calibration_cue_ids"]:
+        raise PhaseError("the calibration record's population is not the bound calibration cues")
+    again = ols([entry["nounness_loo"] for entry in entries], [entry["log_mse"] for entry in entries])
+    if {key: again[key] for key in ("slope", "intercept", "residual_sd", "n")} != {key: record["line"][key] for key in ("slope", "intercept", "residual_sd", "n")}:
+        raise PhaseError("the calibration record's line does not recompute exactly from its own entries")
+    if record["effective_threshold"] != {"value": max(floor["F_rho"], null["null_975"]), "binds": "null_975" if null["null_975"] >= floor["F_rho"] else "F_rho"}:
+        raise PhaseError("the calibration record's effective threshold is not max(F_ρ, null₉₇.₅)")
