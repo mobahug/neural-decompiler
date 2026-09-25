@@ -254,6 +254,8 @@ def test_parser_has_exactly_the_six_phases_no_option_and_production_only():
             parser.parse_args(forbidden_args)
     assert runner_module.PHASES == ("validate", "freeze", "calibrate", "lock", "confirm", "report")
     assert runner_module.Runner().config is rr.PRODUCTION  # main() builds this runner; a test world passes FAKE explicitly
+    with pytest.raises(rr.PhaseError, match="non-production configuration"):
+        runner_module.Runner(config=FAKE)  # never against the real repository
     assert FAKE.guard == rr.GuardSpec(4, 4, 70, 1) and rr.PRODUCTION.guard == rr.GuardSpec(8, 8, 12_870, 321)
 
 
@@ -637,3 +639,34 @@ def test_the_state_is_written_atomically_in_the_state_format(tmp_path):
     with pytest.raises(Exception):
         rr.write_state_atomic(path, {"experiment": "024", "value": float("nan")})  # an unwritable state never replaces the old one
     assert rd.load_results_state(path)["value"] == 1.5 and [p.name for p in tmp_path.iterdir()] == ["results.json"]
+
+
+def test_validate_verifies_an_installed_lock_and_its_preregistration(world, base024, locked024, sandbox):
+    root = sandbox(locked024)
+    runner, logs = make_runner(root, world, FAKE, model_loader=_refuse, tokenizer_loader=_refuse)
+    assert runner.validate() == 0 and "lock and preregistration verified" in logs[-1]
+    preregistration = root / rr.PREREGISTRATION_RELATIVE_PATH
+    preregistration.write_text(preregistration.read_text() + "\nedited")
+    assert runner.validate() == 1 and "preregistration" in logs[-1]
+
+
+def test_a_failed_result_write_is_an_incident_and_never_leaves_a_result(world, base024, locked024, sandbox, monkeypatch):
+    """The result write is atomic: if it fails, the previous state (no result) stays on disk and an incident is
+    recorded — an incident and a result never coexist."""
+    root = sandbox(locked024)
+    original = rr.write_state_atomic
+    failed = []
+
+    def failing(path, state):
+        if (state.get("confirmation") or {}).get("results") is not None and not failed:
+            failed.append(True)
+            raise OSError("planted: the disk refused the result write")
+        return original(path, state)
+
+    monkeypatch.setattr(rr, "write_state_atomic", failing)
+    runner, logs = make_runner(root, world, FAKE)
+    assert runner.confirm() == 2 and "planted" in logs[-1]
+    state = _state(runner)
+    assert failed and "incident" in state["confirmation"] and "results" not in state["confirmation"] and state["phases"]["confirm"]["status"] == "running"
+    with pytest.raises(rr.PhaseError, match="confirm already started"):
+        runner.confirm()

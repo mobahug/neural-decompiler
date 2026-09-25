@@ -1677,6 +1677,32 @@ def new_results_state(*, digests: Mapping[str, str], protocol_code_commit: str, 
             "calibration": {}, "confirmation_024": None, "lock": None, "confirmation": None, "report": None}
 
 
+def fsync_directory(path: Path) -> None:
+    """Make a rename or a new file in ``path`` durable (best effort where the platform refuses a directory fsync)."""
+    try:
+        descriptor = os.open(Path(path), os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def save_durably(value: Any, path: Path) -> None:
+    """``torch.save`` flushed and fsynced, with its directory entry: the measurements are on disk before anything that
+    depends on them is recorded."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as handle:
+        torch.save(value, handle)
+        handle.flush()
+        os.fsync(handle.fileno())
+    fsync_directory(path.parent)
+
+
 def write_state_atomic(path: Path, state: Mapping[str, Any]) -> str:
     """``rd.write_results_state``'s format (canonical JSON with its ``state_sha256``), written to a temporary file in the
     same directory and moved into place in one ``os.replace``: a reader sees the old state or the new one, never a mix."""
@@ -1696,6 +1722,7 @@ def write_state_atomic(path: Path, state: Mapping[str, Any]) -> str:
         if os.path.exists(temporary):
             os.unlink(temporary)
         raise
+    fsync_directory(path.parent)
     return digest
 
 

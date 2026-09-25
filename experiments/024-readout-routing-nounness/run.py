@@ -2,8 +2,8 @@
 """Run Experiment 024 through isolated phases (design revision 2, ``9d03dee``; plan revision 1, ``608088c``).
 
 ``validate`` checks the pinned modules, the frozen inputs, Experiment 022's and 023's committed files (023's reviewed
-exposed cells included) and — once they exist — the confirmation file, the calibration record and the results state,
-without a model. ``freeze`` (tokenizer only) writes the 40 fresh cues to ``confirmation-v1.json``, committed by hand; a
+exposed cells included) and — once they exist — the confirmation file, the calibration record, the lock and its
+preregistration, and the results state, without a model. ``freeze`` (tokenizer only) writes the 40 fresh cues to ``confirmation-v1.json``, committed by hand; a
 shortfall or a deviation from the design's expected picks writes nothing. ``calibrate`` (once; weights only; no forward
 pass) reads 023's committed exposed cells and the embedding matrix and writes the candidate record (F_ρ, null₉₇.₅, the
 line). ``lock`` (weights only) binds the 40 scores, the thresholds, the E–N guard and the outcome. ``confirm`` (once,
@@ -143,6 +143,10 @@ class Runner:
     log: Callable[[str], None] = field(default_factory=lambda: lambda message: print(message, flush=True))
     config: rr.Configuration = rr.PRODUCTION  # only a test world passes another one, explicitly
 
+    def __post_init__(self) -> None:
+        if self.config is not rr.PRODUCTION and Path(self.root).resolve() == ROOT.resolve():
+            raise PhaseError("a non-production configuration may never run against the real repository")
+
     # -- paths ----------------------------------------------------------------
 
     @property
@@ -218,9 +222,21 @@ class Runner:
                 confirmation, _ = self._confirmation(base)
                 frozen = f"confirmation {confirmation.content_sha256[:12]}… ({len(confirmation.tokens)} cues, {len(confirmation.manifest_keys())} keys)"
             record = "no calibration record installed"
-            if (self.root / rr.CALIBRATION_RELATIVE_PATH).exists():
-                rr.verify_calibration_record(json.loads((self.root / rr.CALIBRATION_RELATIVE_PATH).read_text(encoding="utf-8")), self.config)
+            record_path = self.root / rr.CALIBRATION_RELATIVE_PATH
+            if record_path.exists():
+                rr.verify_calibration_record(json.loads(record_path.read_text(encoding="utf-8")), self.config)
                 record = "calibration record verified"
+            lock_path = self.root / rr.LOCK_RELATIVE_PATH
+            if lock_path.exists():
+                lock = json.loads(lock_path.read_text(encoding="utf-8"))
+                if lock.get("experiment") != rr.EXPERIMENT or lock.get("content_sha256") != rc.content_digest(lock) or lock.get("configuration") != self.config.to_json():
+                    raise PhaseError("the installed lock does not verify against its digest and configuration")
+                if not record_path.exists() or lock["calibration"]["file_sha256"] != rc.file_sha256(record_path):
+                    raise PhaseError("the installed lock binds a calibration record other than the installed one")
+                preregistration = self.root / rr.PREREGISTRATION_RELATIVE_PATH
+                if not preregistration.exists() or preregistration.read_text(encoding="utf-8") != rr.render_preregistration(lock):
+                    raise PhaseError("the installed preregistration is not the one the installed lock renders")
+                record += "; lock and preregistration verified"
             if self.results_path.exists():
                 state = rd.load_results_state(self.results_path)
                 if state["inputs"] != {key: base.digests[key] for key in rr.DIGEST_KEYS} or state.get("configuration") != self.config.to_json():
@@ -377,8 +393,7 @@ class Runner:
                 checks = {"mse": population["mse_check"], "spearman": rr.spearman_cross_check(population["calibration"], draws, self.config)}
             arrays = rr.calibration_arrays(draws, null)
             array_digests = rr.arrays_digests(arrays)
-            self.output_dir.mkdir(parents=True, exist_ok=True)
-            torch.save(arrays, self.arrays_path)
+            rr.save_durably(arrays, self.arrays_path)
             calibration.update({"arrays_sha256": array_digests, "checks": rc.json_safe(checks), "dependencies": dependencies})
             self._write(state)
             try:
@@ -528,7 +543,7 @@ class Runner:
                 executed: list[pm.Prompt] = []
                 measured = ul.stage_two_022(model, progs, confirmation, {"Y1": states, "Y2": {}}, executed=executed, log=self.log)
                 tensors = ul.measurement_tensors(measured)
-                torch.save(tensors, self.stage2_path)
+                rr.save_durably(tensors, self.stage2_path)
                 digests = {key: rc.tensor_digest(value) for key, value in tensors.items()}
                 state["confirmation"]["stage2"] = {"path": str(self.stage2_path), "tensors_sha256": digests, "n_executed": len(executed)}
                 self._write(state)  # every fresh measurement is on disk before any gate or score can stop the phase
@@ -569,9 +584,19 @@ class Runner:
             except BaseException as error:  # a protocol failure or an interruption: recorded, then raised; confirm never resumes
                 self._record_incident(state, "confirm", error)
                 raise
+            running = dict(state["phases"]["confirm"])
             state["confirmation"].update({"results": results, "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()})
-            state["phases"]["confirm"] = {**state["phases"]["confirm"], "status": "complete", "completed_at": pm.utc_now()}
-            digest = self._write(state)  # one atomic write: the primary result, the guard, the outcome and the completed phase
+            state["phases"]["confirm"] = {**running, "status": "complete", "completed_at": pm.utc_now()}
+            try:
+                digest = self._write(state)  # one atomic write: the primary result, the guard, the outcome and the completed phase
+            except BaseException as error:  # the atomic write left the previous state (no result) on disk: record an incident, never a result
+                for key in ("results", "lock_sha256", "completed_at"):
+                    state["confirmation"].pop(key, None)
+                state["phases"]["confirm"] = running
+                self._record_incident(state, "confirm", error)
+                if isinstance(error, Exception):
+                    return 2
+                raise
             self.log(f"confirm complete: {results['outcome']['label']} (primary {results['primary']['result']}, ρ {results['primary']['rho']}; E–N guard "
                      f"{results['guard']['result']}, K {results['guard'].get('K')}); results sha256 {digest}")
             self._descriptives(state, progs, confirmation, units, states, saved, cells, lock)
