@@ -1093,18 +1093,18 @@ def primary_draws(entries: Sequence[Mapping[str, Any]], config: Configuration) -
 
 def null_distribution(config: Configuration) -> dict[str, Any]:
     """``P`` SHA-indexed Fisher–Yates permutations of ``n_fresh`` distinct ranks; each one's Spearman against the
-    identity ranking."""
+    identity ranking. The permutations are kept (int8) so the null can be audited without recomputing a hash."""
     n = config.n_fresh
     identity = list(range(n))
-    digest = hashlib.sha256()
+    permutations = torch.empty(config.null_permutations, n, dtype=torch.int8 if n <= 127 else torch.int64)
     values = []
     for p in range(config.null_permutations):
         perm = null_permutation(p, n)
-        digest.update(bytes(perm) if n < 256 else json.dumps(perm).encode("ascii"))
+        permutations[p] = torch.tensor(perm, dtype=permutations.dtype)
         values.append(spearman(identity, perm))
     if any(value is None for value in values):
         raise IncidentError("a null permutation's Spearman is undefined")
-    return {"values": values, "permutations_sha256": digest.hexdigest()}
+    return {"values": values, "permutations": permutations, "permutations_sha256": rc.tensor_digest(permutations.to(torch.int64))}
 
 
 def spearman_cross_check(entries: Sequence[Mapping[str, Any]], draws: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
@@ -1124,11 +1124,9 @@ def spearman_cross_check(entries: Sequence[Mapping[str, Any]], draws: Mapping[st
     return worst
 
 
-def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequence[Mapping[str, Any]], draws: Mapping[str, Any], null: Mapping[str, Any],
-                         config: Configuration) -> dict[str, Any]:
-    """``F_ρ`` (element ``[lower_rank − 1]``, undefined draws at −∞; the stop at ``lower_rank`` undefined; the direction
-    check), ``null₉₇.₅`` (element ``[null_rank − 1]``), the effective threshold, the line and the descriptives."""
-    values = draws["values"]
+def primary_floor(values: Sequence[float | None], config: Configuration) -> dict[str, Any]:
+    """``F_ρ``: element ``[lower_rank − 1]`` of the draws, undefined draws at −∞. ``lower_rank`` or more undefined draws,
+    or a floor above the median of the defined draws (a reversed direction), stop the calibration for review."""
     rank = lower_rank(config.draws)
     undefined = sum(1 for value in values if value is None)
     if undefined >= rank:
@@ -1139,6 +1137,18 @@ def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequenc
         raise CalibrationStop({"reason": f"a reversed direction: F_ρ {floor} above the median of the defined draws {median}", "floor": floor, "median": median})
     defined = sorted(value for value in values if value is not None)
     upper = config.draws - rank  # the draw distribution's upper tail element, descriptive
+    return {"draws": config.draws, "tag": PRIMARY_TAG, "rank": rank, "element": rank - 1, "F_rho": floor, "undefined": undefined, "stop_at": rank,
+            "direction_check": {"ok": True, "median": median},
+            "tails": {"min": defined[0], "element_lower": floor, "median": median, "element_upper": sorted(values, key=lambda v: -math.inf if v is None else v)[upper],
+                      "max": defined[-1]}}
+
+
+def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequence[Mapping[str, Any]], draws: Mapping[str, Any], floor_record: Mapping[str, Any],
+                         null: Mapping[str, Any], config: Configuration) -> dict[str, Any]:
+    """After the floor passed its stops: ``null₉₇.₅`` (element ``[null_rank − 1]``), the effective threshold, the line and
+    the descriptives."""
+    values = draws["values"]
+    floor = floor_record["F_rho"]
     null_values = sorted(null["values"])
     n_rank = null_rank(config.null_permutations)
     null_bound = null_values[n_rank - 1]
@@ -1149,10 +1159,7 @@ def evaluate_calibration(entries: Sequence[Mapping[str, Any]], pronouns: Sequenc
     within = {stratum: descriptive_spearman([e["nounness_loo"] for e in entries if e["stratum"] == stratum], [e["mse"] for e in entries if e["stratum"] == stratum])
               for stratum in b0c.STRATA}
     return {
-        "primary_floor": {"draws": config.draws, "tag": PRIMARY_TAG, "rank": rank, "element": rank - 1, "F_rho": floor, "undefined": undefined, "stop_at": rank,
-                          "direction_check": {"ok": True, "median": median},
-                          "tails": {"min": defined[0], "element_lower": floor, "median": median, "element_upper": sorted(values, key=lambda v: -math.inf if v is None else v)[upper],
-                                    "max": defined[-1]}},
+        "primary_floor": dict(floor_record),
         "null": {"permutations": config.null_permutations, "n": config.n_fresh, "tag": NULL_TAG, "rank": n_rank, "element": n_rank - 1, "null_975": null_bound,
                  "median": _median(null_values), "permutations_sha256": null["permutations_sha256"]},
         "effective_threshold": {"value": max(floor, null_bound), "binds": "null_975" if null_bound >= floor else "F_rho"},
@@ -1181,14 +1188,17 @@ def record_constants(config: Configuration) -> dict[str, Any]:
                                                                                                              "outcomes": list(OUTCOMES)}}
 
 
-def calibration_arrays(draws: Mapping[str, Any], null: Mapping[str, Any]) -> dict[str, torch.Tensor]:
-    return {"draw_rho": torch.tensor([math.nan if v is None else v for v in draws["values"]], dtype=torch.float64),
-            "draw_defined": torch.tensor([v is not None for v in draws["values"]], dtype=torch.bool),
-            "draw_indices": torch.tensor(draws["indices"], dtype=torch.int64), "null_rho": torch.tensor(null["values"], dtype=torch.float64)}
+def calibration_arrays(draws: Mapping[str, Any], null: Mapping[str, Any] | None = None) -> dict[str, torch.Tensor]:
+    arrays = {"draw_rho": torch.tensor([math.nan if v is None else v for v in draws["values"]], dtype=torch.float64),
+              "draw_defined": torch.tensor([v is not None for v in draws["values"]], dtype=torch.bool),
+              "draw_indices": torch.tensor(draws["indices"], dtype=torch.int64)}
+    if null is not None:
+        arrays.update({"null_rho": torch.tensor(null["values"], dtype=torch.float64), "null_permutations": null["permutations"]})
+    return arrays
 
 
 def arrays_digests(arrays: Mapping[str, torch.Tensor]) -> dict[str, str]:
-    return {key: rc.tensor_digest(value.to(torch.int64) if value.dtype == torch.bool else value) for key, value in sorted(arrays.items())}
+    return {key: rc.tensor_digest(value.to(torch.int64) if value.dtype in (torch.bool, torch.int8) else value) for key, value in sorted(arrays.items())}
 
 
 def calibration_record(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], config: Configuration, confirmation: Mapping[str, str],

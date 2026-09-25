@@ -316,7 +316,7 @@ def test_calibrate_is_weights_only_reads_the_committed_cells_and_runs_once(world
     assert record["primary_floor"]["element"] == 0 and record["null"]["element"] == 389 and record["checks"]["spearman"]["passed"]
     assert record["confirmation_024"]["content_sha256"] == _confirmation(runner).content_sha256
     arrays = torch.load(runner.arrays_path)
-    assert rr.arrays_digests(arrays) == record["arrays_sha256"]
+    assert rr.arrays_digests(arrays) == record["arrays_sha256"] and tuple(arrays["null_permutations"].shape) == (400, 20)
     with pytest.raises(rr.PhaseError, match="once"):
         runner.calibrate()
     assert runner.report() == 0 and "Calibration (exposed only" in runner.report_path.read_text()
@@ -341,8 +341,11 @@ def test_calibrate_refuses_a_foreign_calibration_source_or_an_uncommitted_confir
 def test_the_calibration_stop_writes_no_record_and_is_never_retried(world, base024, frozen024, sandbox, monkeypatch):
     root = sandbox(frozen024)
     monkeypatch.setattr(rr, "order_statistic", lambda values, rank: 2.0)  # a reversed direction
+    monkeypatch.setattr(rr, "null_distribution", lambda config: pytest.fail("the null was computed before the floor's stop checks"))
     runner, logs = make_runner(root, world, FAKE)
     assert runner.calibrate() == 3 and "reversed direction" in logs[-1]
+    arrays = torch.load(runner.arrays_path)  # the draws, saved with their digests before the stop
+    assert set(arrays) == {"draw_rho", "draw_defined", "draw_indices"} and rr.arrays_digests(arrays) == _state(runner)["calibration"]["arrays_sha256"]
     state = _state(runner)
     assert state["phases"]["calibrate"]["status"] == "stopped_for_review" and not runner.candidate_calibration_path.exists()
     assert "reversed direction" in state["calibration"]["stop"]["reason"]

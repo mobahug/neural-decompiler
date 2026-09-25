@@ -389,21 +389,27 @@ class Runner:
                 dependencies = rr.scientific_dependencies(base.inputs, parameters_sha256=parameters_sha, embedding_sha256=bindings["embedding_sha256"])
                 population = rr.calibration_population(cells, units, W_E, bindings, self.config)
                 draws = rr.primary_draws(population["calibration"], self.config)
-                null = rr.null_distribution(self.config)
                 checks = {"mse": population["mse_check"], "spearman": rr.spearman_cross_check(population["calibration"], draws, self.config)}
-            arrays = rr.calibration_arrays(draws, null)
-            array_digests = rr.arrays_digests(arrays)
-            rr.save_durably(arrays, self.arrays_path)
-            calibration.update({"arrays_sha256": array_digests, "checks": rc.json_safe(checks), "dependencies": dependencies})
+            arrays = rr.calibration_arrays(draws)
+            rr.save_durably(arrays, self.arrays_path)  # the draws on disk, with their digests in the state, before the stop checks
+            calibration.update({"arrays_sha256": rr.arrays_digests(arrays), "checks": rc.json_safe(checks), "dependencies": dependencies})
             self._write(state)
             try:
-                evaluated = rr.evaluate_calibration(population["calibration"], population["pronouns"], draws, null, self.config)
+                floor = rr.primary_floor(draws["values"], self.config)
             except rr.CalibrationStop as stop:
                 calibration["stop"] = rc.json_safe(stop.details)
                 state["phases"]["calibrate"] = {**state["phases"]["calibrate"], "status": "stopped_for_review", "stopped_at": pm.utc_now()}
                 self._write(state)
                 self.log(f"calibration stopped for review: {stop}; no record was written")
                 return 3
+            with pytest_free_guard():
+                null = rr.null_distribution(self.config)
+            arrays = rr.calibration_arrays(draws, null)
+            array_digests = rr.arrays_digests(arrays)
+            rr.save_durably(arrays, self.arrays_path)
+            calibration.update({"arrays_sha256": array_digests})
+            self._write(state)
+            evaluated = rr.evaluate_calibration(population["calibration"], population["pronouns"], draws, floor, null, self.config)
             binding = rr.confirmation_binding(confirmation, confirmation_sha)
             record = rr.calibration_record(run_id=state["run_id"], protocol_code_commit=commit, digests=base.digests, config=self.config, confirmation=binding,
                                            bindings=bindings, dependencies=dependencies, population=population, evaluated=evaluated, checks=checks,

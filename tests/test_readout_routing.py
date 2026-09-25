@@ -537,11 +537,14 @@ def _toy_calibration_world(config, seed=11, constant_mse=False):
 
 
 def _calibrate(config, cells, units, W_E, bindings):
+    """The calibration's order: the population, the draws and their cross-check, the floor with its stops, only then the
+    null, and the evaluation."""
     population = rr.calibration_population(cells, units, W_E, bindings, config)
     draws = rr.primary_draws(population["calibration"], config)
-    null = rr.null_distribution(config)
     checks = {"mse": population["mse_check"], "spearman": rr.spearman_cross_check(population["calibration"], draws, config)}
-    evaluated = rr.evaluate_calibration(population["calibration"], population["pronouns"], draws, null, config)
+    floor = rr.primary_floor(draws["values"], config)
+    null = rr.null_distribution(config)
+    evaluated = rr.evaluate_calibration(population["calibration"], population["pronouns"], draws, floor, null, config)
     return population, draws, null, checks, evaluated
 
 
@@ -567,6 +570,9 @@ def test_the_calibration_computes_the_floor_the_null_and_the_exact_line():
                                    array_digests=rr.arrays_digests(arrays))
     rr.verify_calibration_record(record, config)
     assert record["configuration"]["name"] == "toy" and record["arrays_sha256"]["draw_indices"] == rc.tensor_digest(arrays["draw_indices"])
+    permutations = arrays["null_permutations"]
+    assert permutations.dtype == torch.int8 and tuple(permutations.shape) == (400, 20) and permutations[7].tolist() == rr.null_permutation(7, 20)
+    assert evaluated["null"]["permutations_sha256"] == rc.tensor_digest(permutations.to(torch.int64)) == record["arrays_sha256"]["null_permutations"]
     for mutate in (lambda r: r["line"].update(slope=r["line"]["slope"] * (1 + 1e-15)), lambda r: r["primary_floor"].update(element=5),
                    lambda r: r["calibration_cues"].pop(), lambda r: r["effective_threshold"].update(binds="nothing")):
         changed = json.loads(json.dumps(record))
