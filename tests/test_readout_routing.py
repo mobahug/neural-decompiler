@@ -639,3 +639,89 @@ def test_a_synthetic_full_scale_calibration_dry_run_fits_in_time_and_memory():
     assert time.time() - started < 600
     assert evaluated["primary_floor"]["element"] == 249 and evaluated["null"]["element"] == 97_499 and len(null["values"]) == 100_000
     assert 0.28 < evaluated["null"]["null_975"] < 0.35 and checks["spearman"]["passed"]
+
+
+# ---------------------------------------------------------------------------
+# Task 5: the lock (synthetic, tier A).
+
+
+def _toy_confirmation(config, frames=()):
+    tokens = tuple({"word": f"{cls.lower()}{k}", "token_id": 200 + 10 * index + k, "class": cls, "lemma": f"{cls.lower()}{k}", "form": "word"}
+                   for index, cls in enumerate(rr.CLASSES) for k in range(config.class_quota))
+    return rr.Confirmation024({"cardinal": 4, "quantifier": 4, "coordinated-adjective": 4}, tuple(frames), tokens, "9" * 64)
+
+
+def _toy_lock(config=None):
+    config = config or toy_configuration()
+    cells, units, W_E, bindings = _toy_calibration_world(config)
+    population, draws, null, checks, evaluated = _calibrate(config, cells, units, W_E, bindings)
+    confirmation = _toy_confirmation(config, units.frames)
+    dependencies = {"calibration_source": rr.calibration_source(), "module_blobs": dict(rr.FROZEN_BLOBS), "C": rr.C_DEFINITION, "measurement": rr.MEASUREMENT,
+                    "readout_020": {"module": "readout_decompilation.py", "exposed_states_sha256": "s" * 64},
+                    "model": {"parameters_sha256": "p" * 64, "embedding_sha256": rr.embedding_digest(W_E)}}
+    record = rr.calibration_record(run_id="r", protocol_code_commit="c" * 40, digests={"x": "y"}, config=config,
+                                   confirmation=rr.confirmation_binding(confirmation, "f" * 64), bindings=bindings, dependencies=dependencies, population=population,
+                                   evaluated=evaluated, checks=checks, array_digests={})
+    fresh = rr.fresh_quantities(W_E, bindings, confirmation, record)
+    lock = rr.build_lock(run_id="r", protocol_code_commit="d" * 40, digests={"x": "y"}, config=config, record=record, record_file_sha256="e" * 64,
+                         confirmation=confirmation, confirmation_file_sha256="f" * 64, fresh=fresh, dependencies=dependencies, noun_keys=["n"] * 79)
+    return {"config": config, "W_E": W_E, "bindings": bindings, "record": record, "confirmation": confirmation, "fresh": fresh, "lock": lock,
+            "dependencies": dependencies}
+
+
+def test_the_lock_binds_the_scores_the_thresholds_the_guard_and_the_outcome():
+    world = _toy_lock()
+    lock, record, fresh = world["lock"], world["record"], world["fresh"]
+    assert lock["content_sha256"] == rc.content_digest(lock) and lock["configuration"]["name"] == "toy"
+    assert (lock["primary"]["F_rho"], lock["primary"]["null_975"]) == (record["primary_floor"]["F_rho"], record["null"]["null_975"])
+    assert lock["guard"]["spec"]["max_upper"] == 1 and [unit["word"] for unit in lock["guard"]["units"]["E"]] == ["e0", "e1", "e2", "e3"]
+    assert lock["outcome"]["table"][-1][2] == "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS" and lock["semantics"] == rr.SEMANTICS
+    assert len(fresh["cues"]) == 20 and all(cue["predicted_log_mse"] == rr.predict(record["line"], cue["nounness"]) for cue in fresh["cues"])
+    maximum = max(entry["nounness_loo"] for entry in record["calibration_cues"])
+    assert fresh["maximum_calibration_score"] == maximum and all(cue["above_calibration_maximum"] == (cue["nounness"] > maximum) for cue in fresh["cues"])
+    assert fresh["extrapolation"]["sentence"].startswith(f"{fresh['extrapolation']['E_above_maximum']} of the 4 E cues")
+    again = rr.fresh_quantities(world["W_E"], world["bindings"], world["confirmation"], record)
+    assert again == fresh  # the lock's quantities reproduce exactly (what I7 checks before any prompt)
+    text = rr.render_preregistration(lock)
+    assert text == rr.render_preregistration(json.loads(json.dumps(lock))) and "exact one-sided permutation test" in text and "Extrapolation" in text
+    assert repr(lock["primary"]["F_rho"]) in text and "| E | e0 |" in text and "Simple: the guard eliminates" in text
+
+
+def _validate(world, *, state, lock=None, record=None, prereg=None, config=None, **overrides):
+    lock = lock or world["lock"]
+    text = prereg if prereg is not None else rr.render_preregistration(lock)
+    arguments = dict(state=state, digests={"x": "y"}, config=config or world["config"], record=record or world["record"], record_file_sha256="e" * 64,
+                     confirmation=world["confirmation"], confirmation_file_sha256="f" * 64, dependencies=world["dependencies"], noun_keys=["n"] * 79,
+                     preregistration_text=text, git_state={"dirty": False}, tracked=True, changed_paths=[])
+    arguments.update(overrides)
+    return rr.validate_lock(lock, **arguments)
+
+
+def test_validate_lock_refuses_every_drift():
+    from neural_decompiler import plural_mechanism as pm
+
+    world = _toy_lock()
+    lock = world["lock"]
+    text = rr.render_preregistration(lock)
+    state = {"lock": {"content_sha256": lock["content_sha256"], "preregistration_sha256": pm.sha256_text(text)},
+             "confirmation_024": rr.confirmation_binding(world["confirmation"], "f" * 64)}
+    _validate(world, state=state)
+    resealed = json.loads(json.dumps(lock))
+    resealed["primary"]["F_rho"] = -1.0
+    resealed["content_sha256"] = rc.content_digest(resealed)
+    cases = [(dict(lock=resealed, state=dict(state, lock=dict(state["lock"], content_sha256=resealed["content_sha256"]))), "thresholds"),
+             (dict(state=state, prereg=text + "\nedited"), "preregistration"),
+             (dict(state=state, config=dataclasses.replace(world["config"], name="other")), "configuration"),
+             (dict(state=state, dependencies={**world["dependencies"], "C": "another readout"}), "dependencies"),
+             (dict(state=state, changed_paths=["src/neural_decompiler/readout_routing.py"]), "scientific paths changed"),
+             (dict(state=state, changed_paths=["experiments/023-block0-completion/exposed-cells.f64"]), "scientific paths changed"),
+             (dict(state=state, changed_paths=None), "not an ancestor"), (dict(state=state, tracked=False), "tracked"),
+             (dict(state=state, git_state={"dirty": True}), "clean"),
+             (dict(state=dict(state, confirmation_024={"path": "x"})), "results state binds")]
+    for overrides, message in cases:
+        with pytest.raises(rr.PhaseError, match=message):
+            _validate(world, **overrides)
+    assert rr.scientific_changes(["experiments/023-block0-completion/README.md", "experiments/023-block0-completion/evidence/x.md", rr.LOCK_RELATIVE_PATH, "docs/a.md"]) == []
+    with pytest.raises(rr.PhaseError, match="the model"):
+        rr.verify_model_dependencies(lock["dependencies"]["model"], parameters_sha256="q" * 64, embedding_sha256=lock["dependencies"]["model"]["embedding_sha256"],
+                                     what="the lock")

@@ -1201,3 +1201,178 @@ def verify_calibration_record(record: Mapping[str, Any], config: Configuration) 
         raise PhaseError("the calibration record's line does not recompute exactly from its own entries")
     if record["effective_threshold"] != {"value": max(floor["F_rho"], null["null_975"]), "binds": "null_975" if null["null_975"] >= floor["F_rho"] else "F_rho"}:
         raise PhaseError("the calibration record's effective threshold is not max(F_ρ, null₉₇.₅)")
+
+
+# ---------------------------------------------------------------------------
+# The lock (weights only; no forward pass) (Task 5).
+
+OUTCOME_TABLE = (
+    ("an incident", "—", "no result is written"),
+    ("NOT_INTERPRETABLE", "any", "NOT_INTERPRETABLE"),
+    ("GUARD_FAILURE or ENVELOPE_ONLY_FAILURE", "any (descriptive only)", "NOUNNESS_PREDICTION_NOT_ESTABLISHED"),
+    ("PASS", "FAIL or NOT_INTERPRETABLE", "ASSOCIATION_PREDICTED_BUT_NOUNNESS_NOT_DISAMBIGUATED"),
+    ("PASS", "PASS", "NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS"),
+)
+
+
+def fresh_quantities(W_E: torch.Tensor, bindings: Mapping[str, Any], confirmation: Confirmation024, record: Mapping[str, Any]) -> dict[str, Any]:
+    """The lock's weight-derived quantities, reproduced bit for bit by I7 before any prompt: the centroids' digests,
+    every fresh cue's score (the full ``μ_cue``), the line's prediction and whether the score lies above every
+    calibration cue's (the extrapolation)."""
+    mu_noun, mu_cue = centroids(W_E, bindings)
+    scores = full_scores(W_E, bindings, [token["token_id"] for token in confirmation.tokens])
+    maximum = max(float(entry["nounness_loo"]) for entry in record["calibration_cues"])
+    cues = [{"word": token["word"], "class": token["class"], "lemma": token["lemma"], "form": token["form"], "token_id": int(token["token_id"]), "nounness": score,
+             "predicted_log_mse": predict(record["line"], score), "above_calibration_maximum": score > maximum} for token, score in zip(confirmation.tokens, scores)]
+    e_above = sum(1 for cue in cues if cue["class"] == "E" and cue["above_calibration_maximum"])
+    n_e = sum(1 for cue in cues if cue["class"] == "E")
+    return {"embedding_sha256": embedding_digest(W_E), "mu_noun_sha256": rc.tensor_digest(mu_noun), "mu_cue_sha256": rc.tensor_digest(mu_cue), "cues": cues,
+            "scores_sha256": rc.tensor_digest(torch.tensor(scores, dtype=torch.float64)), "maximum_calibration_score": maximum,
+            "extrapolation": {"E_above_maximum": e_above, "E": n_e, "sentence": EXTRAPOLATION_SENTENCE.format(k=e_above, n=n_e, maximum=maximum)}}
+
+
+def confirmation_binding(confirmation: Confirmation024, file_sha256: str) -> dict[str, str]:
+    return {"path": CONFIRMATION_RELATIVE_PATH, "file_sha256": file_sha256, "content_sha256": confirmation.content_sha256}
+
+
+def verify_confirmation_binding(record: Mapping[str, Any], state: Mapping[str, Any], binding: Mapping[str, str]) -> None:
+    if dict(record.get("confirmation_024") or {}) != dict(binding):
+        raise PhaseError("the calibration record binds a confirmation file other than the committed one; the frozen cues cannot change after calibrate")
+    if dict(state.get("confirmation_024") or {}) != dict(binding):
+        raise PhaseError("the results state binds a confirmation file other than the committed one; the frozen cues cannot change after calibrate")
+
+
+def guard_units(confirmation: Confirmation024) -> dict[str, Any]:
+    return {cls: [{"word": token["word"], "token_id": int(token["token_id"])} for token in confirmation.class_tokens(cls)] for cls in ("E", "N")}
+
+
+def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], config: Configuration, record: Mapping[str, Any], record_file_sha256: str,
+               confirmation: Confirmation024, confirmation_file_sha256: str, fresh: Mapping[str, Any], dependencies: Mapping[str, Any],
+               noun_keys: Sequence[str]) -> dict[str, Any]:
+    manifest = confirmation.manifest()
+    lock = {
+        "experiment": EXPERIMENT, "schema_version": 1, "kind": "the preregistration lock of Experiment 024 (design revision 2, plan revision 1)", "design": dict(DESIGN),
+        "plan": dict(PLAN), "run_id": run_id, "protocol_code_commit": protocol_code_commit, "module": {"path": "src/neural_decompiler/readout_routing.py", "blob": own_blob()},
+        "inputs": dict(digests), "module_blobs": dict(FROZEN_BLOBS), "constants": record_constants(config), "configuration": config.to_json(),
+        "calibration": {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]},
+        "confirmation_024": {**confirmation_binding(confirmation, confirmation_file_sha256), "counts": confirmation.counts(), "manifest_size": len(manifest["S2-TARGET"]),
+                             "manifest_sha256": pm.sha256_text(pm.canonical_json(manifest))},
+        "exposed_cells": calibration_source(), "dependencies": dict(dependencies), "score": dict(record["score"]), "fresh": dict(fresh),
+        "primary": {"statistic": STATISTIC, "F_rho": record["primary_floor"]["F_rho"], "null_975": record["null"]["null_975"],
+                    "effective_threshold": dict(record["effective_threshold"]), "precedence": list(PRIMARY_RESULTS), "readings": dict(SEMANTICS["primary"])},
+        "guard": {"spec": config.guard.to_json(), "units": guard_units(confirmation), "readings": dict(SEMANTICS["guard"])},
+        "outcome": {"table": [list(row) for row in OUTCOME_TABLE], "readings": dict(SEMANTICS["outcomes"])},
+        "line": dict(record["line"]), "semantics": dict(SEMANTICS), "noun_keys": list(noun_keys),
+    }
+    lock = rc.json_safe(lock)
+    validate_json_safe(lock)
+    lock["content_sha256"] = rc.content_digest(lock)
+    return lock
+
+
+def _full(value: Any) -> str:
+    return repr(float(value)) if isinstance(value, float) else str(value)
+
+
+def render_preregistration(lock: Mapping[str, Any]) -> str:
+    primary, guard, fresh = lock["primary"], lock["guard"], lock["fresh"]
+    lines = ["# Experiment 024 — preregistration", "",
+             f"- Lock run `{lock['run_id']}` at commit `{lock['protocol_code_commit']}`; design revision {lock['design']['revision']} (`{lock['design']['commit']}`), "
+             f"plan revision {lock['plan']['revision']} (`{lock['plan']['commit']}`); configuration `{lock['configuration']['name']}`",
+             f"- Calibration record content sha256 `{lock['calibration']['content_sha256']}` (file `{lock['calibration']['file_sha256']}`)",
+             f"- Confirmation file content sha256 `{lock['confirmation_024']['content_sha256']}`: {lock['confirmation_024']['manifest_size']} S2-TARGET prompts "
+             f"(manifest sha256 `{lock['confirmation_024']['manifest_sha256']}`)",
+             f"- Calibration source: 023's exposed cells, data `{lock['exposed_cells']['data_sha256']}`, index `{lock['exposed_cells']['index_sha256']}` (content "
+             f"`{lock['exposed_cells']['index_content_sha256']}`)",
+             f"- Model parameters sha256 `{lock['dependencies']['model']['parameters_sha256']}`; embedding sha256 `{lock['dependencies']['model']['embedding_sha256']}`; "
+             f"020's locked states sha256 `{lock['dependencies']['readout_020']['exposed_states_sha256']}`", "",
+             "## The primary test", "", f"Statistic: {primary['statistic']}.", "",
+             f"- F_ρ = {_full(primary['F_rho'])}; null₉₇.₅ = {_full(primary['null_975'])}; a PASS needs ρ ≥ max(F_ρ, null₉₇.₅) = "
+             f"{_full(primary['effective_threshold']['value'])} (binding: {primary['effective_threshold']['binds']})",
+             "- Results, in precedence order:"]
+    lines += [f"  - `{name}`: {primary['readings'][name]}" for name in PRIMARY_RESULTS]
+    spec = guard["spec"]
+    lines += ["", "## The E–N disambiguation guard (an exact one-sided permutation test)", "",
+              f"- {spec['statistic']}; the {spec['log']} log of the per-cue MSE; {spec['order']}",
+              f"- E: {', '.join(unit['word'] for unit in guard['units']['E'])}; N: {', '.join(unit['word'] for unit in guard['units']['N'])}",
+              f"- Every one of the C({spec['n_E'] + spec['n_N']}, {spec['n_E']}) = {spec['assignments']} assignments is enumerated ({spec['enumeration']}); "
+              f"{spec['arithmetic']}",
+              f"- {spec['rule']}; max_upper = {spec['max_upper']}, so the exact size is at most {spec['max_upper']}/{spec['assignments']}; {spec['p_value']}",
+              f"- {spec['undefined']}"]
+    lines += [f"  - `{name}`: {guard['readings'][name]}" for name in GUARD_RESULTS]
+    lines += ["", "## The outcome (frozen hierarchy)", "", "| primary result | E–N guard | outcome |", "|---|---|---|"]
+    lines += [f"| {row[0]} | {row[1]} | `{row[2]}` |" for row in lock["outcome"]["table"]]
+    lines += [""] + [f"- `{name}`: {lock['outcome']['readings'][name]}" for name in OUTCOMES]
+    semantics = lock["semantics"]
+    lines += ["", f"- Simple: {semantics['simple']}.", f"- {semantics['predictive'].capitalize()}.", f"- Secondary: {semantics['secondary']}.",
+              f"- Incidents: {semantics['incidents']}.", "- Not shown by any outcome:"]
+    lines += [f"  - {item}" for item in semantics["not_shown"]]
+    lines += ["", "## Extrapolation", "", fresh["extrapolation"]["sentence"], "",
+              "## The fresh cues and their frozen scores", "",
+              f"Line (exposed-data-fitted, prospectively frozen; secondary): log MSE = {_full(lock['line']['intercept'])} + {_full(lock['line']['slope'])} · nounness "
+              f"(residual sd {_full(lock['line']['residual_sd'])}, n = {lock['line']['n']}).", "",
+              "| class | word | token id | nounness | predicted log MSE | above the calibration maximum |", "|---|---|---|---|---|---|"]
+    lines += [f"| {cue['class']} | {cue['word']} | {cue['token_id']} | {_full(cue['nounness'])} | {_full(cue['predicted_log_mse'])} | "
+              f"{'yes' if cue['above_calibration_maximum'] else 'no'} |" for cue in fresh["cues"]]
+    lines.append("")
+    return "\n".join(lines)
+
+
+SCIENTIFIC_PATH_PREFIXES = ("src/", f"{EXPERIMENT_DIR}/", *b0c.SCIENTIFIC_PATH_PREFIXES[1:])
+NON_SCIENTIFIC_PATHS = (CONFIRMATION_RELATIVE_PATH, CALIBRATION_RELATIVE_PATH, LOCK_RELATIVE_PATH, PREREGISTRATION_RELATIVE_PATH, f"{EXPERIMENT_DIR}/README.md",
+                        f"{b0c.EXPERIMENT_DIR}/README.md", *ul.NON_SCIENTIFIC_PATHS)
+NON_SCIENTIFIC_PREFIXES = (f"{EXPERIMENT_DIR}/evidence/", f"{b0c.EXPERIMENT_DIR}/evidence/", *ul.NON_SCIENTIFIC_PREFIXES)
+
+
+def scientific_changes(paths: Sequence[str]) -> list[str]:
+    """Scientific paths: all code, and 024's, 023's, 022's … experiment directories — 023's committed artifacts included
+    (they are 024's inputs) — except the installed 024 artifacts, the READMEs and the evidence directories."""
+    return [path for path in paths if path.startswith(SCIENTIFIC_PATH_PREFIXES) and path not in NON_SCIENTIFIC_PATHS and not path.startswith(NON_SCIENTIFIC_PREFIXES)]
+
+
+def validate_lock(lock: Mapping[str, Any], *, state: Mapping[str, Any], digests: Mapping[str, str], config: Configuration, record: Mapping[str, Any],
+                  record_file_sha256: str, confirmation: Confirmation024, confirmation_file_sha256: str, dependencies: Mapping[str, Any], noun_keys: Sequence[str],
+                  preregistration_text: str, git_state: Mapping[str, Any], tracked: bool, changed_paths: Sequence[str] | None) -> None:
+    """The installed lock before the model is loaded: its digest; that it is this run's candidate; every bound input,
+    configuration, constant, dependency, threshold and semantics; the rendered preregistration; a clean tree with no
+    scientific change since the lock commit. (The model's parameter and embedding digests, and I7, follow the load.)"""
+    if lock.get("experiment") != EXPERIMENT or lock.get("content_sha256") != rc.content_digest(lock):
+        raise PhaseError("the installed lock is not a verified Experiment 024 lock")
+    if state.get("lock") is None or state["lock"].get("content_sha256") != lock["content_sha256"]:
+        raise PhaseError("the installed lock is not the candidate this run wrote")
+    if lock["inputs"] != dict(digests) or lock["module_blobs"] != dict(FROZEN_BLOBS) or lock["design"] != dict(DESIGN) or lock["plan"] != dict(PLAN):
+        raise PhaseError("the lock was written against different frozen inputs, modules, design or plan")
+    if lock["configuration"] != config.to_json() or lock["constants"] != record_constants(config) or lock["guard"]["spec"] != config.guard.to_json():
+        raise PhaseError("the lock was written under a different configuration")
+    verify_calibration_record(record, config)
+    if lock["calibration"] != {"path": CALIBRATION_RELATIVE_PATH, "file_sha256": record_file_sha256, "content_sha256": record["content_sha256"]}:
+        raise PhaseError("the lock was written against a different calibration record")
+    if (lock["primary"]["F_rho"], lock["primary"]["null_975"], lock["primary"]["effective_threshold"]) != (record["primary_floor"]["F_rho"], record["null"]["null_975"],
+                                                                                                             record["effective_threshold"]) or lock["line"] != record["line"]:
+        raise PhaseError("the lock's thresholds or line are not the committed record's")
+    if lock["exposed_cells"] != calibration_source() or record["exposed_cells"] != calibration_source():
+        raise PhaseError("the lock or the record binds a different calibration source")
+    comparable = {key: value for key, value in dependencies.items() if key != "model"}
+    verify_dependencies({key: value for key, value in lock["dependencies"].items() if key != "model"}, comparable, "the lock")
+    binding = confirmation_binding(confirmation, confirmation_file_sha256)
+    if {key: lock["confirmation_024"].get(key) for key in binding} != binding or lock["guard"]["units"] != guard_units(confirmation):
+        raise PhaseError("the lock was written against a different confirmation file")
+    verify_confirmation_binding(record, state, binding)
+    if lock["noun_keys"] != list(noun_keys) or lock["semantics"] != dict(SEMANTICS) or lock["outcome"]["table"] != [list(row) for row in OUTCOME_TABLE]:
+        raise PhaseError("the lock names a different noun order, semantics or outcome table")
+    if preregistration_text != render_preregistration(lock) or pm.sha256_text(preregistration_text) != state["lock"].get("preregistration_sha256"):
+        raise PhaseError("the installed preregistration is not the one this lock renders")
+    if not tracked:
+        raise PhaseError("the lock and the preregistration must be tracked and committed")
+    if git_state.get("dirty"):
+        raise PhaseError("confirm requires a clean Git tree")
+    if changed_paths is None:
+        raise PhaseError("the lock commit is not an ancestor of the current commit")
+    scientific = scientific_changes(changed_paths)
+    if scientific:
+        raise PhaseError(f"scientific paths changed since the lock: {scientific}")
+
+
+def verify_model_dependencies(recorded: Mapping[str, Any], *, parameters_sha256: str, embedding_sha256: str, what: str) -> None:
+    now = {**dict(recorded), "parameters_sha256": parameters_sha256, "embedding_sha256": embedding_sha256}
+    verify_dependencies(dict(recorded), now, f"{what} (the model)")
