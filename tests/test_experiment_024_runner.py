@@ -18,7 +18,6 @@ import shutil
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Any
 
 import pytest
 import torch
@@ -341,7 +340,7 @@ def test_the_calibration_stop_writes_no_record_and_is_never_retried(world, base0
     assert runner.report() == 0 and "Calibration stopped for review" in runner.report_path.read_text()
 
 
-def test_a_calibration_cross_check_failure_is_an_incident_bound_to_its_commit(world, base024, frozen024, sandbox, monkeypatch):
+def test_a_calibration_cross_check_failure_is_an_incident_bound_to_its_commit(world, base023, base024, frozen024, sandbox, monkeypatch):
     root = sandbox(frozen024)
     monkeypatch.setattr(rr, "spearman_direct", lambda x, y: 2.0)
     runner, logs = make_runner(root, world, FAKE)
@@ -352,27 +351,13 @@ def test_a_calibration_cross_check_failure_is_an_incident_bound_to_its_commit(wo
     with pytest.raises(rr.PhaseError, match="incident is recorded at this commit"):
         runner.calibrate()
     monkeypatch.undo()
-    _apply(monkeypatch, world, *_bases(world))
+    _apply(monkeypatch, world, base023, base024)
     _unreadable_outputs(monkeypatch)
     runner, _ = make_runner(root, world, FAKE, git_state=lambda: {"commit": COMMIT_B, "dirty": False}, changed_paths=lambda commit: ["src/neural_decompiler/x.py"])
     with pytest.raises(rr.PhaseError, match="must change no scientific path"):
         runner.calibrate()
     runner, logs = make_runner(root, world, FAKE, git_state=lambda: {"commit": COMMIT_B, "dirty": False}, changed_paths=lambda commit: ["docs/incident-note.md"])
     assert runner.calibrate() == 0, logs[-3:]
-
-
-_BASES: dict[str, Any] = {}
-
-
-@pytest.fixture(autouse=True)
-def _remember_bases(request):
-    if "base023" in request.fixturenames and "base024" in request.fixturenames:
-        _BASES["pair"] = (request.getfixturevalue("base023"), request.getfixturevalue("base024"))
-    yield
-
-
-def _bases(world):
-    return _BASES["pair"]
 
 
 def test_lock_is_weights_only_binds_the_scores_and_the_outcome_and_runs_once(world, base024, calibrated024, sandbox, monkeypatch):
