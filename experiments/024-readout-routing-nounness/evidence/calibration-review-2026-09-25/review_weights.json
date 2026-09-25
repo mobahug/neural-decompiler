@@ -1,0 +1,180 @@
+{
+ "checks": [
+  {
+   "name": "forward refusal armed: the model resolves __call__ to the refusing wrapper; every submodule class either does too or overrides __call__ only to delegate to super().__call__",
+   "ok": true,
+   "detail": "430 modules; overriding classes {'GPTNeoXLayer': True}"
+  },
+  {
+   "name": "pinned revision loaded",
+   "ok": true,
+   "detail": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+  },
+  {
+   "name": "parameter digest: own implementation == canonical == record == fd953f1c\u2026",
+   "ok": true,
+   "detail": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5 over 113 named parameters"
+  },
+  {
+   "name": "W_E (pm.Weights) == model.embed.W_E == the named [50304, 512] embedding parameter, float32",
+   "ok": true,
+   "detail": "['gpt_neox.embed_in._original_component.weight']"
+  },
+  {
+   "name": "embedding digest: own implementation == canonical == record == 9cd6f39b\u2026",
+   "ok": true,
+   "detail": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf"
+  },
+  {
+   "name": "exposed locked-states digest (ul.exposed_states_digest) == record 26c21d63\u2026",
+   "ok": true,
+   "detail": "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83"
+  },
+  {
+   "name": "frozen-input digests (inputs.digests over rc.DIGEST_KEYS) == record readout_020.frozen_input_digests",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record inputs == rr.base_digests recomputed now (020 chain, 022, 023)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record dependencies == rr.scientific_dependencies recomputed now",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "module blobs on disk == rr.FROZEN_BLOBS (rr.assert_frozen_blobs)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "canonical verify_calibration_record(record, PRODUCTION) passes",
+   "ok": true,
+   "detail": "verified"
+  },
+  {
+   "name": "79 scorable (single-token) exposed nouns, in the 023 index's noun order",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "158 noun-form ids == record; own digest == canonical == 08fb9b4f\u2026",
+   "ok": true,
+   "detail": "08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871"
+  },
+  {
+   "name": "158 noun-form ids distinct (sg \u2260 pl for every noun, no shared ids)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "139 cue ids: 023 index order == b0c.exposed_units order == record; own digest == canonical == 106cfecc\u2026",
+   "ok": true,
+   "detail": "106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf"
+  },
+  {
+   "name": "139 cue ids distinct; disjoint from the noun rows",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "canonical rr.score_bindings recomputed now == record score (all keys)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "tokenizer: each calibration cue id decodes to ' ' + word; each noun's singular id decodes to its key; each fresh ' ' + word encodes to its single id",
+   "ok": true,
+   "detail": "([], [], [])"
+  },
+  {
+   "name": "\u03bc_noun digest: canonical rc.tensor_digest == own digest routine == record == 87930f01\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "\u03bc_cue digest: canonical rc.tensor_digest == own digest routine == record == f8cca954\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "exact encoding round-trips every relevant float32 value",
+   "ok": true,
+   "detail": "scale 2^24"
+  },
+  {
+   "name": "centroids: canonical torch means vs exactly rounded means (numerical disagreement only)",
+   "ok": true,
+   "detail": "\u03bc_noun max |\u0394| 0.00e+00 (0/512 coords differ); \u03bc_cue max |\u0394| 0.00e+00 (0/512 coords differ)"
+  },
+  {
+   "name": "all 139 record LOO scores vs own exact route (numerical disagreement only)",
+   "ok": true,
+   "detail": "max |\u0394| 1.938e-16; bitwise equal to the exactly rounded value 41/139"
+  },
+  {
+   "name": "canonical rr.calibration_scores recomputed now == record nounness_loo bit for bit (139)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "the 139 LOO scores are distinct and ordered identically by the record and the exact route",
+   "ok": true,
+   "detail": "smallest gap between consecutive exact scores 1.127e-06 vs max disagreement 1.938e-16"
+  },
+  {
+   "name": "calibration maximum = 0.13502027836111233, the same cue in both routes",
+   "ok": true,
+   "detail": "paper (adjective); second 0.11307944915185951"
+  },
+  {
+   "name": "36 pronoun scores (full \u03bc_cue, descriptive) vs own exact route",
+   "ok": true,
+   "detail": "max |\u0394| 7.298e-17"
+  },
+  {
+   "name": "40-score digest: rc.tensor_digest of rr.full_scores in the freeze file's cue order == a703ac16\u2026",
+   "ok": true,
+   "detail": "a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995"
+  },
+  {
+   "name": "40 fresh scores: canonical vs own exact route (numerical disagreement only)",
+   "ok": true,
+   "detail": "max |\u0394| 2.196e-16"
+  },
+  {
+   "name": "5 of the 8 E cues above the calibration maximum 0.13502027836111233: apple, horse, doctor, poet, dragon",
+   "ok": true,
+   "detail": "['apple', 'horse', 'doctor', 'poet', 'dragon']"
+  },
+  {
+   "name": "the extrapolation flags are robust to the numerical disagreement",
+   "ok": true,
+   "detail": "closest E to the maximum is 0.0064 away"
+  },
+  {
+   "name": "every E above every N",
+   "ok": true,
+   "detail": "min E ('lion', 0.10845152134948685) > max N ('nervous', -0.04507626505814516)"
+  },
+  {
+   "name": "no fresh token id is in \u03bc_cue or \u03bc_noun",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "forward guard: no module call during the load, none after it, no capture entry point reached",
+   "ok": true,
+   "detail": "{'during_load': 0, 'after_load_refused': 0, 'capture_refused': 0}"
+  },
+  {
+   "name": "review guard: no repository write attempted, no forbidden read attempted",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "failures": []
+}

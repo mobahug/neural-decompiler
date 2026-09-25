@@ -1,0 +1,42 @@
+== the saved arrays ==
+[ok] arrays file holds exactly the five calibration arrays with the planned dtypes and shapes: {'draw_rho': ('torch.float64', (10000,)), 'draw_defined': ('torch.bool', (10000,)), 'draw_indices': ('torch.int64', (10000, 40)), 'null_rho': ('torch.float64', (100000,)), 'null_permutations': ('torch.int8', (100000, 40))}
+[ok] array digests: own routine == canonical rr.arrays_digests (rc.tensor_digest, bool/int8 as int64) == record: {'draw_rho': '7c03376c', 'draw_defined': '76b5b970', 'draw_indices': '955930ce', 'null_rho': '92e63029', 'null_permutations': 'a68f7291'}
+== Item 5: the exposed line (exact rational OLS) ==
+[ok] line: record == expected full-precision values (slope 1.2992017464639374, intercept -2.481260357420486, residual sd 0.2570037337349923, n 139)
+[ok] line: own exact OLS on the record's 139 (x, log MSE) vs the record (numerical disagreement only): |Δ| slope 0.00e+00, intercept 0.00e+00, sd 0.00e+00; exact slope 1.2992017464639374, intercept -2.481260357420486, sd 0.2570037337349923
+[ok] line: canonical rr.ols on the record's entries reproduces the record bit for bit
+[ok] line: numpy.polyfit route: polyfit slope np.float64(1.2992017464639372) intercept np.float64(-2.4812603574204863)
+[ok] line from fully independent inputs (own exact LOO scores, own exactly rounded MSE): slope 1.2992017464639374, intercept -2.481260357420486, sd 0.25700373373499225
+[ok] exposed Spearman over the 139: own exact route == 0.5296617364493499 (record): exact 0.52966173644934983690; from own inputs 0.5296617364493499
+[ok] within-stratum Spearman adjective (descriptive): record 0.4263265306122449, own 0.4263265306122449
+[ok] within-stratum Spearman determiner-like (descriptive): record 0.25612648221343876, own 0.25612648221343876
+[ok] within-stratum Spearman quantity (descriptive): record 0.3089591567852437, own 0.3089591567852437
+[ok] pronoun out-of-fit check (descriptive): ρ 0.42316602316602314, median |err| 0.2037503519328614, mean signed 0.14164663336731065
+== Item 6: the 10,000 SHA-indexed draws and F_ρ ==
+[ok] draw indices: own SHA formula == saved array (10,000 × 40, all in [0, 139))
+[ok] draw-indices digest: own == canonical == record == 955930ce…
+[ok] exactly 10,000 draws, 0 undefined (own); every saved draw_defined true: undefined 0
+[ok] draw Spearman: saved (canonical) vs own exact route: max |Δ| 5.550e-17; bitwise equal to the exactly rounded value 10000/10000
+[ok] draw_rho digest == 7c03376c…, draw_defined digest == 76b5b970…
+[ok] F_ρ = ascending element [249] = 0.24411074612857814 (saved values and own exact route agree): own exact [249] 0.24411074612857813233
+[ok] F_ρ's position is unambiguous (gaps to the neighbouring order statistics ≫ numerical disagreement): [248] 0.24371010138941043, [249] 0.24411074612857814, [250] 0.24429416737109044
+[ok] draws min / median / max / element [9750] match the record's tails: min -0.04808414725770098, median 0.5285171092272343, max 0.8487237237237237, [9750] 0.7376126126126126
+[ok] direction check: F_ρ ≤ the median of the draws
+[ok] undefined count 0 < stop 250
+[ok] draws from fully independent inputs (own exact LOO, own exact MSE) give identical values: identical 10000/10000
+== Item 7: the 100,000-permutation null ==
+[ok] permutations: own Fisher–Yates == saved int8 array; every row a permutation of 0..39
+[ok] permutations digest: own == canonical == record == a68f7291…
+[ok] null values: saved (canonical) == own exact rationals, correctly rounded, bit for bit (100,000)
+[ok] null_rho digest == 92e63029…
+[ok] null₉₇.₅ = ascending element [97499] = 0.3136960600375234: exact 836/2665 (S = 7316), float 0.3136960600375234
+[ok] 15 null values tied at the threshold (one exact rational, one float): tied block elements [97497]..[97511]; ≥ t: 2503 (2.503 %), > t: 2488 (2.488 %)
+[ok] the pass rule ρ ≥ t is unambiguous: t is one exact value; ties with the fresh ρ count as passing the null guard: a fresh ρ without ties lies on the same grid (Σab/5330 with Σa² = Σb² = 5330 exactly), so equality is decidable exactly
+[ok] null median matches the record: -0.001125703564727955
+[ok] no 99.5 % value is used (only element [97499])
+== Item 8: the effective threshold ==
+[ok] T_primary = max(F_ρ, null₉₇.₅) = 0.3136960600375234, bound by the null: F_ρ 0.24411074612857814 < null₉₇.₅ 0.3136960600375234
+[ok] draw rates (descriptive): GUARD_FAILURE 593/10,000, ENVELOPE_ONLY 0 (empty band since F_ρ < null), PASS 9,407/10,000: {'ENVELOPE_ONLY_FAILURE': 0.0, 'GUARD_FAILURE': 0.0593, 'NOT_INTERPRETABLE': 0.0, 'PASS': 0.9407}
+guard events: {'refused_writes': [], 'refused_reads': [], 'open_events': 1175}
+[ok] review guard: no repository write attempted, no forbidden read attempted
+FAILURES: none

@@ -1,0 +1,180 @@
+{
+ "checks": [
+  {
+   "name": "arrays file holds exactly the five calibration arrays with the planned dtypes and shapes",
+   "ok": true,
+   "detail": "{'draw_rho': ('torch.float64', (10000,)), 'draw_defined': ('torch.bool', (10000,)), 'draw_indices': ('torch.int64', (10000, 40)), 'null_rho': ('torch.float64', (100000,)), 'null_permutations': ('torch.int8', (100000, 40))}"
+  },
+  {
+   "name": "array digests: own routine == canonical rr.arrays_digests (rc.tensor_digest, bool/int8 as int64) == record",
+   "ok": true,
+   "detail": "{'draw_rho': '7c03376c', 'draw_defined': '76b5b970', 'draw_indices': '955930ce', 'null_rho': '92e63029', 'null_permutations': 'a68f7291'}"
+  },
+  {
+   "name": "line: record == expected full-precision values (slope 1.2992017464639374, intercept -2.481260357420486, residual sd 0.2570037337349923, n 139)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "line: own exact OLS on the record's 139 (x, log MSE) vs the record (numerical disagreement only)",
+   "ok": true,
+   "detail": "|\u0394| slope 0.00e+00, intercept 0.00e+00, sd 0.00e+00; exact slope 1.2992017464639374, intercept -2.481260357420486, sd 0.2570037337349923"
+  },
+  {
+   "name": "line: canonical rr.ols on the record's entries reproduces the record bit for bit",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "line: numpy.polyfit route",
+   "ok": true,
+   "detail": "polyfit slope np.float64(1.2992017464639372) intercept np.float64(-2.4812603574204863)"
+  },
+  {
+   "name": "line from fully independent inputs (own exact LOO scores, own exactly rounded MSE)",
+   "ok": true,
+   "detail": "slope 1.2992017464639374, intercept -2.481260357420486, sd 0.25700373373499225"
+  },
+  {
+   "name": "exposed Spearman over the 139: own exact route == 0.5296617364493499 (record)",
+   "ok": true,
+   "detail": "exact 0.52966173644934983690; from own inputs 0.5296617364493499"
+  },
+  {
+   "name": "within-stratum Spearman adjective (descriptive)",
+   "ok": true,
+   "detail": "record 0.4263265306122449, own 0.4263265306122449"
+  },
+  {
+   "name": "within-stratum Spearman determiner-like (descriptive)",
+   "ok": true,
+   "detail": "record 0.25612648221343876, own 0.25612648221343876"
+  },
+  {
+   "name": "within-stratum Spearman quantity (descriptive)",
+   "ok": true,
+   "detail": "record 0.3089591567852437, own 0.3089591567852437"
+  },
+  {
+   "name": "pronoun out-of-fit check (descriptive)",
+   "ok": true,
+   "detail": "\u03c1 0.42316602316602314, median |err| 0.2037503519328614, mean signed 0.14164663336731065"
+  },
+  {
+   "name": "draw indices: own SHA formula == saved array (10,000 \u00d7 40, all in [0, 139))",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "draw-indices digest: own == canonical == record == 955930ce\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "exactly 10,000 draws, 0 undefined (own); every saved draw_defined true",
+   "ok": true,
+   "detail": "undefined 0"
+  },
+  {
+   "name": "draw Spearman: saved (canonical) vs own exact route",
+   "ok": true,
+   "detail": "max |\u0394| 5.550e-17; bitwise equal to the exactly rounded value 10000/10000"
+  },
+  {
+   "name": "draw_rho digest == 7c03376c\u2026, draw_defined digest == 76b5b970\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "F_\u03c1 = ascending element [249] = 0.24411074612857814 (saved values and own exact route agree)",
+   "ok": true,
+   "detail": "own exact [249] 0.24411074612857813233"
+  },
+  {
+   "name": "F_\u03c1's position is unambiguous (gaps to the neighbouring order statistics \u226b numerical disagreement)",
+   "ok": true,
+   "detail": "[248] 0.24371010138941043, [249] 0.24411074612857814, [250] 0.24429416737109044"
+  },
+  {
+   "name": "draws min / median / max / element [9750] match the record's tails",
+   "ok": true,
+   "detail": "min -0.04808414725770098, median 0.5285171092272343, max 0.8487237237237237, [9750] 0.7376126126126126"
+  },
+  {
+   "name": "direction check: F_\u03c1 \u2264 the median of the draws",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "undefined count 0 < stop 250",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "draws from fully independent inputs (own exact LOO, own exact MSE) give identical values",
+   "ok": true,
+   "detail": "identical 10000/10000"
+  },
+  {
+   "name": "permutations: own Fisher\u2013Yates == saved int8 array; every row a permutation of 0..39",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "permutations digest: own == canonical == record == a68f7291\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "null values: saved (canonical) == own exact rationals, correctly rounded, bit for bit (100,000)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "null_rho digest == 92e63029\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "null\u2089\u2087.\u2085 = ascending element [97499] = 0.3136960600375234",
+   "ok": true,
+   "detail": "exact 836/2665 (S = 7316), float 0.3136960600375234"
+  },
+  {
+   "name": "15 null values tied at the threshold (one exact rational, one float)",
+   "ok": true,
+   "detail": "tied block elements [97497]..[97511]; \u2265 t: 2503 (2.503 %), > t: 2488 (2.488 %)"
+  },
+  {
+   "name": "the pass rule \u03c1 \u2265 t is unambiguous: t is one exact value; ties with the fresh \u03c1 count as passing the null guard",
+   "ok": true,
+   "detail": "a fresh \u03c1 without ties lies on the same grid (\u03a3ab/5330 with \u03a3a\u00b2 = \u03a3b\u00b2 = 5330 exactly), so equality is decidable exactly"
+  },
+  {
+   "name": "null median matches the record",
+   "ok": true,
+   "detail": "-0.001125703564727955"
+  },
+  {
+   "name": "no 99.5 % value is used (only element [97499])",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "T_primary = max(F_\u03c1, null\u2089\u2087.\u2085) = 0.3136960600375234, bound by the null",
+   "ok": true,
+   "detail": "F_\u03c1 0.24411074612857814 < null\u2089\u2087.\u2085 0.3136960600375234"
+  },
+  {
+   "name": "draw rates (descriptive): GUARD_FAILURE 593/10,000, ENVELOPE_ONLY 0 (empty band since F_\u03c1 < null), PASS 9,407/10,000",
+   "ok": true,
+   "detail": "{'ENVELOPE_ONLY_FAILURE': 0.0, 'GUARD_FAILURE': 0.0593, 'NOT_INTERPRETABLE': 0.0, 'PASS': 0.9407}"
+  },
+  {
+   "name": "review guard: no repository write attempted, no forbidden read attempted",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "failures": []
+}

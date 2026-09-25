@@ -1,0 +1,500 @@
+{
+ "checks": [
+  {
+   "name": "HEAD is bf0049c",
+   "ok": true,
+   "detail": "bf0049c85342d01caf9d6a830389ce1e72c05a71"
+  },
+  {
+   "name": "local origin/main is bf0049c",
+   "ok": true,
+   "detail": "bf0049c85342d01caf9d6a830389ce1e72c05a71"
+  },
+  {
+   "name": "remote origin main (ls-remote, read-only) is bf0049c",
+   "ok": true,
+   "detail": "bf0049c85342d01caf9d6a830389ce1e72c05a71"
+  },
+  {
+   "name": "working tree clean (git status --porcelain empty)",
+   "ok": true,
+   "detail": "''"
+  },
+  {
+   "name": "outputs/experiment-024 is ignored, not tracked",
+   "ok": true,
+   "detail": "'!! outputs/experiment-024/\\n'"
+  },
+  {
+   "name": "freeze file sha256",
+   "ok": true,
+   "detail": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60"
+  },
+  {
+   "name": "freeze content digest recomputes (own canonical JSON) and equals 87f8aff1\u2026",
+   "ok": true,
+   "detail": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87"
+  },
+  {
+   "name": "freeze file is canonical JSON + newline",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "freeze file committed once (566eb6f) and unchanged since",
+   "ok": true,
+   "detail": "['566eb6f data: experiment 024 freeze \u2014 confirmation-v1.json, installed byte-identically']"
+  },
+  {
+   "name": "freeze file identical to HEAD's blob",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "outputs/experiment-024 holds exactly the three calibrate outputs",
+   "ok": true,
+   "detail": "['calibration-arrays.pt', 'candidate-calibration.json', 'results.json']"
+  },
+  {
+   "name": "results state verifies its own digest (own canonical JSON)",
+   "ok": true,
+   "detail": "5ed26580be4c28310d072bf2c451dbeba01e4b1f8710b65072d25c9281d31252"
+  },
+  {
+   "name": "results state digest is 5ed26580\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "results state file is canonical JSON + newline",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phases: calibrate complete; lock, confirm, report not_started",
+   "ok": true,
+   "detail": "{'calibrate': 'complete', 'confirm': 'not_started', 'lock': 'not_started', 'report': 'not_started'}"
+  },
+  {
+   "name": "calibrate phase: one commit bf0049c, no incidents key",
+   "ok": true,
+   "detail": "{'commit': 'bf0049c85342d01caf9d6a830389ce1e72c05a71', 'completed_at': '2026-09-25T13:08:45+00:00', 'started_at': '2026-09-25T13:08:19+00:00', 'status': 'complete'}"
+  },
+  {
+   "name": "calibrate phase keys are exactly status/started_at/completed_at/commit/runtime",
+   "ok": true,
+   "detail": "['commit', 'completed_at', 'runtime', 'started_at', 'status']"
+  },
+  {
+   "name": "state protocol_code_commit bf0049c, git_dirty false",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state calibration: no incidents, no stop, no cross_check failure",
+   "ok": true,
+   "detail": "['F_rho', 'arrays_sha256', 'candidate_path', 'checks', 'dependencies', 'line', 'null_975', 'record_content_sha256', 'record_sha256']"
+  },
+  {
+   "name": "executed_prompt_keys and executed_noun_keys empty",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "lock, confirmation and report are null",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phase lock has only a status",
+   "ok": true,
+   "detail": "{'status': 'not_started'}"
+  },
+  {
+   "name": "phase confirm has only a status",
+   "ok": true,
+   "detail": "{'status': 'not_started'}"
+  },
+  {
+   "name": "phase report has only a status",
+   "ok": true,
+   "detail": "{'status': 'not_started'}"
+  },
+  {
+   "name": "created_at == started_at (single fresh state)",
+   "ok": true,
+   "detail": "('2026-09-25T13:08:19+00:00', '2026-09-25T13:08:19+00:00', '2026-09-25T13:08:45+00:00')"
+  },
+  {
+   "name": "candidate file sha256 81fb499e\u2026",
+   "ok": true,
+   "detail": "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d"
+  },
+  {
+   "name": "candidate content digest recomputes (own canonical JSON) and is 09bf093e\u2026",
+   "ok": true,
+   "detail": "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8"
+  },
+  {
+   "name": "candidate file is canonical JSON + newline (byte-identical re-serialization)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state binds this candidate (record_sha256, content, path)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state's F_rho, null_975, line, arrays digests, dependencies equal the record's",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record and state share run_id, commit, inputs, module blobs, configuration, design, plan",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state binds the freeze (confirmation_024)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record top-level keys are exactly the planned ones",
+   "ok": true,
+   "detail": "[]"
+  },
+  {
+   "name": "2026-09-24-experiment-024-readout-routing-nounness-design.md at 9d03dee is an ancestor and unchanged to HEAD",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "2026-09-25-experiment-024-readout-routing-nounness-plan.md at 608088c is an ancestor and unchanged to HEAD",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record binds the freeze: path, file and content digests",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 exposed-cells data file sha256 d2ee71e5\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 exposed-cells index file sha256 62818147\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 index content digest recomputes and is d38305cb\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 index binds the data file digest and the byte layout",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record exposed_cells and dependencies.calibration_source bind exactly these",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 index columns and version agree",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 confirmation: file and content digests on disk equal the record's inputs",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "023 lock: file and content digests on disk equal the record's inputs",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record inputs bind the 023 cells digests",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "022 calibration: file and content digests on disk equal the record's inputs",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "022 confirmation: file and content digests on disk equal the record's inputs",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "table_022_file is bound as a digest only (the table is never opened here)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "every bound input digest except 022's local table (never opened) and 020's results state (gz archive, below) is a tracked file's sha256 or self-verifying content digest",
+   "ok": true,
+   "detail": "['results_020_file', 'results_020_state', 'table_022_file']"
+  },
+  {
+   "name": "readout_020.frozen_input_digests equals the record's inputs on those keys",
+   "ok": true,
+   "detail": "21"
+  },
+  {
+   "name": "results_020_file = sha256 of the archived (gz) and the local 020 results state; results_020_state its self-verifying digest; both equal 020's closure",
+   "ok": true,
+   "detail": "('da63b8c29f95', '2e5485dccb39')"
+  },
+  {
+   "name": "twelve pinned module blobs",
+   "ok": true,
+   "detail": "['attention_patterns.py', 'block0_completion.py', 'encoding_read.py', 'frame_channels.py', 'head_pattern.py', 'head_transport.py', 'layer_correction.py', 'models.py', 'plural_mechanism.py', 'readout_calibration.py', 'readout_decompilation.py', 'upstream_localization.py']"
+  },
+  {
+   "name": "own blob sha1 == record module_blobs == dependencies.module_blobs == state module_blobs == git tree at HEAD",
+   "ok": true,
+   "detail": "{'attention_patterns.py': '3f5acd6539', 'block0_completion.py': '16d310fc7f', 'encoding_read.py': 'cab99c942d', 'frame_channels.py': 'c95d6fb4c9', 'head_pattern.py': '386682fe0a', 'head_transport.py': '936093a4e8', 'layer_correction.py': '04df0cc9a2', 'models.py': 'b1c6f03379', 'plural_mechanism.py': 'd39da8a8d9', 'readout_calibration.py': '9107da9751', 'readout_decompilation.py': 'caa73b4019', 'upstream_localization.py': '465856962a'}"
+  },
+  {
+   "name": "readout_020 pins readout_decompilation.py at caa73b40\u2026",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "readout_routing.py on disk is HEAD's blob (the code that ran at bf0049c)",
+   "ok": true,
+   "detail": "e6cb37767d1d06c6ff40804a88eab569723afdb5"
+  },
+  {
+   "name": "run.py on disk is HEAD's blob",
+   "ok": true,
+   "detail": "30433b23afa94fff4becc556eaaed21a70f4d748"
+  },
+  {
+   "name": "artifact decodes as [18900, 8] little-endian float64, all finite",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "index: 175 cues, 108 frames (72 cue-final, 36 coordinated), 79 nouns",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "frames are in frame_id order",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "cue order: classes contiguous in 022's order (ul.CUE_CANDIDATES), token id ascending within a class",
+   "ok": true,
+   "detail": "(['determiner-like', 'quantity', 'possessive-or-pronoun', 'adjective'], ['determiner-like', 'quantity', 'possessive-or-pronoun', 'adjective'])"
+  },
+  {
+   "name": "175 distinct token ids",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "every exposed cell counts 79 nouns",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "139 calibration cues (45/45/49), 36 pronoun cues",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record: 139 entries, in the artifact's canonical order (word, token id, stratum), no pronoun",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record score.calibration_cue_ids equal the entries' token ids",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record MSE == own fsum MSE bit for bit (all 139)",
+   "ok": true,
+   "detail": "max |\u0394| 0.000e+00, bitwise equal 139/139"
+  },
+  {
+   "name": "record MSE vs exactly-rounded rational MSE",
+   "ok": true,
+   "detail": "max rel 2.215e-16, bitwise equal 101/139"
+  },
+  {
+   "name": "record MSE vs numpy pairwise-sum MSE (numerical disagreement only)",
+   "ok": true,
+   "detail": "max rel 4.154e-16"
+  },
+  {
+   "name": "record log_mse == math.log(record mse) bit for bit",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "every calibration MSE finite and positive",
+   "ok": true,
+   "detail": "min 0.02775489749723004 max 0.15683651613009916"
+  },
+  {
+   "name": "139 calibration MSE values distinct (no rank ties between distinct cues)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record pronoun cues: the 36 in canonical order, MSE bit-identical to own fsum",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "the calibration population excludes every pronoun id",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "src/neural_decompiler/readout_routing.py: no rounded design diagnostic or 99.5 % literal",
+   "ok": true,
+   "detail": "{}"
+  },
+  {
+   "name": "experiments/024-readout-routing-nounness/run.py: no rounded design diagnostic or 99.5 % literal",
+   "ok": true,
+   "detail": "{}"
+  },
+  {
+   "name": "record line is full precision (not the rounded prose)",
+   "ok": true,
+   "detail": "{'formulas': 'slope = Sxy/Sxx, intercept = \u0233 \u2212 slope\u00b7x\u0304, residual sd = sqrt(\u03a3 r\u00b2 / (n \u2212 2)); sums by math.fsum; y = log MSE, x = leave-one-out nounness', 'intercept': -2.481260357420486, 'n': 139, 'residual_sd': 0.2570037337349923, 'slope': 1.2992017464639374}"
+  },
+  {
+   "name": "record text has no 99.5 / 0.995 / 99500 element",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record null element is [97499] of 100000 (rank 97500), tag 024|null",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record floor element is [249] of 10000 (rank 250), stop at 250, tag 024|primary",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "guard spec 8 + 8, C(16,8) = 12,870 assignments, max_upper 321 = \u230a0.025\u00b712,870\u230b",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "guard rule text: K counts ties and the observed; PASS iff K \u2264 max_upper; exact dyadic arithmetic; natural log; E first",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record constants carry the same configuration",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no guard evaluation in the record (no K, D_EN, t, exact p, groups, guard result)",
+   "ok": true,
+   "detail": "[]"
+  },
+  {
+   "name": "the only 'p_value' fields are the guard spec's rule text",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "freeze: 40 distinct fresh cues, classes N,B,D,C,E \u00d7 8 in that order",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no fresh id among the calibration cues, the pronoun cues or the noun rows (a fresh cue is never in \u03bc_cue)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no fresh id among the 175 exposed artifact cues",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record binds no fresh score (no 'fresh' key, no scores digest, no a703ac16\u2026)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "record has no per-fresh-cue entry (no fresh word as an entry word)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no stage2-measurements.pt in outputs/experiment-024",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no candidate-lock.json in outputs/experiment-024",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no candidate-preregistration.md in outputs/experiment-024",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no report.md in outputs/experiment-024",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "experiments/024-readout-routing-nounness/calibration-v1.json not installed yet",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "experiments/024-readout-routing-nounness/preregistration-lock.json not installed yet",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "experiments/024-readout-routing-nounness/preregistration.md not installed yet",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "freeze manifest: 4,320 unique S2-TARGET keys; none in the state's ledger",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "no manifest key appears anywhere in the state or the record text",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "review guard: no repository write attempted, no forbidden read attempted",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "failures": []
+}

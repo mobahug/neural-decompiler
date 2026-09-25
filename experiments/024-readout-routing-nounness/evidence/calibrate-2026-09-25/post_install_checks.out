@@ -1,0 +1,35 @@
+[ok] tracked bytes == working bytes == candidate bytes
+[ok] file sha256
+[ok] content sha256
+[ok] stock validate: module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); calibration record verified
+[ok] installed record checker (rr.verify_calibration_record, production)
+[ok] state digest unchanged
+[ok] freeze binding in the record and the state
+[ok] calibration source bound
+[ok] phase rule allows lock (calibrate complete, lock not started, no lock incident)
+[ok] changed paths since calibrate are all non-scientific: ['experiments/024-readout-routing-nounness/calibration-v1.json']
+[ok] lock reads the installed record (tracked, the candidate this run wrote, verified, same inputs)
+[ok] the committed freeze binding verifies against the record and the state
+[ok] preserved slope: 1.2992017464639374
+[ok] preserved intercept: -2.481260357420486
+[ok] preserved residual_sd: 0.2570037337349923
+[ok] preserved exposed Spearman: 0.5296617364493499
+[ok] preserved F_rho: 0.24411074612857814
+[ok] preserved null_975: 0.3136960600375234
+[ok] preserved effective: 0.3136960600375234
+[ok] preserved binds: null_975
+[ok] preserved undefined draws: 0
+[ok] preserved draw indices: 955930ce
+[ok] preserved draw values: 7c03376c
+[ok] preserved draw flags: 76b5b970
+[ok] preserved null values: 92e63029
+[ok] preserved permutations: a68f7291
+[ok] preserved parameters: fd953f1c
+[ok] preserved embedding: 9cd6f39b
+[ok] preserved mu_noun: 87930f01
+[ok] preserved mu_cue: f8cca954
+[ok] E–N rule bound, not evaluated
+[ok] no fresh score in the record
+[ok] ledger empty; lock/confirm/report not started
+[ok] no repository write: []
+FAILURES: none

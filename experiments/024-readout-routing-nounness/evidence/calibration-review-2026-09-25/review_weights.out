@@ -1,0 +1,46 @@
+refused capture entry points: ['capture_prompt', 'run_patched', 'run_capture', 'run_interventions']
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:25,  2.97it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 224.74it/s]
+module calls during the load: 0
+[ok] forward refusal armed: the model resolves __call__ to the refusing wrapper; every submodule class either does too or overrides __call__ only to delegate to super().__call__: 430 modules; overriding classes {'GPTNeoXLayer': True}
+== Item 2 (model part): model and embedding digests ==
+[ok] pinned revision loaded: e93a9faa9c77e5d09219f6c868bfc7a1bd65593c
+[ok] parameter digest: own implementation == canonical == record == fd953f1c…: fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5 over 113 named parameters
+[ok] W_E (pm.Weights) == model.embed.W_E == the named [50304, 512] embedding parameter, float32: ['gpt_neox.embed_in._original_component.weight']
+[ok] embedding digest: own implementation == canonical == record == 9cd6f39b…: 9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf
+== Item 2 (canonical part): frozen inputs, 020 readout pin, exposed-states digest, dependencies ==
+[ok] exposed locked-states digest (ul.exposed_states_digest) == record 26c21d63…: 26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83
+[ok] frozen-input digests (inputs.digests over rc.DIGEST_KEYS) == record readout_020.frozen_input_digests
+[ok] record inputs == rr.base_digests recomputed now (020 chain, 022, 023)
+[ok] record dependencies == rr.scientific_dependencies recomputed now
+[ok] module blobs on disk == rr.FROZEN_BLOBS (rr.assert_frozen_blobs)
+[ok] canonical verify_calibration_record(record, PRODUCTION) passes: verified
+== Item 3: independent nounness construction ==
+[ok] 79 scorable (single-token) exposed nouns, in the 023 index's noun order
+[ok] 158 noun-form ids == record; own digest == canonical == 08fb9b4f…: 08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871
+[ok] 158 noun-form ids distinct (sg ≠ pl for every noun, no shared ids)
+[ok] 139 cue ids: 023 index order == b0c.exposed_units order == record; own digest == canonical == 106cfecc…: 106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf
+[ok] 139 cue ids distinct; disjoint from the noun rows
+[ok] canonical rr.score_bindings recomputed now == record score (all keys)
+[ok] tokenizer: each calibration cue id decodes to ' ' + word; each noun's singular id decodes to its key; each fresh ' ' + word encodes to its single id: ([], [], [])
+[ok] μ_noun digest: canonical rc.tensor_digest == own digest routine == record == 87930f01…
+[ok] μ_cue digest: canonical rc.tensor_digest == own digest routine == record == f8cca954…
+[ok] exact encoding round-trips every relevant float32 value: scale 2^24
+[ok] centroids: canonical torch means vs exactly rounded means (numerical disagreement only): μ_noun max |Δ| 0.00e+00 (0/512 coords differ); μ_cue max |Δ| 0.00e+00 (0/512 coords differ)
+[ok] all 139 record LOO scores vs own exact route (numerical disagreement only): max |Δ| 1.938e-16; bitwise equal to the exactly rounded value 41/139
+[ok] canonical rr.calibration_scores recomputed now == record nounness_loo bit for bit (139)
+[ok] the 139 LOO scores are distinct and ordered identically by the record and the exact route: smallest gap between consecutive exact scores 1.127e-06 vs max disagreement 1.938e-16
+[ok] calibration maximum = 0.13502027836111233, the same cue in both routes: paper (adjective); second 0.11307944915185951
+[ok] 36 pronoun scores (full μ_cue, descriptive) vs own exact route: max |Δ| 7.298e-17
+== Item 10: the fresh-score boundary (weights only; expected future lock metadata; not a lock) ==
+[ok] 40-score digest: rc.tensor_digest of rr.full_scores in the freeze file's cue order == a703ac16…: a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995
+[ok] 40 fresh scores: canonical vs own exact route (numerical disagreement only): max |Δ| 2.196e-16
+[ok] 5 of the 8 E cues above the calibration maximum 0.13502027836111233: apple, horse, doctor, poet, dragon: ['apple', 'horse', 'doctor', 'poet', 'dragon']
+[ok] the extrapolation flags are robust to the numerical disagreement: closest E to the maximum is 0.0064 away
+[ok] every E above every N: min E ('lion', 0.10845152134948685) > max N ('nervous', -0.04507626505814516)
+    fresh scores by class (rounded for display): {'N': [-0.229351, -0.190319, -0.124397, -0.137109, -0.194409, -0.133006, -0.115091, -0.045076], 'B': [0.16514, 0.075969, 0.163119, 0.396574, 0.237157, 0.292795, 0.261779, 0.006685], 'D': [0.04984, -0.065554, -0.031826, 0.302937, 0.19786, 0.147352, 0.163475, 0.045189], 'C': [0.222966, 0.345916, 0.31865, 0.20619, 0.323953, 0.314666, 0.318209, 0.309718], 'E': [0.167462, 0.298294, 0.217681, 0.11749, 0.128639, 0.165999, 0.188226, 0.108452]}
+    E mean 0.17403038565229723 N mean -0.14609476338081734
+[ok] no fresh token id is in μ_cue or μ_noun
+[ok] forward guard: no module call during the load, none after it, no capture entry point reached: {'during_load': 0, 'after_load_refused': 0, 'capture_refused': 0}
+guard events: {'refused_writes': [], 'refused_reads': [], 'open_events': 7415}
+[ok] review guard: no repository write attempted, no forbidden read attempted
+FAILURES: none

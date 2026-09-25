@@ -1,0 +1,141 @@
+== Item 1: repository and protocol state ==
+[ok] HEAD is bf0049c: bf0049c85342d01caf9d6a830389ce1e72c05a71
+[ok] local origin/main is bf0049c: bf0049c85342d01caf9d6a830389ce1e72c05a71
+[ok] remote origin main (ls-remote, read-only) is bf0049c: bf0049c85342d01caf9d6a830389ce1e72c05a71
+[ok] working tree clean (git status --porcelain empty): ''
+[ok] outputs/experiment-024 is ignored, not tracked: '!! outputs/experiment-024/\n'
+[ok] freeze file sha256: 68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60
+[ok] freeze content digest recomputes (own canonical JSON) and equals 87f8aff1…: 87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87
+[ok] freeze file is canonical JSON + newline
+[ok] freeze file committed once (566eb6f) and unchanged since: ['566eb6f data: experiment 024 freeze — confirmation-v1.json, installed byte-identically']
+[ok] freeze file identical to HEAD's blob
+[ok] outputs/experiment-024 holds exactly the three calibrate outputs: ['calibration-arrays.pt', 'candidate-calibration.json', 'results.json']
+[ok] results state verifies its own digest (own canonical JSON): 5ed26580be4c28310d072bf2c451dbeba01e4b1f8710b65072d25c9281d31252
+[ok] results state digest is 5ed26580…
+[ok] results state file is canonical JSON + newline
+[ok] phases: calibrate complete; lock, confirm, report not_started: {'calibrate': 'complete', 'confirm': 'not_started', 'lock': 'not_started', 'report': 'not_started'}
+[ok] calibrate phase: one commit bf0049c, no incidents key: {'commit': 'bf0049c85342d01caf9d6a830389ce1e72c05a71', 'completed_at': '2026-09-25T13:08:45+00:00', 'started_at': '2026-09-25T13:08:19+00:00', 'status': 'complete'}
+[ok] calibrate phase keys are exactly status/started_at/completed_at/commit/runtime: ['commit', 'completed_at', 'runtime', 'started_at', 'status']
+[ok] state protocol_code_commit bf0049c, git_dirty false
+[ok] state calibration: no incidents, no stop, no cross_check failure: ['F_rho', 'arrays_sha256', 'candidate_path', 'checks', 'dependencies', 'line', 'null_975', 'record_content_sha256', 'record_sha256']
+[ok] executed_prompt_keys and executed_noun_keys empty
+[ok] lock, confirmation and report are null
+[ok] phase lock has only a status: {'status': 'not_started'}
+[ok] phase confirm has only a status: {'status': 'not_started'}
+[ok] phase report has only a status: {'status': 'not_started'}
+[ok] created_at == started_at (single fresh state): ('2026-09-25T13:08:19+00:00', '2026-09-25T13:08:19+00:00', '2026-09-25T13:08:45+00:00')
+[ok] candidate file sha256 81fb499e…: 81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d
+[ok] candidate content digest recomputes (own canonical JSON) and is 09bf093e…: 09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8
+[ok] candidate file is canonical JSON + newline (byte-identical re-serialization)
+[ok] state binds this candidate (record_sha256, content, path)
+[ok] state's F_rho, null_975, line, arrays digests, dependencies equal the record's
+[ok] record and state share run_id, commit, inputs, module blobs, configuration, design, plan
+[ok] state binds the freeze (confirmation_024)
+[ok] record top-level keys are exactly the planned ones: []
+[ok] 2026-09-24-experiment-024-readout-routing-nounness-design.md at 9d03dee is an ancestor and unchanged to HEAD
+[ok] 2026-09-25-experiment-024-readout-routing-nounness-plan.md at 608088c is an ancestor and unchanged to HEAD
+== Item 2: scientific dependency bindings (non-model part) ==
+[ok] record binds the freeze: path, file and content digests
+[ok] 023 exposed-cells data file sha256 d2ee71e5…
+[ok] 023 exposed-cells index file sha256 62818147…
+[ok] 023 index content digest recomputes and is d38305cb…
+[ok] 023 index binds the data file digest and the byte layout
+[ok] record exposed_cells and dependencies.calibration_source bind exactly these
+[ok] 023 index columns and version agree
+[ok] 023 confirmation: file and content digests on disk equal the record's inputs
+[ok] 023 lock: file and content digests on disk equal the record's inputs
+[ok] record inputs bind the 023 cells digests
+[ok] 022 calibration: file and content digests on disk equal the record's inputs
+[ok] 022 confirmation: file and content digests on disk equal the record's inputs
+[ok] table_022_file is bound as a digest only (the table is never opened here)
+    input 023_cells_data_file: d2ee71e58f45… file=['experiments/023-block0-completion/exposed-cells.f64'] content=[]
+    input 023_cells_index_content: d38305cb8662… file=[] content=['experiments/023-block0-completion/exposed-cells.json']
+    input 023_cells_index_file: 628181475e55… file=['experiments/023-block0-completion/exposed-cells.json'] content=[]
+    input 023_confirmation_content: 4e64d4c2c85a… file=[] content=['experiments/023-block0-completion/confirmation-v1.json']
+    input 023_confirmation_file: 5fadfa503f4f… file=['experiments/023-block0-completion/confirmation-v1.json'] content=[]
+    input 023_lock_content: 97ca520f342e… file=[] content=['experiments/023-block0-completion/preregistration-lock.json']
+    input 023_lock_file: 4bd5a5b14627… file=['experiments/023-block0-completion/preregistration-lock.json'] content=[]
+    input calibration_022_content: 46985fd59d9d… file=[] content=['experiments/022-upstream-error-localization/calibration-v1.json']
+    input calibration_022_file: db745653cfa8… file=['experiments/022-upstream-error-localization/calibration-v1.json'] content=[]
+    input closure_020: f2b1b5e793da… file=[] content=['experiments/020-readout-decompilation/closure.json']
+    input confirmation_006: dbb8dbcef9ab… file=[] content=['experiments/006-low-rank-cue-decompilation/confirmation-v1.json']
+    input confirmation_009: 6330b5a22f81… file=[] content=['experiments/009-head-transport-rule/confirmation-v1.json']
+    input confirmation_011: 174cf2221450… file=[] content=['experiments/011-encoding-read-prospective/confirmation-v1.json']
+    input confirmation_012: 32892d23d8f8… file=[] content=['experiments/012-layer-correction-token-local/confirmation-v1.json']
+    input confirmation_013: 25f891e0a52d… file=[] content=['experiments/013-attention-paths-frozen-pattern/confirmation-v1.json']
+    input confirmation_014: a28edf831413… file=[] content=['experiments/014-neuron-1987-feature/confirmation-v1.json']
+    input confirmation_015: 66afcba4cddb… file=[] content=['experiments/015-attention-pattern-token-local/confirmation-v1.json']
+    input confirmation_016: e5a3a4eb392e… file=[] content=['experiments/016-frame-conditioned-qk/confirmation-v1.json']
+    input confirmation_017: 07fc6ea974e2… file=[] content=['experiments/017-transport-head-pattern/confirmation-v1.json']
+    input confirmation_018: e88c0625d105… file=[] content=['experiments/018-block2-concentration/confirmation-v1.json']
+    input confirmation_019: 87540d9b5dac… file=[] content=['experiments/019-block2-routing/confirmation-v1.json']
+    input confirmation_020: e098e2b44a17… file=[] content=['experiments/020-readout-decompilation/confirmation-v1.json']
+    input confirmation_022_content: af848ae4bd48… file=[] content=['experiments/022-upstream-error-localization/confirmation-v1.json']
+    input confirmation_022_file: 1a9afef07911… file=['experiments/022-upstream-error-localization/confirmation-v1.json'] content=[]
+    input extension: 1c6852547f1c… file=[] content=['experiments/005-regular-plural-mechanism/extension-v1.json']
+    input extract_020: 99f25ee6000d… file=[] content=['experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json']
+    input lock_011: 769bfeacd7c4… file=[] content=['experiments/011-encoding-read-prospective/preregistration-lock.json']
+    input lock_012: 830abc3b4a2d… file=[] content=['experiments/012-layer-correction-token-local/preregistration-lock.json']
+    input lock_017: b4fc9014ade7… file=[] content=['experiments/017-transport-head-pattern/preregistration-lock.json']
+    input manifest: 1c50c2e8bbf9… file=[] content=['screening/behavior-candidates/manifest-v1.json']
+    input results_020_file: da63b8c29f95… file=[] content=[]
+    input results_020_state: 2e5485dccb39… file=[] content=[]
+    input table_022_file: 04659d5e8b20… file=[] content=[]
+[ok] every bound input digest except 022's local table (never opened) and 020's results state (gz archive, below) is a tracked file's sha256 or self-verifying content digest: ['results_020_file', 'results_020_state', 'table_022_file']
+[ok] readout_020.frozen_input_digests equals the record's inputs on those keys: 21
+[ok] results_020_file = sha256 of the archived (gz) and the local 020 results state; results_020_state its self-verifying digest; both equal 020's closure: ('da63b8c29f95', '2e5485dccb39')
+[ok] twelve pinned module blobs: ['attention_patterns.py', 'block0_completion.py', 'encoding_read.py', 'frame_channels.py', 'head_pattern.py', 'head_transport.py', 'layer_correction.py', 'models.py', 'plural_mechanism.py', 'readout_calibration.py', 'readout_decompilation.py', 'upstream_localization.py']
+[ok] own blob sha1 == record module_blobs == dependencies.module_blobs == state module_blobs == git tree at HEAD: {'attention_patterns.py': '3f5acd6539', 'block0_completion.py': '16d310fc7f', 'encoding_read.py': 'cab99c942d', 'frame_channels.py': 'c95d6fb4c9', 'head_pattern.py': '386682fe0a', 'head_transport.py': '936093a4e8', 'layer_correction.py': '04df0cc9a2', 'models.py': 'b1c6f03379', 'plural_mechanism.py': 'd39da8a8d9', 'readout_calibration.py': '9107da9751', 'readout_decompilation.py': 'caa73b4019', 'upstream_localization.py': '465856962a'}
+[ok] readout_020 pins readout_decompilation.py at caa73b40…
+[ok] readout_routing.py on disk is HEAD's blob (the code that ran at bf0049c): e6cb37767d1d06c6ff40804a88eab569723afdb5
+[ok] run.py on disk is HEAD's blob: 30433b23afa94fff4becc556eaaed21a70f4d748
+== Item 4: exposed per-cue MSE from the committed artifact alone ==
+[ok] artifact decodes as [18900, 8] little-endian float64, all finite
+[ok] index: 175 cues, 108 frames (72 cue-final, 36 coordinated), 79 nouns
+[ok] frames are in frame_id order
+[ok] cue order: classes contiguous in 022's order (ul.CUE_CANDIDATES), token id ascending within a class: (['determiner-like', 'quantity', 'possessive-or-pronoun', 'adjective'], ['determiner-like', 'quantity', 'possessive-or-pronoun', 'adjective'])
+[ok] 175 distinct token ids
+[ok] every exposed cell counts 79 nouns
+[ok] 139 calibration cues (45/45/49), 36 pronoun cues
+[ok] record: 139 entries, in the artifact's canonical order (word, token id, stratum), no pronoun
+[ok] record score.calibration_cue_ids equal the entries' token ids
+[ok] record MSE == own fsum MSE bit for bit (all 139): max |Δ| 0.000e+00, bitwise equal 139/139
+[ok] record MSE vs exactly-rounded rational MSE: max rel 2.215e-16, bitwise equal 101/139
+[ok] record MSE vs numpy pairwise-sum MSE (numerical disagreement only): max rel 4.154e-16
+[ok] record log_mse == math.log(record mse) bit for bit
+[ok] every calibration MSE finite and positive: min 0.02775489749723004 max 0.15683651613009916
+[ok] 139 calibration MSE values distinct (no rank ties between distinct cues)
+[ok] record pronoun cues: the 36 in canonical order, MSE bit-identical to own fsum
+[ok] the calibration population excludes every pronoun id
+== Item 5 (static part): rounded prose values are not code inputs ==
+[ok] src/neural_decompiler/readout_routing.py: no rounded design diagnostic or 99.5 % literal: {}
+[ok] experiments/024-readout-routing-nounness/run.py: no rounded design diagnostic or 99.5 % literal: {}
+[ok] record line is full precision (not the rounded prose): {'formulas': 'slope = Sxy/Sxx, intercept = ȳ − slope·x̄, residual sd = sqrt(Σ r² / (n − 2)); sums by math.fsum; y = log MSE, x = leave-one-out nounness', 'intercept': -2.481260357420486, 'n': 139, 'residual_sd': 0.2570037337349923, 'slope': 1.2992017464639374}
+== Item 7 (static part): no 99.5 % value in the record ==
+[ok] record text has no 99.5 / 0.995 / 99500 element
+[ok] record null element is [97499] of 100000 (rank 97500), tag 024|null
+[ok] record floor element is [249] of 10000 (rank 250), stop at 250, tag 024|primary
+== Item 9: the E–N guard is bound, not evaluated ==
+[ok] guard spec 8 + 8, C(16,8) = 12,870 assignments, max_upper 321 = ⌊0.025·12,870⌋
+[ok] guard rule text: K counts ties and the observed; PASS iff K ≤ max_upper; exact dyadic arithmetic; natural log; E first
+[ok] record constants carry the same configuration
+[ok] no guard evaluation in the record (no K, D_EN, t, exact p, groups, guard result): []
+[ok] the only 'p_value' fields are the guard spec's rule text
+== Item 10 (record part) and item 11: fresh-score boundary, no fresh measurement ==
+[ok] freeze: 40 distinct fresh cues, classes N,B,D,C,E × 8 in that order
+[ok] no fresh id among the calibration cues, the pronoun cues or the noun rows (a fresh cue is never in μ_cue)
+[ok] no fresh id among the 175 exposed artifact cues
+[ok] record binds no fresh score (no 'fresh' key, no scores digest, no a703ac16…)
+[ok] record has no per-fresh-cue entry (no fresh word as an entry word)
+[ok] no stage2-measurements.pt in outputs/experiment-024
+[ok] no candidate-lock.json in outputs/experiment-024
+[ok] no candidate-preregistration.md in outputs/experiment-024
+[ok] no report.md in outputs/experiment-024
+[ok] experiments/024-readout-routing-nounness/calibration-v1.json not installed yet
+[ok] experiments/024-readout-routing-nounness/preregistration-lock.json not installed yet
+[ok] experiments/024-readout-routing-nounness/preregistration.md not installed yet
+[ok] freeze manifest: 4,320 unique S2-TARGET keys; none in the state's ledger
+[ok] no manifest key appears anywhere in the state or the record text
+guard events: {'refused_writes': [], 'refused_reads': [], 'open_events': 666}
+[ok] review guard: no repository write attempted, no forbidden read attempted
+FAILURES: none

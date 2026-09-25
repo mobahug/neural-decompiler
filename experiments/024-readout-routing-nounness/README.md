@@ -1,15 +1,23 @@
 # Experiment 024: Does an Operational Nounness Score Predict When the Frozen Downstream Routing Stops Holding?
 
-**Status (2026-09-25): implemented and reviewed; frozen, reviewed and committed; calibration next.**
+**Status (2026-09-25): implemented, frozen and calibrated, each independently reviewed and committed; lock next.**
 - **Implementation:** complete and independently reviewed (PASS WITH NOTES, no blockers; every finding addressed).
   Commits `6f80665`…`44c3c2b`.
-- **Freeze:** the production `freeze` ran exactly once at `44c3c2b`, tokenizer and text only, and was independently
-  reviewed (PASS WITH NOTES, no blockers). See [Freeze](#freeze-2026-09-25).
-- **Committed artifact:** the exact freeze file is `confirmation-v1.json`, installed byte for byte in `566eb6f`.
+- **Freeze:** the production `freeze` ran exactly once at `44c3c2b`, tokenizer and text only. It was independently
+  reviewed (PASS WITH NOTES) and `confirmation-v1.json` was installed byte for byte in `566eb6f`:
   - file sha256 `68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60`;
   - content sha256 `87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87`.
-- **Not run:** `calibrate`, `lock`, `confirm` and `report`. **No fresh 024 prompt has run**, and no readout error of any
-  024 cue has been observed.
+
+  See [Freeze](#freeze-2026-09-25).
+- **Calibration:** the production `calibrate` ran exactly once at `bf0049c`, from spent exposed data and the weights
+  only. It was independently reviewed (PASS WITH NOTES) and `calibration-v1.json` was installed byte for byte in
+  `1084efc`:
+  - file sha256 `81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d`;
+  - content sha256 `09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8`.
+
+  **The primary requirement is ρ ≥ `0.3136960600375234`.** See [Calibration](#calibration-2026-09-25).
+- **Not run:** `lock`, `confirm` and `report`. **No fresh 024 prompt has run**, and no readout error of any 024 cue
+  has been observed.
 
 Implements the design
 [`docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md`](../../docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md)
@@ -117,3 +125,38 @@ keys.
    8 C, 5 E, 0 N). This has no outcome force and does not alter the design.
 6. **Extra reads.** The additional file reads the review identified during the freeze were integrity checks only. None
    fed the selection.
+
+## Calibration (2026-09-25)
+
+**The run.** The production `calibrate` ran once at `bf0049c`, from 13:08:12 to 13:08:45 UTC, with exit status 0,
+under a guarded launcher:
+- 1 weights load, 0 module calls, 0 captures, no fresh prompt;
+- it read only 023's committed exposed cells and the weights.
+
+The candidate record was installed byte for byte as `calibration-v1.json` in `1084efc`.
+- Evidence: [`evidence/calibrate-2026-09-25/`](evidence/calibrate-2026-09-25/README.md).
+- The independent review (PASS WITH NOTES, no blockers):
+  [`evidence/calibration-review-2026-09-25/REVIEW.md`](evidence/calibration-review-2026-09-25/REVIEW.md).
+
+**The calibrated values (full precision, from spent exposed data only):**
+- **The line** (exposed-data-fitted, prospectively frozen; secondary): log MSE = `-2.481260357420486` +
+  `1.2992017464639374` · nounness, residual sd `0.2570037337349923` (139 cues). The exposed Spearman is
+  `0.5296617364493499`.
+- **F_ρ** = `0.24411074612857814`: element [249] of 10,000 SHA-indexed draws, with 0 undefined draws.
+- **null₉₇.₅** = `0.3136960600375234`: element [97499] of 100,000 SHA-indexed permutations.
+- **The primary requirement: ρ ≥ `0.3136960600375234`.** The chance-level null binds, not the exposed-like floor.
+
+**Calibration notes, preserved as recorded in the review:**
+1. **F_ρ is lower than the design's rough estimate** (0.2441 against about 0.257) and remains valid. The design's
+   approximate diagnostics are left as they were; design revision 2 is not edited to carry the realized values.
+2. **15 null values tie at the threshold.** The frozen rule is an empirical 100,000-permutation order statistic
+   (ρ ≥ element [97499]). It stays authoritative and unambiguous, and it is not changed because of the ties.
+3. **ENVELOPE_ONLY_FAILURE is unreachable for this realized calibration**, because null₉₇.₅ > F_ρ. The generic
+   four-way result machinery is unchanged.
+4. **Only spent exposed data and the weights.** The nounness construction, the per-cue MSE, the line and both
+   thresholds come from 023's committed exposed cells and the pinned weights.
+5. **The 40 fresh nounness scores are deferred to the lock**, as the approved design intends. They are not in the
+   calibration record.
+6. **Last-bit differences only.** The reviewer's independent arithmetic differed from the canonical nounness and MSE
+   only at the last-bit scale (at most about 2e-16). That changed no ordering or statistic, and the canonical module
+   remains authoritative for every digest.

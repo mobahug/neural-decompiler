@@ -1,0 +1,26 @@
+[ok] HEAD == origin/main == bf0049c: bf0049c85342d01caf9d6a830389ce1e72c05a71
+[ok] working tree clean
+[ok] no outputs/experiment-024
+[ok] configuration is the frozen production one
+[ok] stock validate passes: module blobs 12 verified (022's and 023's programs included); 022's and 023's committed files verified; the calibration source 18900 exposed pairs (175 cues × 108 frames); confirmation 87f8aff1dca4… (40 cues, 4320 keys); no calibration record installed
+[ok] pins
+[ok] 023 committed artifacts (exposed cells, confirmation, lock)
+[ok] 022 committed inputs
+[ok] freeze file sha256
+[ok] freeze content sha256
+[ok] mechanical rebuild byte-identical (same 40 cues)
+[ok] manifest 4,320 unique keys, digest fcc437fc…, zero spent overlap: spent keys 39312
+[ok] expected parameters_sha256: fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5
+[ok] expected embedding_sha256: 9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf
+[ok] expected noun_row_ids_sha256: 08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871
+[ok] expected calibration_cue_ids_sha256: 106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf
+[ok] expected mu_noun_sha256: 87930f0150e7263963d593303defd63f87f601f6892717c61d2f20c704f151d2
+[ok] expected mu_cue_sha256: f8cca95464092089dae6cd668d3e29bd26a89131b0f5994c35f6503a282121c4
+[ok] expected scores_sha256: a703ac16c01f0960100ce1e9db470dfd04c0ce4251319d135fd57e38197d4995
+[ok] expected calibration_maximum: 0.13502027836111233
+[ok] expected E_above: ['apple', 'horse', 'doctor', 'poet', 'dragon']
+[ok] 158 noun-form ids and 139 calibration-cue ids
+[ok] every E above every N: +0.108452 > -0.045076
+[ok] module calls: 0 during the load, 0 after: {'during_load': 0, 'after_load': 0}
+[ok] no repository write: []
+FAILURES: none
