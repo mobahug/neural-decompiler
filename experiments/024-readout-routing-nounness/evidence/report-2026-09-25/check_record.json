@@ -1,0 +1,52 @@
+{
+ "mode": "--check",
+ "launcher_started_at": "2026-09-25T20:27:13.544952+00:00",
+ "pid": 3628,
+ "commit_expected": "b80409b1464c8ab59f82d026e104f4510247c69e",
+ "pre_report_check": {
+  "head": "b80409b1464c8ab59f82d026e104f4510247c69e",
+  "origin": "b80409b1464c8ab59f82d026e104f4510247c69e",
+  "remote": "b80409b1464c8ab59f82d026e104f4510247c69e",
+  "tree": "",
+  "state": "076ab9f984f3ba6244b4df767d8c8fd7ebd40a634521a46a3b881d7da1604e92",
+  "state_file": "e636210c84a4f3f329e9a5fde5baa493d730b6bf77cb419273056e6c89085a7a",
+  "stage2": "b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93",
+  "lock_file": "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d",
+  "prereg_file": "007c9e6cd7c1b9bf3bf57ad36a4ee0338b6081d9fb3256b953e898475314db54",
+  "calibration_file": "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d",
+  "phases": {
+   "calibrate": "complete",
+   "confirm": "complete",
+   "lock": "complete",
+   "report": "not_started"
+  },
+  "incident": null,
+  "phase_incidents": {},
+  "report_md_exists": false,
+  "ledger": 4320,
+  "outputs": [
+   "calibration-arrays.pt",
+   "candidate-calibration.json",
+   "candidate-lock.json",
+   "candidate-preregistration.md",
+   "results.json",
+   "stage2-measurements.pt"
+  ],
+  "phase_rule_allows_report": true
+ },
+ "counts": {
+  "report_invocations": 0,
+  "model_loads_refused": 0,
+  "tokenizer_loads_refused": 0,
+  "entry_points_refused": 0,
+  "module_calls_refused": 0
+ },
+ "events": {
+  "repository_writes_outside_outputs": [],
+  "output_writes": {},
+  "forbidden_reads": [],
+  "relative_opens": 0,
+  "hook_errors": 0
+ },
+ "record_written_at": "2026-09-25T20:27:14.447932+00:00"
+}

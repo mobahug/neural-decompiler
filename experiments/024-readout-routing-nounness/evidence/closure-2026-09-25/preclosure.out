@@ -1,0 +1,20 @@
+[ok] HEAD == origin/main == remote == b80409b: b80409b1464c8ab59f82d026e104f4510247c69e / b80409b1464c8ab59f82d026e104f4510247c69e / b80409b1464c8ab59f82d026e104f4510247c69e
+[ok] tree clean (no untracked file), no stash
+[ok] all four phases complete: {'calibrate': 'complete', 'confirm': 'complete', 'lock': 'complete', 'report': 'complete'}
+[ok] no incident anywhere (phases, calibration, confirmation); no stop; no descriptive failure
+[ok] the phase rule refuses another calibrate: calibrate is complete; the calibration runs once in this protocol version (a stop for review is never retried automatically)
+[ok] the phase rule refuses another lock: lock already written; a new candidate lock requires a new protocol version
+[ok] the phase rule refuses another confirm: confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version
+note: the phase rule permits re-rendering the report (idempotent by design); the one-time report launcher's sentinel refuses a second run
+[ok] stage-2 measurements: 76,314,087 bytes, sha256 b21babe1…
+[ok] generated report: 8,310 bytes, sha256 8234ed9b…
+[ok] final results state: digest 20ac6095…, file edbb6dc9…
+[ok] removing only the two report entries reproduces the confirm-final state 076ab9f9… (file e636210c…)
+[ok] installed confirmation-v1.json unchanged (file, content, == HEAD)
+[ok] installed calibration-v1.json unchanged (file, content, == HEAD)
+[ok] installed preregistration-lock.json unchanged (file, content, == HEAD)
+[ok] installed preregistration.md unchanged (file, == HEAD)
+[ok] the module blob is still e6cb3776…
+[ok] no scientific path changed since the lock
+[ok] no repository write: []
+FAILURES: none

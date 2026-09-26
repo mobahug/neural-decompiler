@@ -1,7 +1,24 @@
 # Experiment 024: Does an Operational Nounness Score Predict When the Frozen Downstream Routing Stops Holding?
 
-**Status (2026-09-25): implemented, frozen, calibrated, locked and confirmed, each phase run once and independently
-reviewed; `report` not yet run.**
+**Status (2026-09-25): CLOSED.** Every phase ran exactly once:
+
+| phase | status |
+|---|---|
+| freeze | complete, reviewed |
+| calibrate | complete, reviewed |
+| lock | complete, reviewed |
+| confirm | complete, reviewed |
+| report | complete, verified |
+| closure | complete |
+
+**Result:**
+- **Primary:** ρ = `0.6108818011257036` against the locked threshold `0.3136960600375234`: PASS.
+- **E–N guard:** K = 1 of 12,870, which passes (the limit is K ≤ 321).
+- **Outcome: `NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`.**
+
+See [Report and closure](#report-and-closure-2026-09-25) and the [evidence index](evidence/README.md).
+
+The phase history:
 - **Implementation:** complete and independently reviewed (PASS WITH NOTES, no blockers; every finding addressed).
   Commits `6f80665`…`44c3c2b`.
 - **Freeze:** the production `freeze` ran exactly once at `44c3c2b`, tokenizer and text only. It was independently
@@ -33,7 +50,10 @@ reviewed; `report` not yet run.**
   - **Frozen outcome: `NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`.**
 
   See [Confirm](#confirm-2026-09-25).
-- **Not run:** `report`.
+- **Report:** the production `report` ran exactly once, at `b80409b`, with exit status 0. It loaded no model and ran no
+  prompt. Its output is preserved byte-identically as
+  [`evidence/final-report-2026-09-25.md`](evidence/final-report-2026-09-25.md) (`8234ed9b…`). See
+  [Report and closure](#report-and-closure-2026-09-25).
 
 Implements the design
 [`docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md`](../../docs/superpowers/specs/2026-09-24-experiment-024-readout-routing-nounness-design.md)
@@ -311,3 +331,53 @@ preregistered E-vs-N disambiguation guard against simple plurality-only and meas
 2. **The noun ledger holds all 80 pool nouns**, as in Experiment 020, and no fresh noun.
 3. **Nothing is committed that the repository does not track.** It keeps no binary measurement artifact and has no
    convention for backing up large artifacts externally, so the measurement file stays local, with its hash recorded.
+
+## Report and closure (2026-09-25)
+
+**The report run.** The production `report` was invoked exactly once, at `b80409b`, from 20:27:23.911 to 20:27:30.987
+UTC. It exited with status 0 and no incident.
+- A guarded launcher refused every model load, tokenizer load, prompt, capture, measurement and ledger entry point and
+  module call; each was attempted 0 times.
+- It rendered only the completed confirmation state and the installed calibration record.
+- Its only writes were `report.md` and one atomic state write, which adds the report entries. Reverting them
+  reproduces the confirm-final state `076ab9f9…` byte for byte.
+- Evidence: [`evidence/report-2026-09-25/`](evidence/report-2026-09-25/README.md).
+
+**The closure data**, byte copies and an extract of the gitignored outputs; nothing was re-rendered or recomputed:
+- [`evidence/final-report-2026-09-25.md`](evidence/final-report-2026-09-25.md): `outputs/experiment-024/report.md`
+  byte for byte. 8,310 bytes, sha256 `8234ed9b41533c5aa90172cfb1bc0b70c656848eaeff234e9dcfc9a5d09a8193`.
+- [`evidence/confirmation-record-2026-09-25.json`](evidence/confirmation-record-2026-09-25.json): the
+  confirmation-record extract of the final state, content `fbe0c68995ce926c5360c2098f8556fb2e70df32919b727ae4bc50cba80ebed3`.
+  - It follows the 022/023 convention: the prompt ledger is replaced by its counts and digests.
+  - It adds the prompt accounting and a summary of the official result, copied from the state.
+  - Its builder and the pre-closure check are in [`evidence/closure-2026-09-25/`](evidence/closure-2026-09-25/).
+- The fresh measurements `outputs/experiment-024/stage2-measurements.pt` (76,314,087 bytes, sha256
+  `b21babe189d1cccb9ae359cfabf74baaa3a8337cac04612bc0d4aaa232b4dc93`) and the final state (`20ac6095…`, file
+  `edbb6dc9…`) stay local and unchanged. The repository tracks no binary measurement artifact; their hashes are
+  recorded in the evidence and the extract.
+- The provenance chain: [`evidence/README.md`](evidence/README.md).
+
+**The report's PASS wording.** The frozen report renderer describes a primary PASS as "at least as strongly as the
+exposed-like relationship". For this realized calibration, that prose is broader than the actual formal rule.
+- The preregistered decision rule was `ρ ≥ max(F_ρ, null₉₇.₅)`. Here F_ρ = `0.24411074612857814` and null₉₇.₅ =
+  `0.3136960600375234`, so the chance-level null was the binding threshold.
+- The prospective result passed the locked primary threshold.
+- The report artifact itself is preserved unchanged for provenance. The preregistration, the lock, the analysis
+  module and the report are not edited.
+
+**The result, in its scope.** On 40 fresh cues, the frozen operational weight-derived nounness score prospectively
+predicted larger error in the frozen block-4/5 attention/readout approximation. The association passed the
+preregistered E-vs-N disambiguation guard against simple plurality-only and measure-only explanations.
+
+**Limitations:**
+- The result is **predictive, not causal**.
+- What was measured is the **error of a frozen approximation**, not directly observed rerouting.
+- **E and N differ in other lexical and semantic properties** besides nounness: the N cues are adjectives, and the E
+  cues are concrete, mostly animate nouns. The guard's formal scope is the two preregistered simple alternatives.
+- **The scale is small:** one Pythia-70M checkpoint (deduped, `e93a9faa…`), 40 fresh cues, 108 frames, 79 scored nouns,
+  and 8 cues per class.
+- **23 of the 40 fresh cues lie beyond the calibration's nounness maximum**, so the test is partly an extrapolation.
+- It therefore supports **no claim about general linguistic nounhood or general algorithm choice**.
+
+The descriptive findings are in [Confirm](#confirm-2026-09-25). They are separate from the preregistered outcome and
+cannot alter it.

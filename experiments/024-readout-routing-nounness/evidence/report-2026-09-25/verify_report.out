@@ -1,0 +1,35 @@
+launcher: report 2026-09-25T20:27:23.911431+00:00 → 2026-09-25T20:27:30.986814+00:00; exit 0; error None
+counts {'report_invocations': 1, 'model_loads_refused': 0, 'tokenizer_loads_refused': 0, 'entry_points_refused': 0, 'module_calls_refused': 0}; events {'repository_writes_outside_outputs': [], 'output_writes': {'report.md': 1, '.results-4mn0nd_7.json': 1}, 'forbidden_reads': [], 'relative_opens': 0, 'hook_errors': 0}
+[ok] report invoked exactly once; the check-only run did not invoke it
+[ok] zero model or tokenizer loads, prompts, captures, measurements, ledger entries or module calls attempted
+[ok] writes: report.md once and one atomic state write; nothing else in the repository; no forbidden read
+[ok] the pre-report byte copy is the confirm-final state file e636210c…
+report.md: 8310 bytes, sha256 8234ed9b41533c5aa90172cfb1bc0b70c656848eaeff234e9dcfc9a5d09a8193; state after 20ac6095a7e8534ff933a6405ae74b5f707aafd2ec9ac42e0ef5ffb1c5267376 (file edbb6dc9c198265202cb567aef7a4d44761c19d658f277e687995759e454ea0c)
+[ok] report.md == rr.render_report(the confirm-final state, the installed calibration record), byte for byte
+[ok] the state records this report (path, sha256) and the report phase complete
+[ok] reverting only the report entries reproduces the confirm-final state 076ab9f9… and its file bytes e636210c…
+[ok] the only top-level differences are report and phases (report only): ['phases', 'report']
+[ok] the ledger is unchanged: 4,320 keys, the same sorted digest 5f386b53…
+[ok] the measurements are unchanged (b21babe1…, 76,314,087 bytes)
+[ok] the confirmation block and the result are unchanged
+[ok] the report states ρ: ρ = 0.6108818011257036
+[ok] the report states null₉₇.₅: null₉₇.₅ 0.3136960600375234
+[ok] the report states F_ρ: F_ρ 0.24411074612857814
+[ok] the report states K: K = 1 of 12870 assignments
+[ok] the report states bound: (bound 321)
+[ok] the report states p: exact p = 1/12870
+[ok] the report states primary PASS: **PASS** — ρ ≥ max(F_ρ, null₉₇.₅)
+[ok] the report states D_EN: D_EN = 0.5680373703974243
+[ok] the report states label: **`NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`**
+[ok] the report states threshold: Effective threshold max(F_ρ, null₉₇.₅) = 0.3136960600375234, bound by null_975
+[ok] the recorded result is the frozen one
+note: the frozen renderer's PASS reading contains 'at least as strongly as the exposed-like relationship': True (the formal interpretation is ρ ≥ max(F_ρ, null₉₇.₅); see the README)
+[ok] the report carries the frozen disclaimers (not shown: causation, linguistic nounhood, other E/N properties)
+[ok] evidence confirm-2026-09-25/SHA256SUMS: 15 entries verify
+[ok] evidence postinstall-review-2026-09-25/SHA256SUMS: 27 entries verify
+[ok] evidence confirmation-review-2026-09-25/SHA256SUMS: 25 entries verify
+HEAD b80409b1464c8ab59f82d026e104f4510247c69e; origin b80409b1464c8ab59f82d026e104f4510247c69e; remote b80409b1464c8ab59f82d026e104f4510247c69e; tree clean
+[ok] HEAD == origin == remote == b80409b; tree clean
+[ok] no report.md or results.json is tracked (gitignored outputs)
+[ok] no repository write by this verification: []
+FAILURES: none
