@@ -375,6 +375,7 @@ def test_a_geometry_gate_failure_at_lock_is_an_incident_and_writes_no_lock(world
     assert not runner.output("candidate-lock.json").exists() and state["phases"]["lock"]["incidents"][-1]["commit"] == COMMIT_A
     with pytest.raises(cr.PhaseError, match="lock incident is recorded"):
         runner.lock()
+    assert runner.report() == 0 and "a lock incident is recorded; no lock was written" in runner.report_path.read_text()
 
 
 def test_lock_refuses_an_uncommitted_freeze_and_a_forbidden_key_in_the_ledger(world, base025, frozen025, sandbox):
@@ -686,6 +687,8 @@ def test_report_renders_the_outcome_and_the_counts(world, confirmed025, sandbox)
     text = runner.report_path.read_text()
     state = _state(runner)
     assert f"**`{state['confirmation']['results']['outcome']['label']}`**" in text and "| A |" in text and "| G |" in text
+    assert cr.SEMANTICS["A"] in text and cr.SEMANTICS["B"] in text and cr.SEMANTICS["G"] in text and cr.SEMANTICS["patch_path"] in text
+    assert cr.SEMANTICS["secondary"] in text and ("Concentration:" in text or "No stratum is below its reporting trigger" in text)
     assert "The patch-path check: passed True" in text and state["phases"]["report"]["status"] == "complete"
     assert state["report"]["sha256"] == pm.sha256_text(text)
     assert runner.validate() == 0 and "lock and preregistration verified" in logs[-1]

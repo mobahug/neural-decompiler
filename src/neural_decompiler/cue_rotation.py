@@ -308,6 +308,9 @@ SEMANTICS = {
                  "directions, the per-template counts and the causal fraction are computed after the result is written and can never rescue, alter or "
                  "redefine it",
     "incidents": "an incident carries no result; an identity incident never coexists with an outcome",
+    "patch_path": "the confirm-time patch-path check on four already-executed keys (a plain capture against a patched θ = 0 run, and the embedding hook "
+                  "against the block-0 residual input, bit for bit) only validates the intervention plumbing; a pass does not strengthen the scientific "
+                  "result",
 }
 
 # ---------------------------------------------------------------------------
@@ -911,7 +914,8 @@ def render_preregistration(lock: Mapping[str, Any]) -> str:
               "## The validity gates", "",
               f"- I7′: the geometry recomputed from the weights before any prompt, bit for bit, and every geometry check within its tolerance "
               f"({', '.join(f'{name} {value:.0e}' for name, value in sorted(geometry['tolerances'].items()))})",
-              f"- The patch path on {len(lock['patch_path_spent_keys'])} spent keys before the ledger: {', '.join(lock['patch_path_spent_keys'])}",
+              f"- The patch path on {len(lock['patch_path_spent_keys'])} spent keys before the ledger: {', '.join(lock['patch_path_spent_keys'])}; "
+              f"{lock['semantics']['patch_path']}",
               f"- I1, I3, I4 on every run ({lock['tolerances']['I1']:.0e}, {lock['tolerances']['I3']:.0e} relative, {lock['tolerances']['I4']:.0e}); C recomputed "
               f"bit for bit; the Level-1 identity ≤ {lock['tolerances']['level1']} on every outcome-bearing primary-dose run", "",
               "## The 40 cues and their geometry", "", "| stratum | word | token id | s₀ | τ | θ primary (°) | θ half (°) | even (primary) |", "|---|---|---|---|---|---|---|---|"]
@@ -1439,8 +1443,9 @@ def assert_phase_allowed(phase: str, state: Mapping[str, Any] | None) -> None:
             raise PhaseError("an I7′ or patch-path incident is recorded; confirm is refused until the reviewer decides (a new protocol version)")
     elif phase == "report":
         confirmation = state.get("confirmation") or {}
-        if status["confirm"] != "complete" and not confirmation.get("incident") and not state["phases"]["confirm"].get("incidents"):
-            raise PhaseError("report requires a completed confirm or a recorded confirm incident")
+        if status["confirm"] != "complete" and not confirmation.get("incident") and not state["phases"]["confirm"].get("incidents") \
+                and not state["phases"]["lock"].get("incidents"):
+            raise PhaseError("report requires a completed confirm, or a recorded confirm or lock incident")
     else:
         raise PhaseError(f"unknown phase {phase}")
 
@@ -1469,6 +1474,8 @@ def render_report(state: Mapping[str, Any]) -> str:
     if not results:
         if state["phases"]["confirm"].get("incidents"):
             lines += ["", "## The outcome", "", "**`NOT_INTERPRETABLE`** — a confirm incident before the ledger; no fresh prompt ran and no result exists."]
+        elif state["phases"]["lock"].get("incidents"):
+            lines += ["", "## The outcome", "", "None: a lock incident is recorded; no lock was written and no prompt ran."]
         lines.append("")
         return "\n".join(lines)
     label = results["outcome"]
@@ -1480,6 +1487,17 @@ def render_report(state: Mapping[str, Any]) -> str:
         test = results[name]
         lines.append(f"| {name} | {test['positive']} | {test['n']} | {test['threshold']} | **{test['result']}** | {test['by_stratum']['adjective']} | "
                      f"{test['by_stratum']['noun']} |")
+    config = state["configuration"]
+    sizes = {"adjective": config["n_adjectives"], "noun": config["n_nouns"]}
+    flagged = [(name, stratum, results[name]["by_stratum"][stratum], size, math.ceil(config["count_threshold"] * size / config["n_cues"]))
+               for name in ("A", "B", "G") if results[name]["result"] == "PASS" for stratum, size in sizes.items()
+               if results[name]["by_stratum"][stratum] < math.ceil(config["count_threshold"] * size / config["n_cues"])]
+    lines += ["", "## What the statistics mean", "", f"- **A**: {SEMANTICS['A']}", f"- **B**: {SEMANTICS['B']}", f"- **G**: {SEMANTICS['G']}",
+              f"- **Strata**: {SEMANTICS['strata']}"]
+    lines += [f"- **Concentration:** {name} passes globally, but the {stratum} stratum has {count} of {size} positive, below the reporting trigger "
+              f"of {trigger}: the claim must say the {name} effect is concentrated and must not imply it holds across both cue types"
+              for name, stratum, count, size, trigger in flagged] or ["- No stratum is below its reporting trigger on a globally passing statistic."]
+    lines += [f"- **Secondary records**: {SEMANTICS['secondary']}", f"- **The patch-path check**: {SEMANTICS['patch_path']}"]
     lines += ["", "| stratum | word | A | B | G |", "|---|---|---|---|---|"]
     lines += [f"| {row['stratum']} | {row['word']} | {row['A']:+.6f} | {row['B']:+.6f} | {row['G']:+.6f} |" for row in results["per_cue"]]
     gates = confirmation.get("gates") or {}

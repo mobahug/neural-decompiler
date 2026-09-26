@@ -479,6 +479,23 @@ def test_the_phase_rules():
             cr.assert_phase_allowed(phase, state)
     with pytest.raises(cr.PhaseError, match="requires the results state"):
         cr.assert_phase_allowed("confirm", None)
+    locked_out = {**state, "phases": {**state["phases"], "lock": {"status": "running", "incidents": [{"message": "m", "commit": "a" * 40}]}}}
+    cr.assert_phase_allowed("report", locked_out)  # a lock incident alone can be reported
+    assert "a lock incident is recorded" in cr.render_report({**locked_out, "run_id": "r"})
+
+
+def test_the_report_names_a_stratum_below_its_trigger_on_a_global_pass():
+    tokens = tuple({"word": f"w{k}", "token_id": 100 + k, "stratum": "adjective" if k < 20 else "noun"} for k in range(40))
+    confirmation = cr.Confirmation025({}, (), tokens, cr.PRODUCTION.conditions, "c")
+    signs = tuple(1 if k < 13 or k >= 20 else -1 for k in range(40))
+    results = cr.statistics(_values(cr.PRODUCTION, tokens, signs, 0.0, signs), confirmation, cr.PRODUCTION)
+    state = cr.new_results_state(digests={key: "d" for key in cr.DIGEST_KEYS}, protocol_code_commit="a" * 40, git_dirty=False, versions={},
+                                 config=cr.PRODUCTION)
+    state["confirmation"] = {"results": results, "gates": {}, "c_recompute": {}}
+    text = cr.render_report(state)
+    assert "A passes globally, but the adjective stratum has 13 of 20 positive, below the reporting trigger of 14" in text
+    assert "B passes globally, but the adjective stratum has 13 of 20" in text and "noun stratum has" not in text
+    assert cr.SEMANTICS["A"] in text and cr.SEMANTICS["patch_path"] in text
     with pytest.raises(cr.PhaseError, match="clean Git tree"):
         cr.new_results_state(digests={key: "d" for key in cr.DIGEST_KEYS}, protocol_code_commit="a" * 40, git_dirty=True, versions={}, config=SMALL)
 
