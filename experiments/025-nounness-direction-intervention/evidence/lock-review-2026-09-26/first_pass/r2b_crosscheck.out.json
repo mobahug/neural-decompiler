@@ -1,0 +1,221 @@
+{
+ "digest_function_equal_rc": true,
+ "d": {
+  "bitwise": true,
+  "maxdiff": 0.0,
+  "cr_digest": "5f914283c39d2f37911ba3bb1391a98bbe3625737f8df80c42eb336868a1bf2a",
+  "lock_digest": "5f914283c39d2f37911ba3bb1391a98bbe3625737f8df80c42eb336868a1bf2a",
+  "mine_digest": "5f914283c39d2f37911ba3bb1391a98bbe3625737f8df80c42eb336868a1bf2a",
+  "d_norm_equal_lock": true,
+  "d_norm": 1.3576567483118904,
+  "mu_digests_equal_lock": true
+ },
+ "p_hat": {
+  "bitwise": true,
+  "maxdiff": 0.0,
+  "lock_digest_equal_mine": true,
+  "cos_equal_lock": true
+ },
+ "per_cue": {
+  "order_ok": true,
+  "max_abs_disagreement": {
+   "lock_norm": 0.0,
+   "lock_s0": 0.0,
+   "lock_tau": 0.0,
+   "lock_theta_primary": 0.0,
+   "lock_theta_half": 0.0,
+   "lock_even_primary": 0.0,
+   "lock_even_half": 0.0,
+   "cr_t_hat": 0.0,
+   "cr_controls": 0.0,
+   "cr_p_prime": 0.0,
+   "cr_v64": 0.0,
+   "cr_v32": 0.0,
+   "cr_uniforms": 0.0,
+   "cr_gaussians": 0.0
+  },
+  "exact_equal_counts_of_40": {
+   "lock_norm": 40,
+   "lock_s0": 40,
+   "lock_tau": 40,
+   "lock_theta_primary": 40,
+   "lock_theta_half": 40,
+   "lock_even_primary": 40,
+   "lock_even_half": 40,
+   "lock_t_hat_sha256": 40,
+   "lock_controls_sha256": 40,
+   "lock_plurality_sha256": 40,
+   "lock_vectors64_sha256": 40,
+   "lock_vectors32_sha256": 40
+  },
+  "bitwise_counts": {
+   "cr_t_hat": 40,
+   "cr_controls": 40,
+   "cr_p_prime": 40,
+   "cr_v64": 40,
+   "cr_v32": 40,
+   "cr_uniforms": 280,
+   "cr_gaussians": 280
+  },
+  "check_disagreement": {
+   "angle32": 1.6653345369377348e-16,
+   "angle64": 1.1102230246251565e-16,
+   "base_equals_model_row": [
+    true
+   ],
+   "d_dot_controls": 0.0,
+   "d_dot_plurality": 0.0,
+   "length32": 0.0,
+   "length64": 0.0,
+   "neutral32": 0.0,
+   "neutral64": 0.0,
+   "odd32": 0.0,
+   "odd64": 0.0,
+   "orth_E_controls": 0.0,
+   "orth_E_plurality": 0.0,
+   "orth_E_t": 0.0,
+   "orth_t_controls": 0.0,
+   "orth_t_plurality": 0.0,
+   "unit_controls": 0.0,
+   "unit_plurality": 0.0,
+   "unit_t": 0.0
+  }
+ },
+ "i7_recompute": {
+  "verify_geometry_against_lock": {
+   "bitwise_equal": true,
+   "differing": []
+  },
+  "block_equals_lock_geometry": true,
+  "vectors32_bitwise_equal_mine": true,
+  "combined32_digest_rc": "30a35c0050421b0b07579ee5827e23386dde95ec777aba8ac36a940551df7ca9"
+ },
+ "nearest": {
+  "lock_equals_cr_now": true,
+  "max_angle_disagreement_mine_vs_lock_deg": 0.0,
+  "flags_equal": true,
+  "min_angle_lock": 36.8578855643715
+ },
+ "prereg_table_equals_mine": true,
+ "check_maxima_mine_vs_lock": {
+  "angle32": {
+   "mine": 3.6851997287090654e-09,
+   "lock": 3.685199839731368e-09
+  },
+  "angle64": {
+   "mine": 1.942890293094024e-16,
+   "lock": 2.220446049250313e-16
+  },
+  "d_dot_controls": {
+   "mine": 5.551115123125783e-17,
+   "lock": 5.551115123125783e-17
+  },
+  "d_dot_plurality": {
+   "mine": 6.245004513516506e-17,
+   "lock": 6.245004513516506e-17
+  },
+  "length32": {
+   "mine": 6.02588934306425e-09,
+   "lock": 6.02588934306425e-09
+  },
+  "length64": {
+   "mine": 4.440892098500626e-16,
+   "lock": 4.440892098500626e-16
+  },
+  "neutral32": {
+   "mine": 6.088945903037768e-09,
+   "lock": 6.088945903037768e-09
+  },
+  "neutral64": {
+   "mine": 1.6653345369377348e-16,
+   "lock": 1.6653345369377348e-16
+  },
+  "odd32": {
+   "mine": 2.1101279890078928e-09,
+   "lock": 2.1101279890078928e-09
+  },
+  "odd64": {
+   "mine": 2.7755575615628914e-16,
+   "lock": 2.7755575615628914e-16
+  },
+  "orth_E_controls": {
+   "mine": 6.071532165918825e-17,
+   "lock": 6.071532165918825e-17
+  },
+  "orth_E_plurality": {
+   "mine": 3.8163916471489756e-17,
+   "lock": 3.8163916471489756e-17
+  },
+  "orth_E_t": {
+   "mine": 6.505213034913027e-17,
+   "lock": 6.505213034913027e-17
+  },
+  "orth_t_controls": {
+   "mine": 4.85722573273506e-17,
+   "lock": 4.85722573273506e-17
+  },
+  "orth_t_plurality": {
+   "mine": 4.163336342344337e-17,
+   "lock": 4.163336342344337e-17
+  },
+  "unit_controls": {
+   "mine": 5.551115123125783e-16,
+   "lock": 5.551115123125783e-16
+  },
+  "unit_plurality": {
+   "mine": 4.440892098500626e-16,
+   "lock": 4.440892098500626e-16
+  },
+  "unit_t": {
+   "mine": 6.661338147750939e-16,
+   "lock": 6.661338147750939e-16
+  }
+ },
+ "tolerances_lock": {
+  "angle32": 1e-06,
+  "angle64": 1e-12,
+  "d_dot_controls": 1e-12,
+  "d_dot_plurality": 1e-12,
+  "length32": 1e-06,
+  "length64": 1e-12,
+  "neutral32": 1e-06,
+  "neutral64": 1e-12,
+  "odd32": 1e-06,
+  "odd64": 1e-12,
+  "orth_E_controls": 1e-12,
+  "orth_E_plurality": 1e-12,
+  "orth_E_t": 1e-12,
+  "orth_t_controls": 1e-12,
+  "orth_t_plurality": 1e-12,
+  "unit_controls": 1e-12,
+  "unit_plurality": 1e-12,
+  "unit_t": 1e-12
+ },
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/qiofevzc",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpd4hfwa8r/probe-source"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched"
+  ],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}

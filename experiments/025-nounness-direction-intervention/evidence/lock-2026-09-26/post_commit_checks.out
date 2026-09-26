@@ -1,0 +1,30 @@
+{
+ "head": "5ee7a7474c5531bf7a7c19ceff4c8ca857d16bf5",
+ "full_lock_validation": "passed",
+ "checks": {
+  "cwd_is_repo_root": true,
+  "commit_touches_exactly_the_two_paths": true,
+  "committed_lock_equals_candidate_bytes": true,
+  "committed_prereg_equals_candidate_bytes": true,
+  "lock_file_sha256": true,
+  "lock_content_sha256": true,
+  "prereg_sha256": true,
+  "installed_lock_renders_the_committed_prereg": true,
+  "stock_validate_passes": true,
+  "full_lock_validation_passes": true,
+  "git_state_clean_at_head": true,
+  "results_state_unchanged": true,
+  "binding_direction": true,
+  "binding_neutral32_max": true,
+  "binding_manifest": true,
+  "binding_threshold_and_tail": true,
+  "binding_level1_on_the_16": true,
+  "binding_outcome_hierarchy": true,
+  "binding_D_attn_reference": true,
+  "nothing_refused_was_reached": true
+ },
+ "all": true,
+ "validate_log": [
+  "module blobs 13 verified (024's included); 022\u2013024's committed files and 020's confirmation file verified; confirmation 6eca7024fe3f\u2026 (40 cues, 90720 condition-tagged keys); lock and preregistration verified"
+ ]
+}

@@ -1,7 +1,7 @@
 # Experiment 025: Does Moving the Cue Embedding Along the Frozen Nounness Direction Causally Change the Frozen Readout Error and the Attention Routing?
 
-**Status: FROZEN. Lock and confirm have not run, and no fresh scientific prompt has run.** The next step is `lock`,
-only when separately authorized.
+**Status: LOCKED. Confirm and report have not run; no fresh scientific prompt has run, and no fresh measurement
+exists.** The next step is the one-shot `confirm`, only when separately authorized.
 - **The implementation** is complete and independently reviewed: PASS WITH NOTES, no blockers. The fixes run through
   `c765148fdb612ae249e21ef3c830e4ceb1d12dd0`. The final test gate on that commit: tier A 542 passed, tier B 575
   passed, tier C 6 passed, 0 failed.
@@ -10,6 +10,13 @@ only when separately authorized.
   - file sha256 `54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a`;
   - content sha256 `6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4`;
   - 90,720 condition-tagged keys, manifest sha256 `0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61`.
+- **The production lock** ran exactly once, at `d3ecbd6feb1bd2aefe08dc0f8d799815be47c519`, weights only (0 prompts,
+  forwards, captures or interventions). It was independently reviewed: PASS WITH NOTES, no blockers. The geometry,
+  the 280 random controls (float32 neutrality max 6.09e-9 against 1e-6) and the `D_attn` reference rows were
+  reconstructed independently. It is installed byte-identically (`5ee7a74`):
+  - `preregistration-lock.json`: file sha256 `1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be`,
+    content sha256 `8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb`;
+  - `preregistration.md`: sha256 `e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919`.
 - **The evidence** is under [`evidence/`](evidence/README.md).
 
 Implements the design
@@ -145,3 +152,15 @@ The local outputs stay in `outputs/experiment-025/`.
   - log the condition of every patched fresh run.
 
   For confirm, these protections must be in place before any fresh ledger entry and before any prompt.
+- **Requirements for the confirm launcher, from the lock review** (`evidence/lock-2026-09-26/README.md` has the full
+  text):
+  - **N1:** `chdir` to the resolved repository root, assert `cwd == repo_root`, and run every git and provenance check
+    there. `collect_git_state()` uses the working directory. A mismatch stops before the patch-path check, the
+    ledger or any prompt.
+  - **N2:** use the lock's machine and stack: macOS arm64, Python 3.12.13, torch 2.14.0, the same packages, 4
+    threads, and the same checkpoint files. No `uv sync`, upgrade or environment recreation; I7′ must reproduce the
+    geometry bit for bit.
+  - **N3:** allow forwards only inside sanctioned calls, and block and log everything else: instance and class
+    `.forward`, `__call__`, hook, cache and generate routes, and every capture or intervention alias.
+  - **N4:** an explicit allow-list of the expected output paths and state writes, even inside
+    `outputs/experiment-025/`. Deletes and renames only for the atomic temporary-file → target operations.

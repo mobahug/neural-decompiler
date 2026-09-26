@@ -1,0 +1,133 @@
+{
+ "launcher_sha256": "f66c12f2357d4fec982a6e4ce7b12de71793291dc46121f1d32e4fae84e85856",
+ "extracted_functions": [
+  "_counted_load",
+  "_hook",
+  "_in_repo",
+  "_inside",
+  "_path",
+  "_refusal",
+  "_refuse_module_call",
+  "_sweep_aliases"
+ ],
+ "audit_hook_cases": {
+  "read 022 calibration table": "refused: lock may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "read outputs/experiment-024": "refused: lock may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json",
+  "read outputs/experiment-023": "refused: lock may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/results.json",
+  "read a source file": "allowed",
+  "write a source file": "refused: lock may not write /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/cue_rotation.py",
+  "os.open O_CREAT in experiments/025": "refused: lock may not write /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/025-nounness-direction-intervent",
+  "write outputs/experiment-025 candidate": "allowed",
+  "write outputs/experiment-025 stage2 (a file lock never writes)": "allowed",
+  "remove a repository file": "refused: lock may not os.remove /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/README.md",
+  "rename inside outputs/experiment-025": "allowed",
+  "rename out of outputs into src": "refused: lock may not os.rename [PosixPath('/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/x'), ",
+  "mkdir in the repository": "refused: lock may not os.mkdir /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/newdir",
+  "symlink into the repository": "refused: lock may not os.symlink [PosixPath('/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/link')]",
+  "relative remove with a temp dir_fd (dry-run-1 false positive case)": "allowed",
+  "write outside the repository": "allowed"
+ },
+ "audit_hook_events": {
+  "forbidden_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/results.json"
+  ],
+  "forbidden_writes": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/cue_rotation.py",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/025-nounness-direction-intervention/preregistration-lock.json"
+  ],
+  "forbidden_deletes_renames_links_mkdirs": [
+   "os.remove /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/README.md",
+   "os.rename /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/x -> /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/x",
+   "os.mkdir /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/newdir",
+   "os.symlink /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/link"
+  ],
+  "output_writes": [
+   "candidate-lock.json",
+   "stage2-measurements.pt"
+  ],
+  "output_renames": [
+   "os.rename .results-x.json -> results.json"
+  ],
+  "outside_repo_writes": [
+   "/private/var/folders/xx/T/tmpfile"
+  ]
+ },
+ "toy_refusals": {
+  "module_call": "refused: a torch module was called during lock",
+  "direct_instance_forward": "refused: Sequential.forward refused during lock",
+  "submodule_direct_forward": "refused: 0.forward refused during lock",
+  "class_level_route": "not sealed at class level (a type(sub).forward(sub, x) call would bypass the instance seal; Module.__call__ still refuses)",
+  "aliases_swept": [
+   "cap",
+   "patched",
+   "rc",
+   "ri"
+  ],
+  "alias_call": "refused: pm.capture_prompt refused during lock",
+  "events": {
+   "load_model": 1,
+   "modules_sealed": 3,
+   "module_calls_refused": 1,
+   "forward_refused": [
+    "Sequential.forward",
+    "0.forward"
+   ],
+   "capture_or_intervention_refused": [
+    "pm.capture_prompt"
+   ],
+   "aliases_patched": [
+    "neural_decompiler.capture.run_capture",
+    "neural_decompiler.interventions.run_interventions",
+    "neural_decompiler.candidate_screening.run_capture",
+    "neural_decompiler.candidate_screening.run_interventions",
+    "neural_decompiler.plural_mechanism.run_capture",
+    "neural_decompiler.plural_mechanism.run_interventions",
+    "neural_decompiler.plural_mechanism.capture_prompt",
+    "neural_decompiler.plural_mechanism.run_patched",
+    "neural_decompiler.review_alias_probe.cap",
+    "neural_decompiler.review_alias_probe.patched",
+    "neural_decompiler.review_alias_probe.rc",
+    "neural_decompiler.review_alias_probe.ri"
+   ],
+   "forbidden_writes": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/cue_rotation.py",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/025-nounness-direction-intervention/preregistration-lock.json"
+   ],
+   "forbidden_deletes_renames_links_mkdirs": [
+    "os.remove /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/README.md",
+    "os.rename /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/x -> /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/x",
+    "os.mkdir /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/newdir",
+    "os.symlink /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/link"
+   ],
+   "output_writes": [
+    "candidate-lock.json",
+    "stage2-measurements.pt"
+   ],
+   "output_renames": [
+    "os.rename .results-x.json -> results.json"
+   ],
+   "outside_repo_writes": [
+    "/private/var/folders/xx/T/tmpfile"
+   ]
+  }
+ },
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/drwjmgs5"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}

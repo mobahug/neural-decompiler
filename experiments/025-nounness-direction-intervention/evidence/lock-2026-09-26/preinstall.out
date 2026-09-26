@@ -1,0 +1,21 @@
+{
+ "head": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+ "checks": {
+  "cwd_is_repo_root": true,
+  "head_equals_origin_equals_remote": true,
+  "tree_clean": true,
+  "freeze_unchanged": true,
+  "lock_complete_once_no_incident": true,
+  "confirm_and_report_not_started": true,
+  "ledger_empty": true,
+  "only_the_three_candidate_files": true,
+  "candidate_lock_file_sha256": true,
+  "candidate_lock_content_sha256": true,
+  "candidate_preregistration_sha256": true,
+  "results_state_sha256": true,
+  "install_targets_absent": true,
+  "install_targets_not_ignored": true,
+  "no_gitattributes_or_autocrlf": true
+ },
+ "all": true
+}

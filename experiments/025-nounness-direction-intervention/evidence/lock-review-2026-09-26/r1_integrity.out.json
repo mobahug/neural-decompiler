@@ -1,0 +1,433 @@
+{
+ "item1": {
+  "head": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+  "origin_main": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+  "remote_main": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+  "all_equal_d3ecbd6": true,
+  "tree_porcelain_empty": true,
+  "freeze_file_sha256": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a",
+  "freeze_blob_head": "6e0488cba33de1169eab5bcaba5670c3339d83b6",
+  "freeze_blob_at_install_57f1f98": "6e0488cba33de1169eab5bcaba5670c3339d83b6",
+  "freeze_blob_mine": "6e0488cba33de1169eab5bcaba5670c3339d83b6",
+  "freeze_changed_since_install": "",
+  "lock_or_prereg_ever_committed": "",
+  "lock_installed_now": false,
+  "outputs_025_listing_incl_hidden": [
+   "candidate-lock.json",
+   "candidate-preregistration.md",
+   "results.json"
+  ],
+  "state_sha256_recorded": "8eeb8184faf556211e68579d4682c85f545c877051641afe07dd5eac2b701dad",
+  "state_sha256_mine": "8eeb8184faf556211e68579d4682c85f545c877051641afe07dd5eac2b701dad",
+  "state_file_is_canonical_json": true,
+  "phases": {
+   "confirm": {
+    "status": "not_started"
+   },
+   "lock": {
+    "commit": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+    "completed_at": "2026-09-26T16:51:50+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "status": "complete"
+   },
+   "report": {
+    "status": "not_started"
+   }
+  },
+  "executed_prompt_keys": 0,
+  "executed_noun_keys": 0,
+  "confirmation": null,
+  "report": null,
+  "incidents": {
+   "confirm": null,
+   "lock": null,
+   "report": null
+  },
+  "phase_rules_on_current_state": {
+   "lock": "refused: lock already written; a new candidate lock requires a new protocol version",
+   "confirm": "allowed by the phase rules",
+   "report": "refused: report requires a completed confirm, or a recorded confirm or lock incident"
+  },
+  "state_lock_block": {
+   "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-lock.json",
+   "content_sha256": "8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb",
+   "preregistration_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-preregistration.md",
+   "preregistration_sha256": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+   "written_at": "2026-09-26T16:51:50+00:00"
+  },
+  "state_run_id": "914fa3afff5c73ec",
+  "state_created_at": "2026-09-26T16:51:30+00:00",
+  "fresh_state_reconstruction_differs_in": [],
+  "versions_now_equal_state": true
+ },
+ "item2": {
+  "lock_file_sha256": "1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be",
+  "lock_file_expected": "1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be",
+  "lock_content_sha256_recorded": "8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb",
+  "lock_content_sha256_mine": "8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb",
+  "lock_content_sha256_rc": "8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb",
+  "lock_bytes_equal_my_canonical_plus_newline": true,
+  "lock_bytes_equal_pm_canonical_plus_newline": true,
+  "my_canonical_equals_pm_canonical": true,
+  "numbers_in_lock": 1226,
+  "non_finite": [],
+  "prereg_file_sha256": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+  "prereg_expected": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+  "prereg_equals_render_bytewise": true,
+  "prereg_sha_in_state": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+  "state_lock_content_matches": true,
+  "lock_run_id_equals_state": true,
+  "lock_commit": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+  "state_lock_phase_commit": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+  "header_numbers_present": {
+   "lock digest": true,
+   "run": true,
+   "design": true,
+   "module blob": true,
+   "freeze": true,
+   "manifest": true,
+   "runs": true,
+   "odd": true,
+   "controls": true,
+   "tail": true,
+   "count": true,
+   "patch keys": true,
+   "tolerances": true
+  },
+  "binomial": {
+   "tail27_exact": "5288280983/274877906944",
+   "tail27": 0.01923865414210013,
+   "tail27_matches_design": true,
+   "tail26": 0.0403452338759962,
+   "tail26_exceeds_0.025": true,
+   "derived_threshold": 27,
+   "lock_reference_tail": {
+    "exact": "5288280983/274877906944",
+    "value": 0.01923865414210013
+   }
+  },
+  "prereg_d_line": {
+   "d_norm": "1.3576567483118904",
+   "lock_d_norm_repr": "1.3576567483118904",
+   "cos": "0.23521413845112732",
+   "lock_cos_repr": "0.23521413845112732"
+  },
+  "prereg_maxima_line_matches_lock": true,
+  "prereg_tolerance_line": "- I7′: the geometry recomputed from the weights before any prompt, bit for bit, and every geometry check within its tolerance (angle32 1e-06, angle64 1e-12, d_dot_controls 1e-12, d_dot_plurality 1e-12, length32 1e-06, length64 1e-12, neutral32 1e-06, neutral64 1e-12, odd32 1e-06, odd64 1e-12, orth_E_controls 1e-12, orth_E_plurality 1e-12, orth_E_t 1e-12, orth_t_controls 1e-12, orth_t_plurality 1e-12, unit_controls 1e-12, unit_plurality 1e-12, unit_t 1e-12)",
+  "prereg_cue_rows": 40
+ },
+ "item4_files": {
+  "freeze": {
+   "file_mine": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a",
+   "content_mine": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "content_recorded": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "manifest_mine": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+   "manifest_recorded": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+   "manifest_keys": 90720,
+   "lock_binding": {
+    "content_sha256": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+    "counts": {
+     "conditions": 21,
+     "frames": 108,
+     "runs": 90720,
+     "strata": {
+      "adjective": 20,
+      "noun": 20
+     }
+    },
+    "file_sha256": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a",
+    "manifest_sha256": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+    "path": "experiments/025-nounness-direction-intervention/confirmation-v1.json"
+   },
+   "runner_confirmation_sha": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a"
+  },
+  "module_blobs": {
+   "readout_decompilation.py": {
+    "path_in_repo": true,
+    "mine": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "git_head": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "pinned": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "lock": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "lock_dependencies": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "state": "caa73b40192f4c910dc63371bd19db75a3258339",
+    "all_equal": true
+   },
+   "readout_calibration.py": {
+    "path_in_repo": true,
+    "mine": "9107da975128d9b0383f3b346695675104e4cde9",
+    "git_head": "9107da975128d9b0383f3b346695675104e4cde9",
+    "pinned": "9107da975128d9b0383f3b346695675104e4cde9",
+    "lock": "9107da975128d9b0383f3b346695675104e4cde9",
+    "lock_dependencies": "9107da975128d9b0383f3b346695675104e4cde9",
+    "state": "9107da975128d9b0383f3b346695675104e4cde9",
+    "all_equal": true
+   },
+   "head_pattern.py": {
+    "path_in_repo": true,
+    "mine": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "git_head": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "pinned": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "lock": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "lock_dependencies": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "state": "386682fe0a47d093dfbee2507afc1df61811ab15",
+    "all_equal": true
+   },
+   "frame_channels.py": {
+    "path_in_repo": true,
+    "mine": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "git_head": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "pinned": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "lock": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "lock_dependencies": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "state": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+    "all_equal": true
+   },
+   "attention_patterns.py": {
+    "path_in_repo": true,
+    "mine": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "git_head": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "pinned": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "lock": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "lock_dependencies": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "state": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+    "all_equal": true
+   },
+   "layer_correction.py": {
+    "path_in_repo": true,
+    "mine": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "git_head": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "pinned": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "lock": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "lock_dependencies": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "state": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+    "all_equal": true
+   },
+   "plural_mechanism.py": {
+    "path_in_repo": true,
+    "mine": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "git_head": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "pinned": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "lock": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "lock_dependencies": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "state": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+    "all_equal": true
+   },
+   "encoding_read.py": {
+    "path_in_repo": true,
+    "mine": "cab99c942de970332e726a5626b584242d4cf600",
+    "git_head": "cab99c942de970332e726a5626b584242d4cf600",
+    "pinned": "cab99c942de970332e726a5626b584242d4cf600",
+    "lock": "cab99c942de970332e726a5626b584242d4cf600",
+    "lock_dependencies": "cab99c942de970332e726a5626b584242d4cf600",
+    "state": "cab99c942de970332e726a5626b584242d4cf600",
+    "all_equal": true
+   },
+   "head_transport.py": {
+    "path_in_repo": true,
+    "mine": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "git_head": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "pinned": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "lock": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "lock_dependencies": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "state": "936093a4e82c83e299a65a7c85529a7226f80c95",
+    "all_equal": true
+   },
+   "models.py": {
+    "path_in_repo": true,
+    "mine": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "git_head": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "pinned": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "lock": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "lock_dependencies": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "state": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+    "all_equal": true
+   },
+   "upstream_localization.py": {
+    "path_in_repo": true,
+    "mine": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "git_head": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "pinned": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "lock": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "lock_dependencies": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "state": "465856962aa380747d1a4f1338d1d2762d03c9f9",
+    "all_equal": true
+   },
+   "block0_completion.py": {
+    "path_in_repo": true,
+    "mine": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "git_head": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "pinned": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "lock": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "lock_dependencies": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "state": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+    "all_equal": true
+   },
+   "readout_routing.py": {
+    "path_in_repo": true,
+    "mine": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "git_head": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "pinned": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "lock": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "lock_dependencies": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "state": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "all_equal": true
+   }
+  },
+  "module_blobs_all_equal": true,
+  "cue_rotation_own": {
+   "imported_file": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/cue_rotation.py",
+   "is_repo_file": true,
+   "mine": "622aa832ae29047c3060d989928236320374e227",
+   "git_head": "622aa832ae29047c3060d989928236320374e227",
+   "cr_own_blob": "622aa832ae29047c3060d989928236320374e227",
+   "lock_module": {
+    "blob": "622aa832ae29047c3060d989928236320374e227",
+    "path": "src/neural_decompiler/cue_rotation.py"
+   },
+   "unchanged_since_lock_commit": true,
+   "all_equal": true
+  },
+  "run_py_blob_mine": "ed027a9623c144817f443a4a735234655a0d3705",
+  "run_py_blob_head": "ed027a9623c144817f443a4a735234655a0d3705",
+  "inherited_024": {
+   "calibration": {
+    "path": "experiments/024-readout-routing-nounness/calibration-v1.json",
+    "file_mine": "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d",
+    "content_mine": "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8",
+    "content_recorded": "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8",
+    "lock_binding": {
+     "content_sha256": "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8",
+     "file_sha256": "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d",
+     "path": "experiments/024-readout-routing-nounness/calibration-v1.json"
+    },
+    "lock_inputs_file": "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d",
+    "lock_inputs_content": "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8",
+    "all_equal": true
+   },
+   "lock": {
+    "path": "experiments/024-readout-routing-nounness/preregistration-lock.json",
+    "file_mine": "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d",
+    "content_mine": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739",
+    "content_recorded": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739",
+    "lock_binding": {
+     "content_sha256": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739",
+     "file_sha256": "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d",
+     "path": "experiments/024-readout-routing-nounness/preregistration-lock.json"
+    },
+    "lock_inputs_file": "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d",
+    "lock_inputs_content": "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739",
+    "all_equal": true
+   },
+   "confirmation": {
+    "path": "experiments/024-readout-routing-nounness/confirmation-v1.json",
+    "file_mine": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60",
+    "content_mine": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+    "content_recorded": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+    "lock_binding": {
+     "content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+     "file_sha256": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60",
+     "path": "experiments/024-readout-routing-nounness/confirmation-v1.json"
+    },
+    "lock_inputs_file": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60",
+    "lock_inputs_content": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+    "all_equal": true
+   }
+  },
+  "prior_nouns_020": {
+   "file_mine": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "pinned": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "lock_inputs": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "nouns": 24,
+   "ids": 48,
+   "ids_sha256_mine": "4a1e2268e9d71878649bc897fb4448e364a9ea53446a19354e1ca43581e00295",
+   "freeze_blocked_prior_sha256": "4a1e2268e9d71878649bc897fb4448e364a9ea53446a19354e1ca43581e00295"
+  },
+  "lock_inputs_equal_base_digests": true,
+  "state_inputs_equal_base_digests": true,
+  "lock_dependency_frozen_input_digests_equal": true,
+  "lock_dependencies_C_measurement": {
+   "C_equals_rr": true,
+   "measurement_equals_cr": true
+  },
+  "validate_status": 0,
+  "validate_log": [
+   "module blobs 13 verified (024's included); 022–024's committed files and 020's confirmation file verified; confirmation 6eca7024fe3f… (40 cues, 90720 condition-tagged keys); no lock installed"
+  ]
+ },
+ "item17": {
+  "keys": 90720,
+  "unique": 90720,
+  "equals_freeze_manifest_in_order": true,
+  "manifest_sha256_mine": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+  "conditions": 21,
+  "conditions_equal_freeze": true,
+  "outcome_bearing": 16,
+  "outcome_bearing_equal_config": true,
+  "tagged_keys_equal_cr": true,
+  "untagged": 4320,
+  "spent_sizes": {
+   "020_ledger": 30132,
+   "020_confirmation": 3060,
+   "022": 3060,
+   "023": 3060,
+   "024": 4320,
+   "union": 43632
+  },
+  "spent_equals_runner_forbidden": true,
+  "020_conf_equals_runner_all_prompts": true,
+  "collisions_untagged_with_spent": 0,
+  "collisions_tagged_with_spent": 0,
+  "collisions_untagged_with_patch_keys": 0,
+  "collisions_tagged_untagged_form_with_spent": 0,
+  "patch_keys_in_020_ledger": {
+   "cardinal-009-1|an|271": true,
+   "quantifier-009-1|least|1878": true,
+   "coordinated-adjective-009-1|black|2806": true,
+   "quantifier-new-2|he|344": true
+  },
+  "patch_keys_in_spent": true,
+  "patch_key_frames_in_exposed_pool": {
+   "cardinal-009-1|an|271": true,
+   "quantifier-009-1|least|1878": true,
+   "coordinated-adjective-009-1|black|2806": true,
+   "quantifier-new-2|he|344": true
+  },
+  "patch_keys_in_manifest": 0,
+  "ledger_empty": true
+ },
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/ov7obgz6"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched",
+   "experiment_025_runner.load_model"
+  ],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}

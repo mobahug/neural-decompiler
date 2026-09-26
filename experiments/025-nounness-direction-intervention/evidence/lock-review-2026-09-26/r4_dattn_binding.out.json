@@ -1,0 +1,289 @@
+{
+ "exposed_frames": 108,
+ "locked_state_frames": 108,
+ "frames_equal": true,
+ "rows": {
+  "shape_8_by_pt_plus_1": true,
+  "positions_match_frames_and_prompt_ends_at_p_t": true,
+  "key_lengths_seen": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "max_abs_row_sum_minus_1": 1.666929283494767e-07,
+  "min_entry": 0.0,
+  "entry_fields": [
+   "c_ref",
+   "h6",
+   "p_c",
+   "p_t",
+   "rows4",
+   "rows5",
+   "x1_all",
+   "x2_all",
+   "x3_all",
+   "x4_all",
+   "x5_all"
+  ]
+ },
+ "digest": {
+  "mine": "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83",
+  "lock": "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83",
+  "ul": "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83",
+  "per_frame_equal_committed_extract": true,
+  "rows_are_hashed_fields": true,
+  "a_rows5_change_changes_the_frame_digest": true,
+  "results_020_file_sha256_mine": "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00",
+  "results_020_file_pinned": "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00"
+ },
+ "states": {
+  "y1_states_rows_equal_locked": true,
+  "frames_bound_to_states": true
+ },
+ "captures": [
+  {
+   "key": "cardinal-009-1|ref|581",
+   "template": "cardinal",
+   "in_020_ledger": true,
+   "p_t": 3,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     4
+    ],
+    "reference_shape": [
+     8,
+     4
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     4
+    ],
+    "reference_shape": [
+     8,
+     4
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  },
+  {
+   "key": "cardinal-009-2|ref|581",
+   "template": "cardinal",
+   "in_020_ledger": true,
+   "p_t": 4,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     5
+    ],
+    "reference_shape": [
+     8,
+     5
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     5
+    ],
+    "reference_shape": [
+     8,
+     5
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  },
+  {
+   "key": "coordinated-adjective-009-1|ref|581",
+   "template": "coordinated-adjective",
+   "in_020_ledger": true,
+   "p_t": 7,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     8
+    ],
+    "reference_shape": [
+     8,
+     8
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     8
+    ],
+    "reference_shape": [
+     8,
+     8
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  },
+  {
+   "key": "coordinated-adjective-009-2|ref|581",
+   "template": "coordinated-adjective",
+   "in_020_ledger": true,
+   "p_t": 8,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     9
+    ],
+    "reference_shape": [
+     8,
+     9
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     9
+    ],
+    "reference_shape": [
+     8,
+     9
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  },
+  {
+   "key": "quantifier-009-1|ref|1016",
+   "template": "quantifier",
+   "in_020_ledger": true,
+   "p_t": 3,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     4
+    ],
+    "reference_shape": [
+     8,
+     4
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     4
+    ],
+    "reference_shape": [
+     8,
+     4
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  },
+  {
+   "key": "quantifier-009-2|ref|1016",
+   "template": "quantifier",
+   "in_020_ledger": true,
+   "p_t": 4,
+   "ATTN_PATTERN.L4": {
+    "captured_shape": [
+     8,
+     5
+    ],
+    "reference_shape": [
+     8,
+     5
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   },
+   "ATTN_PATTERN.L5": {
+    "captured_shape": [
+     8,
+     5
+    ],
+    "reference_shape": [
+     8,
+     5
+    ],
+    "bitwise_equal_locked": true,
+    "allclose_1e-7": true,
+    "captured_dtype": "torch.float32"
+   }
+  }
+ ],
+ "captures_count": {
+  "total": 6,
+  "cardinal": 2,
+  "coordinated-adjective": 2,
+  "quantifier": 2
+ },
+ "non_spent_025_key_refused_before_running": true,
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/1ju_ihkx",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_5z94_yf/probe-source"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched"
+  ],
+  "captures_allowed": [
+   "cardinal-009-1|ref|581",
+   "cardinal-009-2|ref|581",
+   "coordinated-adjective-009-1|ref|581",
+   "coordinated-adjective-009-2|ref|581",
+   "quantifier-009-1|ref|1016",
+   "quantifier-009-2|ref|1016"
+  ],
+  "captures_refused": [
+   {
+    "key": "cardinal-009-1|an|271",
+    "problems": [
+     "not a reference-prompt key frame_id|ref|<id>",
+     "budget exhausted (6 in all, 2 per template family)"
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,165 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:10,  7.24it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 543.40it/s]
+{
+ "torch_threads": 4,
+ "inputs": {
+  "noun_row_ids": 158,
+  "calibration_cue_ids": 139,
+  "cues": 40,
+  "noun_row_ids_sha256_mine": "08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871",
+  "noun_row_ids_sha256_recorded": "08fb9b4faf7e8a807c57fc98bd45887f237f90a4675922ec4c98ce9c79d79871",
+  "cue_ids_sha256_mine": "106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf",
+  "cue_ids_sha256_recorded": "106cfeccd7b9a10362fb7aef1e3558506e2a7299e4bcfa4ec42aa0f46f774dbf"
+ },
+ "model": {
+  "sealed_modules": 430,
+  "resolved_revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+  "W_E_shape": [
+   50304,
+   512
+  ],
+  "W_E_dtype": "torch.float32",
+  "raw_embed_equals_model_W_E_bitwise": true,
+  "raw_dtype": "torch.float16",
+  "embedding_sha256_mine": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf",
+  "embedding_sha256_raw_file": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf",
+  "parameters_sha256_mine": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+  "n_named_parameters": 113,
+  "embedding_sha256_rr": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf",
+  "parameters_sha256_rr": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5"
+ },
+ "direction": {
+  "mu_noun_sha256_mine": "87930f0150e7263963d593303defd63f87f601f6892717c61d2f20c704f151d2",
+  "mu_noun_sha256_recorded": "87930f0150e7263963d593303defd63f87f601f6892717c61d2f20c704f151d2",
+  "mu_cue_sha256_mine": "f8cca95464092089dae6cd668d3e29bd26a89131b0f5994c35f6503a282121c4",
+  "mu_cue_sha256_recorded": "f8cca95464092089dae6cd668d3e29bd26a89131b0f5994c35f6503a282121c4",
+  "d_sha256_mine": "5f914283c39d2f37911ba3bb1391a98bbe3625737f8df80c42eb336868a1bf2a",
+  "d_norm": 1.3576567483118904,
+  "cos_mu_noun_mu_cue": 0.07838407688159266,
+  "hp_max_abs_err_mu_noun": 3.2498617018299677e-18,
+  "hp_max_abs_err_mu_cue": 1.7222434509697798e-18,
+  "hp_max_abs_err_d": 6.705844107897833e-17,
+  "hp_d_norm": 1.35765674831189
+ },
+ "plurality": {
+  "pairs": 79,
+  "pairing_equals_pool": true,
+  "p_hat_sha256_mine": "2dd4a1f427cd23595a4e1cd66a8e32cfe2a771f4c897dde14a44b2f2f6b0507f",
+  "cos_d_hat_p_hat": 0.23521413845112732
+ },
+ "combined": {
+  "vectors32_40x21x512_sha256": "30a35c0050421b0b07579ee5827e23386dde95ec777aba8ac36a940551df7ca9",
+  "vectors32_840x512_sha256": "a8d1baa3750b5fa691c088bec5ba386ceb2239e70ea9aad63af35e0c128a26c4",
+  "controls_40x7x512_sha256": "e12581d4be183798b42e2f673670eda711ddaf87359c28df5350c1c806a37315"
+ },
+ "hp_worst": {
+  "s0": 1.189115647834395e-16,
+  "tau": 4.872696686579993e-16,
+  "theta_primary": 9.495127616415294e-17,
+  "t_hat": 8.677671170842961e-17,
+  "vec64": 3.1008275109784564e-17
+ },
+ "check_maxima_mine": {
+  "unit_t": 6.661338147750939e-16,
+  "unit_controls": 5.551115123125783e-16,
+  "unit_plurality": 4.440892098500626e-16,
+  "orth_E_t": 6.505213034913027e-17,
+  "orth_E_controls": 6.071532165918825e-17,
+  "orth_t_controls": 4.85722573273506e-17,
+  "orth_E_plurality": 3.8163916471489756e-17,
+  "orth_t_plurality": 4.163336342344337e-17,
+  "d_dot_controls": 5.551115123125783e-17,
+  "d_dot_plurality": 6.245004513516506e-17,
+  "neutral64": 1.6653345369377348e-16,
+  "neutral32": 6.088945903037768e-09,
+  "neutral32_controls_only": 6.088945903037768e-09,
+  "odd64": 2.7755575615628914e-16,
+  "odd32": 2.1101279890078928e-09,
+  "length64": 4.440892098500626e-16,
+  "length32": 6.02588934306425e-09,
+  "angle64": 1.942890293094024e-16,
+  "angle32": 3.6851997287090654e-09,
+  "complete_change_max": 3.4861334374802766e-09,
+  "controls_score_minus_s0cos_max32": 4.3241266400873e-09,
+  "plur_score_minus_s0cos_max32": 4.234731953989268e-09,
+  "u_eff32_d_dot_max": 1.561846878911366e-08,
+  "u_eff32_E_dot_max": 1.7695806410478188e-08,
+  "u_eff32_t_dot_max": 9.44773944494548e-09,
+  "u_eff32_unit_dev_max": 1.2033253060650395e-08,
+  "angle32_controls_vs_noun_max": 4.203873749109022e-09,
+  "controls_abs_cos_with_p_prime_max": 0.09979612534300882
+ },
+ "check_minima_mine": {
+  "u_eff32_cos_with_u_min": 0.9999999922185558
+ },
+ "controls_max_offdiag_cos_max": 0.14987637857984965,
+ "gauss_mean_range": [
+  -0.07100872290756588,
+  0.10827826577041305
+ ],
+ "gauss_var_range": [
+  0.9184043383357932,
+  1.101803395868534
+ ],
+ "base_equals_model_row_all": true,
+ "finite_all": true,
+ "arcsine_args_valid": true,
+ "ranges": {
+  "norm": [
+   0.7014667456346505,
+   0.7300426822493635
+  ],
+  "s0": [
+   -0.30588944844486,
+   0.2852067688611917
+  ],
+  "tau": [
+   1.3227484611848597,
+   1.3559742912728403
+  ],
+  "theta_primary_deg": [
+   13.650144772496521,
+   13.99991896936572
+  ],
+  "theta_half_deg": [
+   6.776479587161514,
+   6.947525236110986
+  ],
+  "even_primary": [
+   -0.008412084850997583,
+   0.009086119249669917
+  ],
+  "even_half": [
+   -0.00207958890974881,
+   0.0022460390683965146
+  ]
+ },
+ "nearest_min_angle_deg": 36.8578855643715,
+ "nearest_all_own": true,
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/hxsbo3xy",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpjy03_lic/probe-source"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched"
+  ],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}

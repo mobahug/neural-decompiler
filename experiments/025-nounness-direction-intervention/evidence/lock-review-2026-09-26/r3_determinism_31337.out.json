@@ -1,0 +1,65 @@
+{
+ "seed": 31337,
+ "PYTHONHASHSEED": "12345",
+ "hash_of_str": -4362460235422670927,
+ "embedding_digest": null,
+ "controls_mine_digest": "e12581d4be183798b42e2f673670eda711ddaf87359c28df5350c1c806a37315",
+ "controls_cr_digest": "e12581d4be183798b42e2f673670eda711ddaf87359c28df5350c1c806a37315",
+ "controls_expected": "e12581d4be183798b42e2f673670eda711ddaf87359c28df5350c1c806a37315",
+ "per_cue_controls_equal_lock": true,
+ "geometry_block_by_threads": {
+  "1": {
+   "verify_against_lock": {
+    "bitwise_equal": true,
+    "differing": []
+   },
+   "vectors32_digest": "30a35c0050421b0b07579ee5827e23386dde95ec777aba8ac36a940551df7ca9"
+  },
+  "4": {
+   "verify_against_lock": {
+    "bitwise_equal": true,
+    "differing": []
+   },
+   "vectors32_digest": "30a35c0050421b0b07579ee5827e23386dde95ec777aba8ac36a940551df7ca9"
+  },
+  "8": {
+   "verify_against_lock": {
+    "bitwise_equal": true,
+    "differing": []
+   },
+   "vectors32_digest": "30a35c0050421b0b07579ee5827e23386dde95ec777aba8ac36a940551df7ca9"
+  }
+ },
+ "shuffled_order_per_cue_equal_lock": true,
+ "shuffled_order_first_three": [
+  "sailor",
+  "guitar",
+  "prince"
+ ],
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/prauh8og"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched"
+  ],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}

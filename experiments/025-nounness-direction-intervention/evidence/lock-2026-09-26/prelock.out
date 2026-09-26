@@ -1,0 +1,33 @@
+{
+ "head": "d3ecbd6feb1bd2aefe08dc0f8d799815be47c519",
+ "checks": {
+  "head_equals_origin_equals_remote": true,
+  "tree_clean": true,
+  "stock_validate_passes": true,
+  "freeze_file_sha256": true,
+  "freeze_content_sha256": true,
+  "manifest_90720": true,
+  "manifest_digest": true,
+  "freeze_tracked": true,
+  "no_outputs_experiment_025": true,
+  "no_results_state_or_ledger": true,
+  "no_lock_or_preregistration": true,
+  "pinned_module_blobs": true,
+  "committed_020_024_inputs_recheck": true,
+  "runtime_and_versions_equal_020_explore": true,
+  "model_binding_freeze": true,
+  "model_binding_024_lock": true,
+  "local_checkpoint_snapshot_present": true,
+  "nothing_refused_was_reached": true
+ },
+ "all": true,
+ "validate_log": [
+  "module blobs 13 verified (024's included); 022\u2013024's committed files and 020's confirmation file verified; confirmation 6eca7024fe3f\u2026 (40 cues, 90720 condition-tagged keys); no lock installed"
+ ],
+ "refused": [],
+ "model": {
+  "model_id": "EleutherAI/pythia-70m-deduped",
+  "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+ },
+ "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+}

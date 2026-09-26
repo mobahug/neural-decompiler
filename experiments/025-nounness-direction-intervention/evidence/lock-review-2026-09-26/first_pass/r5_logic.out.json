@@ -1,0 +1,280 @@
+{
+ "tail": {
+  "cr_binomial_tail_equals_mine": true,
+  "derive_threshold": 27,
+  "production_reference_tail": 0.01923865414210013,
+  "mine": 0.01923865414210013,
+  "26": 0.0403452338759962
+ },
+ "count_positive": {
+  "values": [
+   "1e-300",
+   "0.0",
+   "-0.0",
+   "-1e-300",
+   "nan",
+   "inf",
+   "-inf",
+   "None",
+   "5.0"
+  ],
+  "count": 2,
+  "expected_strictly_positive_finite": 2
+ },
+ "outcome_label": {
+  "A0B0G0": "CAUSAL_EFFECT_NOT_ESTABLISHED",
+  "A0B0G1": "CAUSAL_EFFECT_NOT_ESTABLISHED",
+  "A0B1G0": "CAUSAL_EFFECT_NOT_ESTABLISHED",
+  "A0B1G1": "CAUSAL_EFFECT_NOT_ESTABLISHED",
+  "A1B0G0": "DIRECTIONAL_BUT_NOT_DIRECTION_SPECIFIC",
+  "A1B0G1": "DIRECTIONAL_BUT_NOT_DIRECTION_SPECIFIC",
+  "A1B1G0": "READOUT_ERROR_CAUSAL_ROUTING_NOT_ESTABLISHED",
+  "A1B1G1": "NOUNNESS_DIRECTION_CAUSALLY_SHIFTS_ROUTING_AND_READOUT_ERROR"
+ },
+ "statistics_synthetic": {
+  "A27_B26_G40": {
+   "A": [
+    27,
+    "PASS"
+   ],
+   "B": [
+    26,
+    "FAIL"
+   ],
+   "G": [
+    40,
+    "PASS"
+   ],
+   "label": "DIRECTIONAL_BUT_NOT_DIRECTION_SPECIFIC",
+   "per_cue_equals_my_formulas": true,
+   "by_stratum_A": {
+    "adjective": 20,
+    "noun": 7
+   },
+   "reference_tail": {
+    "exact": "5288280983/274877906944",
+    "value": 0.01923865414210013
+   }
+  },
+  "A26_B40_G40": {
+   "A": [
+    26,
+    "FAIL"
+   ],
+   "B": [
+    26,
+    "FAIL"
+   ],
+   "G": [
+    40,
+    "PASS"
+   ],
+   "label": "CAUSAL_EFFECT_NOT_ESTABLISHED",
+   "per_cue_equals_my_formulas": true,
+   "by_stratum_A": {
+    "adjective": 20,
+    "noun": 6
+   },
+   "reference_tail": {
+    "exact": "5288280983/274877906944",
+    "value": 0.01923865414210013
+   }
+  },
+  "A40_B27_G26": {
+   "A": [
+    40,
+    "PASS"
+   ],
+   "B": [
+    27,
+    "PASS"
+   ],
+   "G": [
+    26,
+    "FAIL"
+   ],
+   "label": "READOUT_ERROR_CAUSAL_ROUTING_NOT_ESTABLISHED",
+   "per_cue_equals_my_formulas": true,
+   "by_stratum_A": {
+    "adjective": 20,
+    "noun": 20
+   },
+   "reference_tail": {
+    "exact": "5288280983/274877906944",
+    "value": 0.01923865414210013
+   }
+  },
+  "A40_B27_G27": {
+   "A": [
+    40,
+    "PASS"
+   ],
+   "B": [
+    27,
+    "PASS"
+   ],
+   "G": [
+    27,
+    "PASS"
+   ],
+   "label": "NOUNNESS_DIRECTION_CAUSALLY_SHIFTS_ROUTING_AND_READOUT_ERROR",
+   "per_cue_equals_my_formulas": true,
+   "by_stratum_A": {
+    "adjective": 20,
+    "noun": 20
+   },
+   "reference_tail": {
+    "exact": "5288280983/274877906944",
+    "value": 0.01923865414210013
+   }
+  }
+ },
+ "d_attn_synthetic": {
+  "cr": 0.43655677342394483,
+  "mine_equal_mean_of_16_head_TVs": 0.43655677342394483,
+  "abs_diff": 0.0,
+  "padding_ignored": true,
+  "too_few_keys_refused": "IncidentError: attention rows (8, 4) against reference (8, 5)"
+ },
+ "per_cue_synthetic_matches_definition": true,
+ "level1_routing": {
+  "outcome_bearing_conditions": [
+   "noun+0.32",
+   "noun-0.32",
+   "rand1+0.32",
+   "rand1-0.32",
+   "rand2+0.32",
+   "rand2-0.32",
+   "rand3+0.32",
+   "rand3-0.32",
+   "rand4+0.32",
+   "rand4-0.32",
+   "rand5+0.32",
+   "rand5-0.32",
+   "rand6+0.32",
+   "rand6-0.32",
+   "rand7+0.32",
+   "rand7-0.32"
+  ],
+  "n": 16,
+  "gates": {
+   "level1_outcome_bearing": {
+    "max": 0.019,
+    "at": "synthA|cardinal-009-1|rand7-0.32"
+   },
+   "level1_secondary": {
+    "max": 0.021,
+    "at": "synthA|cardinal-009-1|plur-0.32"
+   }
+  },
+  "bearing_max_expected": 0.019,
+  "secondary_max_expected": 0.021,
+  "bearing_at_condition": "rand7-0.32",
+  "secondary_at_condition": "plur-0.32"
+ },
+ "enforce_gates": {
+  "all_at_tolerance_pass": null,
+  "I1_above": "IncidentError: validity gate I1 failed: 0.00010000001 at x against 1e-04",
+  "I3_above": "IncidentError: validity gate I3 failed: 0.00010000001 at x against 1e-04",
+  "I4_above": "IncidentError: validity gate I4 failed: 0.0010000001 at x against 1e-03",
+  "level1_bearing_above": "IncidentError: validity gate level1_outcome_bearing failed: 0.0200001 at x against 2e-02",
+  "level1_bearing_undefined": "IncidentError: validity gate level1_outcome_bearing failed: None at x against 2e-02",
+  "level1_secondary_huge_not_enforced": null,
+  "precedence_I1_before_level1": "IncidentError: validity gate I1 failed: 1.0 at x against 1e-04"
+ },
+ "nan_is_never_displaced": {
+  "max": null,
+  "at": "somewhere",
+  "undefined": true
+ },
+ "enforce_geometry": {
+  "lock_checks_pass_all_40": true,
+  "base_row_false": "IncidentError: I7′: x: the θ = 0 vector cast to float32 is not the model's embedding row",
+  "neutral32_2e-6": "IncidentError: I7′: x: neutral32 = 2e-06 exceeds 1e-06",
+  "nan": "IncidentError: I7′: x: angle32 = nan exceeds 1e-06"
+ },
+ "phase_rules": {
+  "now_lock": "PhaseError: lock already written; a new candidate lock requires a new protocol version",
+  "now_confirm": "allowed",
+  "now_report": "PhaseError: report requires a completed confirm, or a recorded confirm or lock incident",
+  "confirm_running_confirm": "PhaseError: confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version",
+  "confirm_complete_confirm": "PhaseError: confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version",
+  "pre_ledger_incident_confirm": "PhaseError: an I7′ or patch-path incident is recorded; confirm is refused until the reviewer decides (a new protocol version)",
+  "pre_ledger_incident_report": "allowed",
+  "confirmation_incident_report": "allowed",
+  "no_state_lock": "allowed",
+  "no_state_confirm": "PhaseError: confirm requires the results state the lock creates"
+ },
+ "validate_lock": {
+  "installed_byte_for_byte_clean_tracked_noscience": null,
+  "noun_keys_equal_lock": true,
+  "dirty_tree": "PhaseError: confirm requires a clean Git tree",
+  "untracked": "PhaseError: the lock and the preregistration must be tracked and committed",
+  "not_ancestor": "PhaseError: the lock commit is not an ancestor of the current commit",
+  "src_change": "PhaseError: scientific paths changed since the lock: ['src/neural_decompiler/capture.py']",
+  "runner_change": "PhaseError: scientific paths changed since the lock: ['experiments/025-nounness-direction-intervention/run.py']",
+  "input_024_change": "PhaseError: scientific paths changed since the lock: ['experiments/024-readout-routing-nounness/calibration-v1.json']",
+  "input_digest_change": "PhaseError: the lock was written against different frozen inputs, modules, design or plan",
+  "running_module_blob_differs": "PhaseError: the running analysis module is not the one the lock binds (direct module-blob check)",
+  "prereg_one_char": "PhaseError: the installed preregistration is not the one this lock renders",
+  "lock_edited_resigned": "PhaseError: the installed lock is not the candidate this run wrote"
+ },
+ "patch_path": {
+  "keys": [
+   "cardinal-009-1|an|271",
+   "quantifier-009-1|least|1878",
+   "coordinated-adjective-009-1|black|2806",
+   "quantifier-new-2|he|344"
+  ],
+  "lock_keys_equal": true,
+  "unspent_key_refused_before_forward": "IncidentError: the patch-path key cardinal-009-1|an|271 is not an already-executed key",
+  "all_in_forbidden": true
+ },
+ "ledger_isolation": {
+  "tagged_key_of_spent_prompt_refused": "PhaseError: x holds 1 forbidden keys, e.g. ['cardinal-009-1|an|271']",
+  "fresh_manifest_passes": null
+ },
+ "render_report": {
+  "incident": true,
+  "pre_ledger_incident": true,
+  "result_label_rendered": true,
+  "A_semantics_rendered": true,
+  "A_semantics_is_plus_vs_minus": true,
+  "lock_semantics_equal_module": true
+ },
+ "configuration": {
+  "production_frozen": true,
+  "non_production_refused_at_real_root": "PhaseError: a non-production configuration may never run against the real repository"
+ },
+ "complete_change": {
+  "max_dev_float64": 2.7755575615628914e-16,
+  "max_dev_float32": 3.4861334374802766e-09
+ },
+ "guard": {
+  "forbidden_reads": [],
+  "repo_writes_refused": [],
+  "fs_ops_refused": [],
+  "outside_writes": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/_wu0xnj_"
+  ],
+  "module_calls_refused": 0,
+  "refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched",
+   "experiment_025_runner.load_model"
+  ],
+  "captures_allowed": [],
+  "captures_refused": []
+ }
+}
