@@ -429,7 +429,8 @@ def test_confirm_runs_every_key_once_and_writes_the_result_in_one_write(world, b
     for row, response in zip(results["per_cue"], results["responses"]):
         assert row["B"] == row["A"] - math.fsum(abs(value) for value in row["A_random"]) / 2
         by_condition = response["conditions"]
-        assert response["word"] == row["word"] and list(by_condition) == list(FAKE.conditions) and all(entry["frames"] == 108 for entry in by_condition.values())
+        # the state is canonical JSON: the condition keys come back sorted, the frozen order lives in the configuration
+        assert response["word"] == row["word"] and set(by_condition) == set(FAKE.conditions) and all(entry["frames"] == 108 for entry in by_condition.values())
         assert row["A"] == 0.5 * (by_condition["noun+0.32"]["ell"] - by_condition["noun-0.32"]["ell"])
         assert row["G"] == 0.5 * (by_condition["noun+0.32"]["d_attn"] - by_condition["noun-0.32"]["d_attn"])
         assert row["A_random"] == [0.5 * (by_condition[f"rand{j}+0.32"]["ell"] - by_condition[f"rand{j}-0.32"]["ell"]) for j in (1, 2)]
