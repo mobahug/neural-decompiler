@@ -321,19 +321,24 @@ class Runner:
         self._write(state)
 
     def _preserve_partial(self, state: dict[str, Any], tensors: Mapping[str, torch.Tensor], executed: list[str]) -> None:
-        """A failure during stage 2 (before the full measurements were saved): the runs measured so far are saved
-        durably beside the ledger and recorded with their count and last key. A failure to save is recorded too; it
-        never hides the incident being recorded."""
+        """After a stage-2 incident is on disk (the full measurements were never saved): the runs measured so far are
+        saved durably beside the ledger and recorded with their count and last key. A failed save is recorded as such;
+        an interruption of the save is recorded and raised. The incident is already written either way."""
         confirmation = state.get("confirmation")
         if confirmation is None or "stage2" in confirmation or not tensors:
             return
         path = self.output("stage2-partial.pt")
         try:
             rr.save_durably(dict(tensors), path)
-            confirmation["stage2_partial"] = {"path": str(path), "tensors_sha256": {key: rc.tensor_digest(value) for key, value in tensors.items()},
-                                              "n_executed": len(executed), "last_key": executed[-1] if executed else None}
-        except Exception as error:  # recorded; the incident is written next either way
+        except BaseException as error:
             confirmation["stage2_partial"] = {"path": str(path), "save_failed": f"{type(error).__name__}: {error}", "n_executed": len(executed)}
+            self._write(state)
+            if not isinstance(error, Exception):
+                raise
+            return
+        confirmation["stage2_partial"] = {"path": str(path), "tensors_sha256": {key: rc.tensor_digest(value) for key, value in tensors.items()},
+                                          "n_executed": len(executed), "last_key": executed[-1] if executed else None}
+        self._write(state)
 
     def _check_runtime(self, closure: Mapping[str, Any]) -> dict[str, Any]:
         """The runtime and the dependency versions of Experiment 020's explore (021–024's check, unchanged)."""
@@ -435,8 +440,14 @@ class Runner:
                 if not i7["bitwise_equal"]:
                     raise pm.IncidentError(f"I7′ failed: the lock's geometry fields {i7['differing']} do not reproduce bit for bit; no fresh prompt has run")
                 frames_by_id = {frame.frame_id: frame for frame in base.inputs.pool.frames}
-                path_check = cr.patch_path_check(model, frames_by_id, W_E, base.forbidden)
+                try:
+                    path_check = cr.patch_path_check(model, frames_by_id, W_E, base.forbidden)
+                except pm.IncidentError:
+                    raise
+                except Exception as error:  # the check could not run: an incident before the ledger, as a mismatch is
+                    raise pm.IncidentError(f"the patch-path check could not run: {type(error).__name__}: {error}; no fresh prompt has run") from error
                 if not path_check["passed"]:
+                    state["phases"]["confirm"] = {**state["phases"]["confirm"], "patch_path_check": path_check}  # equality flags and digests only
                     raise pm.IncidentError(f"the patch-path check failed on the spent keys: {path_check['checks']}; no fresh prompt has run")
             except pm.IncidentError as error:
                 self._record_phase_incident(state, "confirm", error)
@@ -457,6 +468,7 @@ class Runner:
                 digests = {key: rc.tensor_digest(value) for key, value in tensors.items()}
                 state["confirmation"]["stage2"] = {"path": str(self.stage2_path), "tensors_sha256": digests, "n_executed": len(executed)}
                 self._write(state)  # every measurement is on disk before any gate or score can stop the phase
+                tensors.clear()  # the re-read copy below is the one every later step uses
                 expected = Counter(confirmation.tagged_keys())
                 accounting = {"manifest": len(expected), "executed": len(executed), "ledger": len(state["executed_prompt_keys"]),
                               "equal": Counter(executed) == expected and set(state["executed_prompt_keys"]) == set(expected)}
@@ -483,12 +495,12 @@ class Runner:
                 if not recheck["ok"]:
                     raise pm.IncidentError(f"the committed inputs no longer verify after confirm: {recheck['message']}; the scored results are void")
             except pm.IncidentError as error:
-                self._preserve_partial(state, tensors, executed)
                 self._record_incident(state, "confirm", error)
+                self._preserve_partial(state, tensors, executed)
                 return 2
             except BaseException as error:  # a protocol failure or an interruption: recorded, then raised; confirm never resumes
-                self._preserve_partial(state, tensors, executed)
                 self._record_incident(state, "confirm", error)
+                self._preserve_partial(state, tensors, executed)
                 raise
             running = dict(state["phases"]["confirm"])
             state["confirmation"].update({"results": results, "lock_sha256": lock["content_sha256"], "completed_at": pm.utc_now()})

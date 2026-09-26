@@ -516,7 +516,21 @@ def test_a_patch_path_failure_is_an_incident_before_any_fresh_key(world, base025
     assert runner.confirm() == 2 and "patch-path check failed" in logs[-1]
     state = _state(runner)
     assert state["executed_prompt_keys"] == [] and state["confirmation"] is None
+    recorded = state["phases"]["confirm"]["patch_path_check"]
+    assert recorded["passed"] is False and recorded["keys"] == list(base025["spent"]) and not any(entry["plain_equals_patched_theta0"] for entry in recorded["checks"].values())
     assert set(spy.patched) <= set(base025["spent"]) and set(spy.plain) <= set(base025["spent"])
+    with pytest.raises(cr.PhaseError, match="incident is recorded"):
+        runner.confirm()
+
+
+def test_an_exception_inside_the_patch_path_check_is_an_incident_before_any_fresh_key(world, locked025, sandbox, monkeypatch):
+    root = sandbox(locked025)
+    monkeypatch.setattr(cr, "patch_path_check", lambda *args, **kwargs: {}["missing frame"])
+    spy = ForwardSpy(monkeypatch)
+    runner, logs = make_runner(root, world, FAKE)
+    assert runner.confirm() == 2 and "the patch-path check could not run: KeyError" in logs[-1]
+    state = _state(runner)
+    assert state["executed_prompt_keys"] == [] and state["phases"]["confirm"]["incidents"] and not spy.patched and not spy.plain
     with pytest.raises(cr.PhaseError, match="incident is recorded"):
         runner.confirm()
 
@@ -593,7 +607,18 @@ def test_a_per_run_integrity_failure_during_stage_two_keeps_the_runs_measured_so
         return original(*args, **kwargs)
 
     monkeypatch.setattr(cr, "measure_rotated", failing)
+    writes: list[dict] = []
+    original_write = runner_module.Runner._write
+
+    def recording(self, state):
+        confirmation = state.get("confirmation") or {}
+        writes.append({"incident": "incident" in confirmation, "partial": "stage2_partial" in confirmation})
+        return original_write(self, state)
+
+    monkeypatch.setattr(runner_module.Runner, "_write", recording)
     assert runner.confirm() == 2 and "inexact replacement" in logs[-1]
+    first_partial = next(index for index, write in enumerate(writes) if write["partial"])
+    assert writes[first_partial - 1] == {"incident": True, "partial": False}  # the incident is on disk before the slow save
     state = _state(runner)
     partial = state["confirmation"]["stage2_partial"]
     assert state["confirmation"]["incident"]["type"] == "IncidentError" and "results" not in state["confirmation"] and "stage2" not in state["confirmation"]
@@ -601,6 +626,53 @@ def test_a_per_run_integrity_failure_during_stage_two_keeps_the_runs_measured_so
     saved = torch.load(runner.output("stage2-partial.pt"))
     assert {key: rc.tensor_digest(value) for key, value in saved.items()} == partial["tensors_sha256"] and not runner.stage2_path.exists()
     assert runner.report() == 0 and "NOT_INTERPRETABLE" in runner.report_path.read_text()
+
+
+def test_an_interruption_during_stage_two_or_its_partial_save_is_recorded_and_raised(world, locked025, sandbox, monkeypatch):
+    root = sandbox(locked025)
+    runner, _ = make_runner(root, world, FAKE)
+    original, calls = cr.measure_rotated, []
+
+    def interrupted(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 50:
+            raise KeyboardInterrupt
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(cr, "measure_rotated", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        runner.confirm()
+    state = _state(runner)
+    assert state["confirmation"]["incident"]["type"] == "KeyboardInterrupt" and state["confirmation"]["stage2_partial"]["n_executed"] == 49
+    with pytest.raises(cr.PhaseError, match="confirm already started"):
+        runner.confirm()
+
+
+def test_an_interrupted_partial_save_keeps_the_incident(world, locked025, sandbox, monkeypatch):
+    root = sandbox(locked025)
+    runner, _ = make_runner(root, world, FAKE)
+    original, calls = cr.measure_rotated, []
+
+    def failing(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 30:
+            raise pm.IncidentError("forced: EMBED@3: inexact replacement")
+        return original(*args, **kwargs)
+
+    original_save = rr.save_durably
+
+    def save(value, path):
+        if Path(path).name == "stage2-partial.pt":
+            raise KeyboardInterrupt
+        return original_save(value, path)
+
+    monkeypatch.setattr(cr, "measure_rotated", failing)
+    monkeypatch.setattr(rr, "save_durably", save)
+    with pytest.raises(KeyboardInterrupt):
+        runner.confirm()
+    state = _state(runner)
+    assert "inexact replacement" in state["confirmation"]["incident"]["message"] and "results" not in state["confirmation"]
+    assert state["confirmation"]["stage2_partial"] == {"path": str(runner.output("stage2-partial.pt")), "save_failed": "KeyboardInterrupt: ", "n_executed": 29}
 
 
 def test_a_failed_result_write_is_an_incident_with_no_result(world, locked025, confirmed025, sandbox, monkeypatch):
