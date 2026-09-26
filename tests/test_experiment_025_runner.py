@@ -282,7 +282,7 @@ def test_validate_loads_no_model_and_refuses_a_tampered_024_file_or_pin(world, b
         path = root / relative
         original = path.read_bytes()
         path.write_bytes(original + b" ")
-        assert runner.validate() == 1 and "not the reviewed file" in logs[-1] or "not the pinned file" in logs[-1], logs[-1]
+        assert runner.validate() == 1 and ("not the reviewed file" in logs[-1] or "not the pinned file" in logs[-1]), logs[-1]
         path.write_bytes(original)
     assert runner.validate() == 0
     monkeypatch.setitem(cr.FROZEN_BLOBS, "readout_routing.py", "0" * 40)

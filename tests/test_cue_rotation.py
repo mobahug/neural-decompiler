@@ -66,6 +66,14 @@ def test_the_pinned_modules_and_the_inherited_files_are_the_reviewed_ones():
     assert (ROOT / cr.DESIGN["path"]).exists() and (ROOT / cr.PLAN["path"]).exists()
 
 
+def test_the_tolerances_and_the_patch_path_keys_are_the_signed_off_ones():
+    assert cr.TOLERANCES == {"geometry": 1e-12, "angle": 1e-12, "patched": 1e-6, "angle_patched": 1e-6, "level1": 2e-2, "I1": 1e-4, "I3": 1e-4, "I4": 1e-3,
+                             "C_recompute": 0.0, "I7": 0.0}
+    assert cr.PATCH_PATH_SPENT_KEYS == ("cardinal-009-1|an|271", "quantifier-009-1|least|1878", "coordinated-adjective-009-1|black|2806", "quantifier-new-2|he|344")
+    assert cr.CONTROL_TAG == "025|control|{token_id}|{j}" and cr.ALPHA == Fraction(1, 40) and cr.STATISTICS_ORDER == ("A", "B", "G", "ell", "D_attn", "count_rule")
+    assert set(cr.GEOMETRY_LIMITS.values()) == {"geometry", "angle", "patched", "angle_patched"}
+
+
 def test_a_changed_inherited_file_or_pin_is_refused(tmp_path, monkeypatch):
     for kind, relative in cr.INHERITED_024_PATHS.items():
         target = tmp_path / relative
@@ -414,6 +422,27 @@ def test_the_descriptive_records_on_the_production_configuration():
     assert records["counts"]["A_half_positive"] == 0 and records["even_noun_mean"] == pytest.approx(0.0, abs=1e-15)
 
 
+def test_the_gates_enforce_the_outcome_bearing_level1_only():
+    passing = {"I1": {"max": 1e-5, "at": "a"}, "I3": {"max": 1e-5, "at": "a"}, "I4": {"max": 1e-4, "at": "a"}, "level1_outcome_bearing": {"max": 0.019, "at": "a"},
+               "level1_secondary": {"max": 5.0, "at": "b"}}
+    cr.enforce_gates(passing)  # the secondary Level-1 value is recorded, never enforced
+    for name, value in (("level1_outcome_bearing", 0.021), ("I1", 2e-4), ("I3", None), ("I4", float("nan"))):
+        with pytest.raises(pm.IncidentError, match=f"validity gate {name} failed"):
+            cr.enforce_gates({**passing, name: {"max": value, "at": "x"}})
+
+
+def test_a_zero_mse_is_an_incident():
+    frames = (pm.Frame("cardinal", "cardinal-9", (1, 2), (), {"sg": 5, "pl": 6}, "x {cue}"),)
+    units = ul.table_units(({"word": "w", "token_id": 70, "stratum": "noun"},), frames)
+    same = torch.ones(1, 5, dtype=torch.float64)
+    tensors = {cr.tensor_name("cue_final", "base", "dc"): same, cr.tensor_name("cue_final", "base", "C"): same.clone(),
+               cr.tensor_name("cue_final", "base", "rows4"): torch.full((1, 2, 3), 1 / 3), cr.tensor_name("cue_final", "base", "rows5"): torch.full((1, 2, 3), 1 / 3)}
+    tensors.update({cr.tensor_name("coordinated", "base", name): torch.zeros(0, 5 if name in ("dc", "C") else 2) for name in ("dc", "C", "rows4", "rows5")})
+    states = {"cardinal-9": SimpleNamespace(rows4=torch.full((2, 3), 1 / 3), rows5=torch.full((2, 3), 1 / 3))}
+    with pytest.raises(pm.IncidentError, match="is not finite and positive"):
+        cr.per_cue(units, tensors, states, ("base",))
+
+
 def test_the_routing_distance_is_the_equal_head_mean_total_variation():
     reference4 = torch.tensor([[0.5, 0.5, 0.0], [1.0, 0.0, 0.0]], dtype=torch.float32)
     reference5 = torch.tensor([[0.2, 0.3, 0.5], [0.0, 0.0, 1.0]], dtype=torch.float32)
@@ -549,9 +578,10 @@ def _refuse_outcomes(monkeypatch, *, rotated: bool = True) -> None:
         monkeypatch.setattr(rr, name, refuse)
     monkeypatch.setattr(rd.ReadoutProgram, "level1_detail", refuse)
     if rotated:
-        for name in ("identity_gates", "recompute_c", "stage_two"):
+        for name in ("identity_gates", "recompute_c", "stage_two", "measure_rotated"):
             monkeypatch.setattr(cr, name, refuse)
         monkeypatch.setattr(ul, "contrast_of", refuse)
+        monkeypatch.setattr(rd.NounSet, "contrasts", refuse)
 
 
 def _frozen_in_memory(runner):
@@ -649,6 +679,10 @@ def _spent_setup(monkeypatch):
     def guarded_patched(model, prompt, replacements, sources, *, capture_sites=()):
         if prompt.key not in allowed or int(prompt.cue_token_id) in candidates or set(replacements) != {("EMBED", prompt.p_c)}:
             raise AssertionError(f"a non-allow-listed patched run reached the model: {prompt.key}")
+        own_row = model.embed.W_E[int(prompt.cue_token_id)].detach().to("cpu", torch.float32)
+        rotated = not torch.equal(replacements[("EMBED", prompt.p_c)].detach().to("cpu", torch.float32).reshape(-1), own_row)
+        if rotated and tuple(capture_sites) != (("EMBED", prompt.p_c),):
+            raise AssertionError(f"a rotated run may capture only EMBED@p_c, not {list(capture_sites)}: {prompt.key}")
         executed.append(("patched", prompt.key, tuple(capture_sites)))
         inside.append(prompt.key)
         try:
@@ -669,6 +703,12 @@ def _spent_setup(monkeypatch):
     monkeypatch.setattr(pm, "run_capture", low_level(original_run_capture))
     monkeypatch.setattr(pm, "run_interventions", low_level(original_run_interventions))
     model = load_model(PYTHIA_70M)
+
+    def pre_hook(module, args):
+        if not inside:
+            raise AssertionError("a model forward outside an allow-listed prompt")
+
+    model.register_forward_pre_hook(pre_hook)
     progs = ul.ModelPrograms.from_model(model, base.inputs)
     return SimpleNamespace(runner=runner, base=base, frames=frames, ledger=ledger, model=model, progs=progs, executed=executed, W_E=progs.weights.W_E)
 
