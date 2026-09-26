@@ -114,8 +114,14 @@ direction, causally change the following in the predicted direction?
 - The plurality direction `p̂` is the unit mean difference of the 79 scorable nouns' plural and singular rows.
 - Its tangent component at `Ê_i` is orthogonalized to `t̂_i`, normalized to `p̂′_i`, and rotated by the same `θ_i`. It is
   therefore also nounness-neutral. I7′ checks its orthogonality to `Ê_i` and `t̂_i`, and its ±θ score equality.
-- Weights-only: cos(d̂, p̂) = −0.066, and at 13.8° the nounness rotation moves `Ê·p̂` by 0.015, against 0.20 for a real
-  singular-to-plural change.
+- **Weights-only figures (corrected 2026-09-26).** The spike's first figures paired the rows wrongly: the noun row
+  list interleaves singular and plural. With the correct pairing:
+  - cos(d̂, p̂) = +0.235;
+  - at 13.8° the nounness rotation moves `Ê·p̂` by about 0.056 (at most 0.066 over 024's cues), against a mean of
+    0.341 for a real singular-to-plural change.
+
+  So the nounness direction carries a partial plurality component, about a sixth of a real plural change at the
+  primary dose. The plurality control, orthogonalized to `t̂_i`, is its secondary check. See Risks.
 
 ## Measurements (per cue × frame × condition)
 
@@ -404,6 +410,12 @@ So the causal within-item slope may be far below the cross-sectional one.
 - **The strict Level-1 gate.** It covers 69,120 outcome-bearing runs; 024's largest value was 0.0099 at the baseline.
   A rotation that leaves the validated regime makes the result `NOT_INTERPRETABLE`, by design.
 - **Vocabulary.** 025 consumes 20 of the 23 remaining curated fresh adjectives. That is another reason it is final.
+- **The nounness direction is partly aligned with plurality** (cos(d̂, p̂) = +0.235, corrected). A nounness rotation
+  moves the plurality coordinate by about a sixth of a real singular-to-plural change.
+  - The within-cue design holds each cue's own plurality fixed.
+  - The plurality control reports the plurality-direction effect descriptively.
+  - No outcome-bearing statistic removes this component, so a PASS cannot exclude a plurality-direction
+    contribution to the effect.
 - **`B` measures specificity only against isotropic random tangent directions.** It is not measured against every
   structured alternative direction. The plurality control is the one structured comparison, and it is secondary.
 
@@ -480,3 +492,7 @@ review. Then, each step only when authorized:
 
 - Revision 1 (2026-09-26): the final design after three spike rounds, with the reviewer's three final clarifications
   (the Level-1 domain, the meaning of `A`, `D_attn`).
+- Revision 1, correction (2026-09-26): the plurality-alignment figures. The spike paired singular and plural rows
+  wrongly. The corrected cos(d̂, p̂) is +0.235, not −0.066, and the rotation's plurality movement is about 0.056 against
+  0.341, not 0.015 against 0.20. Found at the start of implementation. No frozen rule, threshold, population or
+  outcome changes; the Risks section gains the plurality-alignment limitation.
