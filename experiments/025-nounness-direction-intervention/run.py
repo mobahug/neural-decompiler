@@ -229,7 +229,7 @@ class Runner:
                 state = rd.load_results_state(self.results_path)
                 if state["inputs"] != {key: base.digests[key] for key in cr.DIGEST_KEYS} or state.get("configuration") != self.config.to_json():
                     raise PhaseError("the results state was written against different frozen inputs or another configuration")
-                rr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden, "Experiment 025's ledger")
+                cr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden, "Experiment 025's ledger")
         except (PhaseError, rd.PhaseError, pm.IncidentError, ValueError, KeyError) as error:
             self.log(f"validation failed: {error}")
             return 1
@@ -364,7 +364,7 @@ class Runner:
         base = self._base()
         confirmation, confirmation_sha = self._confirmation(base)
         state = self._state_for("lock", base.digests)
-        rr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden | confirmation.manifest_keys() | confirmation.tagged_keys(),
+        cr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden | confirmation.manifest_keys() | confirmation.tagged_keys(),
                                   "Experiment 025's ledger before confirm")
         runtime = self._check_runtime(base.inputs.closure)
         commit = self._provenance()["protocol_code_commit"]
@@ -392,8 +392,7 @@ class Runner:
             self._record_phase_incident(state, "lock", error)
             return 2
         lock = cr.build_lock(run_id=state["run_id"], protocol_code_commit=commit, digests=base.digests, config=self.config, confirmation=confirmation,
-                             confirmation_file_sha256=confirmation_sha, geometry=geometry["block"], nearest=nearest, dependencies=dependencies, noun_keys=noun_keys,
-                             root=self.root)
+                             confirmation_file_sha256=confirmation_sha, geometry=geometry["block"], nearest=nearest, dependencies=dependencies, noun_keys=noun_keys)
         candidate_path, preregistration_path = self.output("candidate-lock.json"), self.output("candidate-preregistration.md")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         candidate_path.write_text(pm.canonical_json(lock) + "\n", encoding="utf-8")
@@ -412,7 +411,7 @@ class Runner:
         base = self._base()
         confirmation, confirmation_sha = self._confirmation(base)
         state = self._state_for("confirm", base.digests)
-        rr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden | confirmation.manifest_keys() | confirmation.tagged_keys(),
+        cr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden | confirmation.manifest_keys() | confirmation.tagged_keys(),
                                   "Experiment 025's ledger before confirm")
         paths = {"lock": self.root / cr.LOCK_RELATIVE_PATH, "preregistration": self.root / cr.PREREGISTRATION_RELATIVE_PATH}
         if not all(path.exists() for path in paths.values()):

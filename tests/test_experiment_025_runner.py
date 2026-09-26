@@ -2,8 +2,10 @@
 
 020 is explored and closed on the fake; 022 is frozen and calibrated; 023 is extracted, frozen, calibrated and locked;
 024 is frozen, calibrated and locked on the fake by its own runner. So 024's calibration record, lock and freeze exist
-in 024's committed formats. The 025 constants that name 024's reviewed files (``INHERITED_024``) and 020's confirmation
-file (``PRIOR_NOUNS_020``) are pointed at that world's files.
+in 024's committed formats. The 025 constants that are facts about the world are pointed at the fake world's:
+- the digests of 024's reviewed files (``INHERITED_024``) and of 020's confirmation file (``PRIOR_NOUNS_020``);
+- the patch-path keys (``PATCH_PATH_SPENT_KEYS``): the fake's 020 ledger has other cues, so one already-executed key
+  per production key's frame.
 
 The world uses an explicit test configuration, never a patched production constant: ``FAKE``, with 2 adjectives, 2
 nouns, 2 random controls (11 conditions) and a threshold of 3 of 4. On that world it checks:
@@ -388,10 +390,12 @@ def test_lock_refuses_an_uncommitted_freeze_and_a_forbidden_key_in_the_ledger(wo
     assert runner.lock() == 0
     state = _state(runner)
     freeze_024 = json.loads((root / rr.CONFIRMATION_RELATIVE_PATH).read_text())
-    state["executed_prompt_keys"] = [freeze_024["manifest"]["S2-TARGET"][0]]  # a spent 024 key
-    rr.write_state_atomic(runner.results_path, state)
-    with pytest.raises(cr.PhaseError, match="forbidden keys"):
-        runner.confirm()
+    for planted in (freeze_024["manifest"]["S2-TARGET"][0], freeze_024["manifest"]["S2-TARGET"][0] + "|noun+0.32"):  # a spent 024 key, plain or tagged
+        state["executed_prompt_keys"] = [planted]
+        rr.write_state_atomic(runner.results_path, state)
+        with pytest.raises(cr.PhaseError, match="forbidden keys"):
+            runner.confirm()
+        assert runner.validate() == 1
 
 
 # ---------------------------------------------------------------------------

@@ -344,6 +344,11 @@ def test_the_manifest_is_condition_tagged():
     assert confirmation.manifest() == {"S2-TARGET": sorted(tagged)} and not confirmation.manifest_keys() & tagged
     assert confirmation.counts() == {"strata": {"adjective": 1, "noun": 1}, "frames": 2, "conditions": len(SMALL.conditions), "runs": len(tagged)}
     assert cr.tagged_key(pm.Prompt(frames[0], 70, "anxious"), "base") == "cardinal-9|anxious|70|base"
+    assert cr.untagged("cardinal-9|anxious|70|noun-0.32") == "cardinal-9|anxious|70" == cr.untagged("cardinal-9|anxious|70")
+    cr.assert_ledger_isolated(sorted(tagged), frozenset({"cardinal-9|other|71"}), "x")
+    for planted in ("cardinal-9|anxious|70", "cardinal-9|anxious|70|rand1+0.32"):
+        with pytest.raises(cr.PhaseError, match="forbidden keys"):
+            cr.assert_ledger_isolated([planted], frozenset({"cardinal-9|anxious|70"}), "x")
 
 
 # ---------------------------------------------------------------------------
@@ -462,7 +467,7 @@ def test_the_preregistration_rendering_does_not_depend_on_the_key_order():
     frames = (pm.Frame("cardinal", "cardinal-9", (1, 2), (), {"sg": 5, "pl": 6}, "x {cue}"),)
     confirmation = cr.Confirmation025({"cardinal": 3}, frames, tokens, SMALL.conditions, "c" * 64)
     lock = cr.build_lock(run_id="r", protocol_code_commit="a" * 40, digests={"x": "y"}, config=SMALL, confirmation=confirmation, confirmation_file_sha256="f" * 64,
-                         geometry=cr.geometry_block(W_E, record, pool, tokens, SMALL)["block"], nearest={}, dependencies={}, noun_keys=["n"], root=ROOT)
+                         geometry=cr.geometry_block(W_E, record, pool, tokens, SMALL)["block"], nearest={}, dependencies={}, noun_keys=["n"])
     canonical = json.loads(pm.canonical_json(lock))
     assert list(canonical["statistics"]) != list(lock["statistics"])  # the installed file's order differs from the built one's
     assert cr.render_preregistration(canonical) == cr.render_preregistration(lock)

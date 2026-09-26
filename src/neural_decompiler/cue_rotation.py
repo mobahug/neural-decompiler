@@ -758,6 +758,17 @@ def tagged_key(prompt: pm.Prompt, condition: str) -> str:
     return f"{prompt.key}|{condition}"
 
 
+def untagged(key: str) -> str:
+    """A ledger key without its condition tag (``frame_id|word|token_id``): what the spent-key isolation compares."""
+    return "|".join(key.split("|")[:3])
+
+
+def assert_ledger_isolated(ledger: Sequence[str], forbidden: frozenset[str], what: str) -> None:
+    """``rr.assert_ledger_isolated`` on every ledger key and on its untagged prompt key: a condition-tagged key whose
+    prompt was executed or reserved before is refused too."""
+    rr.assert_ledger_isolated(sorted(set(ledger) | {untagged(key) for key in ledger}), forbidden, what)
+
+
 def freeze_payload(tokenizer: Any, *, pool: Any, freeze_024: Mapping[str, Any], prior: Mapping[str, Any], config: Configuration,
                    model: Mapping[str, str] | None = None) -> dict[str, Any]:
     """The confirmation file's content: the 40 cues, every rule's inputs and the 90,720-key condition-tagged manifest.
@@ -853,19 +864,19 @@ def confirmation_binding(confirmation: Confirmation025, file_sha256: str) -> dic
             "manifest_sha256": pm.sha256_text(pm.canonical_json(confirmation.manifest())), "counts": confirmation.counts()}
 
 
-def binding_024(root: Path) -> dict[str, Any]:
+def binding_024() -> dict[str, Any]:
     return {kind: {"path": relative, "file_sha256": INHERITED_024[f"{kind}_file_sha256"], "content_sha256": INHERITED_024[f"{kind}_content_sha256"]}
             for kind, relative in INHERITED_024_PATHS.items()}
 
 
 def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, str], config: Configuration, confirmation: Confirmation025,
-               confirmation_file_sha256: str, geometry: Mapping[str, Any], nearest: Mapping[str, Any], dependencies: Mapping[str, Any], noun_keys: Sequence[str],
-               root: Path) -> dict[str, Any]:
+               confirmation_file_sha256: str, geometry: Mapping[str, Any], nearest: Mapping[str, Any], dependencies: Mapping[str, Any],
+               noun_keys: Sequence[str]) -> dict[str, Any]:
     lock = {
         "experiment": EXPERIMENT, "schema_version": LOCK_SCHEMA_VERSION, "kind": "the Experiment 025 preregistration lock", "run_id": run_id,
         "protocol_code_commit": protocol_code_commit, "design": dict(DESIGN), "plan": dict(PLAN), "configuration": config.to_json(), "inputs": dict(digests),
         "module_blobs": dict(FROZEN_BLOBS), "module": {"path": "src/neural_decompiler/cue_rotation.py", "blob": own_blob()},
-        "inherited_024": binding_024(root), "confirmation_025": confirmation_binding(confirmation, confirmation_file_sha256), "dependencies": dict(dependencies),
+        "inherited_024": binding_024(), "confirmation_025": confirmation_binding(confirmation, confirmation_file_sha256), "dependencies": dict(dependencies),
         "noun_keys": list(noun_keys), "geometry": dict(geometry), "nearest_tokens": dict(nearest), "patch_path_spent_keys": list(PATCH_PATH_SPENT_KEYS),
         "statistics": {"A": "A_i = ½[ℓ_i(+θ_i) − ℓ_i(−θ_i)] at the primary dose", "B": "B_i = A_i − (1/k)·Σ_j |A_ij|, A_ij the random controls' A",
                        "G": "G_i = ½[D_attn,i(+θ_i) − D_attn,i(−θ_i)] at the primary dose",
