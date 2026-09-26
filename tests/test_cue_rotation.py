@@ -391,6 +391,8 @@ def test_the_statistics_the_counts_and_the_labels():
     assert cr.statistics(_values(SMALL, tokens, (1, 1, -1, -1), 0.0, (1, 1, 1, 1)), confirmation, SMALL)["outcome"]["label"] == "CAUSAL_EFFECT_NOT_ESTABLISHED"
     assert cr.statistics(_values(SMALL, tokens, (1, 1, 1, 1), 0.0, (1, 0, 1, -1)), confirmation, SMALL)["outcome"]["label"] == "READOUT_ERROR_CAUSAL_ROUTING_NOT_ESTABLISHED"
     assert results["criterion"]["reference_tail"] == {"exact": "5/16", "value": 0.3125}
+    assert [response["word"] for response in results["responses"]] == ["a1", "a2", "n1", "n2"] and list(results["responses"][3]["conditions"]) == list(SMALL.conditions)
+    assert results["responses"][3]["conditions"]["noun-0.32"]["ell"] == pytest.approx(-2.0 + 0.04)
 
 
 def test_the_descriptive_records_on_the_production_configuration():

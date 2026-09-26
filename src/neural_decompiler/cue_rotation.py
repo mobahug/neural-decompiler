@@ -1289,8 +1289,12 @@ def outcome_label(a_pass: bool, b_pass: bool, g_pass: bool) -> str:
 
 def statistics(values: Mapping[int, Mapping[str, Any]], confirmation: Confirmation025, config: Configuration) -> dict[str, Any]:
     """``A``, ``B`` and ``G`` per cue, their positive counts against the threshold, and the outcome; everything computed
-    from the saved measurements."""
+    from the saved measurements. The per-cue, per-condition responses they are computed from (``ℓ``, the MSE, the
+    normalized MSE, ``D_attn`` and the per-template ``ℓ``) are part of the result."""
     p = config.primary
+    responses = [{"word": token["word"], "token_id": int(token["token_id"]), "stratum": token["stratum"],
+                  "conditions": {condition: dict(values[int(token["token_id"])][condition]) for condition in confirmation.conditions}}
+                 for token in confirmation.tokens]
     rows = []
     for token in confirmation.tokens:
         v = values[int(token["token_id"])]
@@ -1306,7 +1310,7 @@ def statistics(values: Mapping[int, Mapping[str, Any]], confirmation: Confirmati
                        "by_stratum": {stratum: count_positive([row[name] for row in rows if row["stratum"] == stratum]) for stratum in STRATA}}
     label = outcome_label(*(tests[name]["result"] == "PASS" for name in ("A", "B", "G")))
     tail = config.reference_tail()
-    return rc.json_safe({"per_cue": rows, "A": tests["A"], "B": tests["B"], "G": tests["G"],
+    return rc.json_safe({"per_cue": rows, "responses": responses, "A": tests["A"], "B": tests["B"], "G": tests["G"],
                          "outcome": {"label": label, "reading": SEMANTICS["outcomes"][label], "not_claimed": SEMANTICS["not_claimed"]},
                          "criterion": {"text": SEMANTICS["criterion"], "reference_tail": {"exact": f"{tail.numerator}/{tail.denominator}", "value": float(tail)}}})
 
