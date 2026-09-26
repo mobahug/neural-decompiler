@@ -1,7 +1,16 @@
 # Experiment 025: Does Moving the Cue Embedding Along the Frozen Nounness Direction Causally Change the Frozen Readout Error and the Attention Routing?
 
-**Status: IMPLEMENTED; no scientific phase has run.** The next step is the production `freeze`, only when separately
-authorized.
+**Status: FROZEN. Lock and confirm have not run, and no fresh scientific prompt has run.** The next step is `lock`,
+only when separately authorized.
+- **The implementation** is complete and independently reviewed: PASS WITH NOTES, no blockers. The fixes run through
+  `c765148fdb612ae249e21ef3c830e4ceb1d12dd0`. The final test gate on that commit: tier A 542 passed, tier B 575
+  passed, tier C 6 passed, 0 failed.
+- **The production freeze** ran exactly once, at `c765148`, and was independently verified: PASS WITH NOTES, no
+  blockers. It is installed byte-identically as `confirmation-v1.json` (`57f1f98`):
+  - file sha256 `54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a`;
+  - content sha256 `6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4`;
+  - 90,720 condition-tagged keys, manifest sha256 `0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61`.
+- **The evidence** is under [`evidence/`](evidence/README.md).
 
 Implements the design
 [`docs/superpowers/specs/2026-09-26-experiment-025-nounness-direction-intervention-design.md`](../../docs/superpowers/specs/2026-09-26-experiment-025-nounness-direction-intervention-design.md)
@@ -113,3 +122,26 @@ incident is on disk), and the outcome is `NOT_INTERPRETABLE`.
   - keeps the four spent-key patch-path runs apart from the fresh runs.
 
 The local outputs stay in `outputs/experiment-025/`.
+
+## Protocol notes
+
+- **The freeze's integrity reads (the reviewer's decision on the freeze review's N3).** The freeze implementation
+  performs shared dependency/integrity reads beyond the minimal phase-table inputs. Independent call-flow verification
+  established that these data do not feed population selection or manifest construction. Freeze selection remains
+  tokenizer/list/exclusion based.
+  - The reads are 020's local results, 023's committed cells input, and 024's calibration record and lock.
+  - They were accepted as integrity and precondition reads only. The code was not changed, and the reviewed freeze
+    remains authoritative.
+- **The tokenizer.** The pinned checkpoint and tokenizer family is `EleutherAI/pythia-70m-deduped` (revision
+  `e93a9faa…`). The freeze-verification brief said `pythia-70m`, a wording mistake that did not affect the production
+  freeze.
+- **Requirements for the lock and confirm launchers** (from the freeze review; recorded, with no code change for the
+  completed freeze). Beyond 024's guards, the launcher must:
+  - record the full HEAD commit, the environment, package and runtime information, and its own file sha256;
+  - block and log direct `.forward()` routes, and unpatched aliases or copies of the capture and intervention
+    functions;
+  - block repository deletes and renames;
+  - keep the 4 spent patch-path runs apart from the 90,720 fresh condition-tagged runs;
+  - log the condition of every patched fresh run.
+
+  For confirm, these protections must be in place before any fresh ledger entry and before any prompt.

@@ -1,0 +1,7 @@
+HEAD c765148fdb612ae249e21ef3c830e4ceb1d12dd0 clean-lines 0
+tiers over the 35 collected: A 29 | B 35 (slow 0, current 0) | D historical 0 | pinned-model contract 6; selected 6 (tier none)
+..
+patch path on the spent keys: cardinal-009-1|an|271, quantifier-009-1|least|1878, coordinated-adjective-009-1|black|2806, quantifier-new-2|he|344
+....                                                                   [100%]
+6 passed, 29 deselected in 55.78s
+exit 0 HEAD c765148fdb612ae249e21ef3c830e4ceb1d12dd0 clean-lines 0

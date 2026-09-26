@@ -1,0 +1,304 @@
+{
+ "launcher_sha256": "69733620898b91822aced2fad86f83d4a36963a432f099a9d175b8134efc3b94",
+ "top_level_order": [
+  [
+   1,
+   "\"\"\"Guarded launcher for Experiment 025's production `freeze` (run exactly once)."
+  ],
+  [
+   26,
+   "import datetime"
+  ],
+  [
+   27,
+   "import hashlib"
+  ],
+  [
+   28,
+   "import importlib.util"
+  ],
+  [
+   29,
+   "import json"
+  ],
+  [
+   30,
+   "import os"
+  ],
+  [
+   31,
+   "import sys"
+  ],
+  [
+   32,
+   "from pathlib import Path"
+  ],
+  [
+   34,
+   "ROOT = Path(\"/Users/gaborhorvath-ulenius/myprojects/neural-decompiler\").resolve()"
+  ],
+  [
+   35,
+   "HERE = Path(__file__).resolve().parent"
+  ],
+  [
+   36,
+   "DRY_RUN = os.environ.get(\"FREEZE025_DRY_RUN\") == \"1\""
+  ],
+  [
+   37,
+   "CONFIRMATION = (ROOT / \"experiments/025-nounness-direction-intervention/confirmation-v1.json\").resolve()"
+  ],
+  [
+   38,
+   "events = {\"module_calls\": 0, \"load_model\": 0, \"capture_calls\": 0, \"score_or_geometry_calls\": [], \"forbidden_re"
+  ],
+  [
+   42,
+   "def _hook(event, args):"
+  ],
+  [
+   64,
+   "sys.addaudithook(_hook)"
+  ],
+  [
+   66,
+   "import torch"
+  ],
+  [
+   68,
+   "from neural_decompiler import cue_rotation as cr"
+  ],
+  [
+   69,
+   "from neural_decompiler import models"
+  ],
+  [
+   70,
+   "from neural_decompiler import plural_mechanism as pm"
+  ],
+  [
+   71,
+   "from neural_decompiler import readout_calibration as rc"
+  ],
+  [
+   72,
+   "from neural_decompiler import readout_routing as rr"
+  ],
+  [
+   75,
+   "def _refuse_module_call(self, *args, **kwargs):"
+  ],
+  [
+   80,
+   "def _refuse_load(*args, **kwargs):"
+  ],
+  [
+   85,
+   "def _refuse_capture(*args, **kwargs):"
+  ],
+  [
+   90,
+   "def _refuse_named(name):"
+  ],
+  [
+   98,
+   "torch.nn.Module.__call__ = _refuse_module_call"
+  ],
+  [
+   99,
+   "models.load_model = _refuse_load"
+  ],
+  [
+   100,
+   "for name in (\"capture_prompt\", \"run_patched\", \"run_capture\", \"run_interventions\"):"
+  ],
+  [
+   103,
+   "for module, names in ((rr, (\"nounness\", \"full_scores\", \"calibration_scores\", \"centroid\", \"centroids\", \"score_b"
+  ],
+  [
+   110,
+   "spec = importlib.util.spec_from_file_location(\"experiment_025_runner\", ROOT / \"experiments/025-nounness-direct"
+  ],
+  [
+   111,
+   "runner_module = importlib.util.module_from_spec(spec)"
+  ],
+  [
+   112,
+   "sys.modules[spec.name] = runner_module"
+  ],
+  [
+   113,
+   "spec.loader.exec_module(runner_module)"
+  ],
+  [
+   114,
+   "assert runner_module.load_model is _refuse_load"
+  ],
+  [
+   116,
+   "logs: list[str] = []"
+  ],
+  [
+   119,
+   "def log(message: str) -> None:"
+  ],
+  [
+   124,
+   "EXPECTED = {"
+  ],
+  [
+   132,
+   "def verify_before_writing(runner) -> tuple[dict, dict, bytes]:"
+  ],
+  [
+   195,
+   "runner = runner_module.Runner(log=log)"
+  ],
+  [
+   196,
+   "assert runner.config is runner_module.cr.PRODUCTION"
+  ],
+  [
+   197,
+   "started = datetime.datetime.now(datetime.timezone.utc).isoformat()"
+  ],
+  [
+   198,
+   "status = None"
+  ],
+  [
+   199,
+   "error = None"
+  ],
+  [
+   200,
+   "checks: dict = {}"
+  ],
+  [
+   201,
+   "facts: dict = {}"
+  ],
+  [
+   202,
+   "post: dict = {}"
+  ],
+  [
+   203,
+   "try:"
+  ],
+  [
+   220,
+   "ended = datetime.datetime.now(datetime.timezone.utc).isoformat()"
+  ],
+  [
+   221,
+   "record = {\"dry_run\": DRY_RUN, \"started_at\": started, \"ended_at\": ended, \"exit_status\": status, \"error\": error,"
+  ],
+  [
+   223,
+   "(HERE / (\"dryrun_run.json\" if DRY_RUN else \"freeze_run.json\")).write_text(json.dumps(record, indent=1) + \"\\n\")"
+  ],
+  [
+   224,
+   "print(json.dumps({key: record[key] for key in (\"started_at\", \"ended_at\", \"exit_status\", \"error\", \"freeze_invoc"
+  ],
+  [
+   225,
+   "print(json.dumps(events), flush=True)"
+  ],
+  [
+   226,
+   "print(json.dumps({\"checks_all_true\": bool(checks) and all(checks.values()), \"post_write\": post}), flush=True)"
+  ],
+  [
+   227,
+   "ok = status == 0 and error is None and (post.get(\"confirmation_exists\") is False if DRY_RUN else post.get(\"byt"
+  ],
+  [
+   228,
+   "sys.exit(0 if ok else 1)"
+  ]
+ ],
+ "lines": {
+  "addaudithook": 64,
+  "import_torch": 66,
+  "import_cr": 68,
+  "patch_module_call": 98,
+  "patch_load_model": 99,
+  "patch_pm_loop": 100,
+  "patch_score_loop": 103,
+  "runner_spec": 110,
+  "runner_exec": 113,
+  "assert_refusal_bound": 114
+ },
+ "guards_before_runner_import": true,
+ "hook_before_any_project_import": true,
+ "freeze_call_sites": [
+  214
+ ],
+ "runner_load_model_is_refusal": true,
+ "runner_default_model_loader_is_refusal": true,
+ "attempts": {
+  "models.load_model": "RuntimeError: the model was loaded during the freeze",
+  "runner.model_loader": "RuntimeError: the model was loaded during the freeze",
+  "toy nn.Module forward": "RuntimeError: a torch module was called during the freeze",
+  "pm.run_patched": "RuntimeError: a capture or intervention entry point was reached during the freeze",
+  "pm.capture_prompt": "RuntimeError: a capture or intervention entry point was reached during the freeze",
+  "rr.nounness": "RuntimeError: readout_routing.nounness was called during the freeze (no score or geometry may exist at the freeze)",
+  "rr.centroid": "RuntimeError: readout_routing.centroid was called during the freeze (no score or geometry may exist at the freeze)",
+  "rr.full_scores": "RuntimeError: readout_routing.full_scores was called during the freeze (no score or geometry may exist at the freeze)",
+  "cr.score": "RuntimeError: cue_rotation.score was called during the freeze (no score or geometry may exist at the freeze)",
+  "cr.geometry_block": "RuntimeError: cue_rotation.geometry_block was called during the freeze (no score or geometry may exist at the freeze)",
+  "original cr.direction -> centroids (internal)": "RuntimeError: cue_rotation.centroids was called during the freeze (no score or geometry may exist at the freeze)",
+  "original cr.centroids -> rr.centroid (internal)": "RuntimeError: readout_routing.centroid was called during the freeze (no score or geometry may exist at the freeze)",
+  "hook read outputs/experiment-023": "PermissionError: the freeze may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/any.pt",
+  "hook read outputs/experiment-024": "PermissionError: the freeze may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json",
+  "hook read calibration-table.pt": "PermissionError: the freeze may not open /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "hook write README (mode w)": "PermissionError: the freeze may not write /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/README.md",
+  "hook write via os.open flags": "PermissionError: the freeze may not write /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/x.json",
+  "hook write confirmation (allowed, counted)": "NOT REFUSED",
+  "hook read README (allowed)": "NOT REFUSED"
+ },
+ "events_after": {
+  "module_calls": 1,
+  "load_model": 2,
+  "capture_calls": 2,
+  "score_or_geometry_calls": [
+   "readout_routing.nounness",
+   "readout_routing.centroid",
+   "readout_routing.full_scores",
+   "cue_rotation.score",
+   "cue_rotation.geometry_block",
+   "cue_rotation.centroids",
+   "readout_routing.centroid"
+  ],
+  "forbidden_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-023/any.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-024/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt"
+  ],
+  "forbidden_writes": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/README.md",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/x.json"
+  ],
+  "confirmation_writes": 1,
+  "freeze_invocations": 0
+ },
+ "audit_open_event_for_write_text": [
+  [
+   "open",
+   "w",
+   16778753
+  ]
+ ],
+ "audit_open_event_for_read_bytes": [
+  [
+   "open",
+   "r",
+   16777216
+  ]
+ ]
+}

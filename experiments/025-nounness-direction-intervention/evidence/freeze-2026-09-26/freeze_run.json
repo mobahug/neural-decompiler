@@ -1,0 +1,586 @@
+{
+ "dry_run": false,
+ "started_at": "2026-09-26T15:56:49.339048+00:00",
+ "ended_at": "2026-09-26T15:57:07.474705+00:00",
+ "exit_status": 0,
+ "error": null,
+ "freeze_invocations": 1,
+ "events": {
+  "module_calls": 0,
+  "load_model": 0,
+  "capture_calls": 0,
+  "score_or_geometry_calls": [],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "confirmation_writes": 1,
+  "freeze_invocations": 1
+ },
+ "pre_write_checks": {
+  "picks_are_the_approved_40": true,
+  "single_token_with_leading_space": true,
+  "token_ids_distinct": true,
+  "none_in_earlier_cues": true,
+  "none_in_pool_noun_forms": true,
+  "none_in_prior_noun_forms": true,
+  "none_in_exposed_frame_tokens": true,
+  "statue_and_barrel_excluded_by_prior_noun_rule": true,
+  "statue_rejected_for_the_prior_noun_rule": true,
+  "manifest_90720_unique_sorted": true,
+  "every_key_tagged_with_a_frozen_condition": true,
+  "untagged_keys_are_the_4320_prompts": true,
+  "no_untagged_key_is_a_tagged_key": true,
+  "no_collision_with_spent_keys": true,
+  "no_collision_with_patch_path_keys": true,
+  "manifest_digest_recomputes": true,
+  "configuration_is_production": true,
+  "content_digest_verifies": true
+ },
+ "facts": {
+  "forbidden_keys": 43632,
+  "blocked_sizes": {
+   "earlier_cues": 391,
+   "target_forms": 161,
+   "prior_nouns": 48,
+   "frame_tokens": 316
+  },
+  "candidates_by_list": {
+   "adjective-reserve": 23,
+   "ordinary-reserve": 9,
+   "new-list": 39
+  },
+  "rejected_by_list": {
+   "adjective-reserve": 0,
+   "ordinary-reserve": 1,
+   "new-list": 22
+  },
+  "eligible_by_list": {
+   "adjective-reserve": 23,
+   "ordinary-reserve": 8,
+   "new-list": 17
+  },
+  "picked_by_list": {
+   "adjective-reserve": 20,
+   "ordinary-reserve": 8,
+   "new-list": 12
+  },
+  "unpicked_eligible_reserves_by_list": {
+   "adjective-reserve": 3,
+   "ordinary-reserve": 0,
+   "new-list": 5
+  },
+  "rejected": [
+   {
+    "list": "ordinary-reserve",
+    "candidate": "statue/statues",
+    "rank": 8,
+    "reason": "statue: token id 23957: a form of a noun of 020's confirmation list (read by 021); statues: token id 38490: a form of a noun of 020's confirmation list (read by 021)"
+   },
+   {
+    "list": "new-list",
+    "candidate": "baker/bakers",
+    "rank": 1,
+    "reason": "baker: 2 tokens with a leading space; bakers: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "camel/camels",
+    "rank": 3,
+    "reason": "camel: eligible; camels: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "carpet/carpets",
+    "rank": 4,
+    "reason": "carpet: eligible; carpets: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "clerk/clerks",
+    "rank": 5,
+    "reason": "clerk: eligible; clerks: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "dolphin/dolphins",
+    "rank": 7,
+    "reason": "dolphin: 2 tokens with a leading space; dolphins: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "donkey/donkeys",
+    "rank": 8,
+    "reason": "donkey: eligible; donkeys: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "eagle/eagles",
+    "rank": 10,
+    "reason": "eagle: eligible; eagles: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "frog/frogs",
+    "rank": 11,
+    "reason": "frog: eligible; frogs: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "hammer/hammers",
+    "rank": 14,
+    "reason": "hammer: eligible; hammers: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "ladder/ladders",
+    "rank": 16,
+    "reason": "ladder: eligible; ladders: 3 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "mirror/mirrors",
+    "rank": 18,
+    "reason": "mirror: token id 11472: a form of a pool target noun; mirrors: token id 27034: a form of a pool target noun"
+   },
+   {
+    "list": "new-list",
+    "candidate": "owl/owls",
+    "rank": 21,
+    "reason": "owl: 2 tokens with a leading space; owls: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "parrot/parrots",
+    "rank": 23,
+    "reason": "parrot: 2 tokens with a leading space; parrots: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "pencil/pencils",
+    "rank": 24,
+    "reason": "pencil: eligible; pencils: 3 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "pillow/pillows",
+    "rank": 25,
+    "reason": "pillow: eligible; pillows: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "planet/planets",
+    "rank": 26,
+    "reason": "planet: token id 8859: a form of a pool target noun; planets: token id 20581: a form of a pool target noun"
+   },
+   {
+    "list": "new-list",
+    "candidate": "queen/queens",
+    "rank": 28,
+    "reason": "queen: eligible; queens: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "rocket/rockets",
+    "rank": 30,
+    "reason": "rocket: token id 21912: a form of a pool target noun; rockets: token id 39647: a form of a pool target noun"
+   },
+   {
+    "list": "new-list",
+    "candidate": "tiger/tigers",
+    "rank": 34,
+    "reason": "tiger: eligible; tigers: 3 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "tractor/tractors",
+    "rank": 35,
+    "reason": "tractor: eligible; tractors: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "violin/violins",
+    "rank": 36,
+    "reason": "violin: eligible; violins: 2 tokens with a leading space"
+   },
+   {
+    "list": "new-list",
+    "candidate": "wizard/wizards",
+    "rank": 38,
+    "reason": "wizard: eligible; wizards: 2 tokens with a leading space"
+   }
+  ],
+  "cues": [
+   [
+    "adjective",
+    "anxious",
+    20138,
+    null,
+    null,
+    "adjective-reserve",
+    0
+   ],
+   [
+    "adjective",
+    "cheerful",
+    39567,
+    null,
+    null,
+    "adjective-reserve",
+    1
+   ],
+   [
+    "adjective",
+    "curious",
+    14338,
+    null,
+    null,
+    "adjective-reserve",
+    2
+   ],
+   [
+    "adjective",
+    "jealous",
+    23327,
+    null,
+    null,
+    "adjective-reserve",
+    3
+   ],
+   [
+    "adjective",
+    "lonely",
+    25106,
+    null,
+    null,
+    "adjective-reserve",
+    4
+   ],
+   [
+    "adjective",
+    "nasty",
+    26321,
+    null,
+    null,
+    "adjective-reserve",
+    5
+   ],
+   [
+    "adjective",
+    "careful",
+    10182,
+    null,
+    null,
+    "adjective-reserve",
+    6
+   ],
+   [
+    "adjective",
+    "careless",
+    48292,
+    null,
+    null,
+    "adjective-reserve",
+    7
+   ],
+   [
+    "adjective",
+    "famous",
+    8530,
+    null,
+    null,
+    "adjective-reserve",
+    8
+   ],
+   [
+    "adjective",
+    "friendly",
+    11453,
+    null,
+    null,
+    "adjective-reserve",
+    9
+   ],
+   [
+    "adjective",
+    "gorgeous",
+    23535,
+    null,
+    null,
+    "adjective-reserve",
+    10
+   ],
+   [
+    "adjective",
+    "hungry",
+    18254,
+    null,
+    null,
+    "adjective-reserve",
+    11
+   ],
+   [
+    "adjective",
+    "weary",
+    35725,
+    null,
+    null,
+    "adjective-reserve",
+    12
+   ],
+   [
+    "adjective",
+    "wicked",
+    26395,
+    null,
+    null,
+    "adjective-reserve",
+    13
+   ],
+   [
+    "adjective",
+    "ugly",
+    19513,
+    null,
+    null,
+    "adjective-reserve",
+    14
+   ],
+   [
+    "adjective",
+    "vivid",
+    24863,
+    null,
+    null,
+    "adjective-reserve",
+    15
+   ],
+   [
+    "adjective",
+    "vague",
+    21248,
+    null,
+    null,
+    "adjective-reserve",
+    16
+   ],
+   [
+    "adjective",
+    "rapid",
+    5233,
+    null,
+    null,
+    "adjective-reserve",
+    17
+   ],
+   [
+    "adjective",
+    "rigid",
+    16572,
+    null,
+    null,
+    "adjective-reserve",
+    18
+   ],
+   [
+    "adjective",
+    "clever",
+    19080,
+    null,
+    null,
+    "adjective-reserve",
+    19
+   ],
+   [
+    "noun",
+    "soldier",
+    15796,
+    "soldiers",
+    9647,
+    "ordinary-reserve",
+    0
+   ],
+   [
+    "noun",
+    "sailor",
+    45758,
+    "sailors",
+    35089,
+    "ordinary-reserve",
+    1
+   ],
+   [
+    "noun",
+    "priest",
+    14959,
+    "priests",
+    24061,
+    "ordinary-reserve",
+    2
+   ],
+   [
+    "noun",
+    "knight",
+    30605,
+    "knights",
+    44773,
+    "ordinary-reserve",
+    3
+   ],
+   [
+    "noun",
+    "onion",
+    21635,
+    "onions",
+    27408,
+    "ordinary-reserve",
+    4
+   ],
+   [
+    "noun",
+    "carrot",
+    47215,
+    "carrots",
+    39033,
+    "ordinary-reserve",
+    5
+   ],
+   [
+    "noun",
+    "pirate",
+    42404,
+    "pirates",
+    44545,
+    "ordinary-reserve",
+    6
+   ],
+   [
+    "noun",
+    "tourist",
+    22777,
+    "tourists",
+    24359,
+    "ordinary-reserve",
+    7
+   ],
+   [
+    "noun",
+    "author",
+    2488,
+    "authors",
+    4477,
+    "new-list",
+    0
+   ],
+   [
+    "noun",
+    "bishop",
+    29417,
+    "bishops",
+    39180,
+    "new-list",
+    2
+   ],
+   [
+    "noun",
+    "dancer",
+    42411,
+    "dancers",
+    39576,
+    "new-list",
+    6
+   ],
+   [
+    "noun",
+    "duck",
+    27985,
+    "ducks",
+    46495,
+    "new-list",
+    9
+   ],
+   [
+    "noun",
+    "goat",
+    23244,
+    "goats",
+    36507,
+    "new-list",
+    12
+   ],
+   [
+    "noun",
+    "guitar",
+    12609,
+    "guitars",
+    47087,
+    "new-list",
+    13
+   ],
+   [
+    "noun",
+    "hunter",
+    32290,
+    "hunters",
+    35041,
+    "new-list",
+    15
+   ],
+   [
+    "noun",
+    "lawyer",
+    11115,
+    "lawyers",
+    16099,
+    "new-list",
+    17
+   ],
+   [
+    "noun",
+    "monk",
+    35295,
+    "monks",
+    34955,
+    "new-list",
+    19
+   ],
+   [
+    "noun",
+    "nurse",
+    15339,
+    "nurses",
+    16675,
+    "new-list",
+    20
+   ],
+   [
+    "noun",
+    "painter",
+    27343,
+    "painters",
+    41472,
+    "new-list",
+    22
+   ],
+   [
+    "noun",
+    "prince",
+    24012,
+    "princes",
+    47776,
+    "new-list",
+    27
+   ]
+  ],
+  "manifest_sha256": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+  "content_sha256": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+  "expected_file_sha256": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a"
+ },
+ "post_write": {
+  "file_sha256": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a",
+  "bytes_equal_pre_verified_payload": true,
+  "content_sha256": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4"
+ },
+ "logs": [
+  "froze 40 cues and 90720 condition-tagged keys to /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/025-nounness-direction-intervention/confirmation-v1.json (content sha256 6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4, file sha256 54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a); commit it by hand and stop for the freeze review before lock"
+ ],
+ "config": "production"
+}

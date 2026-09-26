@@ -1,0 +1,2065 @@
+{
+ "file_sha256": "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a",
+ "file_size": 4123258,
+ "content_sha256_recorded": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+ "content_sha256_recomputed": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+ "file_is_canonical_json_plus_newline": true,
+ "manifest_sha256_recorded": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+ "manifest_sha256_recomputed": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+ "top_level_keys": [
+  "blocked",
+  "candidates",
+  "conditions",
+  "configuration",
+  "content_sha256",
+  "counts",
+  "cues",
+  "design",
+  "expected_picks",
+  "experiment",
+  "exposed_frame_ids",
+  "kind",
+  "manifest",
+  "manifest_sha256",
+  "model",
+  "picks",
+  "picks_match_expected",
+  "plan",
+  "reference_cue_ids",
+  "rejected",
+  "rules",
+  "schema_version",
+  "sources"
+ ],
+ "experiment": "025",
+ "schema_version": 1,
+ "design": {
+  "commit": "c0885e5",
+  "correction": "26c9925",
+  "path": "docs/superpowers/specs/2026-09-26-experiment-025-nounness-direction-intervention-design.md",
+  "revision": 1
+ },
+ "plan": {
+  "commit": "7d90d28",
+  "path": "docs/superpowers/plans/2026-09-26-experiment-025-nounness-direction-intervention-plan.md",
+  "revision": 1
+ },
+ "model": {
+  "model_id": "EleutherAI/pythia-70m-deduped",
+  "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+ },
+ "model_matches_pinned_spec": true,
+ "design_new_list": {
+  "n": 39,
+  "words": [
+   "author",
+   "baker",
+   "bishop",
+   "camel",
+   "carpet",
+   "clerk",
+   "dancer",
+   "dolphin",
+   "donkey",
+   "duck",
+   "eagle",
+   "frog",
+   "goat",
+   "guitar",
+   "hammer",
+   "hunter",
+   "ladder",
+   "lawyer",
+   "mirror",
+   "monk",
+   "nurse",
+   "owl",
+   "painter",
+   "parrot",
+   "pencil",
+   "pillow",
+   "planet",
+   "prince",
+   "queen",
+   "robot",
+   "rocket",
+   "shark",
+   "singer",
+   "snake",
+   "tiger",
+   "tractor",
+   "violin",
+   "whale",
+   "wizard"
+  ],
+  "alphabetical": true
+ },
+ "design_picks": {
+  "adjective": [
+   "anxious",
+   "cheerful",
+   "curious",
+   "jealous",
+   "lonely",
+   "nasty",
+   "careful",
+   "careless",
+   "famous",
+   "friendly",
+   "gorgeous",
+   "hungry",
+   "weary",
+   "wicked",
+   "ugly",
+   "vivid",
+   "vague",
+   "rapid",
+   "rigid",
+   "clever"
+  ],
+  "noun": [
+   "soldier",
+   "sailor",
+   "priest",
+   "knight",
+   "onion",
+   "carrot",
+   "pirate",
+   "tourist",
+   "author",
+   "bishop",
+   "dancer",
+   "duck",
+   "goat",
+   "guitar",
+   "hunter",
+   "lawyer",
+   "monk",
+   "nurse",
+   "painter",
+   "prince"
+  ]
+ },
+ "plan_patch_path_keys": [
+  "cardinal-009-1|an|271",
+  "quantifier-009-1|least|1878",
+  "coordinated-adjective-009-1|black|2806",
+  "quantifier-new-2|he|344"
+ ],
+ "config_expected_equals_file": true,
+ "config_diff": {},
+ "threshold_derived": 27,
+ "tail_27": {
+  "exact": "5288280983/274877906944",
+  "value": 0.01923865414210013
+ },
+ "tail_26": 0.0403452338759962,
+ "conditions_equal": true,
+ "n_conditions": 21,
+ "n_outcome_bearing": 16,
+ "pool": {
+  "n_nouns": 80,
+  "n_scorable_single_token": 79,
+  "n_frames": 108,
+  "multi_token_nouns": [
+   [
+    "peach",
+    [
+     759,
+     607
+    ],
+    [
+     759,
+     3844
+    ]
+   ]
+  ],
+  "reference_ids": {
+   "cardinal": 581,
+   "coordinated-adjective": 581,
+   "quantifier": 1016
+  }
+ },
+ "f024_file_sha256": "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60",
+ "f024_content_recomputes": true,
+ "f024_content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+ "f020_file_sha256": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+ "f020_content_recomputes": true,
+ "frame_ids_equal_file": true,
+ "frame_ids_equal_024": true,
+ "frame_ids_equal_020": true,
+ "frame_ids_unique": true,
+ "reference_ids_equal_file": true,
+ "frames_match_020_exposed_prompts": {
+  "prompts": 2592,
+  "mismatches": 0
+ },
+ "exclusion_sizes": {
+  "earlier_cues": 391,
+  "target_forms": 161,
+  "prior_nouns": 48,
+  "frame_tokens": 316
+ },
+ "exclusion_parts": {
+  "024_exclusion_cue_token_ids": 351,
+  "024_cues": 40,
+  "024_cues_already_in_exclusion": 0,
+  "020_prior_nouns": 24,
+  "020_prior_noun_keys": [
+   "anomaly",
+   "arch",
+   "artery",
+   "ash",
+   "barrel",
+   "batch",
+   "battery",
+   "boundary",
+   "branch",
+   "brick",
+   "candle",
+   "category",
+   "cavity",
+   "colony",
+   "crash",
+   "curtain",
+   "flash",
+   "gallery",
+   "magnet",
+   "pillar",
+   "puzzle",
+   "sketch",
+   "statue",
+   "switch"
+  ]
+ },
+ "exclusion_equal_file": {
+  "earlier_cues": true,
+  "target_forms": true,
+  "prior_nouns": true,
+  "frame_tokens": true
+ },
+ "exclusion_sha_recomputes": {
+  "earlier_cues": true,
+  "target_forms": true,
+  "prior_nouns": true,
+  "frame_tokens": true
+ },
+ "exclusion_file_keys": [
+  "earlier_cues",
+  "frame_tokens",
+  "prior_nouns",
+  "target_forms"
+ ],
+ "target_equals_024_committed_target_noun_form_ids": true,
+ "frame_tokens_equal_024_committed_frame_token_ids": true,
+ "statue_barrel": {
+  "statue": {
+   "ids": [
+    23957,
+    38490
+   ],
+   "in_prior": true,
+   "in_other_sets": {
+    "earlier_cues": [],
+    "target_forms": [],
+    "frame_tokens": []
+   }
+  },
+  "barrel": {
+   "ids": [
+    15474,
+    33545
+   ],
+   "in_prior": true,
+   "in_other_sets": {
+    "earlier_cues": [],
+    "target_forms": [],
+    "frame_tokens": []
+   }
+  }
+ },
+ "exposed_frame_cue_ids_subset_of_earlier": true,
+ "020_exposed_token_ids_subset_of_earlier": true,
+ "020_fresh_cues_subset_of_earlier": true,
+ "022_cues_subset_of_earlier": true,
+ "023_cues_subset_of_earlier": true,
+ "tokenizer": {
+  "class": "GPTNeoXTokenizer",
+  "name_or_path": "EleutherAI/pythia-70m-deduped",
+  "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+  "tokenizer_json_sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624"
+ },
+ "lists": {
+  "adjective_reserves": [
+   "anxious",
+   "cheerful",
+   "curious",
+   "jealous",
+   "lonely",
+   "nasty",
+   "careful",
+   "careless",
+   "famous",
+   "friendly",
+   "gorgeous",
+   "hungry",
+   "weary",
+   "wicked",
+   "ugly",
+   "vivid",
+   "vague",
+   "rapid",
+   "rigid",
+   "clever",
+   "fuzzy",
+   "latest",
+   "earliest"
+  ],
+  "ordinary_reserves": [
+   [
+    "soldier",
+    "soldiers"
+   ],
+   [
+    "sailor",
+    "sailors"
+   ],
+   [
+    "priest",
+    "priests"
+   ],
+   [
+    "knight",
+    "knights"
+   ],
+   [
+    "onion",
+    "onions"
+   ],
+   [
+    "carrot",
+    "carrots"
+   ],
+   [
+    "pirate",
+    "pirates"
+   ],
+   [
+    "tourist",
+    "tourists"
+   ],
+   [
+    "statue",
+    "statues"
+   ]
+  ]
+ },
+ "candidates_equal_file": true,
+ "new_list_plurals_are_plus_s": true,
+ "route_mismatch": [],
+ "per_list_counts": {
+  "adjective-reserve": {
+   "candidates": 23,
+   "rejected": 0,
+   "eligible": 23,
+   "picked": 20,
+   "unpicked_eligible": 3
+  },
+  "ordinary-reserve": {
+   "candidates": 9,
+   "rejected": 1,
+   "eligible": 8,
+   "picked": 8,
+   "unpicked_eligible": 0
+  },
+  "new-list": {
+   "candidates": 39,
+   "rejected": 22,
+   "eligible": 17,
+   "picked": 12,
+   "unpicked_eligible": 5
+  }
+ },
+ "my_picks": {
+  "adjective": [
+   "anxious",
+   "cheerful",
+   "curious",
+   "jealous",
+   "lonely",
+   "nasty",
+   "careful",
+   "careless",
+   "famous",
+   "friendly",
+   "gorgeous",
+   "hungry",
+   "weary",
+   "wicked",
+   "ugly",
+   "vivid",
+   "vague",
+   "rapid",
+   "rigid",
+   "clever"
+  ],
+  "noun": [
+   "soldier",
+   "sailor",
+   "priest",
+   "knight",
+   "onion",
+   "carrot",
+   "pirate",
+   "tourist",
+   "author",
+   "bishop",
+   "dancer",
+   "duck",
+   "goat",
+   "guitar",
+   "hunter",
+   "lawyer",
+   "monk",
+   "nurse",
+   "painter",
+   "prince"
+  ]
+ },
+ "my_picks_equal_design": true,
+ "cues_equal_file_exactly": true,
+ "cue_table": [
+  [
+   "adjective",
+   "anxious",
+   20138,
+   null,
+   null,
+   "adjective-reserve",
+   0
+  ],
+  [
+   "adjective",
+   "cheerful",
+   39567,
+   null,
+   null,
+   "adjective-reserve",
+   1
+  ],
+  [
+   "adjective",
+   "curious",
+   14338,
+   null,
+   null,
+   "adjective-reserve",
+   2
+  ],
+  [
+   "adjective",
+   "jealous",
+   23327,
+   null,
+   null,
+   "adjective-reserve",
+   3
+  ],
+  [
+   "adjective",
+   "lonely",
+   25106,
+   null,
+   null,
+   "adjective-reserve",
+   4
+  ],
+  [
+   "adjective",
+   "nasty",
+   26321,
+   null,
+   null,
+   "adjective-reserve",
+   5
+  ],
+  [
+   "adjective",
+   "careful",
+   10182,
+   null,
+   null,
+   "adjective-reserve",
+   6
+  ],
+  [
+   "adjective",
+   "careless",
+   48292,
+   null,
+   null,
+   "adjective-reserve",
+   7
+  ],
+  [
+   "adjective",
+   "famous",
+   8530,
+   null,
+   null,
+   "adjective-reserve",
+   8
+  ],
+  [
+   "adjective",
+   "friendly",
+   11453,
+   null,
+   null,
+   "adjective-reserve",
+   9
+  ],
+  [
+   "adjective",
+   "gorgeous",
+   23535,
+   null,
+   null,
+   "adjective-reserve",
+   10
+  ],
+  [
+   "adjective",
+   "hungry",
+   18254,
+   null,
+   null,
+   "adjective-reserve",
+   11
+  ],
+  [
+   "adjective",
+   "weary",
+   35725,
+   null,
+   null,
+   "adjective-reserve",
+   12
+  ],
+  [
+   "adjective",
+   "wicked",
+   26395,
+   null,
+   null,
+   "adjective-reserve",
+   13
+  ],
+  [
+   "adjective",
+   "ugly",
+   19513,
+   null,
+   null,
+   "adjective-reserve",
+   14
+  ],
+  [
+   "adjective",
+   "vivid",
+   24863,
+   null,
+   null,
+   "adjective-reserve",
+   15
+  ],
+  [
+   "adjective",
+   "vague",
+   21248,
+   null,
+   null,
+   "adjective-reserve",
+   16
+  ],
+  [
+   "adjective",
+   "rapid",
+   5233,
+   null,
+   null,
+   "adjective-reserve",
+   17
+  ],
+  [
+   "adjective",
+   "rigid",
+   16572,
+   null,
+   null,
+   "adjective-reserve",
+   18
+  ],
+  [
+   "adjective",
+   "clever",
+   19080,
+   null,
+   null,
+   "adjective-reserve",
+   19
+  ],
+  [
+   "noun",
+   "soldier",
+   15796,
+   "soldiers",
+   9647,
+   "ordinary-reserve",
+   0
+  ],
+  [
+   "noun",
+   "sailor",
+   45758,
+   "sailors",
+   35089,
+   "ordinary-reserve",
+   1
+  ],
+  [
+   "noun",
+   "priest",
+   14959,
+   "priests",
+   24061,
+   "ordinary-reserve",
+   2
+  ],
+  [
+   "noun",
+   "knight",
+   30605,
+   "knights",
+   44773,
+   "ordinary-reserve",
+   3
+  ],
+  [
+   "noun",
+   "onion",
+   21635,
+   "onions",
+   27408,
+   "ordinary-reserve",
+   4
+  ],
+  [
+   "noun",
+   "carrot",
+   47215,
+   "carrots",
+   39033,
+   "ordinary-reserve",
+   5
+  ],
+  [
+   "noun",
+   "pirate",
+   42404,
+   "pirates",
+   44545,
+   "ordinary-reserve",
+   6
+  ],
+  [
+   "noun",
+   "tourist",
+   22777,
+   "tourists",
+   24359,
+   "ordinary-reserve",
+   7
+  ],
+  [
+   "noun",
+   "author",
+   2488,
+   "authors",
+   4477,
+   "new-list",
+   0
+  ],
+  [
+   "noun",
+   "bishop",
+   29417,
+   "bishops",
+   39180,
+   "new-list",
+   2
+  ],
+  [
+   "noun",
+   "dancer",
+   42411,
+   "dancers",
+   39576,
+   "new-list",
+   6
+  ],
+  [
+   "noun",
+   "duck",
+   27985,
+   "ducks",
+   46495,
+   "new-list",
+   9
+  ],
+  [
+   "noun",
+   "goat",
+   23244,
+   "goats",
+   36507,
+   "new-list",
+   12
+  ],
+  [
+   "noun",
+   "guitar",
+   12609,
+   "guitars",
+   47087,
+   "new-list",
+   13
+  ],
+  [
+   "noun",
+   "hunter",
+   32290,
+   "hunters",
+   35041,
+   "new-list",
+   15
+  ],
+  [
+   "noun",
+   "lawyer",
+   11115,
+   "lawyers",
+   16099,
+   "new-list",
+   17
+  ],
+  [
+   "noun",
+   "monk",
+   35295,
+   "monks",
+   34955,
+   "new-list",
+   19
+  ],
+  [
+   "noun",
+   "nurse",
+   15339,
+   "nurses",
+   16675,
+   "new-list",
+   20
+  ],
+  [
+   "noun",
+   "painter",
+   27343,
+   "painters",
+   41472,
+   "new-list",
+   22
+  ],
+  [
+   "noun",
+   "prince",
+   24012,
+   "princes",
+   47776,
+   "new-list",
+   27
+  ]
+ ],
+ "cue_key_sets": [
+  [
+   "plural",
+   "plural_token_id",
+   "rank",
+   "source",
+   "stratum",
+   "token_id",
+   "word"
+  ],
+  [
+   "rank",
+   "source",
+   "stratum",
+   "token_id",
+   "word"
+  ]
+ ],
+ "picks_fields_equal_design": true,
+ "picked_ids": {
+  "n_forms": 60,
+  "distinct": 60,
+  "in_any_exclusion": []
+ },
+ "rejections": [
+  {
+   "list": "ordinary-reserve",
+   "rank": 8,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "statue",
+     "file": {
+      "kind": "blocked",
+      "id": 23957,
+      "named": [
+       "prior_nouns"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 23957,
+      "hits": [
+       "prior_nouns"
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "statues",
+     "file": {
+      "kind": "blocked",
+      "id": 38490,
+      "named": [
+       "prior_nouns"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 38490,
+      "hits": [
+       "prior_nouns"
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "statue: token id 23957: a form of a noun of 020's confirmation list (read by 021); statues: token id 38490: a form of a noun of 020's confirmation list (read by 021)"
+  },
+  {
+   "list": "new-list",
+   "rank": 1,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "baker",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       270,
+       4584
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "bakers",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       270,
+       7380
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "baker: 2 tokens with a leading space; bakers: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 3,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "camel",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 46493
+     },
+     "agree": true
+    },
+    {
+     "form": "camels",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       4049,
+       1241
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "camel: eligible; camels: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 4,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "carpet",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 23656
+     },
+     "agree": true
+    },
+    {
+     "form": "carpets",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       26918,
+       1507
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "carpet: eligible; carpets: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 5,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "clerk",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 21334
+     },
+     "agree": true
+    },
+    {
+     "form": "clerks",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       31557,
+       661
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "clerk: eligible; clerks: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 7,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "dolphin",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       277,
+       41178
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "dolphins",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       277,
+       35706
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "dolphin: 2 tokens with a leading space; dolphins: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 8,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "donkey",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 49695
+     },
+     "agree": true
+    },
+    {
+     "form": "donkeys",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       1053,
+       12305
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "donkey: eligible; donkeys: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 10,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "eagle",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 42484
+     },
+     "agree": true
+    },
+    {
+     "form": "eagles",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       299,
+       23044
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "eagle: eligible; eagles: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 11,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "frog",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 40096
+     },
+     "agree": true
+    },
+    {
+     "form": "frogs",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       8954,
+       5943
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "frog: eligible; frogs: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 14,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "hammer",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 24627
+     },
+     "agree": true
+    },
+    {
+     "form": "hammers",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       288,
+       42560
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "hammer: eligible; hammers: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 16,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "ladder",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 23465
+     },
+     "agree": true
+    },
+    {
+     "form": "ladders",
+     "file": {
+      "kind": "multi",
+      "n": 3
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 3,
+      "ids": [
+       298,
+       1911,
+       398
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "ladder: eligible; ladders: 3 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 18,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "mirror",
+     "file": {
+      "kind": "blocked",
+      "id": 11472,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 11472,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "mirrors",
+     "file": {
+      "kind": "blocked",
+      "id": 27034,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 27034,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "mirror: token id 11472: a form of a pool target noun; mirrors: token id 27034: a form of a pool target noun"
+  },
+  {
+   "list": "new-list",
+   "rank": 21,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "owl",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       18454,
+       77
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "owls",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       18454,
+       5200
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "owl: 2 tokens with a leading space; owls: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 23,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "parrot",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       1061,
+       8601
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "parrots",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       1061,
+       30353
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "parrot: 2 tokens with a leading space; parrots: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 24,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "pencil",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 29514
+     },
+     "agree": true
+    },
+    {
+     "form": "pencils",
+     "file": {
+      "kind": "multi",
+      "n": 3
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 3,
+      "ids": [
+       268,
+       2083,
+       3683
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "pencil: eligible; pencils: 3 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 25,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "pillow",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 30055
+     },
+     "agree": true
+    },
+    {
+     "form": "pillows",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       12575,
+       5811
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "pillow: eligible; pillows: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 26,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "planet",
+     "file": {
+      "kind": "blocked",
+      "id": 8859,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 8859,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "planets",
+     "file": {
+      "kind": "blocked",
+      "id": 20581,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 20581,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "planet: token id 8859: a form of a pool target noun; planets: token id 20581: a form of a pool target noun"
+  },
+  {
+   "list": "new-list",
+   "rank": 28,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "queen",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 19538
+     },
+     "agree": true
+    },
+    {
+     "form": "queens",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       1753,
+       561
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "queen: eligible; queens: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 30,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "rocket",
+     "file": {
+      "kind": "blocked",
+      "id": 21912,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 21912,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "rockets",
+     "file": {
+      "kind": "blocked",
+      "id": 39647,
+      "named": [
+       "target_forms"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 39647,
+      "hits": [
+       "target_forms"
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "rocket: token id 21912: a form of a pool target noun; rockets: token id 39647: a form of a pool target noun"
+  },
+  {
+   "list": "new-list",
+   "rank": 34,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "tiger",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 39121
+     },
+     "agree": true
+    },
+    {
+     "form": "tigers",
+     "file": {
+      "kind": "multi",
+      "n": 3
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 3,
+      "ids": [
+       246,
+       304,
+       398
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "tiger: eligible; tigers: 3 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 35,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "tractor",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 39463
+     },
+     "agree": true
+    },
+    {
+     "form": "tractors",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       10649,
+       641
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "tractor: eligible; tractors: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 36,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "violin",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 36608
+     },
+     "agree": true
+    },
+    {
+     "form": "violins",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       2757,
+       968
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "violin: eligible; violins: 2 tokens with a leading space"
+  },
+  {
+   "list": "new-list",
+   "rank": 38,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "wizard",
+     "file": {
+      "kind": "eligible"
+     },
+     "mine": {
+      "ok": true,
+      "kind": "eligible",
+      "id": 35589
+     },
+     "agree": true
+    },
+    {
+     "form": "wizards",
+     "file": {
+      "kind": "multi",
+      "n": 2
+     },
+     "mine": {
+      "ok": false,
+      "kind": "multi",
+      "n": 2,
+      "ids": [
+       259,
+       35426
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "wizard: eligible; wizards: 2 tokens with a leading space"
+  }
+ ],
+ "rejections_all_agree": true,
+ "n_rejected_file": 23,
+ "n_rejected_mine": 23,
+ "rejected_order_equal": true,
+ "rejected_entry_key_sets": [
+  [
+   "candidate",
+   "list",
+   "rank",
+   "reason"
+  ]
+ ],
+ "new_list_rejection_breakdown": {
+  "multi_token_entries": 19,
+  "blocked_entries": [
+   [
+    "mirror/mirrors",
+    [
+     [
+      "target_forms"
+     ],
+     [
+      "target_forms"
+     ]
+    ]
+   ],
+   [
+    "planet/planets",
+    [
+     [
+      "target_forms"
+     ],
+     [
+      "target_forms"
+     ]
+    ]
+   ],
+   [
+    "rocket/rockets",
+    [
+     [
+      "target_forms"
+     ],
+     [
+      "target_forms"
+     ]
+    ]
+   ]
+  ]
+ },
+ "statue_rejection": [
+  {
+   "list": "ordinary-reserve",
+   "rank": 8,
+   "in_mine": true,
+   "in_file": true,
+   "candidate_equal": true,
+   "reason_agrees": true,
+   "details": [
+    {
+     "form": "statue",
+     "file": {
+      "kind": "blocked",
+      "id": 23957,
+      "named": [
+       "prior_nouns"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 23957,
+      "hits": [
+       "prior_nouns"
+      ]
+     },
+     "agree": true
+    },
+    {
+     "form": "statues",
+     "file": {
+      "kind": "blocked",
+      "id": 38490,
+      "named": [
+       "prior_nouns"
+      ]
+     },
+     "mine": {
+      "ok": false,
+      "kind": "blocked",
+      "id": 38490,
+      "hits": [
+       "prior_nouns"
+      ]
+     },
+     "agree": true
+    }
+   ],
+   "file_reason": "statue: token id 23957: a form of a noun of 020's confirmation list (read by 021); statues: token id 38490: a form of a noun of 020's confirmation list (read by 021)"
+  }
+ ],
+ "unpicked_eligible": {
+  "adjective-reserve": [
+   "fuzzy",
+   "latest",
+   "earliest"
+  ],
+  "new-list": [
+   "robot/robots",
+   "shark/sharks",
+   "singer/singers",
+   "snake/snakes",
+   "whale/whales"
+  ]
+ },
+ "manifest": {
+  "n_mine": 90720,
+  "n_mine_unique": 90720,
+  "n_file": 90720,
+  "n_file_unique": 90720,
+  "file_sorted": true,
+  "equal_to_mine_sorted": true,
+  "only_S2_TARGET": true,
+  "all_tagged_4_fields_frozen_condition": true,
+  "untagged_file": 4320,
+  "untagged_equal_4320_prompts": true,
+  "per_condition_counts_all_4320": true,
+  "sha256_of_mine": "0e1f068b4fe792ea3d9ea23221b17bc11f6c992b14036a5b6e5ead77f24aba61",
+  "outcome_bearing_runs": 69120
+ },
+ "counts_field_equal": true,
+ "020_results_file_sha256": "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00",
+ "020_results_file_sha_matches_closure": true,
+ "020_ledger": {
+  "n": 30132,
+  "n_unique": 30132,
+  "extract_n": 30132,
+  "extract_sha256": "8258198b5750e8b2252ad99f6ad5afb4c06953a6382e54b7cdeafa4dd08b360d",
+  "digest_match": [
+   "canon_sorted",
+   "canon_as_stored"
+  ]
+ },
+ "020_confirmation": {
+  "n": 3060,
+  "S2_TARGET_equals_prompt_lists": true
+ },
+ "spent": {
+  "sizes": {
+   "020_ledger": 30132,
+   "020_confirmation": 3060,
+   "022_manifest": 3060,
+   "023_manifest": 3060,
+   "024_manifest": 4320
+  },
+  "union": 43632,
+  "sum": 43632,
+  "pairwise_overlaps": {},
+  "field_counts": {
+   "3": 43632
+  }
+ },
+ "collisions": {
+  "untagged_in_spent": 0,
+  "tagged_in_spent": 0,
+  "patch_keys_in_manifest_or_untagged": 0,
+  "patch_keys_in_spent": {
+   "cardinal-009-1|an|271": [
+    "020_ledger"
+   ],
+   "quantifier-009-1|least|1878": [
+    "020_ledger"
+   ],
+   "coordinated-adjective-009-1|black|2806": [
+    "020_ledger"
+   ],
+   "quantifier-new-2|he|344": [
+    "020_ledger"
+   ]
+  },
+  "frame_tokenid_pairs_in_spent": 0,
+  "cue_ids_ever_prompted_in_spent_keys": [],
+  "plural_ids_ever_prompted_in_spent_keys": [],
+  "words_ever_labels_in_spent_keys": []
+ },
+ "sources": {
+  "freeze_024": {
+   "content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+   "path": "experiments/024-readout-routing-nounness/confirmation-v1.json"
+  },
+  "prior_nouns_020": {
+   "file_sha256": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "nouns": [
+    "anomaly",
+    "arch",
+    "artery",
+    "ash",
+    "barrel",
+    "batch",
+    "battery",
+    "boundary",
+    "branch",
+    "brick",
+    "candle",
+    "category",
+    "cavity",
+    "colony",
+    "crash",
+    "curtain",
+    "flash",
+    "gallery",
+    "magnet",
+    "pillar",
+    "puzzle",
+    "sketch",
+    "statue",
+    "switch"
+   ],
+   "path": "experiments/020-readout-decompilation/confirmation-v1.json"
+  }
+ },
+ "sources_ok": true,
+ "rules": {
+  "deviation": "picks that differ from the design's expected picks write nothing and stop for review",
+  "earlier_cues": "its id was never used as a cue by Experiments 005–024: 024's committed freeze exclusion (005–023) plus 024's 40 cues",
+  "frame_tokens": "its id occurs nowhere in the 108 exposed frames",
+  "nouns": "a noun counts only when its singular and its plural are both eligible and distinct; for the new list the plural is the regular one",
+  "picks": "the first 20 eligible adjectives of 024's adjective reserves in list order; the first 20 eligible nouns of 024's ordinary reserves then the frozen new list, in textual order; mechanically",
+  "prior_nouns": "its id is none of the singular or plural ids of the 24 nouns of 020's committed confirmation file, which 021 read as fresh target nouns (the tightened rule: excludes statue and barrel)",
+  "score": "no nounness score is computed at the freeze, and none selects, rejects or reorders a candidate",
+  "target_nouns": "its id is none of the token ids of any pool target noun's singular or plural forms (161 ids)",
+  "word": "' ' + w is a single token of the pinned tokenizer"
+ },
+ "kind": "the fresh cues of Experiment 025, frozen from the tokenizer and the text rules alone; no model output",
+ "cue_rotation_imported": false,
+ "opened_files_under_repo": [
+  "docs/superpowers/plans/2026-09-26-experiment-025-nounness-direction-intervention-plan.md",
+  "docs/superpowers/specs/2026-09-26-experiment-025-nounness-direction-intervention-design.md",
+  "experiments/005-regular-plural-mechanism/extension-v1.json",
+  "experiments/006-low-rank-cue-decompilation/confirmation-v1.json",
+  "experiments/009-head-transport-rule/confirmation-v1.json",
+  "experiments/011-encoding-read-prospective/confirmation-v1.json",
+  "experiments/011-encoding-read-prospective/preregistration-lock.json",
+  "experiments/012-layer-correction-token-local/confirmation-v1.json",
+  "experiments/012-layer-correction-token-local/preregistration-lock.json",
+  "experiments/013-attention-paths-frozen-pattern/confirmation-v1.json",
+  "experiments/014-neuron-1987-feature/confirmation-v1.json",
+  "experiments/015-attention-pattern-token-local/confirmation-v1.json",
+  "experiments/016-frame-conditioned-qk/confirmation-v1.json",
+  "experiments/017-transport-head-pattern/confirmation-v1.json",
+  "experiments/017-transport-head-pattern/preregistration-lock.json",
+  "experiments/018-block2-concentration/confirmation-v1.json",
+  "experiments/019-block2-routing/confirmation-v1.json",
+  "experiments/020-readout-decompilation/closure.json",
+  "experiments/020-readout-decompilation/confirmation-v1.json",
+  "experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json",
+  "experiments/022-upstream-error-localization/confirmation-v1.json",
+  "experiments/023-block0-completion/confirmation-v1.json",
+  "experiments/024-readout-routing-nounness/confirmation-v1.json",
+  "experiments/025-nounness-direction-intervention/confirmation-v1.json",
+  "outputs/experiment-020/results.json",
+  "screening/behavior-candidates/manifest-v1.json",
+  "src/neural_decompiler.egg-info/METADATA",
+  "src/neural_decompiler.egg-info/PKG-INFO",
+  "src/neural_decompiler.egg-info/top_level.txt"
+ ],
+ "refused": []
+}

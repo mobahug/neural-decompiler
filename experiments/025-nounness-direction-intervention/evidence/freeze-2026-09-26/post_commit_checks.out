@@ -1,0 +1,23 @@
+{
+ "head": "57f1f989b1095708f4805c57be251b2392febc51",
+ "checks": {
+  "commit_touches_exactly_one_path": true,
+  "committed_bytes_equal_the_reviewed_file": true,
+  "content_sha256": true,
+  "the_40_cues_reconstruct_mechanically": true,
+  "the_whole_file_reconstructs_byte_for_byte": true,
+  "manifest_90720_tagged_keys_same_digest": true,
+  "spent_set_is_43632": true,
+  "zero_collision_with_spent_keys": true,
+  "zero_collision_with_patch_path_keys": true,
+  "runner_validate_passes": true,
+  "nothing_refused_was_reached": true,
+  "no_outputs_experiment_025": true,
+  "tree_clean": true
+ },
+ "validate_log": [
+  "module blobs 13 verified (024's included); 022\u2013024's committed files and 020's confirmation file verified; confirmation 6eca7024fe3f\u2026 (40 cues, 90720 condition-tagged keys); no lock installed"
+ ],
+ "refused": [],
+ "all": true
+}

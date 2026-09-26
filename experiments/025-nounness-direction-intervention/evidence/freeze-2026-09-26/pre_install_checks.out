@@ -1,0 +1,17 @@
+{
+ "head": "c765148fdb612ae249e21ef3c830e4ceb1d12dd0",
+ "checks": {
+  "head_equals_origin_equals_remote": true,
+  "tree_is_exactly_the_untracked_freeze": true,
+  "no_outputs_experiment_025": true,
+  "no_lock_or_preregistration": true,
+  "file_sha256": true,
+  "content_sha256": true,
+  "manifest_count_90720_unique": true,
+  "manifest_digest": true,
+  "no_gitattributes": true,
+  "no_active_git_hooks": true,
+  "autocrlf_unset_or_false": true
+ },
+ "all": true
+}
