@@ -86,15 +86,30 @@ directly captured L4/L5 routing, to change in the predicted direction?
    - the patch-path check on four already-executed keys. It compares a plain capture with a patched θ = 0 run, and
      the embedding hook with the block-0 residual input, bit for bit. It records equality and digests only, outside
      the ledger, the manifest and the accounting;
-   - the ledger of all 90,720 keys, then every run once, with the measurements saved first;
+   - the ledger of all 90,720 keys, then every run once, with the measurements saved first. Stage 2 executes frame by
+     frame, as 022 and 024 did; the tensors are stored in `ul.table_units` order, and the order of independent
+     forwards changes no value;
    - the accounting, and `C` recomputed from the saved `Δx3` bit for bit;
    - I1, I3 and I4 on every run, and the Level-1 identity on the 69,120 outcome-bearing runs;
-   - the result and the completed phase in one atomic write;
+   - the result, with every cue's per-condition responses, and the completed phase in one atomic write;
    - then the descriptive records.
 4. **`report`**.
 
 An I7′ or patch-path failure is an incident before the ledger. Any failure after the ledger is an incident that
-carries no result: the measurements are kept (the runs measured so far, if stage 2 itself fails), and the outcome is
-`NOT_INTERPRETABLE`.
+carries no result. The measurements are kept (if stage 2 itself fails, the runs measured so far, saved after the
+incident is on disk), and the outcome is `NOT_INTERPRETABLE`.
+
+- **What the patch-path check can and cannot show.** It checks the θ = 0 plumbing only: a patched run with the
+  model's own row reproduces the plain run, and the embedding hook equals the block-0 residual input. It cannot show
+  that a rotated vector propagates. That is shown on every run by the vector I1 gate: `d_emb + ΔE + ΔA0` against the
+  measured `Δx1`, with `d_emb` the rotated vector's change. A patch that did not land would miss I1 by orders of
+  magnitude. A pass of the check does not strengthen the scientific result.
+- **Runtime.** The estimate is about 2.5–3.5 hours on this machine: 90,720 patched forwards, the identity gates, and
+  the Level-1 identity on every run. The ladder adds about 26,000 more Level-1 evaluations after the result.
+- **The production confirm** runs through an external guarded launcher, as in 024. It must live under `evidence/`, or
+  it counts as a scientific-path change. The launcher:
+  - logs each patched run's condition, for example by mapping the replacement's digest to the lock's vectors, since
+    `run_patched` sees untagged prompt keys;
+  - keeps the four spent-key patch-path runs apart from the fresh runs.
 
 The local outputs stay in `outputs/experiment-025/`.
