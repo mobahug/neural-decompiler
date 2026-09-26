@@ -34,7 +34,7 @@ import pytest
 
 # The experiment under development: the three-digit number whose runner test is ``current``; ``None`` while no
 # experiment is open. The environment variable NEURAL_DECOMPILER_CURRENT_EXPERIMENT overrides it.
-CURRENT_EXPERIMENT: str | None = "024"
+CURRENT_EXPERIMENT: str | None = "025"
 
 TIERS = ("A", "B", "C", "D", "all")
 KINDS = ("unit", "runner", "pythia_smoke")
