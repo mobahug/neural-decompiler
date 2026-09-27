@@ -120,8 +120,8 @@ per-experiment records below give the numbers and the full citations.
   - Exploratory:
     - the pre-lock quality gate: Spearman 0.800 passed, normalized RMSE 0.623 failed;
     - the post-hoc rank diagnostic;
-    - the carried-forward E-patch result: 708/708 paired signs, but a correlation of 0.756 against the 0.90 criterion
-      (006:67–89).
+    - the carried-forward circuit result, P3's isolation fidelity: 708/708 paired signs, but a correlation of 0.756
+      against the 0.90 criterion (006:58–59, 67–89).
   - Unestablished: every confirmatory family. No lock could be written, so none was tested (006:71).
 - **007.**
   - Prospective confirmation, at criterion level only: the precondition, Y1's MAE, Y2 and Y3 passed (007:85–93).
@@ -284,7 +284,7 @@ section sorts them into the five categories.
 - **Protocol.** Confirmation set frozen before any model output (`c5d32d1`); `explore` once at `adea65f` (006:52–53). “Consequently no lock may be written and the experiment ends at Tier A.” (006:71) Calibrate, lock and confirm: NOT_RUN.
 - **Result — exploratory** (Tier A, on the pool exposed by 005). The pre-lock quality gate: Spearman 0.800 against ≥ 0.70 (pass), normalized leave-one-cue-out RMSE 0.623 against ≤ 0.50 (fail); no rank beat rank 1 by 20 % (006:67–69). “Outcome recorded as `QUALITY_GATE_FAILED`; no confirmation, no claim change (C002 stays `LOCALIZED`).” (006:71–72)
 - **Post-hoc diagnostic — exploratory.** Cue-level MAE 2.35 (r = 1) falling to 0.40 (r = 15) (006:74–77). “The diagnostic supports, but does not prove, the explanation that those variance-leading directions are poorly aligned with the downstream-relevant directions; whether a *supervised* rank ≤ 4 subspace works is an open question for the next experiment, not a conclusion of this one.” (006:79–81)
-- **Carried forward, exploratory.** Rank 4 was only about 9 % better than rank 1, against the 20 % requirement. The E-patch reached 708/708 paired signs but a correlation of 0.756, against the unchanged 0.90 criterion (006:86–89).
+- **Carried forward, exploratory.** Rank 4 was only about 9 % better than rank 1, against the 20 % requirement. The fixed circuit's isolation fidelity (P3) reached 708/708 paired signs but a correlation of 0.756, against the unchanged 0.90 criterion (006:58–59, 86–89).
 - **Label provenance.** `QUALITY_GATE_FAILED` appears in the README but not in the design's outcome list (docs/superpowers/specs/2026-09-18-experiment-006-low-rank-cue-decompilation-design.md:341–353).
 - **Hand-off.** The never-executed confirmation set is inherited “byte-for-byte as the untouched holdout of Experiment 007” (006:86–92).
 - **Evidence.** `evidence/exploration-report-2026-09-18.md`, `confirmation-v1.json`. Closed in `10c8faf`.
@@ -766,3 +766,6 @@ The pushed history is not rewritten; the mismatch is recorded here instead.
 - **`checks/independent-review-2026-09-27.md`** is the independent, read-only review of this map, of the 025
   correction and of the root README entries. Its verdict was PASS WITH NOTES, with no blocker. The file lists how
   each finding was addressed.
+- **A later correction to this map (2026-09-27).** Two lines called 006's 708/708 paired signs and its correlation of
+  0.756 an E-patch result. They are the fixed circuit's isolation fidelity, P3 (006:58–59, 86–89), and now say so.
+  The independent review of the C002 claim review found the mislabel (`../claims/reviews/`).
