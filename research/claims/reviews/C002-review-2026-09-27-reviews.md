@@ -1,9 +1,9 @@
 # Independent reviews of the C002 claim review, 2026-09-27
 
-Two separate agents reviewed [the C002 claim review](C002-review-2026-09-27.md), read-only. Each loaded no model, ran
-no phase, and changed nothing:
-- the first review read the first draft;
-- the second, a re-review, read revision 2.
+Three separate agents reviewed, read-only. Each loaded no model, ran no phase, and changed nothing:
+- the first review read the first draft of [the C002 claim review](C002-review-2026-09-27.md);
+- the second, a re-review, read revision 2;
+- the third read the edited claim file, `76b6a72`, against the review and the decision recorded at its end.
 
 Revision 2 answered the first review, and revision 3 the re-review. What was done about each finding is listed below.
 
@@ -170,9 +170,48 @@ The re-review's verified-correct items stand:
 - rulings 1, 2 and 4 applied, with no Level-3 gate checked or implied;
 - the ladder statement.
 
+## The review of the edited claim file (`76b6a72`): PASS WITH NOTES, no blocker
+
+It found that the edit applies §5 as decided. Maturity and disposition are unchanged, and the protected sections are
+byte-identical. Level 3 stays unestablished, and the E008/E017 adjustment is applied everywhere in the file. Its
+findings, with what was done in `adf08e9`; line numbers refer to `76b6a72`:
+
+1. **Should-fix: the adjustment was recorded only in the commit message.** The claim's note under the evidence table
+   pointed to the review, whose §2 types E008 and E017 differently. *Done:* the note records the decision, and the
+   review file gains its Decision section and a new status line.
+2. **Should-fix: the note under the third competing explanation dropped content.** It omitted E009 and the
+   restriction to `this`, `a` and `another`. It also replaced three source citations with evidence IDs whose rows do
+   not state the facts. *Done:* the review's citations (006:77–79, 007:102–109, 012:103–104), the pointer to E009 and
+   the token restriction are restored.
+3. **Note: E013's new-frame qualifier is wrong for 012,** whose predictions use exposed base states (012:7–9). *Done:*
+   the qualifier now names 013 and 016. The review's own §2 row had the same imprecision; its Decision section records
+   the correction.
+4. **Note: E017 had lost the review's example cue words,** the direct support for not numerals or quantifiers. *Done:*
+   restored, with their source.
+5. **Note: other departures, all accurate.** *Done:*
+   - E005 cites the full design range, 344–347;
+   - E019 states that it has no kind;
+   - the H2 note regains the blocking figure 0.128 and the review's closing reading.
+6. **Note: the alternative-explanations pointer was imprecise.** *Done:* it lists the exact entries the notes cite:
+   E005, E008–E013, E016, E017 and E019.
+
+It also judged the consequence the editor drew from the adjustment: dropping E017's line from *Contradicting evidence
+and failed tests* is correct, and nothing else needed retyping.
+
+Its verified-correct items stand:
+- exactly two original lines replaced, both in the metadata, and eleven insertion blocks;
+- the protected sections byte-identical by sha256;
+- every number of every review row kept, about 60 figures checked against their sources, and 007's table recomputed;
+- one type per row, and every artifact path and commit resolved;
+- the checker's only two failures predate the edit.
+
 ## Checks
 
 After revision 3, the checker (`../../synthesis/checks/check_source_map.py`) passes on the review: 34 quotes, 108
 citation groups, 42 commit hashes and 9 labels. Every quote also matches its cited lines exactly, with no line of
 slack. The checker passes on the corrected source map: 259 quotes, 565 citation groups, 123 commit hashes and 58 labels
 (`../../synthesis/checks/check_source_map.out`).
+
+On the edited claim file after `adf08e9`, it checks 10 quotes, 58 citation groups, 45 commit hashes and 11 labels, and
+every quote matches exactly. Its only two failures are straight-quoted section names in the unchanged Scope and
+Operational definitions lines, which were there before the edit.
