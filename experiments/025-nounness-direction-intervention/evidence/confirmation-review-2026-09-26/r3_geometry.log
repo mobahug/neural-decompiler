@@ -1,0 +1,71 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:19,  3.87it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 287.25it/s]
+{
+ "sealed_model_routes": 20,
+ "parameters_sha256_equal_lock": true,
+ "embedding_sha256_equal_lock": true,
+ "calibration_024_file_sha256_ok": true,
+ "n_noun_rows": 158,
+ "n_cue_rows": 139,
+ "mu_digests_equal_024_record": true,
+ "direction_digest_equal_lock": true,
+ "d_norm": 1.3576567483118904,
+ "d_norm_lock": 1.3576567483118904,
+ "cos_mu": 0.07838407688159266,
+ "plurality_digest_equal_lock": true,
+ "cos_d_plurality": 0.23521413845112732,
+ "cos_d_plurality_lock": 0.23521413845112732,
+ "all_cues_bitwise_equal_lock": true,
+ "failing": [],
+ "tag_map": {
+  "entries": 840,
+  "unique_digests": 840,
+  "collisions": [],
+  "spent_rows_in_map": []
+ },
+ "summary_adjective": {
+  "n": 20,
+  "s0_min": -0.30588944844486,
+  "s0_max": -0.06756898433403594,
+  "s0_mean": -0.1955700587707283,
+  "s_plus_minus_s_minus_min": 0.6399999969340494,
+  "s_plus_minus_s_minus_max": 0.6400000020975004,
+  "odd_dev_primary_max": 1.5329753022541581e-09,
+  "all_plus_raises": true,
+  "d_dot_t_hat_minus_tau_max": 6.661338147750939e-16,
+  "tau_min": 1.3227484611848597,
+  "theta_primary_deg_range": [
+   13.650144772496521,
+   13.99991896936572
+  ]
+ },
+ "summary_noun": {
+  "n": 20,
+  "s0_min": 0.06902295665137842,
+  "s0_max": 0.2852067688611917,
+  "s0_mean": 0.17320725445656207,
+  "s_plus_minus_s_minus_min": 0.6399999987355777,
+  "s_plus_minus_s_minus_max": 0.640000003052217,
+  "odd_dev_primary_max": 1.5261085173357003e-09,
+  "all_plus_raises": true,
+  "d_dot_t_hat_minus_tau_max": 8.881784197001252e-16,
+  "tau_min": 1.3273616482453356,
+  "theta_primary_deg_range": [
+   13.650896306488853,
+   13.95027619761496
+  ]
+ },
+ "rand_neutral32_max": 6.088945903037768e-09,
+ "d_dot_controls_max": 5.551115123125783e-17,
+ "guard": {
+  "refused": [],
+  "writes_here": 1,
+  "writes_elsewhere": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/j49k3whx",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2rvr3mh3/probe-source"
+  ]
+ }
+}

@@ -1,0 +1,6 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.21it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 316.10it/s]
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm_v2.py", line 638, in <module>
+    record.update({"ended_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "exit_status": status, "error": error, "events": events, "aliases": aliases,
+                                                                                                                         ^^^^^
+NameError: name 'error' is not defined. Did you mean: 'OSError'?

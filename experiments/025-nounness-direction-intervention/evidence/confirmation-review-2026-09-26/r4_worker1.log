@@ -1,0 +1,58 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:28,  2.62it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 197.70it/s]
+worker 1/2: 54 frames, threads 4, sealed 20, setup 13.1s
+  frame 1/54 cardinal-009-2 (cue_final) 39.6s; elapsed 0.9 min
+  frame 2/54 cardinal-011-2 (cue_final) 42.3s; elapsed 1.6 min
+  frame 3/54 cardinal-012-2 (cue_final) 40.9s; elapsed 2.3 min
+  frame 4/54 cardinal-013-2 (cue_final) 39.6s; elapsed 2.9 min
+  frame 5/54 cardinal-014-2 (cue_final) 41.7s; elapsed 3.6 min
+  frame 6/54 cardinal-015-2 (cue_final) 39.1s; elapsed 4.3 min
+  frame 7/54 cardinal-016-2 (cue_final) 39.2s; elapsed 4.9 min
+  frame 8/54 cardinal-016-4 (cue_final) 39.4s; elapsed 5.6 min
+  frame 9/54 cardinal-017-2 (cue_final) 40.0s; elapsed 6.3 min
+  frame 10/54 cardinal-017-4 (cue_final) 40.0s; elapsed 6.9 min
+  frame 11/54 cardinal-018-2 (cue_final) 39.9s; elapsed 7.6 min
+  frame 12/54 cardinal-018-4 (cue_final) 38.8s; elapsed 8.2 min
+  frame 13/54 cardinal-019-2 (cue_final) 38.9s; elapsed 8.9 min
+  frame 14/54 cardinal-019-4 (cue_final) 39.3s; elapsed 9.5 min
+  frame 15/54 cardinal-019-6 (cue_final) 39.0s; elapsed 10.2 min
+  frame 16/54 cardinal-2 (cue_final) 38.2s; elapsed 10.8 min
+  frame 17/54 cardinal-fresh-2 (cue_final) 38.8s; elapsed 11.5 min
+  frame 18/54 cardinal-new-2 (cue_final) 41.1s; elapsed 12.1 min
+  frame 19/54 quantifier-009-2 (cue_final) 40.1s; elapsed 12.8 min
+  frame 20/54 quantifier-011-2 (cue_final) 50.9s; elapsed 13.7 min
+  frame 21/54 quantifier-012-2 (cue_final) 52.9s; elapsed 14.5 min
+  frame 22/54 quantifier-013-2 (cue_final) 45.6s; elapsed 15.3 min
+  frame 23/54 quantifier-014-2 (cue_final) 45.6s; elapsed 16.1 min
+  frame 24/54 quantifier-015-2 (cue_final) 49.6s; elapsed 16.9 min
+  frame 25/54 quantifier-016-2 (cue_final) 45.2s; elapsed 17.6 min
+  frame 26/54 quantifier-016-4 (cue_final) 41.4s; elapsed 18.3 min
+  frame 27/54 quantifier-017-2 (cue_final) 41.5s; elapsed 19.0 min
+  frame 28/54 quantifier-017-4 (cue_final) 40.4s; elapsed 19.7 min
+  frame 29/54 quantifier-018-2 (cue_final) 40.1s; elapsed 20.4 min
+  frame 30/54 quantifier-018-4 (cue_final) 44.3s; elapsed 21.1 min
+  frame 31/54 quantifier-019-2 (cue_final) 42.0s; elapsed 21.8 min
+  frame 32/54 quantifier-019-4 (cue_final) 48.3s; elapsed 22.6 min
+  frame 33/54 quantifier-019-6 (cue_final) 46.2s; elapsed 23.4 min
+  frame 34/54 quantifier-2 (cue_final) 42.9s; elapsed 24.1 min
+  frame 35/54 quantifier-fresh-2 (cue_final) 41.5s; elapsed 24.8 min
+  frame 36/54 quantifier-new-2 (cue_final) 45.9s; elapsed 25.6 min
+  frame 37/54 coordinated-adjective-009-2 (coordinated) 80.7s; elapsed 26.9 min
+  frame 38/54 coordinated-adjective-011-2 (coordinated) 80.6s; elapsed 28.2 min
+  frame 39/54 coordinated-adjective-012-2 (coordinated) 77.8s; elapsed 29.5 min
+  frame 40/54 coordinated-adjective-013-2 (coordinated) 81.4s; elapsed 30.9 min
+  frame 41/54 coordinated-adjective-014-2 (coordinated) 76.1s; elapsed 32.2 min
+  frame 42/54 coordinated-adjective-015-2 (coordinated) 73.7s; elapsed 33.4 min
+  frame 43/54 coordinated-adjective-016-2 (coordinated) 76.1s; elapsed 34.7 min
+  frame 44/54 coordinated-adjective-016-4 (coordinated) 75.4s; elapsed 35.9 min
+  frame 45/54 coordinated-adjective-017-2 (coordinated) 73.0s; elapsed 37.1 min
+  frame 46/54 coordinated-adjective-017-4 (coordinated) 80.1s; elapsed 38.5 min
+  frame 47/54 coordinated-adjective-018-2 (coordinated) 86.4s; elapsed 39.9 min
+  frame 48/54 coordinated-adjective-018-4 (coordinated) 82.9s; elapsed 41.3 min
+  frame 49/54 coordinated-adjective-019-2 (coordinated) 92.8s; elapsed 42.8 min
+  frame 50/54 coordinated-adjective-019-4 (coordinated) 121.1s; elapsed 44.9 min
+  frame 51/54 coordinated-adjective-019-6 (coordinated) 101.4s; elapsed 46.6 min
+  frame 52/54 coordinated-adjective-2 (coordinated) 98.7s; elapsed 48.2 min
+  frame 53/54 coordinated-adjective-fresh-2 (coordinated) 78.8s; elapsed 49.5 min
+  frame 54/54 coordinated-adjective-new-2 (coordinated) 80.7s; elapsed 50.9 min
+done {"worker": 1, "n_workers": 2, "runs": 45360, "swaps": 19440, "lexicon_check": {"base_equal_pm_lexicon": true}, "vector_factors_max_diff": 0.0, "minutes": 50.859037935733795, "threads": 4, "guard": {"refused": [], "writes_here": 1, "writes_elsewhere": ["/dev/null", "/dev/null", "/dev/null", "/dev/null", "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/mf8ghcxb", "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2fautkdf/probe-source"]}, "chain_ref": {"cardinal": 581, "coordinated-adjective": 581, "quantifier": 1016}, "pool_ref": {"cardinal": 581, "coordinated-adjective": 581, "quantifier": 1016}}
+exit 0

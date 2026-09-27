@@ -1,0 +1,47 @@
+{
+ "smoke_keys": {
+  "in_020_ledger": true,
+  "in_025_manifest": false,
+  "are_patch_path_keys": false
+ },
+ "reference_row_frame_alignment": {
+  "frames_tested": 108,
+  "own_frame_nearest": 24,
+  "min_gap": -0.2479815355431642,
+  "median_gap": -0.05683313642477317
+ },
+ "report_preview": {
+  "label_line": "**`CAUSAL_EFFECT_NOT_ESTABLISHED`** — A failed: the +nounness intervention did not consistently produce greater frozen-readout approximation error than the −nounness intervention.",
+  "table": [
+   "| A | 26 | 40 | 27 | **FAIL** | 20 | 6 |",
+   "| B | 23 | 40 | 27 | **FAIL** | 20 | 3 |",
+   "| G | 37 | 40 | 27 | **PASS** | 20 | 17 |"
+  ],
+  "concentration_line": [
+   "- **Strata**: the positive counts of A, B and G are reported for the 20 adjectives and the 20 ordinary singular nouns separately; they cannot change the label; if a global PASS is strongly concentrated in one stratum the final claim must say so (reporting trigger: a stratum below 14 of 20)",
+   "- No stratum is below its reporting trigger on a globally passing statistic."
+  ],
+  "says_no_causal_effect": false,
+  "chars": 7836,
+  "validity_line": [
+   "- I1 max 2.1541116871581778e-05 (at knight|cardinal-017-3|noun+0.16), I3 max 4.35303313102457e-05 (at painter|quantifier-016-4|rand5-0.32), I4 max 9.004566446524365e-05 (at lonely|cardinal-new-2|rand6-0.32), level1_outcome_bearing max 0.011862701913658569 (at knight|cardinal-012-1|rand4+0.32)"
+  ],
+  "c_line": [
+   "- C recomputed from the saved Δx3: bit for bit True over 90720 runs"
+  ],
+  "patch_path_line": [
+   "- The patch-path check: passed True"
+  ]
+ },
+ "guard": {
+  "refused": [],
+  "writes_here": 1,
+  "writes_elsewhere": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/p7o0p711"
+  ]
+ }
+}

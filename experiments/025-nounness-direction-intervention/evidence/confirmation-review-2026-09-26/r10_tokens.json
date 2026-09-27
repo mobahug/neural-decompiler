@@ -1,0 +1,62 @@
+{
+ "cues": 40,
+ "mismatches": [],
+ "strata": {
+  "adjective": [
+   "anxious",
+   "cheerful",
+   "curious",
+   "jealous",
+   "lonely",
+   "nasty",
+   "careful",
+   "careless",
+   "famous",
+   "friendly",
+   "gorgeous",
+   "hungry",
+   "weary",
+   "wicked",
+   "ugly",
+   "vivid",
+   "vague",
+   "rapid",
+   "rigid",
+   "clever"
+  ],
+  "noun": [
+   "soldier",
+   "sailor",
+   "priest",
+   "knight",
+   "onion",
+   "carrot",
+   "pirate",
+   "tourist",
+   "author",
+   "bishop",
+   "dancer",
+   "duck",
+   "goat",
+   "guitar",
+   "hunter",
+   "lawyer",
+   "monk",
+   "nurse",
+   "painter",
+   "prince"
+  ]
+ },
+ "guard": {
+  "refused": [],
+  "writes_here": 0,
+  "writes_elsewhere": [
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/fshrt_4v",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpgexnb_vd/probe-source",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null"
+  ]
+ }
+}

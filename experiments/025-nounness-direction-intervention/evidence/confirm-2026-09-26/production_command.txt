@@ -1,0 +1,5 @@
+cwd: /Users/gaborhorvath-ulenius/myprojects/neural-decompiler
+command: caffeinate -i -s env CONFIRM025_MODE=production CONFIRM025_LOCK=8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb HF_HUB_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm_v3.py
+launcher_sha256_before: 58b760bea9d8a7bf66bef4352deb5c7153f7aea46c264de02f49c9ab96d1e307
+head: 6f72d7d8afcaa079ee38256b7c1250352b1b1bdd
+launched_at_utc: 2026-09-26T19:23:54Z

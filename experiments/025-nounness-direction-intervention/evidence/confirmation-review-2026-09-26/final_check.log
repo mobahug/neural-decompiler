@@ -1,0 +1,53 @@
+date_utc 2026-09-27T09:05:47Z
+head 6f72d7d8afcaa079ee38256b7c1250352b1b1bdd
+origin_main 6f72d7d8afcaa079ee38256b7c1250352b1b1bdd
+status_porcelain_begin
+status_porcelain_end
+outputs_025_listing
+total 1772712
+drwxr-xr-x@  6 gaborhorvath-ulenius  staff        192 Sep 27 00:12 .
+drwxr-xr-x@ 27 gaborhorvath-ulenius  staff        864 Sep 26 19:51 ..
+-rw-r--r--@  1 gaborhorvath-ulenius  staff      83623 Sep 26 19:51 candidate-lock.json
+-rw-r--r--@  1 gaborhorvath-ulenius  staff       9981 Sep 26 19:51 candidate-preregistration.md
+-rw-------@  1 gaborhorvath-ulenius  staff    4405948 Sep 27 00:12 results.json
+-rw-r--r--@  1 gaborhorvath-ulenius  staff  898673151 Sep 26 23:20 stage2-measurements.pt
+outputs_025_sha256
+1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-lock.json
+e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-preregistration.md
+c827bb69292f11ff6baf2194b4d8e34ccb0fbad9058c76d1abf2a3581724efb4  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/results.json
+87284bddfba16a1b7709d7d33f98aa1a0898b1d85767956a524d2950d80a7788  /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/stage2-measurements.pt
+outputs_025_times_utc (birth | mtime | ctime)
+/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-lock.json | 2026-09-26T16:51:50 | 2026-09-26T16:51:50 | 2026-09-26T16:51:50
+/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/candidate-preregistration.md | 2026-09-26T16:51:50 | 2026-09-26T16:51:50 | 2026-09-26T16:51:50
+/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/results.json | 2026-09-26T21:12:42 | 2026-09-26T21:12:42 | 2026-09-26T21:12:42
+/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/stage2-measurements.pt | 2026-09-26T20:20:12 | 2026-09-26T20:20:15 | 2026-09-26T20:20:15
+report_md_exists: no
+run_records_times_utc (mtime)
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/confirm.sentinel | 2026-09-26T19:23:57
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm.py | 2026-09-26T18:59:57
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm_v2.py | 2026-09-26T19:09:26
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm_v3.py | 2026-09-26T19:11:11
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/production.exit | 2026-09-26T21:12:44
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/production.log | 2026-09-26T21:12:44
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/production_command.txt | 2026-09-26T19:23:54
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/production_run.json | 2026-09-26T21:12:44
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/production_runs.jsonl | 2026-09-26T20:20:12
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/rehearsal_run.json | 2026-09-26T19:12:31
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/rehearsal_v1.log | 2026-09-26T19:00:14
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/rehearsal_v1_run.json | 2026-09-26T19:00:14
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/rehearsal_v3.log | 2026-09-26T19:12:31
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/shell_error_production.exit | 2026-09-26T19:23:09
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/shell_error_production.log | 2026-09-26T19:23:09
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/shell_error_production_command.txt | 2026-09-26T19:23:09
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke.log | 2026-09-26T19:11:39
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_reference.json | 2026-09-26T19:10:11
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_reference.log | 2026-09-26T19:10:11
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_reference.pt | 2026-09-26T19:10:11
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_reference.py | 2026-09-26T19:08:06
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_run.json | 2026-09-26T19:11:39
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/smoke_v2_crashed.log | 2026-09-26T19:10:35
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/verify_confirm.json | 2026-09-26T21:29:36
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/verify_confirm.log | 2026-09-26T21:29:36
+/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/verify_confirm.py | 2026-09-26T21:13:53
+sentinel 58b760bea9d8a7bf66bef4352deb5c7153f7aea46c264de02f49c9ab96d1e307
+launcher_v3 58b760bea9d8a7bf66bef4352deb5c7153f7aea46c264de02f49c9ab96d1e307

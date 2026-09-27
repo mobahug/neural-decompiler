@@ -1,7 +1,17 @@
 # Experiment 025: Does Moving the Cue Embedding Along the Frozen Nounness Direction Causally Change the Frozen Readout Error and the Attention Routing?
 
-**Status: LOCKED. Confirm and report have not run; no fresh scientific prompt has run, and no fresh measurement
-exists.** The next step is the one-shot `confirm`, only when separately authorized.
+**Status: CONFIRMED. The one confirmation ran and was independently reviewed; the report and the closure follow.**
+- **The official result: `CAUSAL_EFFECT_NOT_ESTABLISHED`.**
+
+  | statistic | positive | result |
+  |---|---|---|
+  | A | 26/40 | FAIL |
+  | B | 23/40 | FAIL |
+  | G | 37/40 | PASS, but it cannot change the label |
+
+  The threshold is 27, and the reference tail is 0.01923865414210013.
+- **The run:** 2026-09-26, at `6f72d7d`; see `evidence/confirm-2026-09-26/`.
+- **The review:** PASS WITH NOTES, no blockers; see `evidence/confirmation-review-2026-09-26/`.
 - **The implementation** is complete and independently reviewed: PASS WITH NOTES, no blockers. The fixes run through
   `c765148fdb612ae249e21ef3c830e4ceb1d12dd0`. The final test gate on that commit: tier A 542 passed, tier B 575
   passed, tier C 6 passed, 0 failed.

@@ -1,0 +1,2 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:14,  5.25it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 395.99it/s]
+{"head": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd", "state_sha256": "1d5d37f035bc3153fec6efac527b088f64cd42fcd74e59680f4388daea98b33c", "incident": null, "recomputed_result_equals_recorded": true, "recomputed_counts": {"A": 26, "B": 23, "G": 37}, "level1_outcome_bearing_max": 0.011862701913658569, "level1_max_equals_recorded": true, "c_spot_max_abs_difference": 0.0, "refused": []}

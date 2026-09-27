@@ -1,0 +1,2 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.28it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 322.52it/s]
+{"keys": ["cardinal-009-1|ref|581", "quantifier-009-1|ref|1016", "coordinated-adjective-009-1|ref|581"], "forwards": 6, "theta0_identity": {"cardinal-009-1|ref|581": true, "quantifier-009-1|ref|1016": true, "coordinated-adjective-009-1|ref|581": true}, "outputs_unchanged": true, "tree_clean": true}

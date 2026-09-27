@@ -1,0 +1,404 @@
+{
+ "mode": "smoke",
+ "environment": {
+  "head": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+  "repository": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "cwd": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "launcher_path": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/8109f22f-55d4-4c73-8b05-dafc2d319c0b/scratchpad/confirm025/launch_confirm_v3.py",
+  "launcher_sha256": "58b760bea9d8a7bf66bef4352deb5c7153f7aea46c264de02f49c9ab96d1e307",
+  "mode": "smoke",
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "transformer_lens": "3.9.0",
+  "huggingface_hub": "1.31.0",
+  "numpy": "2.5.3",
+  "torch_num_threads": 4,
+  "model": {
+   "model_id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "device": "cpu",
+   "dtype": "float32"
+  },
+  "tokenizer_revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+  "checkpoint": {
+   "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "files": {
+    "config.json": {
+     "sha256": "002050231a9b1ec3ac77aa6b9b3bbdc4d923f4068a7dd33b8da72a9bd6ad9a43",
+     "bytes": 567
+    },
+    "model.safetensors": {
+     "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+     "bytes": 166029852
+    },
+    "special_tokens_map.json": {
+     "sha256": "6f50ab5a5a509a1c309d6171f339b196a900dc9c99ad0408ff23bb615fdae7ad",
+     "bytes": 99
+    },
+    "tokenizer.json": {
+     "sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+     "bytes": 2113710
+    },
+    "tokenizer_config.json": {
+     "sha256": "70e38394e494931c6f773ba41e19460dd4436526b852207367f04341b4066d3f",
+     "bytes": 396
+    }
+   }
+  },
+  "env_flags": {
+   "HF_HUB_OFFLINE": "1",
+   "TRANSFORMERS_OFFLINE": null,
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONHASHSEED": null,
+   "OMP_NUM_THREADS": null,
+   "MKL_NUM_THREADS": null,
+   "TOKENIZERS_PARALLELISM": null,
+   "CUDA_VISIBLE_DEVICES": null,
+   "VIRTUAL_ENV": null,
+   "CONFIRM025_MODE": "smoke"
+  },
+  "recorded_at": "2026-09-26T19:11:23.673488+00:00"
+ },
+ "started_at": "2026-09-26T19:11:23.678862+00:00",
+ "preflight": {
+  "N1_cwd_is_repo_root": true,
+  "N1_head_origin_remote_equal": {
+   "ok": true,
+   "detail": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd"
+  },
+  "N1_tree_clean": true,
+  "N1_runner_git_state_at_root": {
+   "ok": true,
+   "detail": {
+    "commit": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+    "dirty": false
+   }
+  },
+  "N2_environment_identity_with_lock_run": {
+   "ok": true,
+   "detail": []
+  },
+  "installed_lock_hashes": true,
+  "installed_preregistration_hash": true,
+  "module_binding_cr": {
+   "ok": true,
+   "detail": {
+    "lock": "622aa832ae29047c3060d989928236320374e227",
+    "git_head": "622aa832ae29047c3060d989928236320374e227",
+    "imported_file": "622aa832ae29047c3060d989928236320374e227",
+    "own_blob": "622aa832ae29047c3060d989928236320374e227"
+   }
+  },
+  "module_binding_rr": {
+   "ok": true,
+   "detail": {
+    "lock": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "git_head": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+    "imported_file": "e6cb37767d1d06c6ff40804a88eab569723afdb5"
+   }
+  },
+  "all_pinned_blobs": true,
+  "production_configuration": true,
+  "results_state_is_the_lock_state": {
+   "ok": true,
+   "detail": "8eeb8184faf556211e68579d4682c85f545c877051641afe07dd5eac2b701dad"
+  },
+  "ledger_empty": true,
+  "scientific_paths_unchanged_since_lock": {
+   "ok": true,
+   "detail": [
+    "experiments/025-nounness-direction-intervention/README.md",
+    "experiments/025-nounness-direction-intervention/evidence/README.md",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/README.md",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/SHA256SUMS",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/dryrun.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/dryrun1.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/dryrun1_run.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/dryrun_run.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/launch_lock.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/lock.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/lock_run.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/post_commit_checks.out",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/post_commit_checks.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/preinstall.out",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/preinstall.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/prelock.out",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/prelock.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/verify_lock.err",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/verify_lock.out",
+    "experiments/025-nounness-direction-intervention/evidence/lock-2026-09-26/verify_lock.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/PROMPT.md",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/README.md",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/REVIEW.md",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/SHA256SUMS",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r1_integrity.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r2a_own.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r2b_crosscheck.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r3_determinism_271828.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r3_determinism_31337.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/first_pass/r5_logic.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/guard.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r1_integrity.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r1_integrity.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r1_integrity.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2a_own.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2a_own.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2a_own.pt",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2a_own_geometry.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2a_stream.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2b_crosscheck.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2b_crosscheck.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r2b_crosscheck.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r3_determinism.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r3_determinism_271828.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r3_determinism_271828.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r3_determinism_31337.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r3_determinism_31337.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r4_dattn_binding.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r4_dattn_binding.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r4_dattn_binding.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r5_logic.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r5_logic.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r5_logic.py",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r6_launcher_guards.log",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r6_launcher_guards.out.json",
+    "experiments/025-nounness-direction-intervention/evidence/lock-review-2026-09-26/r6_launcher_guards.py",
+    "experiments/025-nounness-direction-intervention/preregistration-lock.json",
+    "experiments/025-nounness-direction-intervention/preregistration.md"
+   ]
+  },
+  "full_validate_lock": true,
+  "runtime_and_versions_equal_020_explore": true,
+  "manifest_fresh_90720": true,
+  "zero_spent_collisions": true,
+  "patch_path_keys_spent_and_outside_manifest": true,
+  "confirm_eligible_exactly_once": true,
+  "only_the_lock_outputs_exist": true
+ },
+ "smoke": {
+  "keys": [
+   "cardinal-009-1|ref|581",
+   "quantifier-009-1|ref|1016",
+   "coordinated-adjective-009-1|ref|581"
+  ],
+  "per_key": {
+   "cardinal-009-1|ref|581": {
+    "plain": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "f6f7704d437383cbe8dda8eeef94f695d7640eb1d640042155a0ea34761c2bce"
+    },
+    "patched": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "f6f7704d437383cbe8dda8eeef94f695d7640eb1d640042155a0ea34761c2bce"
+    },
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true,
+    "theta0_landed_exactly": true
+   },
+   "quantifier-009-1|ref|1016": {
+    "plain": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "a0b10e9eeb1769dc7269b5edb9959f958237815dbcc265385db4824a5f00e290"
+    },
+    "patched": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "a0b10e9eeb1769dc7269b5edb9959f958237815dbcc265385db4824a5f00e290"
+    },
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true,
+    "theta0_landed_exactly": true
+   },
+   "coordinated-adjective-009-1|ref|581": {
+    "plain": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "a3a3bb3179cbd8099c7b1ede34e798a9c4bd97cecd4bdd7eb7daaf886c57cf79"
+    },
+    "patched": {
+     "logits_equal_unguarded": true,
+     "same_sites_as_unguarded": true,
+     "slices_equal_unguarded": true,
+     "digests_equal_unguarded": true,
+     "shapes_equal_unguarded": true,
+     "dtypes": [
+      "torch.float32"
+     ],
+     "logits_sha256": "a3a3bb3179cbd8099c7b1ede34e798a9c4bd97cecd4bdd7eb7daaf886c57cf79"
+    },
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true,
+    "theta0_landed_exactly": true
+   }
+  },
+  "signatures": {
+   "instance_wrapped_equal_original": true,
+   "class_wrapped_equal_original": true,
+   "instance_original_equal_unguarded_process": true,
+   "class_original_equal_unguarded_process": true,
+   "instances": 430,
+   "class_methods": 20,
+   "unavailable": 0
+  },
+  "refusals": {
+   "module_call": "refused",
+   "root_instance_forward": "refused",
+   "root_class_forward": "refused",
+   "run_with_cache": "refused",
+   "run_with_hooks": "refused",
+   "submodule_instance_forward": "refused",
+   "capture_prompt_unlisted_key": "refused",
+   "capture_prompt_second_time": "refused",
+   "run_patched_spent_key_not_own_row": "refused",
+   "run_patched_fresh_route_unmapped": "refused",
+   "low_level_run_capture": "refused",
+   "low_level_run_interventions": "refused"
+  },
+  "forwards_during_refusal_attempts": 0,
+  "refusals_during_sanctioned_runs": 0,
+  "guarded_runs": 6
+ },
+ "ended_at": "2026-09-26T19:11:39.576459+00:00",
+ "exit_status": 0,
+ "error": null,
+ "events": {
+  "mode": "smoke",
+  "load_model": 1,
+  "refused": [
+   "torch.nn.Module.__call__ outside a sanctioned call (TransformerBridge)",
+   "model.forward outside a sanctioned call",
+   "TransformerBridge.forward outside a sanctioned call",
+   "TransformerBridge.run_with_cache outside a sanctioned call",
+   "TransformerBridge.run_with_hooks outside a sanctioned call",
+   "embed.forward outside a sanctioned call",
+   "pm.capture_prompt(cardinal-009-1|synthetic|50000)",
+   "pm.capture_prompt(cardinal-009-1|ref|581)",
+   "pm.run_patched spent cardinal-009-1|ref|581",
+   "pm.run_patched fresh cardinal-009-1|synthetic|50000: vector unknown or ledger not on disk",
+   "capture.run_capture outside a sanctioned call",
+   "interventions.run_interventions outside a sanctioned call"
+  ],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "output_writes": [],
+  "output_renames": [],
+  "outside_repo_writes": 8,
+  "spent_runs": [
+   {
+    "kind": "plain",
+    "key": "cardinal-009-1|ref|581"
+   },
+   {
+    "kind": "patched-theta0",
+    "key": "cardinal-009-1|ref|581"
+   },
+   {
+    "kind": "plain",
+    "key": "quantifier-009-1|ref|1016"
+   },
+   {
+    "kind": "patched-theta0",
+    "key": "quantifier-009-1|ref|1016"
+   },
+   {
+    "kind": "plain",
+    "key": "coordinated-adjective-009-1|ref|581"
+   },
+   {
+    "kind": "patched-theta0",
+    "key": "coordinated-adjective-009-1|ref|581"
+   }
+  ],
+  "fresh_runs": 0,
+  "sanctioned_forward_calls": 2040,
+  "confirm_invocations": 0,
+  "ledger_checks": 0
+ },
+ "aliases": [
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_patched"
+ ],
+ "sealing": {
+  "instances": 430,
+  "class_methods": [
+   "Dropout.forward",
+   "Embedding.forward",
+   "EmbeddingBridge.forward",
+   "GELUActivation.forward",
+   "GPTNeoXAttention.forward",
+   "GPTNeoXLayer.forward",
+   "GPTNeoXMLP.forward",
+   "GPTNeoXRotaryEmbedding.forward",
+   "HookPoint.forward",
+   "LayerNorm.forward",
+   "Linear.forward",
+   "LinearBridge.forward",
+   "MLPBridge.forward",
+   "NormalizationBridge.forward",
+   "RotaryEmbeddingBridge.forward",
+   "TransformerBridge.forward",
+   "TransformerBridge.run_with_hooks",
+   "TransformerBridge.run_with_cache",
+   "TransformerBridge.generate",
+   "UnembeddingBridge.forward"
+  ]
+ },
+ "outputs": {
+  "candidate-lock.json": {
+   "sha256": "1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be",
+   "bytes": 83623
+  },
+  "candidate-preregistration.md": {
+   "sha256": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+   "bytes": 9981
+  },
+  "results.json": {
+   "sha256": "05f17a42d191aaeb7aab5c4cf704f972497d52d3945f45a6db58503eb7ebd594",
+   "bytes": 7676
+  }
+ },
+ "tree_after": "",
+ "head_after": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd"
+}

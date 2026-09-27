@@ -1,0 +1,173 @@
+{
+ "head": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+ "origin": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+ "remote": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+ "tree": "",
+ "state_sha256": "1d5d37f035bc3153fec6efac527b088f64cd42fcd74e59680f4388daea98b33c",
+ "results_file_sha256": "c827bb69292f11ff6baf2194b4d8e34ccb0fbad9058c76d1abf2a3581724efb4",
+ "phases": {
+  "confirm": "complete",
+  "lock": "complete",
+  "report": "not_started"
+ },
+ "incident": null,
+ "phase_incidents": {},
+ "stage2": {
+  "path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/stage2-measurements.pt",
+  "bytes": 898673151,
+  "sha256": "87284bddfba16a1b7709d7d33f98aa1a0898b1d85767956a524d2950d80a7788",
+  "tensor_digests_equal_state": true,
+  "tensors": 256,
+  "complete_and_finite": true
+ },
+ "run_log": {
+  "lines": 90720,
+  "unique": 90720,
+  "duplicates": 0,
+  "missing": 0,
+  "extra": 0,
+  "sequence_numbers_contiguous": true,
+  "per_condition": {
+   "base": 4320,
+   "noun+0.16": 4320,
+   "noun+0.32": 4320,
+   "noun-0.16": 4320,
+   "noun-0.32": 4320,
+   "plur+0.32": 4320,
+   "plur-0.32": 4320,
+   "rand1+0.32": 4320,
+   "rand1-0.32": 4320,
+   "rand2+0.32": 4320,
+   "rand2-0.32": 4320,
+   "rand3+0.32": 4320,
+   "rand3-0.32": 4320,
+   "rand4+0.32": 4320,
+   "rand4-0.32": 4320,
+   "rand5+0.32": 4320,
+   "rand5-0.32": 4320,
+   "rand6+0.32": 4320,
+   "rand6-0.32": 4320,
+   "rand7+0.32": 4320,
+   "rand7-0.32": 4320
+  },
+  "ledger_equals_manifest": true
+ },
+ "recomputed_result_equals_recorded": true,
+ "recomputed_counts": {
+  "A": 26,
+  "B": 23,
+  "G": 37
+ },
+ "level1_per_condition": {
+  "base": {
+   "max": 0.010140636521302149,
+   "at": "onion|cardinal-012-1",
+   "outcome_bearing": false
+  },
+  "noun+0.32": {
+   "max": 0.009483025113360188,
+   "at": "prince|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "noun-0.32": {
+   "max": 0.009742454066276274,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "noun+0.16": {
+   "max": 0.010174800995252475,
+   "at": "tourist|cardinal-012-1",
+   "outcome_bearing": false
+  },
+  "noun-0.16": {
+   "max": 0.010527069680314138,
+   "at": "tourist|cardinal-012-1",
+   "outcome_bearing": false
+  },
+  "rand1+0.32": {
+   "max": 0.01042787037579851,
+   "at": "bishop|cardinal-013-1",
+   "outcome_bearing": true
+  },
+  "rand1-0.32": {
+   "max": 0.010619078901648038,
+   "at": "knight|cardinal-013-1",
+   "outcome_bearing": true
+  },
+  "rand2+0.32": {
+   "max": 0.010073770172791097,
+   "at": "tourist|cardinal-013-1",
+   "outcome_bearing": true
+  },
+  "rand2-0.32": {
+   "max": 0.010406794887121373,
+   "at": "onion|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand3+0.32": {
+   "max": 0.011139239961523995,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand3-0.32": {
+   "max": 0.009700897011354792,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand4+0.32": {
+   "max": 0.011862701913658569,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand4-0.32": {
+   "max": 0.010035790263322575,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand5+0.32": {
+   "max": 0.010933858734314517,
+   "at": "weary|cardinal-018-1",
+   "outcome_bearing": true
+  },
+  "rand5-0.32": {
+   "max": 0.010210727887762783,
+   "at": "tourist|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand6+0.32": {
+   "max": 0.010898204845473547,
+   "at": "prince|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand6-0.32": {
+   "max": 0.010423996407258773,
+   "at": "tourist|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand7+0.32": {
+   "max": 0.010610457089005543,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "rand7-0.32": {
+   "max": 0.010141525893714531,
+   "at": "knight|cardinal-012-1",
+   "outcome_bearing": true
+  },
+  "plur+0.32": {
+   "max": 0.010135016563624255,
+   "at": "careful|coordinated-adjective-018-3",
+   "outcome_bearing": false
+  },
+  "plur-0.32": {
+   "max": 0.010784592608527932,
+   "at": "rapid|coordinated-adjective-018-3",
+   "outcome_bearing": false
+  }
+ },
+ "level1_outcome_bearing_max": 0.011862701913658569,
+ "level1_secondary_max": 0.010784592608527932,
+ "level1_max_equals_recorded": true,
+ "c_spot_max_abs_difference": 0.0,
+ "refused": []
+}

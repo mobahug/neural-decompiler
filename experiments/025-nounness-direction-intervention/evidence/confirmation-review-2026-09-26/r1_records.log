@@ -1,0 +1,123 @@
+{
+ "launcher_ok": true,
+ "state_verifies": true,
+ "aa3db023": true,
+ "only_desc_diff": true,
+ "accounting": {
+  "own_keys": 90720,
+  "own_unique": 90720
+ },
+ "manifest_eq": true,
+ "log": {
+  "lines": 90720,
+  "unique": 90720,
+  "duplicates": 0,
+  "missing": 0,
+  "extra": 0,
+  "n_field_contiguous": true,
+  "per_condition": {
+   "base": 4320,
+   "noun+0.16": 4320,
+   "noun+0.32": 4320,
+   "noun-0.16": 4320,
+   "noun-0.32": 4320,
+   "plur+0.32": 4320,
+   "plur-0.32": 4320,
+   "rand1+0.32": 4320,
+   "rand1-0.32": 4320,
+   "rand2+0.32": 4320,
+   "rand2-0.32": 4320,
+   "rand3+0.32": 4320,
+   "rand3-0.32": 4320,
+   "rand4+0.32": 4320,
+   "rand4-0.32": 4320,
+   "rand5+0.32": 4320,
+   "rand5-0.32": 4320,
+   "rand6+0.32": 4320,
+   "rand6-0.32": 4320,
+   "rand7+0.32": 4320,
+   "rand7-0.32": 4320
+  }
+ },
+ "ledger": {
+  "n": 90720,
+  "unique": 90720,
+  "duplicates": 0,
+  "missing": 0,
+  "extra": 0
+ },
+ "pairing": {
+  "loop_len": 90720,
+  "log_len": 90720,
+  "all_equal": true,
+  "first_mismatch": [],
+  "first_log_keys": [
+   "cardinal-009-1|author|2488|base",
+   "cardinal-009-1|author|2488|noun+0.32",
+   "cardinal-009-1|author|2488|noun-0.32"
+  ],
+  "last_log_key": "quantifier-new-2|careless|48292|plur-0.32",
+  "frame_order_matches_production_log": true,
+  "every_21_block_in_frozen_condition_order": true
+ },
+ "iso": {
+  "spent_keys": [
+   "cardinal-009-1|an|271",
+   "quantifier-009-1|least|1878",
+   "coordinated-adjective-009-1|black|2806",
+   "quantifier-new-2|he|344"
+  ],
+  "passed": true,
+  "per_key": {
+   "cardinal-009-1|an|271": {
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true
+   },
+   "coordinated-adjective-009-1|black|2806": {
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true
+   },
+   "quantifier-009-1|least|1878": {
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true
+   },
+   "quantifier-new-2|he|344": {
+    "plain_equals_patched_theta0": true,
+    "embed_equals_resid_pre0": true
+   }
+  },
+  "keys_recorded": true,
+  "spent_in_ledger_untagged": [],
+  "spent_in_ledger_as_prefix": [],
+  "spent_in_run_log": [],
+  "spent_in_manifest": [],
+  "ledger_all_tagged_4_fields": true,
+  "I7": {
+   "bitwise_equal": true,
+   "differing": []
+  },
+  "spent_words": [
+   "an",
+   "black",
+   "he",
+   "least"
+  ],
+  "spent_token_ids_not_025_cues": true
+ },
+ "shell": {
+  "event_duration_s": 0.0029065608978271484,
+  "shell_command_identical_to_production_command_except_time": true,
+  "zsh_whole_string_not_found": true,
+  "run_log_born_after_production_launch": true,
+  "run_log_born_between_recorded_at_and_started_at": true,
+  "sentinel_born_after_started_at": true,
+  "sentinel_minus_started_at_s": 9.703636169433594e-05,
+  "sentinel_inode_after_production_command_inode": true,
+  "renamed_at_ctime": "2026-09-26T19:23:43.620657+00:00"
+ },
+ "guard": {
+  "refused": [],
+  "writes_here": 1,
+  "writes_elsewhere": []
+ }
+}

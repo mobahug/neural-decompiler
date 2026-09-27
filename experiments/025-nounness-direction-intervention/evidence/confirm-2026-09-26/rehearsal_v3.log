@@ -1,0 +1,3 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:18,  4.11it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 310.09it/s]
+{"mode": "rehearsal", "started_at": "2026-09-26T19:12:18.557119+00:00", "ended_at": "2026-09-26T19:12:31.841234+00:00", "exit_status": 0, "error": null}
+{"mode": "rehearsal", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "output_renames": [], "outside_repo_writes": 8, "spent_runs": [], "fresh_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 0, "ledger_checks": 0}

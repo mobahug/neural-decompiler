@@ -1,0 +1,211 @@
+{
+ "mine": {
+  "magnitudes": {
+   "A": {
+    "mean": 0.11457901336066345,
+    "median": 0.14191208776278663
+   },
+   "B": {
+    "mean": 0.06289458391769001,
+    "median": 0.08492943627022942
+   },
+   "G": {
+    "mean": 0.015703076979356616,
+    "median": 0.015614380833868485
+   }
+  },
+  "counts": {
+   "plus_above_base": 23,
+   "minus_below_base": 30,
+   "A_half_positive": 25,
+   "A_plurality_positive": 16,
+   "A_nmse_positive": 24,
+   "G_minus_random_positive": 35
+  },
+  "A_positive_by_template": {
+   "cardinal": 26,
+   "coordinated-adjective": 31,
+   "quantifier": 25
+  },
+  "even_noun_mean": 0.014446877229105298,
+  "even_random_mean": 0.014085822525458298,
+  "causal_fraction": {
+   "median_A": 0.14191208776278663,
+   "slope_024": 1.2992017464639374,
+   "fraction": 0.34134442588745245
+  },
+  "strata_trigger": 14
+ },
+ "vs": {
+  "magnitudes_max_diff": 3.469446951953614e-18,
+  "counts_equal": true,
+  "recorded_counts": {
+   "A_half_positive": 25,
+   "A_nmse_positive": 24,
+   "A_plurality_positive": 16,
+   "G_minus_random_positive": 35,
+   "minus_below_base": 30,
+   "plus_above_base": 23
+  },
+  "templates_equal": true,
+  "recorded_templates": {
+   "cardinal": 26,
+   "coordinated-adjective": 31,
+   "quantifier": 25
+  },
+  "even_max_diff": 0.0,
+  "causal_fraction_diff": 0.0,
+  "recorded_causal_fraction": {
+   "fraction": 0.34134442588745245,
+   "median_A": 0.14191208776278663,
+   "odd": 0.32,
+   "slope_024_exposed": 1.2992017464639374
+  },
+  "trigger_equal": true,
+  "per_cue_max_diff": 5.551115123125783e-17,
+  "no_stratum_flag_possible_for_failed_statistics": true
+ }
+}
+{
+ "adjective": {
+  "A": [
+   0.13581996593465484,
+   0.2680822736884112,
+   0.4641403332491856
+  ],
+  "B": [
+   0.08784195806802744,
+   0.2149519845436751,
+   0.3799649258434834
+  ],
+  "G": [
+   0.0006467533655412777,
+   0.018708862848016615,
+   0.035594985023907344
+  ],
+  "mean_abs_A_random_median": 0.04991358312901019,
+  "base_ell_median": -2.755895241387466,
+  "plus_above_base": 20,
+  "minus_below_base": 20,
+  "A_half_positive": 20,
+  "A_nmse_positive": 20,
+  "A_positive_by_template": {
+   "cardinal": 20,
+   "coordinated-adjective": 20,
+   "quantifier": 20
+  },
+  "frames_sse_plus_gt_minus_median_fraction": 0.8240740740740741,
+  "frames_sse_plus_gt_minus_range": [
+   0.7222222222222222,
+   0.8981481481481481
+  ],
+  "frames_sse_plus_gt_minus_by_template_median": {
+   "cardinal": 0.8611111111111112,
+   "coordinated-adjective": 0.6944444444444444,
+   "quantifier": 0.9027777777777777
+  },
+  "frames_dattn_plus_gt_minus_median_fraction": 0.6712962962962963,
+  "s0_range": [
+   -0.30588944844486,
+   -0.06756898433403594
+  ],
+  "template_frame_counts": {
+   "cardinal": 36,
+   "coordinated-adjective": 36,
+   "quantifier": 36
+  }
+ },
+ "noun": {
+  "A": [
+   -0.19949141494046108,
+   -0.0514421723621985,
+   0.14800420959091842
+  ],
+  "B": [
+   -0.2607415014598013,
+   -0.08176431263348419,
+   0.08201691447243141
+  ],
+  "G": [
+   -0.004151885205799816,
+   0.009299379894197823,
+   0.035307311512171785
+  ],
+  "mean_abs_A_random_median": 0.048206638776907645,
+  "base_ell_median": -2.2187942761732184,
+  "plus_above_base": 3,
+  "minus_below_base": 10,
+  "A_half_positive": 5,
+  "A_nmse_positive": 4,
+  "A_positive_by_template": {
+   "cardinal": 6,
+   "coordinated-adjective": 11,
+   "quantifier": 5
+  },
+  "frames_sse_plus_gt_minus_median_fraction": 0.4537037037037037,
+  "frames_sse_plus_gt_minus_range": [
+   0.19444444444444445,
+   0.7777777777777778
+  ],
+  "frames_sse_plus_gt_minus_by_template_median": {
+   "cardinal": 0.4861111111111111,
+   "coordinated-adjective": 0.5277777777777778,
+   "quantifier": 0.375
+  },
+  "frames_dattn_plus_gt_minus_median_fraction": 0.6064814814814815,
+  "s0_range": [
+   0.06902295665137842,
+   0.2852067688611917
+  ],
+  "template_frame_counts": {
+   "cardinal": 36,
+   "coordinated-adjective": 36,
+   "quantifier": 36
+  }
+ },
+ "spearman_A_s0_all": -0.8273921200750469,
+ "spearman_A_s0_adjective": -0.015037593984962405,
+ "spearman_A_s0_noun": -0.6255639097744361,
+ "strata_equal_sign_of_s0": true,
+ "A_equals_other_condition_count": 0
+}
+adjective anxious    s0 -0.175  A +0.2574  B +0.2193  G +0.01888  mean|Aj| 0.0381  ell0 -2.770 ell+ -2.483 ell- -2.998  Ahalf +0.1128  Aplur -0.0202
+adjective cheerful   s0 -0.191  A +0.2712  B +0.1887  G +0.01089  mean|Aj| 0.0825  ell0 -2.961 ell+ -2.567 ell- -3.109  Ahalf +0.1200  Aplur +0.0419
+adjective curious    s0 -0.198  A +0.2650  B +0.2081  G +0.02429  mean|Aj| 0.0568  ell0 -2.737 ell+ -2.433 ell- -2.963  Ahalf +0.1309  Aplur +0.0477
+adjective jealous    s0 -0.132  A +0.1482  B +0.1035  G +0.02428  mean|Aj| 0.0448  ell0 -2.281 ell+ -2.155 ell- -2.452  Ahalf +0.0808  Aplur -0.0067
+adjective lonely     s0 -0.142  A +0.3198  B +0.2670  G +0.01854  mean|Aj| 0.0527  ell0 -2.647 ell+ -2.334 ell- -2.973  Ahalf +0.1608  Aplur -0.0725
+adjective nasty      s0 -0.222  A +0.3399  B +0.2908  G +0.01926  mean|Aj| 0.0491  ell0 -2.918 ell+ -2.441 ell- -3.120  Ahalf +0.1807  Aplur +0.1095
+adjective careful    s0 -0.235  A +0.4438  B +0.3242  G +0.03559  mean|Aj| 0.1197  ell0 -2.644 ell+ -2.176 ell- -3.063  Ahalf +0.2508  Aplur +0.0857
+adjective careless   s0 -0.237  A +0.1358  B +0.0878  G +0.00065  mean|Aj| 0.0480  ell0 -2.818 ell+ -2.702 ell- -2.974  Ahalf +0.0498  Aplur +0.0350
+adjective famous     s0 -0.125  A +0.2340  B +0.2041  G +0.02068  mean|Aj| 0.0299  ell0 -3.131 ell+ -2.734 ell- -3.202  Ahalf +0.0920  Aplur -0.0606
+adjective friendly   s0 -0.102  A +0.2849  B +0.2120  G +0.02696  mean|Aj| 0.0729  ell0 -2.831 ell+ -2.490 ell- -3.060  Ahalf +0.1541  Aplur +0.0404
+adjective gorgeous   s0 -0.221  A +0.2971  B +0.2574  G +0.03231  mean|Aj| 0.0397  ell0 -2.864 ell+ -2.483 ell- -3.078  Ahalf +0.1421  Aplur -0.0389
+adjective hungry     s0 -0.068  A +0.3086  B +0.2772  G +0.01822  mean|Aj| 0.0314  ell0 -2.595 ell+ -2.178 ell- -2.795  Ahalf +0.1656  Aplur -0.0910
+adjective weary      s0 -0.132  A +0.2764  B +0.2457  G +0.03153  mean|Aj| 0.0307  ell0 -2.469 ell+ -2.178 ell- -2.731  Ahalf +0.1562  Aplur -0.0143
+adjective wicked     s0 -0.141  A +0.2414  B +0.1752  G +0.01239  mean|Aj| 0.0662  ell0 -2.742 ell+ -2.465 ell- -2.948  Ahalf +0.1306  Aplur +0.0421
+adjective ugly       s0 -0.260  A +0.3259  B +0.2751  G +0.01749  mean|Aj| 0.0508  ell0 -2.983 ell+ -2.458 ell- -3.110  Ahalf +0.1596  Aplur -0.0082
+adjective vivid      s0 -0.289  A +0.1967  B +0.1283  G +0.00957  mean|Aj| 0.0684  ell0 -2.438 ell+ -2.210 ell- -2.603  Ahalf +0.0987  Aplur -0.0800
+adjective vague      s0 -0.306  A +0.4641  B +0.3800  G +0.01991  mean|Aj| 0.0842  ell0 -2.628 ell+ -2.185 ell- -3.113  Ahalf +0.2536  Aplur -0.1143
+adjective rapid      s0 -0.283  A +0.1953  B +0.1167  G +0.00785  mean|Aj| 0.0786  ell0 -2.661 ell+ -2.368 ell- -2.758  Ahalf +0.0800  Aplur -0.1443
+adjective rigid      s0 -0.195  A +0.2395  B +0.2179  G +0.01705  mean|Aj| 0.0216  ell0 -2.931 ell+ -2.595 ell- -3.074  Ahalf +0.1091  Aplur -0.0137
+adjective clever     s0 -0.258  A +0.1603  B +0.1326  G +0.00917  mean|Aj| 0.0277  ell0 -3.028 ell+ -2.765 ell- -3.085  Ahalf +0.0547  Aplur +0.0128
+noun      soldier    s0 +0.232  A -0.0113  B -0.0798  G +0.00684  mean|Aj| 0.0685  ell0 -2.226 ell+ -2.294 ell- -2.272  Ahalf -0.0152  Aplur -0.0307
+noun      sailor     s0 +0.249  A -0.0824  B -0.1138  G +0.00975  mean|Aj| 0.0314  ell0 -2.463 ell+ -2.490 ell- -2.325  Ahalf -0.0485  Aplur -0.0309
+noun      priest     s0 +0.175  A +0.0088  B -0.0120  G +0.01259  mean|Aj| 0.0208  ell0 -2.265 ell+ -2.266 ell- -2.283  Ahalf -0.0041  Aplur +0.0534
+noun      knight     s0 +0.163  A +0.0315  B -0.0116  G +0.02113  mean|Aj| 0.0431  ell0 -2.130 ell+ -2.101 ell- -2.164  Ahalf +0.0192  Aplur +0.0179
+noun      onion      s0 +0.139  A -0.1166  B -0.1914  G +0.03021  mean|Aj| 0.0748  ell0 -1.833 ell+ -2.112 ell- -1.879  Ahalf -0.0825  Aplur -0.0767
+noun      carrot     s0 +0.166  A -0.0585  B -0.1179  G +0.00431  mean|Aj| 0.0594  ell0 -2.161 ell+ -2.301 ell- -2.184  Ahalf -0.0151  Aplur +0.1809
+noun      pirate     s0 +0.069  A +0.1110  B +0.0788  G +0.02448  mean|Aj| 0.0322  ell0 -2.212 ell+ -2.189 ell- -2.411  Ahalf +0.0279  Aplur -0.0006
+noun      tourist    s0 +0.070  A +0.1480  B +0.0820  G +0.03531  mean|Aj| 0.0660  ell0 -1.752 ell+ -1.743 ell- -2.039  Ahalf +0.0575  Aplur -0.0873
+noun      author     s0 +0.128  A -0.0009  B -0.0542  G +0.01205  mean|Aj| 0.0533  ell0 -2.299 ell+ -2.352 ell- -2.350  Ahalf +0.0028  Aplur +0.0680
+noun      bishop     s0 +0.211  A -0.0536  B -0.0806  G +0.00721  mean|Aj| 0.0270  ell0 -2.260 ell+ -2.341 ell- -2.234  Ahalf -0.0328  Aplur +0.0555
+noun      dancer     s0 +0.285  A -0.1263  B -0.1615  G -0.00022  mean|Aj| 0.0352  ell0 -2.087 ell+ -2.214 ell- -1.962  Ahalf -0.0570  Aplur -0.1011
+noun      duck       s0 +0.145  A +0.0844  B +0.0134  G +0.03424  mean|Aj| 0.0710  ell0 -2.069 ell+ -2.110 ell- -2.278  Ahalf +0.0241  Aplur +0.0546
+noun      goat       s0 +0.171  A -0.1995  B -0.2607  G +0.01418  mean|Aj| 0.0613  ell0 -2.063 ell+ -2.276 ell- -1.877  Ahalf -0.1447  Aplur +0.0929
+noun      guitar     s0 +0.166  A -0.1157  B -0.1673  G +0.02384  mean|Aj| 0.0516  ell0 -1.962 ell+ -2.121 ell- -1.890  Ahalf -0.0476  Aplur -0.0456
+noun      hunter     s0 +0.145  A +0.0159  B -0.0234  G +0.00885  mean|Aj| 0.0393  ell0 -2.345 ell+ -2.357 ell- -2.389  Ahalf -0.0103  Aplur -0.0791
+noun      lawyer     s0 +0.181  A -0.1320  B -0.1821  G -0.00246  mean|Aj| 0.0501  ell0 -2.274 ell+ -2.396 ell- -2.132  Ahalf -0.0772  Aplur -0.0108
+noun      monk       s0 +0.118  A -0.0452  B -0.0819  G +0.00619  mean|Aj| 0.0367  ell0 -2.354 ell+ -2.414 ell- -2.324  Ahalf -0.0405  Aplur +0.0256
+noun      nurse      s0 +0.242  A -0.1592  B -0.2326  G -0.00415  mean|Aj| 0.0734  ell0 -2.225 ell+ -2.292 ell- -1.974  Ahalf -0.0898  Aplur -0.0944
+noun      painter    s0 +0.240  A -0.0714  B -0.1177  G +0.00305  mean|Aj| 0.0463  ell0 -2.229 ell+ -2.316 ell- -2.173  Ahalf -0.0287  Aplur -0.0896
+noun      prince     s0 +0.169  A -0.0493  B -0.0817  G +0.00524  mean|Aj| 0.0323  ell0 -2.131 ell+ -2.174 ell- -2.075  Ahalf -0.0348  Aplur -0.0438

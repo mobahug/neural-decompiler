@@ -1,0 +1,306 @@
+{
+ "workers": [
+  {
+   "worker": 0,
+   "n_workers": 2,
+   "runs": 45360,
+   "swaps": 19440,
+   "lexicon_check": {
+    "base_equal_pm_lexicon": true
+   },
+   "vector_factors_max_diff": 0.0,
+   "minutes": 50.857952415943146,
+   "threads": 4,
+   "guard": {
+    "refused": [],
+    "writes_here": 0,
+    "writes_elsewhere": [
+     "/dev/null",
+     "/dev/null",
+     "/dev/null",
+     "/dev/null",
+     "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/patpb4s8",
+     "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpfyngko_x/probe-source"
+    ]
+   },
+   "chain_ref": {
+    "cardinal": 581,
+    "coordinated-adjective": 581,
+    "quantifier": 1016
+   },
+   "pool_ref": {
+    "cardinal": 581,
+    "coordinated-adjective": 581,
+    "quantifier": 1016
+   }
+  },
+  {
+   "worker": 1,
+   "n_workers": 2,
+   "runs": 45360,
+   "swaps": 19440,
+   "lexicon_check": {
+    "base_equal_pm_lexicon": true
+   },
+   "vector_factors_max_diff": 0.0,
+   "minutes": 50.859037935733795,
+   "threads": 4,
+   "guard": {
+    "refused": [],
+    "writes_here": 0,
+    "writes_elsewhere": [
+     "/dev/null",
+     "/dev/null",
+     "/dev/null",
+     "/dev/null",
+     "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/mf8ghcxb",
+     "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2fautkdf/probe-source"
+    ]
+   },
+   "chain_ref": {
+    "cardinal": 581,
+    "coordinated-adjective": 581,
+    "quantifier": 1016
+   },
+   "pool_ref": {
+    "cardinal": 581,
+    "coordinated-adjective": 581,
+    "quantifier": 1016
+   }
+  }
+ ],
+ "coverage": {
+  "runs": 90720,
+  "unique": 90720,
+  "duplicates": 0,
+  "frames": 108,
+  "cues": 40,
+  "per_condition": {
+   "base": 4320,
+   "noun+0.32": 4320,
+   "noun-0.32": 4320,
+   "noun+0.16": 4320,
+   "noun-0.16": 4320,
+   "rand1+0.32": 4320,
+   "rand1-0.32": 4320,
+   "rand2+0.32": 4320,
+   "rand2-0.32": 4320,
+   "rand3+0.32": 4320,
+   "rand3-0.32": 4320,
+   "rand4+0.32": 4320,
+   "rand4-0.32": 4320,
+   "rand5+0.32": 4320,
+   "rand5-0.32": 4320,
+   "rand6+0.32": 4320,
+   "rand6-0.32": 4320,
+   "rand7+0.32": 4320,
+   "rand7-0.32": 4320,
+   "plur+0.32": 4320,
+   "plur-0.32": 4320
+  }
+ },
+ "C": {
+  "all_bitwise_equal": true,
+  "not_equal": 0,
+  "max_abs_diff": 0.0,
+  "runs": 90720,
+  "outcome_bearing_runs": 69120
+ },
+ "level1": {
+  "outcome_bearing": {
+   "max": 0.011862701913658569,
+   "at": "knight|cardinal-012-1|rand4+0.32"
+  },
+  "secondary": {
+   "max": 0.010784592608527932,
+   "at": "rapid|coordinated-adjective-018-3|plur-0.32"
+  },
+  "tolerance": 0.02,
+  "recorded_outcome_bearing": {
+   "at": "knight|cardinal-012-1|rand4+0.32",
+   "max": 0.011862701913658569
+  },
+  "recorded_secondary": {
+   "at": "rapid|coordinated-adjective-018-3|plur-0.32",
+   "max": 0.010784592608527932
+  },
+  "outcome_bearing_runs": 69120,
+  "equal_recorded": true
+ },
+ "level1_per_condition_vs_operator_max_abs_diff": 0.0,
+ "level1_per_condition_location_equal_operator": true,
+ "level1_outcome_bearing_per_condition_all_within_tolerance": true,
+ "I1": {
+  "max": 2.1541116871581778e-05,
+  "at": "knight|cardinal-017-3|noun+0.16",
+  "tolerance": 0.0001,
+  "recorded": {
+   "at": "knight|cardinal-017-3|noun+0.16",
+   "max": 2.1541116871581778e-05
+  },
+  "equal_recorded_value": true,
+  "equal_recorded_location": true,
+  "abs_diff": 0.0,
+  "within_tolerance": true
+ },
+ "I3": {
+  "max": 4.35303313102457e-05,
+  "at": "painter|quantifier-016-4|rand5-0.32",
+  "tolerance": 0.0001,
+  "recorded": {
+   "at": "painter|quantifier-016-4|rand5-0.32",
+   "max": 4.35303313102457e-05
+  },
+  "equal_recorded_value": true,
+  "equal_recorded_location": true,
+  "abs_diff": 0.0,
+  "within_tolerance": true
+ },
+ "I4": {
+  "max": 9.004566446524365e-05,
+  "at": "lonely|cardinal-new-2|rand6-0.32",
+  "tolerance": 0.001,
+  "recorded": {
+   "at": "lonely|cardinal-new-2|rand6-0.32",
+   "max": 9.004566446524365e-05
+  },
+  "equal_recorded_value": true,
+  "equal_recorded_location": true,
+  "abs_diff": 0.0,
+  "within_tolerance": true
+ },
+ "I1_wrong_vector_min_over_all": 0.19735074472026354,
+ "I1_margin_ratio": 9161.58367724282,
+ "ladder": {
+  "base": {
+   "sse": {
+    "C": 30944.29620753961,
+    "C5": 20958.988156896874,
+    "L1": 0.49207207947148834
+   },
+   "block5_attention": 0.32268654564552046,
+   "block4_attention": 0.6772975524875838,
+   "pairs": 4320,
+   "max_abs_diff_vs_recorded": 0.0,
+   "recorded": {
+    "block4_attention": 0.6772975524875838,
+    "block5_attention": 0.32268654564552046,
+    "sse": {
+     "C": 30944.29620753961,
+     "C5": 20958.988156896874,
+     "L1": 0.49207207947148834
+    }
+   }
+  },
+  "noun+0.32": {
+   "sse": {
+    "C": 33801.707650206925,
+    "C5": 23431.506184668375,
+    "L1": 0.4883198893462824
+   },
+   "block5_attention": 0.30679519427992763,
+   "block4_attention": 0.6931903591159422,
+   "pairs": 4320,
+   "max_abs_diff_vs_recorded": 0.0,
+   "recorded": {
+    "block4_attention": 0.6931903591159422,
+    "block5_attention": 0.30679519427992763,
+    "sse": {
+     "C": 33801.707650206925,
+     "C5": 23431.506184668375,
+     "L1": 0.4883198893462824
+    }
+   }
+  },
+  "noun-0.32": {
+   "sse": {
+    "C": 28969.711798360804,
+    "C5": 19430.451253385054,
+    "L1": 0.49150617498884974
+   },
+   "block5_attention": 0.3292839297598919,
+   "block4_attention": 0.670699104031455,
+   "pairs": 4320,
+   "max_abs_diff_vs_recorded": 0.0,
+   "recorded": {
+    "block4_attention": 0.670699104031455,
+    "block5_attention": 0.3292839297598919,
+    "sse": {
+     "C": 28969.711798360804,
+     "C5": 19430.451253385054,
+     "L1": 0.49150617498884974
+    }
+   }
+  }
+ },
+ "guard": {
+  "refused": [],
+  "writes_here": 1,
+  "writes_elsewhere": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/a5euyvnj"
+  ]
+ }
+}
+{
+ "noun+0.32 <- noun-0.32": {
+  "n": 4320,
+  "min": 0.6337207649045358
+ },
+ "noun+0.32 <- plur+0.32": {
+  "n": 4320,
+  "min": 0.3794021618928416
+ },
+ "noun+0.32 <- base": {
+  "n": 4320,
+  "min": 0.37240546288226717
+ },
+ "noun-0.32 <- noun+0.32": {
+  "n": 4320,
+  "min": 0.6337225645334872
+ },
+ "rand1+0.32 <- rand1-0.32": {
+  "n": 4320,
+  "min": 0.29033174937663553
+ },
+ "rand1+0.32 <- rand2+0.32": {
+  "n": 4320,
+  "min": 0.19735074472026354
+ },
+ "rand4+0.32 <- rand4-0.32": {
+  "n": 4320,
+  "min": 0.31416763778021733
+ },
+ "plur+0.32 <- plur-0.32": {
+  "n": 4320,
+  "min": 0.37548111892203945
+ },
+ "plur+0.32 <- noun+0.32": {
+  "n": 4320,
+  "min": 0.3794041595554005
+ }
+}
+base        L1 0.010141 (onion|cardinal-012-1|base)  I1 2.107e-05  I3 3.509e-05  I4 8.194e-05  runs 4320
+noun+0.32   L1 0.009483 (prince|cardinal-012-1|noun+0.32)  I1 1.498e-05  I3 1.760e-05  I4 3.924e-05  runs 4320
+noun-0.32   L1 0.009742 (knight|cardinal-012-1|noun-0.32)  I1 1.426e-05  I3 3.097e-05  I4 5.627e-05  runs 4320
+noun+0.16   L1 0.010175 (tourist|cardinal-012-1|noun+0.16)  I1 2.154e-05  I3 1.914e-05  I4 3.575e-05  runs 4320
+noun-0.16   L1 0.010527 (tourist|cardinal-012-1|noun-0.16)  I1 1.662e-05  I3 3.640e-05  I4 6.756e-05  runs 4320
+rand1+0.32  L1 0.010428 (bishop|cardinal-013-1|rand1+0.32)  I1 1.699e-05  I3 2.129e-05  I4 4.563e-05  runs 4320
+rand1-0.32  L1 0.010619 (knight|cardinal-013-1|rand1-0.32)  I1 1.580e-05  I3 2.980e-05  I4 6.566e-05  runs 4320
+rand2+0.32  L1 0.010074 (tourist|cardinal-013-1|rand2+0.32)  I1 1.314e-05  I3 2.731e-05  I4 6.774e-05  runs 4320
+rand2-0.32  L1 0.010407 (onion|cardinal-012-1|rand2-0.32)  I1 1.574e-05  I3 3.053e-05  I4 7.603e-05  runs 4320
+rand3+0.32  L1 0.011139 (knight|cardinal-012-1|rand3+0.32)  I1 1.515e-05  I3 3.381e-05  I4 7.473e-05  runs 4320
+rand3-0.32  L1 0.009701 (knight|cardinal-012-1|rand3-0.32)  I1 1.835e-05  I3 2.481e-05  I4 5.553e-05  runs 4320
+rand4+0.32  L1 0.011863 (knight|cardinal-012-1|rand4+0.32)  I1 1.561e-05  I3 3.415e-05  I4 6.422e-05  runs 4320
+rand4-0.32  L1 0.010036 (knight|cardinal-012-1|rand4-0.32)  I1 2.071e-05  I3 3.440e-05  I4 7.885e-05  runs 4320
+rand5+0.32  L1 0.010934 (weary|cardinal-018-1|rand5+0.32)  I1 1.403e-05  I3 3.264e-05  I4 7.642e-05  runs 4320
+rand5-0.32  L1 0.010211 (tourist|cardinal-012-1|rand5-0.32)  I1 1.599e-05  I3 4.353e-05  I4 8.693e-05  runs 4320
+rand6+0.32  L1 0.010898 (prince|cardinal-012-1|rand6+0.32)  I1 1.475e-05  I3 2.375e-05  I4 3.756e-05  runs 4320
+rand6-0.32  L1 0.010424 (tourist|cardinal-012-1|rand6-0.32)  I1 1.578e-05  I3 3.208e-05  I4 9.005e-05  runs 4320
+rand7+0.32  L1 0.010610 (knight|cardinal-012-1|rand7+0.32)  I1 1.521e-05  I3 2.648e-05  I4 6.092e-05  runs 4320
+rand7-0.32  L1 0.010142 (knight|cardinal-012-1|rand7-0.32)  I1 1.524e-05  I3 2.680e-05  I4 4.428e-05  runs 4320
+plur+0.32   L1 0.010135 (careful|coordinated-adjective-018-3|plur+0.32)  I1 1.836e-05  I3 1.317e-05  I4 3.020e-05  runs 4320
+plur-0.32   L1 0.010785 (rapid|coordinated-adjective-018-3|plur-0.32)  I1 1.479e-05  I3 2.276e-05  I4 6.000e-05  runs 4320

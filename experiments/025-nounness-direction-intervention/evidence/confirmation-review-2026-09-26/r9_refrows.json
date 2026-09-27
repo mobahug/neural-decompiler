@@ -1,0 +1,17 @@
+{
+ "frames": 108,
+ "own_frame_max_abs_diff": 0.006726113451645532,
+ "other_frame_min_of_max_abs_diff": 0.07551821326722108,
+ "guard": {
+  "refused": [],
+  "writes_here": 0,
+  "writes_elsewhere": [
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/dev/null",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/ayhm1x87",
+   "/private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmpvrgjep61/probe-source"
+  ]
+ }
+}

@@ -1,0 +1,939 @@
+{
+ "head": "6f72d7d8afcaa079ee38256b7c1250352b1b1bdd",
+ "keys": [
+  "cardinal-009-1|ref|581",
+  "quantifier-009-1|ref|1016",
+  "coordinated-adjective-009-1|ref|581"
+ ],
+ "spent_proof": {
+  "cardinal-009-1|ref|581": {
+   "in_020_ledger": true,
+   "in_committed_020_archive": true,
+   "patch_path_key": false,
+   "in_025_manifest": false
+  },
+  "quantifier-009-1|ref|1016": {
+   "in_020_ledger": true,
+   "in_committed_020_archive": true,
+   "patch_path_key": false,
+   "in_025_manifest": false
+  },
+  "coordinated-adjective-009-1|ref|581": {
+   "in_020_ledger": true,
+   "in_committed_020_archive": true,
+   "patch_path_key": false,
+   "in_025_manifest": false
+  }
+ },
+ "ledger_source": {
+  "020_results_state": "outputs/experiment-020/results.json (executed_prompt_keys), verified by rc.verify_020_closure against the committed closure's file and state digests",
+  "committed_archive": "experiments/023-block0-completion/evidence/archive/experiment-020-results.json.gz",
+  "committed_archive_sha256": "69d726ac54b86ea98cc49a3e995de631875fb5417771b2212bd99cbe6fef6f86"
+ },
+ "executed": [
+  [
+   "plain",
+   "cardinal-009-1|ref|581"
+  ],
+  [
+   "patched-theta0",
+   "cardinal-009-1|ref|581"
+  ],
+  [
+   "plain",
+   "quantifier-009-1|ref|1016"
+  ],
+  [
+   "patched-theta0",
+   "quantifier-009-1|ref|1016"
+  ],
+  [
+   "plain",
+   "coordinated-adjective-009-1|ref|581"
+  ],
+  [
+   "patched-theta0",
+   "coordinated-adjective-009-1|ref|581"
+  ]
+ ],
+ "forwards": 6,
+ "digests": {
+  "cardinal-009-1|ref|581": {
+   "plain": {
+    "logits_sha256": "f6f7704d437383cbe8dda8eeef94f695d7640eb1d640042155a0ea34761c2bce",
+    "slices": [
+     "ATTN_PATTERN.L4@3",
+     "ATTN_PATTERN.L5@3",
+     "EMBED@3",
+     "RESID_PRE.L0@3",
+     "RESID_PRE.L1@3",
+     "RESID_PRE.L3@3"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@3": "e3d3a71a561e8da720bea0f62d55b9b512a43cfea22df5574f432feb2cd59449",
+     "ATTN_PATTERN.L5@3": "94f3c5ec9fe6fdb3128face39091b37ef1f46120249d286d235c35b01b581889",
+     "EMBED@3": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L0@3": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L1@3": "411abb43acd2a823b57a2a7fcc52a2b84aaaae9f23589b89a9185e1caf2c7e46",
+     "RESID_PRE.L3@3": "a98593bcb560178010b58d06229f40121c5bd1b51eb5cb784d06211ed64d22af"
+    },
+    "shapes": {
+     "RESID_PRE.L1@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@3": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "ATTN_PATTERN.L5@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "EMBED@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@3": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "patched": {
+    "logits_sha256": "f6f7704d437383cbe8dda8eeef94f695d7640eb1d640042155a0ea34761c2bce",
+    "slices": [
+     "ATTN_PATTERN.L4@3",
+     "ATTN_PATTERN.L5@3",
+     "EMBED@3",
+     "RESID_PRE.L0@3",
+     "RESID_PRE.L1@3",
+     "RESID_PRE.L3@3"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@3": "e3d3a71a561e8da720bea0f62d55b9b512a43cfea22df5574f432feb2cd59449",
+     "ATTN_PATTERN.L5@3": "94f3c5ec9fe6fdb3128face39091b37ef1f46120249d286d235c35b01b581889",
+     "EMBED@3": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L0@3": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L1@3": "411abb43acd2a823b57a2a7fcc52a2b84aaaae9f23589b89a9185e1caf2c7e46",
+     "RESID_PRE.L3@3": "a98593bcb560178010b58d06229f40121c5bd1b51eb5cb784d06211ed64d22af"
+    },
+    "shapes": {
+     "RESID_PRE.L1@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@3": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "ATTN_PATTERN.L5@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "EMBED@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@3": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "plain_equals_patched_theta0": true,
+   "embed_equals_resid_pre0": true,
+   "patch_integrity": [
+    {
+     "site": "EMBED@3",
+     "hook": "embed.hook_out",
+     "source": "direct",
+     "shape": [
+      1,
+      1,
+      512
+     ],
+     "outside_max_abs_change": 0.0
+    }
+   ]
+  },
+  "quantifier-009-1|ref|1016": {
+   "plain": {
+    "logits_sha256": "a0b10e9eeb1769dc7269b5edb9959f958237815dbcc265385db4824a5f00e290",
+    "slices": [
+     "ATTN_PATTERN.L4@3",
+     "ATTN_PATTERN.L5@3",
+     "EMBED@3",
+     "RESID_PRE.L0@3",
+     "RESID_PRE.L1@3",
+     "RESID_PRE.L3@3"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@3": "d46e184aa6d1866dc9ab53c8bc8179d1fc01909d051a5be71428c40b1dae9cc9",
+     "ATTN_PATTERN.L5@3": "206692f6f345fdbb4851c646a96e5887e4dd1eb61aeefddd075b7a1adee44b88",
+     "EMBED@3": "09a6620b5b194b2713e6f79ea64aac6865279a7edb22fb5690707f73aef90e3d",
+     "RESID_PRE.L0@3": "09a6620b5b194b2713e6f79ea64aac6865279a7edb22fb5690707f73aef90e3d",
+     "RESID_PRE.L1@3": "d1ff8b7df937ca5b5b3caed5c9a1376c7ac2dd00b3b13ad91601cae74c26a345",
+     "RESID_PRE.L3@3": "102c5feabc964144b1d064daed685a76b72c43686c437495b7f9d0342b5d7f2f"
+    },
+    "shapes": {
+     "RESID_PRE.L1@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@3": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "ATTN_PATTERN.L5@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "EMBED@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@3": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "patched": {
+    "logits_sha256": "a0b10e9eeb1769dc7269b5edb9959f958237815dbcc265385db4824a5f00e290",
+    "slices": [
+     "ATTN_PATTERN.L4@3",
+     "ATTN_PATTERN.L5@3",
+     "EMBED@3",
+     "RESID_PRE.L0@3",
+     "RESID_PRE.L1@3",
+     "RESID_PRE.L3@3"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@3": "d46e184aa6d1866dc9ab53c8bc8179d1fc01909d051a5be71428c40b1dae9cc9",
+     "ATTN_PATTERN.L5@3": "206692f6f345fdbb4851c646a96e5887e4dd1eb61aeefddd075b7a1adee44b88",
+     "EMBED@3": "09a6620b5b194b2713e6f79ea64aac6865279a7edb22fb5690707f73aef90e3d",
+     "RESID_PRE.L0@3": "09a6620b5b194b2713e6f79ea64aac6865279a7edb22fb5690707f73aef90e3d",
+     "RESID_PRE.L1@3": "d1ff8b7df937ca5b5b3caed5c9a1376c7ac2dd00b3b13ad91601cae74c26a345",
+     "RESID_PRE.L3@3": "102c5feabc964144b1d064daed685a76b72c43686c437495b7f9d0342b5d7f2f"
+    },
+    "shapes": {
+     "RESID_PRE.L1@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@3": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "ATTN_PATTERN.L5@3": [
+      1,
+      8,
+      1,
+      4
+     ],
+     "EMBED@3": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@3": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "plain_equals_patched_theta0": true,
+   "embed_equals_resid_pre0": true,
+   "patch_integrity": [
+    {
+     "site": "EMBED@3",
+     "hook": "embed.hook_out",
+     "source": "direct",
+     "shape": [
+      1,
+      1,
+      512
+     ],
+     "outside_max_abs_change": 0.0
+    }
+   ]
+  },
+  "coordinated-adjective-009-1|ref|581": {
+   "plain": {
+    "logits_sha256": "a3a3bb3179cbd8099c7b1ede34e798a9c4bd97cecd4bdd7eb7daaf886c57cf79",
+    "slices": [
+     "ATTN_PATTERN.L4@7",
+     "ATTN_PATTERN.L5@7",
+     "EMBED@6",
+     "RESID_PRE.L0@6",
+     "RESID_PRE.L1@6",
+     "RESID_PRE.L1@7",
+     "RESID_PRE.L3@6",
+     "RESID_PRE.L3@7"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@7": "2db0b35059790107ca0ced227e946758e4b15d41dc809de0cf4ffa94f0d4d2bd",
+     "ATTN_PATTERN.L5@7": "1bab39a91a74dbf7c0054faf86d038f2724e3e5aba188ca470024a7f9cc21834",
+     "EMBED@6": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L0@6": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L1@6": "de900d50b6af17f8e510f13d86999c7b59604702fe029558f51e25c3306882a2",
+     "RESID_PRE.L1@7": "d61a3a4430e7c4ecefbb01975e306344453fd74ab0d92b5440c664c1c7a136f7",
+     "RESID_PRE.L3@6": "94a0e13c07979acf7b5d25d7806eeb46eb56ca7a06cf54bd331451ed33f06d94",
+     "RESID_PRE.L3@7": "ae6e578672747d1b1998c2e4b43f23f376bd07cd5b7b24823dcc957ce37ddc1f"
+    },
+    "shapes": {
+     "RESID_PRE.L1@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L1@7": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@7": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@7": [
+      1,
+      8,
+      1,
+      8
+     ],
+     "ATTN_PATTERN.L5@7": [
+      1,
+      8,
+      1,
+      8
+     ],
+     "EMBED@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@6": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "patched": {
+    "logits_sha256": "a3a3bb3179cbd8099c7b1ede34e798a9c4bd97cecd4bdd7eb7daaf886c57cf79",
+    "slices": [
+     "ATTN_PATTERN.L4@7",
+     "ATTN_PATTERN.L5@7",
+     "EMBED@6",
+     "RESID_PRE.L0@6",
+     "RESID_PRE.L1@6",
+     "RESID_PRE.L1@7",
+     "RESID_PRE.L3@6",
+     "RESID_PRE.L3@7"
+    ],
+    "slices_sha256": {
+     "ATTN_PATTERN.L4@7": "2db0b35059790107ca0ced227e946758e4b15d41dc809de0cf4ffa94f0d4d2bd",
+     "ATTN_PATTERN.L5@7": "1bab39a91a74dbf7c0054faf86d038f2724e3e5aba188ca470024a7f9cc21834",
+     "EMBED@6": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L0@6": "5b51a332f39de2a4905b0498e2661224765d5c1573d2b3dc28aec65010839705",
+     "RESID_PRE.L1@6": "de900d50b6af17f8e510f13d86999c7b59604702fe029558f51e25c3306882a2",
+     "RESID_PRE.L1@7": "d61a3a4430e7c4ecefbb01975e306344453fd74ab0d92b5440c664c1c7a136f7",
+     "RESID_PRE.L3@6": "94a0e13c07979acf7b5d25d7806eeb46eb56ca7a06cf54bd331451ed33f06d94",
+     "RESID_PRE.L3@7": "ae6e578672747d1b1998c2e4b43f23f376bd07cd5b7b24823dcc957ce37ddc1f"
+    },
+    "shapes": {
+     "RESID_PRE.L1@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L1@7": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L3@7": [
+      1,
+      1,
+      512
+     ],
+     "ATTN_PATTERN.L4@7": [
+      1,
+      8,
+      1,
+      8
+     ],
+     "ATTN_PATTERN.L5@7": [
+      1,
+      8,
+      1,
+      8
+     ],
+     "EMBED@6": [
+      1,
+      1,
+      512
+     ],
+     "RESID_PRE.L0@6": [
+      1,
+      1,
+      512
+     ]
+    },
+    "dtypes": [
+     "torch.float32"
+    ]
+   },
+   "plain_equals_patched_theta0": true,
+   "embed_equals_resid_pre0": true,
+   "patch_integrity": [
+    {
+     "site": "EMBED@6",
+     "hook": "embed.hook_out",
+     "source": "direct",
+     "shape": [
+      1,
+      1,
+      512
+     ],
+     "outside_max_abs_change": 0.0
+    }
+   ]
+  }
+ },
+ "instance_signatures": {
+  "<root>": "(input: Union[str, List[str], torch.Tensor], return_type: Optional[str] = 'logits', loss_per_token: bool = False, prepend_bos: Optional[bool] = None, padding_side: Optional[str] = None, attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, start_at_layer: Optional[int] = None, stop_at_layer: Optional[int] = None, pixel_values: Optional[torch.Tensor] = None, input_values: Optional[torch.Tensor] = None, **kwargs) -> Any",
+  "embed": "(input_ids: torch.Tensor, position_ids: torch.Tensor | None = None, **kwargs: Any) -> torch.Tensor",
+  "embed.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "embed.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "embed._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "rotary_emb": "(*args: Any, **kwargs: Any) -> Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]",
+  "rotary_emb.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "rotary_emb.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "rotary_emb.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "rotary_emb.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "rotary_emb._original_component": "(x, position_ids)",
+  "blocks": "(*input: Any) -> None",
+  "blocks.0": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.0.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.0._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.0._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.0._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.0._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.0._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.0._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.0._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.0._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.1.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.1._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.1._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.1._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.1._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.1._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.1._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.1._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.1._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.2.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.2._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.2._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.2._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.2._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.2._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.2._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.2._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.2._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.3.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.3._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.3._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.3._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.3._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.3._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.3._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.3._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.3._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.4.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.4._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.4._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.4._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.4._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.4._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.4._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.4._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.4._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5": "(*args: 'Any', **kwargs: 'Any') -> 'Any'",
+  "blocks.5.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5.hook_mlp_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component": "(hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.5._original_component.input_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.input_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.input_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.input_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.input_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.input_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.post_attention_layernorm": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.post_attention_layernorm.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.post_attention_layernorm.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.post_attention_layernorm.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.post_attention_layernorm.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.post_attention_layernorm._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.post_attention_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.post_mlp_dropout": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention": "(*args: Any, **kwargs: Any) -> Any",
+  "blocks.5._original_component.attention.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_attn_scores": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_pattern": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_hidden_states": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_result": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_attn_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_q_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_k_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_v_input": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_rot_k": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_rot_q": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.q": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.attention.q.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.q.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.q._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention.k": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.attention.k.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.k.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.k._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention.v": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.attention.v.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.v.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.v._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention.qkv": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.attention.qkv.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.qkv.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.qkv._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention.o": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.attention.o.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.o.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.o._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.attention.hook_cos": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention.hook_sin": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.attention._original_component": "(hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "blocks.5._original_component.mlp": "(*args, **kwargs) -> Any",
+  "blocks.5._original_component.mlp.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp._original_component": "(hidden_states)",
+  "blocks.5._original_component.mlp._original_component.dense_h_to_4h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.mlp._original_component.dense_h_to_4h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp._original_component.dense_h_to_4h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp._original_component.dense_h_to_4h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.mlp._original_component.dense_4h_to_h": "(input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "blocks.5._original_component.mlp._original_component.dense_4h_to_h.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp._original_component.dense_4h_to_h.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "blocks.5._original_component.mlp._original_component.dense_4h_to_h._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "blocks.5._original_component.mlp._original_component.act": "(input: torch.Tensor) -> torch.Tensor",
+  "ln_final": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "ln_final.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "ln_final.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "ln_final.hook_normalized": "(x: 'Tensor') -> 'Tensor'",
+  "ln_final.hook_scale": "(x: 'Tensor') -> 'Tensor'",
+  "ln_final._original_component": "(input: torch.Tensor) -> torch.Tensor",
+  "unembed": "(hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "unembed.hook_in": "(x: 'Tensor') -> 'Tensor'",
+  "unembed.hook_out": "(x: 'Tensor') -> 'Tensor'",
+  "unembed._original_component": "(input: torch.Tensor) -> torch.Tensor"
+ },
+ "class_signatures": {
+  "Dropout.forward": "(self, input: torch.Tensor) -> torch.Tensor",
+  "Embedding.forward": "(self, input: torch.Tensor) -> torch.Tensor",
+  "EmbeddingBridge.forward": "(self, input_ids: torch.Tensor, position_ids: torch.Tensor | None = None, **kwargs: Any) -> torch.Tensor",
+  "GELUActivation.forward": "(self, input: torch.Tensor) -> torch.Tensor",
+  "GPTNeoXAttention.forward": "(self, hidden_states: torch.FloatTensor, attention_mask: torch.FloatTensor, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "GPTNeoXLayer.forward": "(self, hidden_states: torch.FloatTensor | None, attention_mask: torch.FloatTensor | None = None, position_ids: torch.LongTensor | None = None, use_cache: bool | None = False, layer_past: transformers.cache_utils.Cache | None = None, position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None, **kwargs: Unpack[transformers.modeling_flash_attention_utils.FlashAttentionKwargs])",
+  "GPTNeoXMLP.forward": "(self, hidden_states)",
+  "GPTNeoXRotaryEmbedding.forward": "(self, x, position_ids)",
+  "HookPoint.forward": "(self, x: 'Tensor') -> 'Tensor'",
+  "LayerNorm.forward": "(self, input: torch.Tensor) -> torch.Tensor",
+  "Linear.forward": "(self, input: torch.Tensor) -> torch.Tensor",
+  "LinearBridge.forward": "(self, input: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor",
+  "MLPBridge.forward": "(self, *args, **kwargs) -> Any",
+  "NormalizationBridge.forward": "(self, hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor",
+  "RotaryEmbeddingBridge.forward": "(self, *args: Any, **kwargs: Any) -> Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]",
+  "TransformerBridge.forward": "(self, input: Union[str, List[str], torch.Tensor], return_type: Optional[str] = 'logits', loss_per_token: bool = False, prepend_bos: Optional[bool] = None, padding_side: Optional[str] = None, attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, start_at_layer: Optional[int] = None, stop_at_layer: Optional[int] = None, pixel_values: Optional[torch.Tensor] = None, input_values: Optional[torch.Tensor] = None, **kwargs) -> Any",
+  "TransformerBridge.run_with_hooks": "(self, input: Union[str, List[str], torch.Tensor], fwd_hooks: List[Tuple[Union[str, Callable], Callable]] = [], bwd_hooks: List[Tuple[Union[str, Callable], Callable]] = [], reset_hooks_end: bool = True, clear_contexts: bool = False, return_type: Optional[str] = 'logits', names_filter: Union[str, List[str], Callable[[str], bool], NoneType] = None, stop_at_layer: Optional[int] = None, remove_batch_dim: bool = False, **kwargs) -> Any",
+  "TransformerBridge.run_with_cache": "(self, input: Union[str, List[str], torch.Tensor], return_cache_object: bool = True, remove_batch_dim: bool = False, names_filter: Union[str, List[str], Callable[[str], bool], NoneType] = None, stop_at_layer: Optional[int] = None, incl_bwd: bool = False, pos_slice: Union[transformer_lens.utilities.slice.Slice, int, Tuple[int], Tuple[int, int], Tuple[int, int, int], List[int], torch.Tensor, numpy.ndarray, NoneType] = None, reset_hooks_end: bool = True, clear_contexts: bool = False, **kwargs) -> Tuple[Any, Union[transformer_lens.ActivationCache.ActivationCache, Dict[str, torch.Tensor]]]",
+  "TransformerBridge.generate": "(self, input: Union[str, List[str], torch.Tensor] = '', max_new_tokens: int = 10, stop_at_eos: bool = True, eos_token_id: Optional[int] = None, do_sample: bool = True, top_k: Optional[int] = None, top_p: Optional[float] = None, temperature: float = 1.0, freq_penalty: float = 0.0, repetition_penalty: float = 1.0, use_past_kv_cache: bool = True, prepend_bos: Optional[bool] = None, padding_side: Optional[str] = None, return_type: Optional[str] = 'input', verbose: bool = True, output_logits: bool = False, return_cache: bool = False, return_input_tokens: bool = False, names_filter: Union[str, List[str], Callable[[str], bool], NoneType] = None, device: Union[str, torch.device, NoneType] = None, pixel_values: Optional[torch.Tensor] = None, stop_strings: Union[str, List[str], NoneType] = None, stopping_criteria: Optional[Any] = None, attention_mask: Optional[torch.Tensor] = None, forced_bos_token_id: Optional[int] = None, **multimodal_kwargs) -> str | list[str] | torch.Tensor | typing.Any | tuple[typing.Any, transformer_lens.ActivationCache.ActivationCache] | tuple[typing.Any, torch.Tensor]",
+  "UnembeddingBridge.forward": "(self, hidden_states: torch.Tensor, **kwargs: Any) -> torch.Tensor"
+ },
+ "reference_tensors_sha256": "e939adcf0f69e4790e2e47fe520d2c7db55a5b97038517280dfedf3260c68472",
+ "outputs_unchanged": true,
+ "outputs": {
+  "candidate-lock.json": "1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be",
+  "candidate-preregistration.md": "e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919",
+  "results.json": "05f17a42d191aaeb7aab5c4cf704f972497d52d3945f45a6db58503eb7ebd594"
+ },
+ "tree_after": ""
+}
