@@ -1,8 +1,8 @@
 # Experiment 025 â€” post-closure documentation correction (2026-09-27): tracked binary files
 
 This correction was added after the closure (`d7c5e62`). It is documentation only. It changes no result, label,
-digest, report, record, evidence file or artifact of Experiment 025. It was found while building the synthesis source
-map (`research/synthesis/`).
+digest, report, record or artifact of Experiment 025. It adds this file, adds one line to the evidence index and edits
+two passages of the README. It was found while building the synthesis source map (`research/synthesis/`).
 
 ## The wrong sentence
 
@@ -14,7 +14,10 @@ The README's "Report and closure" section, as committed in `d7c5e62` (lines 227â
 > recorded in the evidence and the extract.
 
 The clause "The repository tracks no binary measurement artifact" is wrong. It was carried over from Experiment 024's
-README, where the same sentence is true: no binary file is tracked under 024.
+README (line 356).
+- For 024 the sentence holds for 024's own directory, where no binary file is tracked.
+- The repository as a whole already tracked binary tables of Experiments 022 and 023. Among them is 023's
+  `exposed-cells.f64`, which is derived from 022's exposed measurements.
 
 ## What is true
 
@@ -40,5 +43,9 @@ README, where the same sentence is true: no binary file is tracked under 024.
 - A pointer at the top of the README names the correction.
 - The evidence index lists this file.
 
-Nothing else changes. The official result, every digest, the report, the confirmation-record extract and every
+Nothing else changes. The official result, every digest, the report, the confirmation-record extract and every other
 evidence file are unchanged.
+
+**This file's own wording was made exact on 2026-09-27, in the commit after `e34f16d`.** The first version said no
+evidence file changed, and called 024's sentence simply true. The independent review of the synthesis source map
+pointed out both statements.
