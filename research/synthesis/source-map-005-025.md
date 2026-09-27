@@ -664,7 +664,7 @@ Each item has one of four classes:
 | 005 | cosmetic | The final report names a third axis, new frames `NOT_GENERALIZED` (experiments/005-regular-plural-mechanism/evidence/final-report-2026-09-18.md:131). The design's outcome section defines two axes (docs/superpowers/specs/2026-09-17-experiment-005-regular-plural-mechanism-design.md:859–863), and revision 5 defines the related label `CIRCUIT_NOT_GENERALIZED` (docs/superpowers/specs/2026-09-17-experiment-005-regular-plural-mechanism-design.md:87, 879–881). |
 | 005 | cosmetic | The calibration population is called 114 single-token holdout nouns (005:49), elsewhere 114 cases (docs/superpowers/specs/2026-09-17-experiment-005-regular-plural-mechanism-design.md:623) and 19 nouns (research/claims/C002-count-cued-noun-number-circuit.md:29). The design's status line is stale. |
 | 006 | outcome | The label `QUALITY_GATE_FAILED` (006:72) is not in the design's outcome list (docs/superpowers/specs/2026-09-18-experiment-006-low-rank-cue-decompilation-design.md:341–353). |
-| 006 | interpretation | The root README keeps the pre-narrowing wording and says the confirmation set “remains unexecuted” (README.md:21), although 007 executed it (007:112–113). |
+| 006 | interpretation | The root README kept the pre-narrowing wording and said the confirmation set “remains unexecuted” (README.md:21), although 007 executed it (007:112–113). Fixed in the root README after this map was first committed (`5fc98f6`). |
 | 006, 007 | cosmetic | The designs' status lines are stale (they predate the experiments). |
 | 008 | cosmetic | Frozen Rule 4 defines the head-dropped decision (docs/superpowers/specs/2026-09-18-experiment-008-cue-suppression-localization-design.md:216–218); only the label string `HEAD_DROPPED` (008:61) comes from the code. The README says the frozen rules “did not anticipate this pattern” (008:68). |
 | 009 | interpretation | “`R3` for the numerals” (009:80), while the final report shows stage `T` for `fourteen` and `sixteen` (experiments/009-head-transport-rule/evidence/final-report-2026-09-18.md:84, 95). |
@@ -724,6 +724,7 @@ The pushed history is not rewritten; the mismatch is recorded here instead.
 | 020, 021 | `2320345` | errata: the coordinated reference-row wiring |
 | 025 | `e34f16d`, `8fe3ee9` | the tracked-binary-files clause corrected, with an erratum file; the original wording stays visible, struck through; the erratum's own scope wording made exact in the second commit |
 | root README | `4f1f97d` | entries for 024 and 025 added |
+| root README | the commit after `5fc98f6` | the 006 sentence updated to the narrowed wording, with the confirmation set's later execution in 007 |
 
 ### Registries
 
@@ -735,8 +736,9 @@ The pushed history is not rewritten; the mismatch is recorded here instead.
 - **Anomalies.** “No anomalies have been registered.” (research/anomalies/README.md:31)
 - **Root README.** Its experiment entries ended at 023 (README.md:21), although 024's plan required an entry at
   closure: “The root `README.md` registry entry, at closure only.” (docs/superpowers/plans/2026-09-25-experiment-024-readout-routing-nounness-plan.md:616)
-  Entries for 024 and 025 were added in `4f1f97d`. Its 006 sentence keeps the pre-narrowing wording and says the
-  confirmation set “remains unexecuted” (README.md:21); that is left for a decision.
+  Entries for 024 and 025 were added in `4f1f97d`. Its 006 sentence kept the pre-narrowing wording and said the
+  confirmation set “remains unexecuted” (README.md:21). In the commit after `5fc98f6`, it was updated to the narrowed
+  wording and now notes that 007 executed the set; 006's own README and artifacts are unchanged.
 
 ## What this map does not do
 
