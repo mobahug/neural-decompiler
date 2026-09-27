@@ -127,7 +127,8 @@ def main(files: list[str]) -> int:
             window = check_refs(refs, where, failures)
             if normalize(quote) not in normalize(" ".join(window)):
                 failures.append(f"{where}: not found in the cited lines ({group.group(1)})")
-        bare = re.sub(r"`[^`]*`", "", QUOTE.sub("", text))
+        code_free = re.sub(r"```.*?```", "", text, flags=re.S)  # fenced blocks would shift the backtick pairing
+        bare = re.sub(r"`[^`]*`", "", QUOTE.sub("", code_free))
         for match in re.finditer(r"\"[^\"\n]{3,}\"", bare):
             failures.append(f"{name}: straight-quoted text {match.group(0)[:70]}: quote it with “…” and a citation, or paraphrase it")
         # 2. citations
@@ -142,12 +143,12 @@ def main(files: list[str]) -> int:
                 continue
             check_refs(refs, f"{name}: citation ({body[:60]})", failures)
         # 3. commit hashes
-        for value in sorted(set(re.findall(r"`([0-9a-f]{7,40})`", text))):
+        for value in sorted(set(re.findall(r"`([0-9a-f]{7,40})`", code_free))):
             counts["hashes"] += 1
             if value not in NON_COMMITS and git("cat-file", "-e", f"{value}^{{commit}}").returncode != 0:
                 failures.append(f"{name}: `{value}` is not a commit of this repository")
         # 4. labels
-        spans = [part.strip() for span in re.findall(r"`([^`]+)`", text) for part in span.replace("\\|", "|").split("|")]
+        spans = [part.strip() for span in re.findall(r"`([^`]+)`", code_free) for part in span.replace("\\|", "|").split("|")]
         for label in sorted({part for part in spans if re.fullmatch(r"[A-Z][A-Z0-9]*(?:_[A-Z0-9<>]+)+", part)}):
             counts["labels"] += 1
             if git("grep", "-q", "-F", label, PIN, "--", "experiments", "docs", "research", "screening", "README.md").returncode != 0:

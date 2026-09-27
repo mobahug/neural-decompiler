@@ -19,4 +19,5 @@ point to them; where a summary here disagrees with its source, the source wins.
 ## Documents
 
 - [Source map, Experiments 005–025](source-map-005-025.md) — step 1, with the evidence status of every finding and the record caveats.
-- [`checks/`](checks/) — the mechanical quote and citation checker, the investigation of the 010 and 012 digest mismatches, and the independent review of the map with the disposition of each finding.
+- [Synthesis, Experiments 005–025](synthesis-005-025.md) — step 2: the answer to the original question along the mechanistic chain, where prediction succeeds and where causal establishment stops.
+- [`checks/`](checks/) — the mechanical quote and citation checker; the investigation of the 010 and 012 digest mismatches; and the independent reviews of the map and of the synthesis, with the disposition of each finding.
