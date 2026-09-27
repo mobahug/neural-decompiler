@@ -1,0 +1,29 @@
+{
+ "checks": {
+  "report_sha256_in_state": true,
+  "phases_all_complete": true,
+  "no_incident": true,
+  "reversal_reproduces_pre_report_state": true,
+  "reversal_equals_launcher_copy": true,
+  "frozen_renderer_reproduces_report": true,
+  "only_report_entries_changed": true,
+  "measurements_unchanged": true,
+  "ledger_unchanged_90720": true,
+  "installed_artifacts_unchanged": true,
+  "wording_label_and_reading": true,
+  "wording_counts": true,
+  "wording_tail": true,
+  "wording_no_forbidden_phrases": true,
+  "descriptives_marked_no_outcome_force": true
+ },
+ "all": true,
+ "report_md": {
+  "bytes": 7868,
+  "sha256": "ad9f85e62e74bf10b22060dc6f49ab75ddf3e79b7c81814d29ac6aa19fb75407"
+ },
+ "final_state": {
+  "state_sha256": "534dad3907d94fa78c3a88a9e74bd88051b6ada57a09daff8007d2a3495bcdb8",
+  "file_sha256": "fef818dced09bbf4faae43e68bc7da8c97bfeaed5190637099132968f4408134"
+ },
+ "pre_report_state": "1d5d37f035bc3153fec6efac527b088f64cd42fcd74e59680f4388daea98b33c"
+}

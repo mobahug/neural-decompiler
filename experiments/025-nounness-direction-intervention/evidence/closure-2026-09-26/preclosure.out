@@ -1,0 +1,26 @@
+[ok] head, origin and remote at the confirm-evidence commit
+[ok] tree clean (no untracked file), no stash
+[ok] final state
+[ok] all state phases complete
+[ok] no incident
+[ok] no descriptive failure
+[ok] report
+[ok] measurements
+[ok] reverting the two report entries gives the confirm-final state
+[ok] removing the descriptive records gives the result-write state
+[ok] the official result
+[ok] ledger and accounting
+[ok] installed lock and preregistration
+[ok] installed freeze
+[ok] experiments/025-nounness-direction-intervention/confirmation-v1.json equals its HEAD blob byte for byte
+[ok] experiments/025-nounness-direction-intervention/preregistration-lock.json equals its HEAD blob byte for byte
+[ok] experiments/025-nounness-direction-intervention/preregistration.md equals its HEAD blob byte for byte
+[ok] the phase rule refuses another lock: lock already written; a new candidate lock requires a new protocol version
+[ok] the phase rule refuses another confirm: confirm already started; it runs once, never resumes, and a second attempt requires a new protocol version
+[ok] the freeze file exists and is tracked, so the runner's freeze refuses a second run
+note: the phase rule permits re-rendering the report (idempotent by design); the one-time report launcher's sentinel refuses a second run
+[ok] no scientific path changed since the lock commit: 131 paths changed, all non-scientific
+[ok] module binding
+[ok] the runner's validate: module blobs 13 verified (024's included); 022–024's committed files and 020's confirmation file verified; confirmation 6eca7024fe3f… (40 cues, 90720 condition-tagged keys); lock and preregistration verified
+[ok] nothing written into the repository
+PASS: 0 failure(s) []

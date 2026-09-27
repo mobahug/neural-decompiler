@@ -1,17 +1,34 @@
 # Experiment 025: Does Moving the Cue Embedding Along the Frozen Nounness Direction Causally Change the Frozen Readout Error and the Attention Routing?
 
-**Status: CONFIRMED. The one confirmation ran and was independently reviewed; the report and the closure follow.**
-- **The official result: `CAUSAL_EFFECT_NOT_ESTABLISHED`.**
+**Status (2026-09-27): CLOSED.** Every phase ran exactly once:
 
-  | statistic | positive | result |
-  |---|---|---|
-  | A | 26/40 | FAIL |
-  | B | 23/40 | FAIL |
-  | G | 37/40 | PASS, but it cannot change the label |
+| phase | status |
+|---|---|
+| freeze | complete, reviewed |
+| lock | complete, reviewed |
+| confirm | complete, reviewed |
+| report | complete, verified |
+| closure | complete |
 
-  The threshold is 27, and the reference tail is 0.01923865414210013.
-- **The run:** 2026-09-26, at `6f72d7d`; see `evidence/confirm-2026-09-26/`.
-- **The review:** PASS WITH NOTES, no blockers; see `evidence/confirmation-review-2026-09-26/`.
+**The official result: `CAUSAL_EFFECT_NOT_ESTABLISHED`.**
+
+| statistic | positive | threshold | result |
+|---|---|---|---|
+| A | 26/40 | 27 | FAIL |
+| B | 23/40 | 27 | FAIL |
+| G | 37/40 | 27 | PASS as a statistic; descriptive only, because under the frozen hierarchy it cannot change the label |
+
+The reference tail is 0.01923865414210013.
+
+**The preregistered reading:** the preregistered Experiment 025 test did not establish that moving fresh cue embeddings
+in the +nounness direction consistently causes greater frozen block-4/5 readout-approximation error than the matched
+−nounness intervention across the frozen 40-cue population.
+
+See [Report and closure](#report-and-closure-2026-09-27) and the [evidence index](evidence/README.md).
+
+**Experiment 025 is the endpoint of this sequence.** No Experiment 026 follows.
+
+The phase history:
 - **The implementation** is complete and independently reviewed: PASS WITH NOTES, no blockers. The fixes run through
   `c765148fdb612ae249e21ef3c830e4ceb1d12dd0`. The final test gate on that commit: tier A 542 passed, tier B 575
   passed, tier C 6 passed, 0 failed.
@@ -27,6 +44,12 @@
   - `preregistration-lock.json`: file sha256 `1881a79008f905f0331a4396757d69722b6cc22a9b10c06184d79c97ebc843be`,
     content sha256 `8e5300de76357ff5df9a3bff1473a85a79d2a3677769b18921bba8e5fb40c2fb`;
   - `preregistration.md`: sha256 `e4b12656b877fe1d3dbc2eec314c03c6b2e228d3acadcd146eb179bbf02df919`.
+- **The production confirm** ran exactly once, on 2026-09-26, at `6f72d7d`, with exit status 0 and no incident; see
+  `evidence/confirm-2026-09-26/`. The independent confirmation review: PASS WITH NOTES, no blockers; see
+  `evidence/confirmation-review-2026-09-26/`.
+- **The production report** ran exactly once, on 2026-09-27, at `c8d9fad`, with exit status 0; it loaded no model and
+  ran no prompt. Its output is preserved byte-identically as
+  [`evidence/final-report-2026-09-26.md`](evidence/final-report-2026-09-26.md) (`ad9f85e6…`).
 - **The evidence** is under [`evidence/`](evidence/README.md).
 
 Implements the design
@@ -174,3 +197,84 @@ The local outputs stay in `outputs/experiment-025/`.
     `.forward`, `__call__`, hook, cache and generate routes, and every capture or intervention alias.
   - **N4:** an explicit allow-list of the expected output paths and state writes, even inside
     `outputs/experiment-025/`. Deletes and renames only for the atomic temporary-file → target operations.
+
+## Report and closure (2026-09-27)
+
+**The report run.** The production `report` was invoked exactly once, at `c8d9fad`, from the confirm-final state
+`1d5d37f0…`. It ran from 11:13:34.742 to 11:13:42.044 UTC on 2026-09-27, and exited with status 0 and no incident.
+- A guarded launcher refused every model load, tokenizer load, module call, and every prompt, capture, intervention,
+  measurement, gate and ledger entry point. Each was attempted 0 times.
+- It rendered only the completed confirmation state.
+- Its only writes were `report.md` and one atomic state write, which adds the report entries. Reverting them
+  reproduces the confirm-final state `1d5d37f0…` byte for byte.
+- The post-report verification passed all 15 checks. They include the frozen renderer reproducing `report.md` byte
+  for byte.
+- Evidence: [`evidence/report-2026-09-26/`](evidence/report-2026-09-26/README.md).
+
+**The closure data**, byte copies and an extract of the gitignored outputs; nothing was re-rendered or recomputed:
+- [`evidence/final-report-2026-09-26.md`](evidence/final-report-2026-09-26.md): `outputs/experiment-025/report.md`
+  byte for byte. 7,868 bytes, sha256 `ad9f85e62e74bf10b22060dc6f49ab75ddf3e79b7c81814d29ac6aa19fb75407`.
+- [`evidence/confirmation-record-2026-09-26.json`](evidence/confirmation-record-2026-09-26.json): the
+  confirmation-record extract of the final state, content `30da650f3d8ce15fdfef86e51a5e2adb8ebb5bb4ec45f1b5aedaa738796052ca`.
+  - It follows the 022–024 convention: the prompt ledger is replaced by its counts and digests.
+  - It adds:
+    - the run accounting: manifest = run log = ledger = 90,720 keys;
+    - the isolation against the 43,632 earlier spent keys, of which 0 were executed;
+    - the exit-127 event;
+    - a summary of the official result, copied from the state.
+  - Its builder and the pre-closure check (24/24) are in
+    [`evidence/closure-2026-09-26/`](evidence/closure-2026-09-26/README.md).
+- The fresh measurements `outputs/experiment-025/stage2-measurements.pt` (898,673,151 bytes, sha256
+  `87284bddfba16a1b7709d7d33f98aa1a0898b1d85767956a524d2950d80a7788`) and the final state (`534dad39…`, file
+  `fef818dc…`) stay local and unchanged. The repository tracks no binary measurement artifact; their hashes are
+  recorded in the evidence and the extract.
+- The provenance chain: [`evidence/README.md`](evidence/README.md).
+
+**The exit-127 shell event (provenance only).** At 19:23:09 UTC on 2026-09-26, the first confirm launch command failed
+in the shell, before Python started.
+- The command had been stored in a shell variable. zsh does not word-split an unquoted variable, so it looked for a
+  program named after the whole string and exited with 127.
+- No launcher code ran and `runner.confirm()` was not invoked. No state, output or ledger changed.
+- **It was not a scientific attempt.**
+- The launch of record followed, with the command written out literally; the launcher started at 19:23:57.846 UTC.
+- The event is archived in `evidence/confirm-2026-09-26/` (`shell_error_production.*`). The independent confirmation
+  review verified it from the file contents and timestamps.
+
+**The result, in its scope.**
+- The official result is **`CAUSAL_EFFECT_NOT_ESTABLISHED`**: A = 26/40, B = 23/40, G = 37/40, threshold = 27,
+  reference tail = 0.01923865414210013.
+- The preregistered reading: the preregistered Experiment 025 test did not establish that moving fresh cue embeddings
+  in the +nounness direction consistently causes greater frozen block-4/5 readout-approximation error than the matched
+  −nounness intervention across the frozen 40-cue population.
+- The label records that this test did not establish the effect. It is not a finding of no causal effect.
+- A failed, so the frozen hierarchy assigns this label whatever B and G are. G's 37/40 cannot change it.
+
+**Descriptive records (no outcome force).** They were computed after the result was written, or in the independent
+review. None is a preregistered test, no claim rests on them, and they can never rescue, alter or redefine the result:
+- the adjective/noun stratum split: A 20/20 and 6/20, B 20/20 and 3/20, G 20/20 and 17/20. The stratum counts cannot
+  change the label, and no stratum-level claim is made;
+- G = 37/40;
+- the causal fraction, 0.341;
+- the block-4/5 ladder;
+- the related correlations, such as Spearman(A, s₀) = −0.83 across the 40 cues, reported descriptively in the
+  independent confirmation review;
+- the magnitudes, the even components and baselines, the half dose, the plurality control, nMSE, G against the random
+  directions and the per-template counts, in the [final report](evidence/final-report-2026-09-26.md).
+
+**Limitations:**
+- **The scale is small:** one checkpoint (Pythia-70M deduped, `e93a9faa…`), 40 fresh cues picked mechanically (not
+  sampled at random), 108 exposed frames and 79 scored nouns.
+- **The intervention is narrow:** one norm-preserving rotation of the cue's input embedding, along one frozen
+  weight-derived direction, at two doses.
+- **What was measured** is the error of a frozen approximation, and one frozen L4/L5 routing summary. Neither is
+  directly observed rerouting.
+- **The nounness direction is partly aligned with plurality** (cos +0.235).
+- **Not claimed by any label:** semantic nounhood as the model's variable; a general routing controller; algorithm
+  selection in general; generalization beyond this checkpoint and this mechanism.
+
+**Experiment 024's result is unchanged.** Its frozen nounness score prospectively predicted the frozen readout error,
+which is a predictive result, not a causal one. Experiment 025's preregistered test did not establish the causal
+reading it tested.
+
+**The endpoint.** Experiment 025 is the endpoint of this sequence, as its design fixed in advance. Confirm is not
+rerun, and no Experiment 026 follows.
