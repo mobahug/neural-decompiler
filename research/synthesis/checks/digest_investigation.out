@@ -1,0 +1,21 @@
+Experiment 010 (read_assembly.write_results_state; report() rewrites the state with phases.report complete)
+  010 explore log digest: a9f8d7031207becd4d0390fb0e7ea4d7c37d28e6a500950fed0033d69a27c3da  (equals the README value)
+  final state, recorded: b8986dd3c5cf31f145c4156ccf5b2dd4a0121a98f5873c97d4bedaffe6beb41b
+  final state, recomputed: b8986dd3c5cf31f145c4156ccf5b2dd4a0121a98f5873c97d4bedaffe6beb41b  == b8986dd3c5cf…  MATCH
+  extract experiment-010-transport-fractions.json: b8986dd3c5cf31f145c4156ccf5b2dd4a0121a98f5873c97d4bedaffe6beb41b  == b8986dd3c5cf…  MATCH
+  extract experiment-010-component-fractions.json: b8986dd3c5cf31f145c4156ccf5b2dd4a0121a98f5873c97d4bedaffe6beb41b  == b8986dd3c5cf…  MATCH
+  final phases.report: {'completed_at': '2026-09-18T19:26:30+00:00', 'status': 'complete'}
+  final state with phases.report reverted to not_started: a9f8d7031207becd4d0390fb0e7ea4d7c37d28e6a500950fed0033d69a27c3da  == a9f8d7031207…  MATCH
+  010 verdict: EXPLAINED
+
+Experiment 012 (layer_correction.write_results_state; lock() writes state['lock'] and phases.lock; confirm() writes the
+fresh ledger keys, phases.confirm and state['confirmation']; report() does not write the state)
+  final state, recomputed: 7561c402d2e24313a3a497412d890fcd93c710ba0b3e96483c73e00439e85585  == 7561c402d2e2…  MATCH
+  installed lock tier_a_results_sha256: 3eb1db00ea1ac1d3974be3ec4c81dcbb7e464d6c028f8395479cd37f24372764  == 3eb1db00ea1a…  MATCH
+  ledger: final 252 keys; without the 6 fresh frames' keys 90 (README:133-134 says 90)
+  rebuilt state at the end of explore: 3eb1db00ea1ac1d3974be3ec4c81dcbb7e464d6c028f8395479cd37f24372764  == 3eb1db00ea1a…  MATCH
+  rebuilt state after the lock phase: 069a6306d1325dcd6efd7f2aeac330f26baa2c765021e65d5a4480f1252f381a  == 069a6306d132…  MATCH
+  state['lock'] (written by lock, unchanged by confirm): {"candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-012/candidate-lock.json", "content_sha256": "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c
+  012 verdict: EXPLAINED
+
+file sha256 of the local states (for the record): {'010': 'f3319310dcc594ee4caed752f63a2aeca81a285a2762dfa6f4b8ab41691da561', '012': '71fc8793b36667c3f639bdd9eaeac22e17f07d836d137c6b47d60ba6c4665e0a'}
