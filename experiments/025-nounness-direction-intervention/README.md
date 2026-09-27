@@ -26,6 +26,10 @@ in the +nounness direction consistently causes greater frozen block-4/5 readout-
 
 See [Report and closure](#report-and-closure-2026-09-27) and the [evidence index](evidence/README.md).
 
+**Post-closure documentation correction (2026-09-27).** One clause of the closure text was wrong: the repository
+does track binary tensor files in 025's evidence. The clause is kept, struck through, beside the correction. No
+result, digest or record changes. See [the correction](evidence/erratum-2026-09-27-tracked-binary-files.md).
+
 **Experiment 025 is the endpoint of this sequence.** No Experiment 026 follows.
 
 The phase history:
@@ -226,8 +230,10 @@ The local outputs stay in `outputs/experiment-025/`.
     [`evidence/closure-2026-09-26/`](evidence/closure-2026-09-26/README.md).
 - The fresh measurements `outputs/experiment-025/stage2-measurements.pt` (898,673,151 bytes, sha256
   `87284bddfba16a1b7709d7d33f98aa1a0898b1d85767956a524d2950d80a7788`) and the final state (`534dad39…`, file
-  `fef818dc…`) stay local and unchanged. The repository tracks no binary measurement artifact; their hashes are
-  recorded in the evidence and the extract.
+  `fef818dc…`) stay local and unchanged. ~~The repository tracks no binary measurement artifact;~~ their hashes are
+  recorded in the evidence and the extract. **Corrected after closure (2026-09-27):** the struck clause was wrong. Six
+  binary tensor files are tracked in the evidence, and three of them hold values derived from the measurements; see
+  [the correction](evidence/erratum-2026-09-27-tracked-binary-files.md).
 - The provenance chain: [`evidence/README.md`](evidence/README.md).
 
 **The exit-127 shell event (provenance only).** At 19:23:09 UTC on 2026-09-26, the first confirm launch command failed
