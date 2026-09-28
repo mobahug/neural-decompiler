@@ -6,16 +6,18 @@
 - Disposition: `ACTIVE`
 - Created: 2026-09-28 (drafted 2026-09-27)
 - Last reviewed: 2026-09-28 ([registration review](reviews/C003-registration-review-2026-09-28.md))
-- Origin: each stage was formulated on exposed data and tested once, in its experiment's single confirmation run
+- Origin: exploratory composite of confirmatory stage tests. Each stage was formulated on exposed data and tested once, in its experiment's single confirmation run
   under its own lock (009, 011–019, 021–024); not every test passed. The composite hypothesis below was assembled
   afterwards, in the draft this claim was registered from, from those runs and from exploratory work (005, 008, 010,
   020).
 - Related experiments: Experiments 005–025
-- Related claim: C002, a localization claim (see the next section). This claim sits beside it and does not replace or
+- Related claim: [C002](C002-count-cued-noun-number-circuit.md), a localization claim (see the next section). This claim sits beside it and does not replace or
   supersede it.
 - Registered from: the frozen draft [`drafts/C002-successor-draft-2026-09-27.md`](drafts/C002-successor-draft-2026-09-27.md)
-  at `b1f6247`, after three independent read-only reviews
-  ([archive](drafts/C002-successor-draft-2026-09-27-reviews.md)).
+  at `b1f6247`, its revision 4. Three independent read-only reviews read the first draft and revisions 2 and 3
+  ([archive](drafts/C002-successor-draft-2026-09-27-reviews.md)). Revision 4 answered the third, and the independent
+  check of this registration confirmed those answers
+  ([registration review](reviews/C003-registration-review-2026-09-28.md)).
 
 ## Relationship to C002
 
@@ -259,7 +261,7 @@ end-to-end shortfall. E024, an intervention whose effect was not established, is
 - [ ] Sufficiency-oriented intervention supports the prediction on confirmatory data. Not established. The
   confirmations predict the consequences of the E-patch or of a real cue swap. No decoded variable was itself
   manipulated and shown sufficient in a preregistered, outcome-bearing test. The one preregistered intervention on a
-  decoded direction did not establish its predicted effect (E024). The decision on the C002 review applies the same
+  decoded direction did not establish its predicted effect (E024). [The decision on the C002 review](reviews/C002-review-2026-09-27.md#decision-2026-09-27) applies the same
   reading here.
 - [ ] Matched, negative and other controls on confirmatory data. Not established. The preregistered alternatives
   (E008, E009, E012, E013, E015) are variants of the program, not interventions in the model.
@@ -419,4 +421,4 @@ The programs are prospectively predictive; their causal gates are unestablished.
 
 | Date | Previous maturity | New maturity | Previous disposition | New disposition | Reason | Evidence |
 |---|---|---|---|---|---|---|
-| 2026-09-28 | — | `LOCALIZED` | — | `ACTIVE` | Registered from the frozen draft at `b1f6247`, after three independent read-only reviews, each PASS WITH NOTES with no blocker and every should-fix item resolved. Level 0–2 gates satisfied (see *Evidence gates*). Level 3 not established: no preregistered, outcome-bearing necessity, sufficiency or control test of a decoded variable, and the one preregistered intervention on a decoded direction did not establish its predicted effect (E024). Prospectively predictive; causal gates unestablished. Sits beside C002 and does not supersede it. | E001–E027 |
+| 2026-09-28 | — | `LOCALIZED` | — | `ACTIVE` | Registered from the frozen draft at `b1f6247`, after three independent read-only reviews of the first draft and of revisions 2 and 3, each PASS WITH NOTES with no blocker. Revision 4 answered every should-fix item of the third, and the registration's independent check confirmed the answers. Level 0–2 gates satisfied (see *Evidence gates*). Level 3 not established: no preregistered, outcome-bearing necessity, sufficiency or control test of a decoded variable, and the one preregistered intervention on a decoded direction did not establish its predicted effect (E024). Prospectively predictive; causal gates unestablished. Sits beside C002 and does not supersede it. | E001–E027 |
