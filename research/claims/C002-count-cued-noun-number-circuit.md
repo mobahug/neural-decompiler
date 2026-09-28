@@ -8,6 +8,7 @@
 - Last reviewed: 2026-09-27
 - Origin: exploratory (mechanism found on development data in Experiment 005 Tier A; predictions preregistered in the protocol v2 lock before the single confirmation run)
 - Related experiments: Experiment 005 (behavior candidate screen protocol v1 as its precursor); Experiments 006–025, reviewed in [the 2026-09-27 claim review](reviews/C002-review-2026-09-27.md)
+- Related claims: [C003](C003-frame-conditioned-decoded-program.md), registered 2026-09-28, a separate claim describing the decoded predictive program; it sits beside this claim and does not supersede it
 
 ## Hypothesis
 
@@ -170,3 +171,4 @@ Within pinned Pythia-70M, the three screening templates, single-token regular no
 |---|---|---|---|---|---|---|
 | 2026-09-18 | — | `LOCALIZED` | — | `ACTIVE` | Created after Experiment 005's single confirmation run; Level 0–2 gates satisfied by E001, E002, E004; Level 3 not established because E003's behavioral precondition failed | E001–E004 |
 | 2026-09-27 | `LOCALIZED` | `LOCALIZED` | `ACTIVE` | `ACTIVE` | Reviewed against Experiments 006–025 ([review](reviews/C002-review-2026-09-27.md)). The recorded measurements stand, and 007 recorded the same magnitudes on new nouns and frames at criterion level. Level 3 not established: 007's composite route was not met (P3's correlation floor); 009–019 are predictive and mechanistic evidence on the consequences of the E-patch, not sufficiency evidence; 025 is recorded as null and does not test this chain. The contributors the later record names are small on C002's pairs (E001). Beyond the tested cue words, at the pair level, `L00.MLP` alone is not the whole cue stage (E017); this is recorded under Not supported. | E005–E019 |
+| 2026-09-28 | `LOCALIZED` | `LOCALIZED` | `ACTIVE` | `ACTIVE` | C003 was registered beside this claim. It describes the decoded predictive program and does not supersede this claim, whose evidence, gates and wording are unchanged. | — |
