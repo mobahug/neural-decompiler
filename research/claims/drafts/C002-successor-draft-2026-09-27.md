@@ -12,8 +12,8 @@
 - Proposed maturity on adoption: `LOCALIZED`. Prospectively predictive; causal gates unestablished.
 - Proposed disposition on adoption: `ACTIVE`
 - Drafted: 2026-09-27
-- Last reviewed: 2026-09-27, by two independent read-only reviews, of the first draft and of revision 2 (this is
-  revision 3)
+- Last reviewed: 2026-09-28, by three independent read-only reviews, of the first draft and of revisions 2 and 3
+  (this is revision 4)
 - Origin: each stage was formulated on exposed data and tested once, in its experiment's single confirmation run
   under its own lock (009, 011–019, 021–024); not every test passed. The composite hypothesis below was assembled
   afterwards, in this draft, from those runs and from exploratory work (005, 008, 010, 020).
@@ -25,8 +25,9 @@
 - **C002 localizes.** It names three components: `L00.MLP` at the cue position, `L03.H04` at the prediction position,
   and the layer-4 and layer-5 MLPs there. It measures what fraction of the contrast shift they recover, retain and
   mediate, for two cue pairs.
-- **This draft describes decoded programs.** They are written from the weights and each frame's measured reference
-  state. By rules frozen before the target prompts were executed, they predicted the consequences of a cue change:
+- **This draft describes decoded programs.** They are written from the weights, each frame's measured reference
+  state and quantities locked from exposed data, such as 012's template bases (012:8–9), 017's layer-3 bases
+  (017:13–14) and 018's neuron subset (018:12–13). By rules frozen before the target prompts were executed, they predicted the consequences of a cue change:
   stage by stage for the E-patch, and end to end for a real cue swap.
 - **The two coexist.** C002's measurements stand. Its 2026-09-27 review records Experiments 006–025 against C002's own
   components (C002, E005–E019). This draft starts from C002's localization and does not restate it.
@@ -34,8 +35,8 @@
 
 ## Hypothesis
 
-In pinned `EleutherAI/pythia-70m-deduped`, frozen programs written from the weights and each frame's measured
-reference state predict, by rules frozen before the target prompts are executed, the consequences of changing the
+In pinned `EleutherAI/pythia-70m-deduped`, frozen programs written from the weights, each frame's measured reference
+state and quantities locked from exposed data predict, by rules frozen before the target prompts are executed, the consequences of changing the
 count cue before a noun. Two interventions were predicted:
 - **The E-patch** replaces the `L00.MLP` output at the cue position with another cue's encoding. For it, the programs
   predicted the intermediate states, stage by stage (009–019).
@@ -52,8 +53,9 @@ In the model's order, the program's stages are:
    (docs/superpowers/specs/2026-09-23-experiment-022-upstream-error-localization-design.md:74–81; 018:9–12):
    - the token-local MLPs at the frame's operating point;
    - the heads' value paths and their pattern change;
-   - block 2's operating-point dependence (channel D), carried by a distributed-but-concentrated population of
-     block-2 neurons whose membership the frame routes.
+   - block 2's operating-point dependence (channel D). A locked subset of block-2 neurons largely recovers it, and the
+     frame's routing of that population is predicted in aggregate. This is not a uniquely defined circuit
+     (018:156–157; 019:164–165, 186–187).
 3. **`L03.H04`.**
    - Given its measured input, a fixed-normalization linear read-out predicts its output (009, 011).
    - A weight-only read of the encoding predicts its transport of new cues (011).
@@ -66,8 +68,10 @@ In the model's order, the program's stages are:
    - Block-4 attention is held at the reference.
    - Block 5's heads keep their reference rows over the predicted value changes. That includes a small
      second-transport path from the cue (020:43).
-   - The residual the readout leaves is small. A frozen, weight-derived nounness score predicts its size across new
-     cues, as a rank association that is predictive, not causal.
+   - The residual the readout leaves is small: exploratory on exposed data (020:132), descriptive on fresh data
+     (021:140–142; 023:143–145). 023 makes no claim that the readout is complete (023:183–184). A frozen,
+     weight-derived nounness score predicts the residual's size across new cues, as a rank association that is
+     predictive, not causal.
 
 The claim is predictive. It does not claim that the programs' variables are the model's causal variables.
 
@@ -129,10 +133,11 @@ neither a new frame's reference state nor a measured input, before the experimen
 - Frame-conditional tables were computed at stage 1 of that run and held by digest before any target prompt: 013–019
   (experiments/013-attention-paths-frozen-pattern/predictions.md:5; experiments/019-block2-routing/predictions.md:7),
   021 (021:86–89) and 022–023 (experiments/022-upstream-error-localization/preregistration.md:7;
-  experiments/023-block0-completion/preregistration.md:8). The source map records that 013–016's were not committed
-  before scoring (research/synthesis/source-map-005-025.md@b722e9c:678).
+  experiments/023-block0-completion/preregistration.md:8). None of these tables was committed before scoring. The
+  source map records this for 013–016 (research/synthesis/source-map-005-025.md@b722e9c:678), and 022 committed its
+  table after the confirmation, as closure evidence (022:100–104).
 - The head read-outs, 009's Y1 and 011's Y2, apply a locked rule to the measured head input
-  (experiments/011-encoding-read-prospective/predictions.md@85a6c04:4).
+  (docs/superpowers/specs/2026-09-18-experiment-009-head-transport-rule-design.md:223–224).
 
 | exp | lock installed or committed | families |
 |---|---|---|
@@ -158,9 +163,9 @@ neither a new frame's reference state nor a measured input, before the experimen
 
 | ID | Source | Type | Artifact | Result | Revision/digest |
 |---|---|---|---|---|---|
-| E001 | Experiment 005, Tier A and calibration | supporting | `experiments/005-regular-plural-mechanism/evidence/discovery-report-2026-09-18.md`; `experiments/005-regular-plural-mechanism/evidence/final-report-2026-09-18.md` | Kind M; exploratory and calibration. The localization the programs start from, recorded in C002 (its E001–E002): `L00.MLP` carries 0.535 of the transport-input axis, and the three-component set recovers 0.982 (005:94–97). Isolation and its pair-level fidelity are recorded against C002, not here (C002, E006–E007). | code `83d1ae4`, `009607d` |
+| E001 | Experiment 005, Tier A and calibration | supporting | `experiments/005-regular-plural-mechanism/evidence/discovery-report-2026-09-18.md`; `experiments/005-regular-plural-mechanism/evidence/final-report-2026-09-18.md` | Kind M; exploratory and calibration. The localization the programs start from, recorded in C002 (its E001–E002): `L00.MLP` carries 0.535 of the transport-input axis, and the three-component set recovers 0.982 (005:94–97). Isolation and its pair-level fidelity are recorded against C002, not here (C002, E006–E007). 005's single confirmation ended `BEHAVIOR_NOT_REPLICATED` (005:125–129), recorded in C002 as its E003, and 006's circuit families never ran (C002, E005), so the starting localization rests on exploratory and calibration data. | code `83d1ae4`, `009607d` |
 | E002 | Experiments 005 (protocol v1), 006 and 007: their compact programs | null | 005's discovery report; `experiments/006-low-rank-cue-decompilation/evidence/exploration-report-2026-09-18.md`; `experiments/007-supervised-cue-subspace/evidence/final-report-2026-09-18.md` | Kind M; 005 v1 and 006 exploratory, 007 unestablished. Compact programs failed. 005's token-local program missed its floor, `NO_COMPACT_MECHANISM` (005:98–101). 006 falsified the leading ≤ 4 unsupervised PCA directions (006:77–79). 007's supervised rank-1 program failed Y1, `PROGRAM_NOT_SUPPORTED`, though its Y2 and Y3 passed as criteria (007:87–94). The programs read the encoding in full, from the weights. | 005 `83d1ae4`; 006 explore `adea65f`; 007 confirm `ede0f53` |
-| E003 | Experiments 008 and 010 (discovery only) | supporting | `evidence/exploration-report-2026-09-18.md` of 008 and of 010 | Kind M; exploratory; both summaries `MIXED` (008:65; 010:62). For `this`, `a` and `another`, `L03.H04` attends normally but passes on 0.07–0.29 of the number signal (008:86–91). For `this`, `a`, `another` and `every`, the encoding carries an on-axis number signal and an opposing off-axis part (010:85–89). 010's relay bound failed: layers 1–2 move the read by at least 0.29 in gross even when their net effect is near zero (010:64–67), which is consistent with stage 2. The signal is spread over hundreds of neurons: 320–700 of 2048 by the README (010:63), up to 726 in its report (research/synthesis/source-map-005-025.md@b722e9c:672). | 008 explore `d324755`; 010 explore `0a6836b` |
+| E003 | Experiments 008 and 010 (discovery only) | supporting | `evidence/exploration-report-2026-09-18.md` of 008 and of 010 | Kind M; exploratory; both summaries `MIXED` (008:65; 010:62). For `this`, `a` and `another`, `L03.H04` attends normally but passes on 0.07–0.29 of the number signal (008:86–91). For `this`, `a`, `another` and `every`, the encoding carries an on-axis number signal and an opposing off-axis part (010:85–89). 010's relay bound failed: layers 1–2 move the read by at least 0.29 in gross even when their net effect is near zero (010:64–67). 010 attributes this to a bound frozen without a baseline, and reads layers 1–2 as mostly relaying the signal (010:66–67, 110); this draft reads the churn as consistent with stage 2. The signal is spread over hundreds of neurons: 320–700 of 2048 by the README (010:63), up to 726 in its report (research/synthesis/source-map-005-025.md@b722e9c:672). | 008 explore `d324755`; 010 explore `0a6836b` |
 | E004 | Experiment 009, Y1 | supporting | `experiments/009-head-transport-rule/evidence/final-report-2026-09-18.md` | Kind M, P; prospective, given the measured head input. `HEAD_MECHANISM_CONFIRMED_P1`: on 138 fresh (token, frame) pairs, the P1 read predicts the head's output with Spearman 0.957 and MAE 0.066 (009:62–64). The head's transport is “a fixed-normalization linear read-out of components already present in the cue residual it receives” (009:84–85). | confirm `78d71c2` |
 | E005 | Experiment 009, Y2 and Y3 | null | as E004 | Kind P; unestablished. The fitted rank-1 transport rule failed, `TRANSPORT_RULE_FAILED`: Spearman 0.765 against 0.80 (009:69–70). The contrast rule was `NOT_LOCKED` (009:77–79). A compact transport rule is not established; the stage-level programs use the P1 read. | confirm `78d71c2` |
 | E006 | Experiment 011 | supporting | `experiments/011-encoding-read-prospective/evidence/final-report-2026-09-19.md` | Kind P, M; Y1 prospective from the weights alone; Y2 prospective, given the measured head input. `ENCODING_READ_PREDICTS_TRANSPORT`: Spearman 0.848, MAE 0.077 on 24 never-seen cues in six new frames (011:75–76). `HEAD_P1_REPLICATED`: 0.974 / 0.076 (011:87–89). `an` was predicted at 0.18 and measured at 0.30, the lowest of the 24 [locked prediction] (011:77–79). 009's fitted rule would also have cleared the Y1 floors [descriptive] (011:91–92). | confirm `85a6c04` |
@@ -183,15 +188,17 @@ neither a new frame's reference state nor a measured input, before the experimen
 | E023 | Experiment 024 | supporting | `experiments/024-readout-routing-nounness/evidence/final-report-2026-09-25.md` | Kind P; prospective; “predictive, not causal” (024:373). `NOUNNESS_PREDICTS_READOUT_ERROR_BEYOND_SIMPLE_PLURALITY_OR_MEASURE_CLASS`: ρ 0.611 against 0.314, and the E–N guard K = 1 of 12,870, on 40 new cues in exposed frames (024:277–279). The guard's formal scope is two simple alternatives (024:295–297). 23 of the 40 cues lie beyond the calibration's nounness range (024:300–301). What was measured is the error of a frozen approximation (024:298–299). | confirm `af160ce` |
 | E024 | Experiment 025 | null | `experiments/025-nounness-direction-intervention/evidence/final-report-2026-09-26.md` | No kind: an intervention on a decoded direction; unestablished. `CAUSAL_EFFECT_NOT_ESTABLISHED` (025:244): rotating new cues' embeddings along the nounness direction did not establish its predicted effect on the readout error. | confirm `6f72d7d` |
 | E025 | Post-closure errata of Experiments 020 and 021 | methodological | `evidence/erratum-2026-09-23-coordinated-reference-rows.md` of 020 and of 021 | No kind: an erratum. 020's program built the coordinated layer-1/2 reference rows through the prediction position instead of the cue position (020:13–15). This qualifies 020's coordinated Level-0 values and all three 021 labels. The downstream readout and its ceiling stand (experiments/020-readout-decompilation/evidence/erratum-2026-09-23-coordinated-reference-rows.md:54–57). 022 and 023 use the correct wiring. | `2320345` |
-| E026 | Measurement-validity records of Experiments 009–025 | methodological | each experiment's README and evidence directory | No kind. The frozen prompt manifests and ledgers, the exact identities, the runtime records and the runners. For example, 022's confirmation gates I1, I3 and I4 held at 1.64e-5, 4.23e-5 and 7.69e-5 (022:161–163), and their values are in its committed confirmation record (022:171–174). 020's Level-1 identity is bounded by a diagnosed float32 precision floor (020:69–81, 190–194). 023 executed its 3,060 frozen prompts exactly once (023:158–160). | the confirm commits of E004–E024 |
+| E026 | Measurement-validity records of Experiments 009–025 | methodological | each experiment's README and evidence directory | No kind. The frozen prompt manifests and ledgers, the exact identities, the runtime records and the runners. For example, 022's confirmation gates I1, I3 and I4 held at 1.64e-5, 4.23e-5 and 7.69e-5 (022:161–163), and their values are held under `confirmation.gates` in its committed `experiments/022-upstream-error-localization/evidence/confirmation-record-2026-09-24.json` (022:171–174). 020's Level-1 identity is bounded by a diagnosed float32 precision floor (020:69–81, 190–194). 023 executed its 3,060 frozen prompts exactly once (023:158–160). | the confirm commits of E004–E024; 020's explore commit `ce3766b` |
 | E027 | The preregistration locks | methodological | each experiment's lock and design | No kind. Each lock committed its families' criteria, their prediction rules, and every prediction that needs neither a new frame's reference state nor a measured input. Frame-conditional tables were computed at stage 1 and held by digest before any target prompt; the source map records that 013–016's were not committed before scoring (research/synthesis/source-map-005-025.md@b722e9c:678). See *Predictions*. | the lock commits under *Predictions* |
 
 Kind M marks evidence on the mechanistic decomposition, P evidence on the prediction of intervention effects. No
 entry satisfies the Level-3 necessity, sufficiency or control gates for the decoded variables. The one preregistered
-intervention on a decoded direction did not establish its effect (E024).
+intervention on a decoded direction did not establish its predicted effect (E024).
 
 The types follow one rule. Each tested version of the program counts: a pass is supporting and a failure
-contradicting. Compact alternatives and program-internal necessity tests that were not established are null.
+contradicting. Compact alternatives, meaning fitted or low-rank rules outside the zero-parameter program class (005's
+lexicon program, 006's PCA directions, 007's rank-1 program, and 009's rank-1 rule and contrast rule), and
+program-internal necessity tests that were not established are null.
 Exploratory records are typed by what they show: E001, E003 and E016 support the decomposition, and E017 records an
 end-to-end shortfall. E024, an intervention whose effect was not established, is null.
 
@@ -213,8 +220,10 @@ end-to-end shortfall. E024, an intervention whose effect was not established, is
 - [x] Measured directly, with explicit sample and scope. Evidence: E003–E024.
 - [x] Variation across cases quantified. Evidence: per-frame and per-condition values, for example E014, E015 and
   E021.
-- [x] Repeated or related cases examined. Evidence: exposed and fresh sets in every confirmation (E004–E015,
-  E018–E024).
+- [x] Repeated or related cases examined. Evidence: fresh cues in exposed frames, in new frames, or both. 009, 011
+  and 012 used new frames only (research/synthesis/synthesis-005-025.md@3d87d3c:272), 024 and 025 exposed frames only
+  (024:300), and the others both (E004–E015, E018–E024). 011 replicated 009's read-out on new cues and frames (E004,
+  E006).
 - [x] Results labeled exploratory or confirmatory. Evidence: each entry's status, E001–E024.
 - [x] The conclusion avoids causal interpretation. Evidence: each entry states its result as a prediction or an
   observation, with its status (E001–E024); this record.
@@ -224,20 +233,24 @@ end-to-end shortfall. E024, an intervention whose effect was not established, is
 - [x] Narrowed to defined layers, positions and components. The programs narrow the cue's effect to named terms at
   the only positions a cue changes: the cue position and, in coordinated frames, the prediction position
   (docs/superpowers/specs/2026-09-22-experiment-020-readout-decompilation-design.md:76–77, 113–115). Evidence:
-  - the only cue-specific inputs are the encoding change and block 0's terms (E011, E021);
+  - by construction, the E-patch's only cue-specific input is the encoding change, and a real swap adds block 0's
+    terms (E011, E021); the empirical narrowing rests on the next bullets;
   - the E-only chain's remaining error lies primarily in block-0 attention, with the layer-1–2 reductions at most
     0.007 of the gap (E020);
   - channel D concentrates in a locked subset on new cues (E013), though not in one new frame (E014);
-  - block-4 attention can be held at the reference [exploratory] (E016);
+  - block-4 attention can be held at the reference [exploratory] (E016); its share of the frozen readout's own error
+    is 0.58–0.73 by class [descriptive] (024:324);
   - the starting point is C002's localization (E001).
 - [x] Plausible alternative locations compared. Evidence: 005's position map (E001); 022's attribution across
   block-0 attention, the embedding and the layer-1–2 reductions (E020); 018's random and lowest-ranked subsets (E013).
-- [x] Obvious artifacts and confounders tested. Evidence: the exact identities (E026); floors calibrated on exposed
-  data only (E018); the wiring defect found and recorded (E025).
+- [x] Obvious artifacts and confounders tested. Evidence: the exact identities (E026); the wiring defect found and
+  recorded (E025); E023's guard against two simple confounds, plurality and measure class, the one preregistered
+  confounder test (024:278, 295–297).
 - [x] Replicates within its declared scope. Evidence: prospective confirmations on new cues and nouns, and on new
   frames given their reference states (E004, E006–E009, E011, E013, E015, E018, E020, E021), with the failures E010,
   E014, E019 and E022.
-- [x] Not presented as proof of causality. Evidence: E026; this record.
+- [x] Not presented as proof of causality. Evidence: each entry's status (E001–E024); E023, stated as predictive, not
+  causal; E024, the one causal test, null; this record.
 
 ### Level 3 — Causal evidence
 
@@ -249,7 +262,8 @@ end-to-end shortfall. E024, an intervention whose effect was not established, is
 - [ ] Sufficiency-oriented intervention supports the prediction on confirmatory data. Not established. The
   confirmations predict the consequences of the E-patch or of a real cue swap. No decoded variable was itself
   manipulated and shown sufficient in a preregistered, outcome-bearing test. The one preregistered intervention on a
-  decoded direction was not established (E024). The decision on the C002 review applies the same reading here.
+  decoded direction did not establish its predicted effect (E024). The decision on the C002 review applies the same
+  reading here.
 - [ ] Matched, negative and other controls on confirmatory data. Not established. The preregistered alternatives
   (E008, E009, E012, E013, E015) are variants of the program, not interventions in the model.
 - [x] Effect sizes and uncertainty reported. Evidence: floors from exposed-only calibration (E018), and per-frame and
@@ -257,7 +271,8 @@ end-to-end shortfall. E024, an intervention whose effect was not established, is
 - [x] Plausible alternative causal explanations considered. Evidence: the preregistered alternatives (E008, E009,
   E012, E013, E015); *Competing explanations*.
 
-As in C002, the reporting gates (effect sizes; alternatives considered) are checked. No causal gate is checked.
+As in C002, the preregistration gate and the two reporting gates (effect sizes; alternatives considered) are checked.
+No necessity, sufficiency or control gate is checked.
 
 ### Level 4 — Falsification tested
 
@@ -278,7 +293,8 @@ As in C002, the reporting gates (effect sizes; alternatives considered) are chec
 
 - [ ] Not claimed. The record bears on several of this level's criteria:
   - it predicts unseen model behavior (E018, E021);
-  - it predicts the outcomes of an intervention it was not fitted on, the E-patch on new cues (E004, E006–E009,
+  - it predicts the outcomes of the same intervention as each Tier A, the E-patch, on new cues and frames by locked
+    rules, which only partly meets the criterion of new interventions (E004, E006–E009,
     E011, E013, E015);
   - residual unexplained behavior is quantified (E016, E021);
   - known failures are documented (E010, E014, E017, E019, E022).
@@ -291,12 +307,17 @@ As in C002, the reporting gates (effect sizes; alternatives considered) are chec
 
 - E010: 015's token-local pattern model failed in new frames.
 - E014: 018's locked channel-D subset failed the no-harm guard in one new quantifier frame.
-- E017: 020's end-to-end program sat below six of its twelve frozen floors on exposed data; its confirmation was never
-  run.
+- E017: 020's end-to-end program sat below six of its twelve frozen floors on exposed data. The floors had been
+  calibrated on a scratch pass with a block-5 error, and 020 calls the exposed values a calibration record, never
+  evidence for a label; its confirmation was never run (020:110, 143, 175–181).
 - E019: 021's coordinated new-frame condition failed. It is plausibly explained by the wiring defect (E025).
 - E022: 023's Y1/cue_final fell below its envelope.
-- Null results: the compact programs (E002), a compact transport rule and the contrast rule (E005), `L03.H04`'s pattern
-  term (E012), and the nounness-direction intervention (E024).
+- Null results:
+  - 005's single confirmation, `BEHAVIOR_NOT_REPLICATED` (E001; C002, E003);
+  - the compact programs (E002), a compact transport rule and the contrast rule (E005);
+  - `L03.H04`'s pattern term (E012);
+  - the nounness-direction intervention (E024).
+- Exploratory frozen-rule outcomes: 008's and 010's `MIXED` summaries, and 010's failed relay bound (E003).
 
 ## Competing explanations
 
@@ -351,10 +372,10 @@ by rules frozen before the target prompts were executed:
 - **for the E-patch, stage by stage:**
   - the head's transport of new cues from the weights alone [prospective] (E006), and its read-out from the measured
     input [prospective, given the measured input] (E004);
-  - the net layers-1–2 correction (E007);
-  - the attention value paths, block 2's operating point and routing, and the head's pattern change, for new cues
-    [prospective], and in new frames for most stages [prospective, conditional; 015 and 018 Y2 unestablished]
-    (E007–E015);
+  - the net layers-1–2 correction, on new cues in new frames from exposed base states [prospective] (E007);
+  - the attention value paths (013), the attention-pattern change (015, 016), neuron 1987 (014), block 2's operating
+    point and routing (018, 019), and the head's pattern change (017), for new cues [prospective], and in new frames
+    for most stages [prospective, conditional; 015 and 018 Y2 unestablished] (E007–E015);
 - **for a real cue swap:**
   - the contrast change on 020's wiring, for new cues and nouns in exposed frames, pooled over templates, with a small
     margin [prospective]. In coordinated frames it had no positive skill, in exposed frames (−0.014 [descriptive]) or

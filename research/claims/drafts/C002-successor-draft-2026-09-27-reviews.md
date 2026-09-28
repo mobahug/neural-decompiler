@@ -1,11 +1,14 @@
 # Independent reviews of the successor draft, 2026-09-27
 
-Two separate agents reviewed [the successor draft](C002-successor-draft-2026-09-27.md), read-only. Each loaded no model,
-ran no phase, and changed nothing:
+Three separate agents reviewed [the successor draft](C002-successor-draft-2026-09-27.md), read-only. Each loaded no
+model, ran no phase, and changed nothing:
 - the first review read the first draft;
-- the second, a focused re-review, read revision 2.
+- the second, a focused re-review, read revision 2;
+- the third, the final review before any registration decision, read revision 3 as pushed in `b43d6aa`.
 
-Revision 2 answered the first review, and revision 3 the re-review.
+Revision 2 answered the first review, revision 3 the re-review, and revision 4 the final review. An earlier attempt at
+the final review was lost when the computer slept; it had recorded no findings, and the review was run again from the
+start.
 
 ## The first review: PASS WITH NOTES, no blocker
 
@@ -115,7 +118,61 @@ Its verified-correct items stand:
 - the draft is not registered: the registry README and C002 are unchanged, and it has no claim identifier;
 - the proposed maturity is `LOCALIZED`, with the note, and necessity, sufficiency and controls stay unchecked.
 
+## The final review: PASS WITH NOTES, no blocker
+
+It checked more than 35 figures and citations, including every item revision 3 changed, and found them all correct. It
+found the registry untouched, the maturity wording within the binding constraints, and the typing rule applied
+consistently. Its findings, with what was done in revision 4; line numbers refer to revision 3:
+
+### Should-fix
+
+1. **005's `BEHAVIOR_NOT_REPLICATED` was missing.** The draft relies on 005's localization (E001), whose single
+   confirmation failed its precondition (005:125–129). *Done:* E001 says so, and that 006's circuit families never
+   ran. The null-results list names it.
+2. **A checked gate cited evidence that does not bear on it.** *Done:* the no-proof-of-causality gate cites the
+   entries' statuses, E023's predictive-not-causal statement and E024. The artifacts gate cites E023's guard, the one
+   preregistered confounder test (024:278, 295–297), in place of the exposed-only calibration.
+3. **A false every in the Level-1 gate.** 009, 011 and 012 used new frames only, and 024 and 025 exposed frames only.
+   *Done:* the gate says which sets each used.
+4. **A conclusion item had no status, and two stages were unnamed.** *Done:* the layers-1–2 correction is tagged
+   prospective, from exposed base states. The attention-pattern change and neuron 1987 are named.
+
+### Notes
+
+5. **What made 009's rule an alternative.** *Done:* the typing rule defines compact alternatives as fitted or low-rank
+   rules outside the zero-parameter program class, and names them.
+6. **Exploratory negatives.** *Done:* E003 gives 010's own reading of its relay bound (010:66–67, 110), and marks the
+   draft's reading as its own. The failures list adds 008's and 010's `MIXED` summaries and the relay bound, and says
+   that 020's floors came from the scratch pass.
+7. **Causal-sounding wording.** *Done:* channel D carries the records' disclaimers: not a uniquely defined circuit,
+   and routing in aggregate (018:156–157; 019:164–165, 186–187). The readout residual carries its statuses, and 023's
+   statement that it makes no claim of a complete readout.
+8. **The strength of the Level-2 evidence.** *Done:* the first bullet says the E-patch's single input holds by
+   construction, and that the empirical narrowing rests on the other bullets. Block-4 attention's share of the readout
+   error, 0.58–0.73, is added (024:324).
+9. **Precision in the Predictions preface, E026 and E027.** *Done:*
+   - none of the frame-conditional tables was committed before scoring;
+   - the read-out rule cites 009's design (223–224);
+   - E026 adds 020's explore commit and names the JSON key that holds 022's gate values.
+10. **Wording at Levels 3 and 6.** *Done:*
+    - Level 3 says that the preregistration gate and the two reporting gates are checked;
+    - 025 did not establish its predicted effect;
+    - the Level-6 bullet calls the E-patch the same intervention as each Tier A, which only partly meets the criterion
+      of new interventions;
+    - the programs are said to use quantities locked from exposed data as well as the weights and reference states.
+
+Its verified-correct items stand:
+- the registry is untouched: `b43d6aa` changed only the draft and this file, and no file outside `drafts/` refers to
+  the draft;
+- the draft carries no claim identifier;
+- the proposed maturity is `LOCALIZED`, with the note, and no new level;
+- at Level 3 only the preregistration gate and the two reporting gates are checked;
+- the E-patch and the real swap are kept apart;
+- 025 is null, never called no causal effect or a near miss;
+- 023 has no aggregate label;
+- every item on the failure list is present, except 005 v2, which revision 4 adds.
+
 ## Checks
 
-After revision 3, the checker (`../../synthesis/checks/check_source_map.py`) passes on the draft: 10 quotes, 124
-citation groups, 29 commit hashes and 38 labels. Every quote also matches its cited lines exactly.
+After revision 4, the checker (`../../synthesis/checks/check_source_map.py`) passes on the draft: 10 quotes, 139
+citation groups, 29 commit hashes and 39 labels. Every quote also matches its cited lines exactly.
