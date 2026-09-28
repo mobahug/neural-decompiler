@@ -21,4 +21,5 @@ point to them; where a summary here disagrees with its source, the source wins.
 - [Source map, Experiments 005–025](source-map-005-025.md) — step 1, with the evidence status of every finding and the record caveats.
 - [Synthesis, Experiments 005–025](synthesis-005-025.md) — step 2: the answer to the original question along the mechanistic chain, where prediction succeeds and where causal establishment stops.
 - [Paper-readiness assessment](paper-readiness-2026-09-28.md) — input to step 3, after C002's review and C003's registration: the strongest defensible paper claim, its novelty, whether the record suffices for a paper, and whether a causal test should come before writing.
+- [The paper](../paper/README.md) — the step-3 decision: write the paper now; draft v0 is internal.
 - [`checks/`](checks/) — the mechanical quote and citation checker; the investigation of the 010 and 012 digest mismatches; and the independent reviews of the map, of the synthesis and of the paper-readiness assessment, with the disposition of each finding.
