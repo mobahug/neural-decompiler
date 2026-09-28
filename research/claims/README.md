@@ -8,5 +8,6 @@ The registry intentionally does not duplicate live claim status. Follow the clai
 
 - [C001: Largest target-logit increase occurs across the final block for four tested capital prompts](C001-final-block-target-logit-increase.md)
 - [C002: A three-stage circuit (L00.MLP → L03.H04 → L04/L05 MLPs) localizes count-cued noun number selection in pinned Pythia-70M](C002-count-cued-noun-number-circuit.md)
+- [C003: Frame-conditioned decoded programs prospectively predict how a cue change reaches noun-number selection in pinned Pythia-70M](C003-frame-conditioned-decoded-program.md)
 
 See the [research methodology](../../docs/RESEARCH_METHODOLOGY.md) for evidence levels, promotion and downgrade rules, and the claim template.
