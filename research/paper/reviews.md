@@ -1,11 +1,13 @@
-# Independent reviews of paper draft v0
+# Independent reviews of the paper drafts
 
-## The first review, of revision 1: FAIL, four blockers
+## Draft v0
+
+### The first review, of revision 1: FAIL, four blockers
 
 It found every number in both tables and every experiment-README citation correct, and the checker passing. The
 problems were framing, completeness and three misstatements. Its findings, condensed, with what was done in revision 2:
 
-### Blockers
+#### Blockers
 
 1. **The causal routes were attributed to the decoded variables.** Three of the four preregistered routes concerned
    C002's localized components; only 025's rotation concerned a decoded direction. *Done:* the abstract, §7 and the
@@ -26,7 +28,7 @@ problems were framing, completeness and three misstatements. Its findings, conde
    The incident example is corrected, errata and restatements are separated, and *no confirmation run was repeated*
    replaces *no scientific retries*.
 
-### Should-fix and notes
+#### Should-fix and notes
 
 - **C002 and the abstract.** C002's basis and two-pair scope are in the abstract and the conclusion. The abstract
   answers the question attribute by attribute. It carries C003's origin qualifiers, the tested lexical classes, and
@@ -55,7 +57,7 @@ problems were framing, completeness and three misstatements. Its findings, conde
   - the title no longer reads as a completed decompilation;
   - the README's traceability claim is scoped to the body, and it records who decided step 3 and when.
 
-## The re-review, of revision 2: FAIL on one residual blocker
+### The re-review, of revision 2: FAIL on one residual blocker
 
 It found blockers 2, 3 and 4 resolved, and blocker 1 partly resolved: the abstract and §7 were fixed, but the
 conclusion still tied all four routes to the programs' variables. Every other item was at the PASS WITH NOTES level.
@@ -86,3 +88,55 @@ What was done in revision 3:
   every one occurs in its own README.
 
 After revision 3, the checker passes on the draft: 23 quotes and 140 citation groups, every quote exact.
+
+## Draft v1
+
+One independent agent reviewed v1, read-only, against v0, the verified literature review and its verification
+record, the protocol, the claims C002 and C003, and the checker change. It loaded no model and changed nothing in the
+repository.
+
+### The review: PASS WITH NOTES, no blocker
+
+- **Verified as correct.**
+  - **Conversion.** v0's 140 citation groups became 137 comments, in order and at the same statements. Exactly the
+    three §9 citations that went with the rewritten §9 were dropped, and one quote became a paraphrase with its
+    citation.
+  - **Content.** No number, label, status tag or qualifier in the body changed.
+  - **Visible changes.** Every visible change is an attribution, the header or new material.
+  - **Rendering.** Checked with a CommonMark renderer: every comment stays hidden, and the tables, the code fence and
+    the nested lists are intact.
+  - **References.** All entries match the literature review's verified records, and every citation resolves.
+  - **Contributions.** They follow the reviewer's decisions.
+  - **Checker change.** The old and new checkers agree on all 75 tracked Markdown files under `research/` and `docs/`.
+- **Should-fix,** eight, all done:
+  1. Contribution 2 said a pretrained model; it now says a pretrained language model, as the protocol states it.
+  2. §7's principle regained the qualifier *under stated assumptions*.
+  3. §8's self-repair bullet now says that C002 scopes its necessity and isolation conclusions to pair-centered
+     neutralization, and that its necessity gate is open in any case.
+  4. §8 no longer implies that the E-patch is exempt from off-distribution concerns. It says the E-patch is not a
+     subspace intervention, and that it too builds a state that need not occur on natural inputs.
+  5. Méloux and colleagues (2026) are characterized as in the review, in §8 and §9.
+  6. Bayazit and colleagues' feature is described as annotated, as in the review.
+  7. Weiss and colleagues are no longer credited with compiled programs.
+  8. §9's list of what the work does not add gained predictors conditioned on a measured reference state.
+- **Notes,** all done except where stated:
+  - the header's three ways;
+  - the audit-trail sentence limited to kept statements;
+  - a trace for the count of experiments;
+  - the exact-computation caveat in the abstract and the conclusion;
+  - the conclusion's *from the tested lexical classes*;
+  - the contributions' sentence on precedents;
+  - §9's hedges and dropped qualifiers restored;
+  - superlatives hedged with *found*;
+  - §9's lead sentence for what the work adds;
+  - two works on circuits with guarantees and one on agreement units added from the review;
+  - traces for the new §8 statements;
+  - 005's compensation ratio and its missed band added for balance;
+  - the record entry, two ICML page ranges and arXiv titles, and the mirror's provenance in the references;
+  - the checker's docstring made exact.
+
+  The reviewer also suggested that the checker catch an unclosed comment and a comment that begins a line. The checker
+  now does both, and its output on the 75 tracked files is unchanged.
+
+After these changes, the checker passes on v1: 22 quotes and 142 citation groups. The five new groups are the traces
+added for the count of experiments and the new §8 statements.

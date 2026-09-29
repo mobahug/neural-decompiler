@@ -5,7 +5,12 @@
    verbatim in the cited lines of one of the cited files (one line of slack either side), as the file stood at the
    pinned commit or at the commit the citation names. The comparison ignores Markdown emphasis (`*`), block-quote
    markers (`>`) and line breaks. A quote from a commit message cites `(message of <hash>)`. A quote with no citation,
-   or with a citation that does not parse, fails. So does straight-quoted prose ("…") outside quotes and code.
+   or with a citation that does not parse, fails. So does straight-quoted prose ("…") outside quotes and code. The
+   citation group may sit inside an HTML comment that opens after the quote, with only whitespace between them,
+   `“…”<!-- (023:142) -->`, as in drafts whose traceability markers are hidden from the rendered text; citations inside
+   comments are checked like any other. Outside fenced code, every HTML comment must close before the next one opens,
+   and no line may begin with one, because a line-initial `<!--` would start an HTML block instead of a hidden
+   comment.
 2. Citations. Every parenthesized group that looks like a citation (a three-digit experiment number or a file name,
    then `:` and a digit) must parse completely, and must name a file that exists at its commit and lines that exist
    in it.
@@ -35,7 +40,7 @@ LOOKS_LIKE_CITATION = re.compile(rf"(?:\b[0-9]{{3}}|\.(?:md|json|py))(?:@[0-9a-f
 FILLER = re.compile(r"^(?:[\s,;]|for example|and)*$")
 MESSAGE = re.compile(r"^message of `?(?P<rev>[0-9a-f]{7,40})`?$")
 QUOTE = re.compile(r"“([^”]+)”")
-GROUP = re.compile(r"\s*\(([^()]*)\)")
+GROUP = re.compile(r"\s*(?:<!--\s*)?\(([^()]*)\)")
 _files: dict[tuple[str, str], list[str] | None] = {}
 NON_COMMITS = {"e93a9faa9c77e5d09219f6c868bfc7a1bd65593c": "the pinned Pythia-70M-deduped model revision (Hugging Face), not a git commit"}
 
@@ -131,6 +136,17 @@ def main(files: list[str]) -> int:
         bare = re.sub(r"`[^`]*`", "", QUOTE.sub("", code_free))
         for match in re.finditer(r"\"[^\"\n]{3,}\"", bare):
             failures.append(f"{name}: straight-quoted text {match.group(0)[:70]}: quote it with “…” and a citation, or paraphrase it")
+        # hidden citations: every HTML comment closes before the next one opens, and none begins a line
+        for match in re.finditer(r"<!--", code_free):
+            end, following = code_free.find("-->", match.end()), code_free.find("<!--", match.end())
+            if end == -1 or (following != -1 and following < end):
+                failures.append(f"{name}: an HTML comment ({code_free[match.start():match.start() + 60]!r}) does not close")
+        fenced = False
+        for number, line in enumerate(text.split("\n"), 1):
+            if line.lstrip().startswith("```"):
+                fenced = not fenced
+            elif not fenced and line.lstrip().startswith("<!--"):
+                failures.append(f"{name}:{number}: a line begins with an HTML comment, which would open an HTML block")
         # 2. citations
         for match in re.finditer(r"\(([^()]*)\)", text):
             body = match.group(1)
