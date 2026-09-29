@@ -8,6 +8,10 @@ test is worth running is to be decided only after a full draft exists.
   chronology. Every number in its body carries a traceability citation to the committed records; the abstract and the
   conclusion summarize the body.
 - [Reviews of draft v0](reviews.md) — the independent read-only reviews and what was done about each finding.
+- [Literature review](literature-review/review-2026-09-28.md) — the first step of v1 preparation: what in the draft is
+  new relative to existing work, under a [protocol](literature-review/protocol-2026-09-28.md) frozen before any search.
+  Its [verification record](literature-review/verification-2026-09-28.md) archives the read-only checks of every cited
+  work and of the review's logic.
 
 The drafts claim nothing beyond the registered claims, [C002](../claims/C002-count-cued-noun-number-circuit.md) and
 [C003](../claims/C003-frame-conditioned-decoded-program.md). Where a draft and a record disagree, the record wins.
