@@ -5,7 +5,8 @@ Every value and every status comes from `figure_data.py`, which reads it from a 
 source; see the figure-data audit (figure-data-audit-2026-09-30.md). Nothing is computed here. The only
 transformations are presentational: selecting, ordering, labelling, colouring by a recorded status, choosing axes and
 drawing identity lines. No curve is fitted and no statistic is recomputed; the recorded results are printed as
-recorded.
+recorded. The images carry no figure titles or footnote notes: the captions in the figures' README and in the draft
+carry them. Panel titles and in-plot annotations stay.
 
     .venv/bin/python research/paper/figures/make_figures.py
 """
@@ -205,16 +206,8 @@ def f1_chip(ax, x, y, layout):
     ax.text(x + F1_PAD + 0.02, top + 0.01, text, ha="left", va="top", fontsize=F1_TEXT, linespacing=1.15)
 
 
-def f1(record):
-    stages, chips = record["stages"], record["chips"]
-    left, column, gap = 1.45, 1.63, 0.2
-    xs = [left + i * (column + gap) for i in range(len(stages))]
-    right = xs[-1] + column
-    fig, ax = canvas(right + 0.1)
-    ax.text(0.05, 0.22, "F1. The decoded chain, stage by stage, with the recorded status of each result",
-            fontsize=11, weight="bold", va="center")
-    # The stages, in the model's order. The encoding (the layer-0 MLP) runs in parallel with block-0 attention.
-    y, header = 0.55, 0.5
+def chain_header(ax, stages, xs, column, y, header):
+    """The stages, in the model's order. The encoding (the layer-0 MLP) runs in parallel with block-0 attention."""
     for i, (name, subtitle) in enumerate(stages):
         ax.add_patch(Rectangle((xs[i], y), column, header, facecolor="#F2F2F2", edgecolor="#444444", linewidth=0.8))
         ax.text(xs[i] + column / 2, y + (0.18 if subtitle else header / 2), name, ha="center", va="center",
@@ -227,6 +220,27 @@ def f1(record):
                         arrowprops={"arrowstyle": "->", "color": "#444444", "linewidth": 0.8})
     box(ax, xs[0] - 0.06, y - 0.06, xs[1] + column - xs[0] + 0.12, header + 0.12, "none", edge="#666666", dashed=True)
     ax.text((xs[0] + column + xs[1]) / 2, y + header / 2, "∥", ha="center", va="center", fontsize=12)
+
+
+def f1a(record):
+    """The chain's stages alone, as a schematic: F1's stage row."""
+    stages = record["stages"]
+    column, gap = 1.63, 0.2
+    xs = [0.12 + i * (column + gap) for i in range(len(stages))]
+    fig, ax = canvas(xs[-1] + column + 0.12)
+    chain_header(ax, stages, xs, column, 0.12, 0.5)
+    crop(fig, ax, 0.12 + 0.5 + 0.14)
+    save(fig, "F1a-chain-schematic")
+
+
+def f1(record):
+    stages, chips = record["stages"], record["chips"]
+    left, column, gap = 1.45, 1.63, 0.2
+    xs = [left + i * (column + gap) for i in range(len(stages))]
+    right = xs[-1] + column
+    fig, ax = canvas(right + 0.1)
+    y, header = 0.12, 0.5
+    chain_header(ax, stages, xs, column, y, header)
     y += header + 0.22
     lanes = [("E-patch", "E-patch lane", "stage by stage"),
              ("real swap", "real-swap lane", "end to end; only Δc was scored")]
@@ -281,18 +295,6 @@ def f1(record):
     status_legend(ax, used, loc="upper left", bbox_to_anchor=(xs[0] - 0.1, y), bbox_transform=ax.transData,
                   ncol=len(used), fontsize=7.5)
     y += 0.35
-    y += text_block(ax, xs[0], y, "Each badge carries one recorded status, checked against its experiment's block in "
-                    "the source map's evidence-status section or against the cited lines of the record; unestablished "
-                    "badges are hatched, exploratory ones striped and descriptive ones dotted. Y1: new cues in exposed "
-                    "frames; Y2: new cues in "
-                    "new frames, conditional on their measured reference states; C1–C4: 022's conditions; c-f and co: "
-                    "cue-final and coordinated frames; 021's Y3: new nouns over the Y1 pairs; rival: a preregistered "
-                    "alternative account, rejected or found insufficient on both sets pooled, whose new-frame share is "
-                    "conditional. The "
-                    "encoding, the layer-0 MLP, runs in parallel with block-0 attention (∥). End to end, L03.H04 is "
-                    "computed inside block 3, as part of the readout (dashed frame), so the transport results come "
-                    "from the E-patch lane. Under a real swap only Δc was scored; the reconstruction of Δx3 is "
-                    "descriptive. A dash marks a cell where no chip is drawn.", right - xs[0], size=7.2, color=NOTE)
     crop(fig, ax, y + 0.1)
     save(fig, "F1-chain")
 
@@ -320,19 +322,8 @@ def f2(record):
                             bbox=on_fill(cell.status))
                     ax.text(x + 2.5, i + 0.88, cell.status, ha="right", va="bottom", fontsize=5.8, style="italic",
                             color=ink(fill), bbox=on_fill(cell.status))
-    ax.text(0, len(rows) + 0.1, "ρ is Spearman. An empty cell has no result drawn. It means not tested for the "
-            "exposed-frame and pooled cells of 007, 009, 011 and 012, whose new cues were tested on new frames only, and "
-            "for every "
-            "fresh-data cell of 006,\nwhose confirmatory test never ran. The alternatives are drawn at the pooled "
-            "level on which their labels are defined, and the new-frame share of pooled statistics is conditional; "
-            "019's rival was also scored on the new frames\nalone (A = κ(E₆₄) − κ(T₆₄), 0.080, conditional). "
-            "Exploratory Tier A results "
-            "are drawn only for 005 and 006. Criterion-level passes under a failed label are not shown as passes.",
-            fontsize=7.2, color=NOTE, va="top")
     used = [s for s in LEGEND_ORDER if any(cell.status == s for cell in cells)]
     status_legend(ax, used, loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=6, fontsize=7.5)
-    ax.set_title("F2. The prediction map: what the programs predicted, stage by stage, and what failed", loc="left",
-                 fontsize=11, weight="bold", pad=24)
     save(fig, "F2-prediction-map")
 
 
@@ -359,7 +350,7 @@ def f3(record):
     ax.set_xlabel("P1 read-out, token mean")
     ax.set_ylabel("measured transport q_T, token mean")
     ax.set_title("A1. 009: 23 token means [descriptive]", loc="left", fontsize=9.5)
-    ax.text(0.02, 0.98, "Y1 was scored over 138 pairs (not committed,\nnot shown): Spearman 0.957, MAE 0.066\n"
+    ax.text(0.02, 0.98, "009's read-out test was scored over 138 pairs\n(not committed, not shown): Spearman 0.957, MAE 0.066\n"
             "[prospective, given the measured input]", transform=ax.transAxes, va="top", fontsize=7.5)
     ax = axes[1]
     rest = [p for p in a2["points"] if p.label != "an"]
@@ -371,7 +362,7 @@ def f3(record):
     _identity(ax, a2["points"])
     ax.set_xlabel("P1 read-out of the measured head input")
     ax.set_ylabel("measured transport q_T")
-    ax.set_title("A2. 011 Y2: the 142 scored pairs", loc="left", fontsize=9.5)
+    ax.set_title("A2. 011, read-out replicated: the 142 scored pairs", loc="left", fontsize=9.5)
     ax.text(0.02, 0.98, "Spearman 0.974, MAE 0.076 over these pairs\n[prospective, given the measured input]",
             transform=ax.transAxes, va="top", fontsize=7.5)
     ax.legend(loc="lower right", frameon=False, fontsize=7.5)
@@ -389,11 +380,9 @@ def f3(record):
     _identity(ax, b["points"])
     ax.set_xlabel("locked prediction ḡ_E (encoding read)")
     ax.set_ylabel("measured transport q̄_T")
-    ax.set_title("B. 011 Y1: 24 new cues, locked predictions", loc="left", fontsize=9.5)
+    ax.set_title("B. 011, encoding read: 24 new cues, locked predictions", loc="left", fontsize=9.5)
     ax.text(0.02, 0.98, "Spearman 0.848, MAE 0.077 over the 24 cues [prospective]\n"
             "the read is weight-only apart from the frozen axis", transform=ax.transAxes, va="top", fontsize=7.5)
-    fig.suptitle("F3. The head: its read-out given the measured input, and the encoding read of its transport",
-                 x=0.01, ha="left", fontsize=11, weight="bold")
     fig.tight_layout()
     save(fig, "F3-head")
 
@@ -414,14 +403,7 @@ def f4(record):
     ax.invert_yaxis()
     ax.set_xlabel("fraction of the plural cue's measured head change (means over informative frames)")
     ax.legend(loc="upper left", bbox_to_anchor=(1.0, 1.0), frameon=False, fontsize=8)
-    ax.set_title("F4. The opposition ledger: the encoding's axis part and its rest [exploratory]", loc="left",
-                 fontsize=11, weight="bold")
     fig.tight_layout()
-    fig.text(0.01, -0.02, "Exploratory, on spent data: 010's discovery summary was MIXED and its relay bound failed. The "
-             "rest is negative in 24 of 24 frames\nfor each of this, a, another and every; per-frame values are not "
-             "committed, so token means are shown. The pattern is not general:\neither, also singular-selecting, has "
-             f"a positive rest ({rows['either']['f_perp_text']}), and these is the contrast case, its rest supporting "
-             "the signal.", fontsize=7.3, color=NOTE, va="top")
     save(fig, "F4-opposition-ledger")
 
 
@@ -475,20 +457,13 @@ def f5(record):
                Patch(facecolor=COLOURS[status["other"]], edgecolor="#222222",
                      label="other rungs, the controls and the oracle [descriptive]")]
     ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.0, -0.1), ncol=3, frameon=False, fontsize=7.5)
-    ax.text(0.0, -0.25, "Rungs are discrete neuron subsets; no curve is drawn, since no monotonicity was predeclared. "
-            "The locked rung is plotted at its decision values, the others at two decimals. The oracle is each "
-            "frame's own subset.\nThe single-neuron statistic is not Y1's one-neuron rung (0.24); its new-frame "
-            "share is conditional.", transform=ax.transAxes, fontsize=7.3, color=NOTE, va="top")
-    ax.set_title("F5. Channel D's closure ladder (018)", loc="left", fontsize=11, weight="bold")
     fig.tight_layout()
     save(fig, "F5-closure-ladder")
 
 
 # F6 -----------------------------------------------------------------------------------------------------------------
-def f6(record):
-    conditions = ["Y1/cue_final", "Y1/coordinated", "Y2/cue_final", "Y2/coordinated"]
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), gridspec_kw={"width_ratios": [1.5, 1.2, 0.8]})
-    ax = axes[0]
+def g_panel(ax, record, conditions):
+    """023's g per condition against its floor F, with the calibration draws' range and median."""
     for i, name in enumerate(conditions):
         c = record["conditions"][name]
         low, median, high = c["draws"]
@@ -501,11 +476,15 @@ def f6(record):
     ax.invert_yaxis()
     ax.set_xlim(0.985, 1.0165)
     ax.set_xlabel("g, the share of the gap to the ceiling recovered")
+
+
+def f6(record):
+    conditions = ["Y1/cue_final", "Y1/coordinated", "Y2/cue_final", "Y2/coordinated"]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.2), gridspec_kw={"width_ratios": [1.5, 1.2, 0.8]})
+    ax = axes[0]
+    g_panel(ax, record, conditions)
     ax.set_title("A. 023: g (dot) against its floor F (black tick)\ngrey bar: the calibration draws' range; grey "
                  "tick: their median", loc="left", fontsize=9.5)
-    ax.text(0.0, -0.3, "The axis is zoomed to 0.985–1.017. The 0.90 meaning guard is met in every condition.\nNo "
-            "aggregate label; Y1 and Y2 are never pooled.", transform=ax.transAxes, fontsize=7.3, va="top",
-            color=NOTE)
     ax = axes[1]
     for i, name in enumerate(conditions):
         c = record["conditions"][name]
@@ -517,8 +496,6 @@ def f6(record):
     ax.set_xlim(0.5, 1.0)
     ax.set_xlabel("flattened Δc R² over pairs and nouns [descriptive]")
     ax.set_title("B. 023: E-only (●), completed (■), ceiling (▲)", loc="left", fontsize=9.5)
-    ax.text(0.0, -0.3, "The markers are offset within each row. The ceiling is a comparator,\nnot a mathematical upper "
-            "bound.", transform=ax.transAxes, fontsize=7.3, va="top", color=NOTE)
     ax = axes[2]
     values = record["flattened_021"]
     ax.scatter([values["Y1"], values["Y2"]], [0, 1], s=50, color=COLOURS[data.DESCRIPTIVE], edgecolor="#222222")
@@ -530,15 +507,21 @@ def f6(record):
     ax.set_xlim(0.5, 0.7)
     ax.set_xlabel("flattened Δc R² [descriptive]")
     ax.set_title("C. 021, on 020's wiring", loc="left", fontsize=9.5)
-    ax.text(0.0, -0.3, "The erratum: 020's program built the coordinated\nframes' layer-1/2 reference rows through p_t\n"
-            "instead of the cue position p_c. Not comparable\nwith A or B.", transform=ax.transAxes, fontsize=7.3,
-            va="top", color=NOTE)
-    fig.suptitle("F6. End to end: the contrast change under real cue swaps", x=0.01, y=1.0, ha="left", fontsize=11,
-                 weight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.92))
     status_legend(fig, [data.PROSPECTIVE, data.PROSPECTIVE_CONDITIONAL, data.UNESTABLISHED, data.DESCRIPTIVE],
-                  hatched=False, loc="upper left", bbox_to_anchor=(0.01, 0.95), ncol=4, fontsize=7.5)
+                  hatched=False, loc="upper left", bbox_to_anchor=(0.01, 1.0), ncol=4, fontsize=7.5)
     save(fig, "F6-end-to-end")
+
+
+def f6a(record):
+    """F6's panel A alone, for the body of the paper."""
+    conditions = ["Y1/cue_final", "Y1/coordinated", "Y2/cue_final", "Y2/coordinated"]
+    fig, ax = plt.subplots(figsize=(8, 2.8))
+    g_panel(ax, record, conditions)
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    status_legend(fig, [data.PROSPECTIVE, data.PROSPECTIVE_CONDITIONAL, data.UNESTABLISHED], hatched=False,
+                  loc="upper left", bbox_to_anchor=(0.01, 1.0), ncol=3, fontsize=7.5)
+    save(fig, "F6a-completion")
 
 
 # F7 -----------------------------------------------------------------------------------------------------------------
@@ -573,12 +556,11 @@ def f7(record):
     rows = record["rows"]
     width, subject_x, chips_x = 14.0, 0.55, 4.25
     fig, ax = canvas(width)
-    ax.text(0.05, 0.22, "F7. The sequence, 005–025", fontsize=11, weight="bold", va="center")
     used = [s for s in LEGEND_ORDER if any(status == s for row in rows for _, parts in row["chips"]
                                            for _, status in parts)]
-    status_legend(ax, used, loc="upper left", bbox_to_anchor=(chips_x - 0.1, 0.45), bbox_transform=ax.transData,
+    status_legend(ax, used, loc="upper left", bbox_to_anchor=(chips_x - 0.1, 0.1), bbox_transform=ax.transData,
                   ncol=6, fontsize=7.5)
-    y = 0.85
+    y = 0.5
     ax.text(0.05, y, "exp", fontsize=8.5, weight="bold", va="center")
     ax.text(subject_x, y, "subject (verbatim)", fontsize=8.5, weight="bold", va="center")
     ax.text(chips_x, y, "frozen outcome (verbatim), one chip per label, coloured by its recorded status; the "
@@ -603,16 +585,6 @@ def f7(record):
         ax.text(0.05, top + 0.1, row["experiment"], fontsize=8.5, weight="bold", va="center")
         y = top + height + 0.07
     y += 0.1
-    y += text_block(ax, 0.05, y, "From the source map's overview; its screen row and its 023-d row (post-closure "
-                    "diagnostic) are not plotted. An ordinal axis: no durations are drawn. Each chip's colour is the "
-                    "status the source map's evidence-status section gives the label; unestablished chips are hatched and "
-                    "exploratory ones striped. "
-                    "022's and 023's passes carry one badge per population, since their Y2 conditions are conditional. "
-                    "Statistics pooled over both sets (013–016 Y3, 018 Y3, 019 Y3–Y5) have a conditional new-frame "
-                    "share, which their colour does not show; the head read-outs (009's mechanism, 011's "
-                    "HEAD_P1_REPLICATED) are given the measured input. The chips of 006 and 020 for the confirmatory "
-                    "test that was never run come from the status column; 020's none assigned is its whole outcome.",
-                    width - 0.1, size=7.3, color=NOTE)
     crop(fig, ax, y + 0.1)
     save(fig, "F7-sequence")
 
@@ -654,22 +626,19 @@ def f8(record):
             ax.text(1.0, i + 0.5, item3["title"], va="center", fontsize=7.2)
         for x, item in ((6.3, item2), (8.8, item3)):
             gate(ax, x, i + 0.08, 2.1, 0.84, item["state"] if item else "no such item", dashed=item is None)
-    ax.text(0.0, len(rows) + 0.1, "Each cell names its claim's own state; the fill repeats it. Row titles are C003's "
-            "items; where C002's own wording differs, it is shown beneath. An item stated only by its state is "
-            "titled with its level's name.\n025's rotation bears on C003 only; C002 records that it does not test "
-            "C002's chain.", fontsize=7.3, va="top", color=NOTE)
-    ax.set_title("F8. The boundary: the evidence gates of C002 and C003", loc="left", fontsize=11, weight="bold")
     save(fig, "F8-boundary")
 
 
 def main():
     record = data.everything()
     f1(record["F1"])
+    f1a(record["F1"])
     f2(record["F2"])
     f3(record["F3"])
     f4(record["F4"])
     f5(record["F5"])
     f6(record["F6"])
+    f6a(record["F6"])
     f7(record["F7"])
     f8(record["F8"])
     print("wrote", ", ".join(sorted(p.name for p in OUT.glob("F*.svg"))))

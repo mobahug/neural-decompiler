@@ -16,8 +16,15 @@ test is worth running is to be decided only after a full draft exists.
 - [Draft v2](draft-v2-2026-09-30.md) — internal, not for circulation. It is draft v1, revision 2, with its figures:
   Figures 1–8 are embedded where the text first relies on them, each with a caption traced like the body, and Appendix
   B lists them. Revision 1 applies the paper-level claim-strength review.
+- [Draft v3](draft-v3-2026-09-30.md) — internal, not for circulation. Draft v2, revision 1, restructured for TMLR, the
+  venue the reviewer chose on 2026-09-30, along the paper-level review's outline: an introduction and a one-paragraph
+  abstract, a statement on AI tools, a worked stage program, a table of exact and reduced steps, one home for each
+  result, and the chronology, supplementary figures and audit trail in appendices. It adds no claim, and no number that
+  the record does not state. Its first build had three independent read-only reviews, applied before it was committed
+  ([reviews of draft v3](paper-review-v3-2026-09-30/README.md)).
 - [Paper-level review of draft v2](paper-review-2026-09-30/README.md) — three independent read-only reviews: claim
-  strength, applied; narrative flow and redundancy, and submission format, both pending a decision.
+  strength, applied in v2's revision 1; narrative flow and redundancy, whose outline the reviewer adopted for draft v3;
+  and submission format, after which the reviewer chose TMLR.
 - [Reviews of the drafts](reviews.md) — the independent read-only reviews and what was done about each finding.
 - [Literature review](literature-review/review-2026-09-28.md) — the first step of v1 preparation: what in the draft is
   new relative to existing work, under a [protocol](literature-review/protocol-2026-09-28.md) frozen before any search.

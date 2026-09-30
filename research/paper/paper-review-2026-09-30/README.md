@@ -6,9 +6,10 @@ kept here as reported. Their line numbers refer to draft v2 before revision 1. W
 
 - [Claim strength](claims.md): PASS WITH NOTES, no blocker. Applied in revision 1, whose
   [verification](claims-rev1.md) passed with six minor notes, also applied.
-- [Narrative flow and redundancy](flow.md): eight major findings and a proposed outline. Pending a decision.
+- [Narrative flow and redundancy](flow.md): eight major findings and a proposed outline. The reviewer adopted the
+  outline on 2026-09-30, and [draft v3](../draft-v3-2026-09-30.md) follows it.
 - [Submission format and readiness](format.md): findings by venue type and a conversion plan; no venue recommended.
-  Pending a decision.
+  The reviewer chose TMLR on 2026-09-30.
 
 The format review checked venue rules on the web on 2026-09-30. Those it marks unconfirmed must be checked again before
 they are relied on. The reports quote the draft and the record freely; they are not held to the source-map checker's

@@ -216,7 +216,7 @@ three independent, read-only parts, each by its own reviewer. The full reports a
   - a line left short by reflowing is joined;
   - the format summary gives cuts of about 40–45 %.
 
-### Narrative flow and redundancy: eight major findings, pending a decision
+### Narrative flow and redundancy: eight major findings, adopted for draft v3
 
 - The draft reads as an audited record rather than an argument. The proposals are moves, cuts and definitions that
   change no number and no claim:
@@ -230,7 +230,8 @@ three independent, read-only parts, each by its own reviewer. The full reports a
   - prose in place of most bullets, and the real-swap section framed as the protocol at work, from 020 to 023;
   - §9 halved, and a conclusion that follows the contributions;
   - about 6,150 words from the abstract to the conclusion, against about 7,500 now.
-- Not applied: they restructure the paper, so they wait for the reviewer's decision.
+- Not applied to v2: they restructure the paper. On 2026-09-30 the reviewer adopted the outline in full, and draft v3
+  follows it.
 
 ### Submission format: depends on the venue, none recommended
 
@@ -245,3 +246,94 @@ three independent, read-only parts, each by its own reviewer. The full reports a
   - replace the paragraph on the project's record with a citable snapshot, and ship the audit trail as supplementary
     material.
 - The venue type, the template and the target length come first; the report gives a conversion plan for each.
+- On 2026-09-30 the reviewer chose TMLR, with about 6,000–6,500 words of main text, and gave the statement on AI tools.
+
+## Draft v3
+
+Draft v3 (2026-09-30) restructures draft v2, revision 1, for TMLR along the outline the reviewer adopted from the flow
+review. Its first build had three independent read-only reviews, one each for claim strength, flow and figures. Each
+was applied, and each was re-checked before the draft was committed. The reports are in
+[`paper-review-v3-2026-09-30/`](paper-review-v3-2026-09-30/README.md).
+
+### Claim strength: FAIL on one blocker, then PASS WITH NOTES
+
+- **The blocker.** The cuts had dropped the core claim's scope in the introduction, in contribution 2 and in the
+  conclusion. The dropped qualifiers were: new cues from the tested lexical classes; most stages in new frames; and
+  those frames conditional on their measured reference states.
+  - Contribution 2 and §10 now carry v2's scope in full, with *by rules frozen before the target prompts were
+    executed*.
+  - The introduction names the two interventions without restating the claim.
+- **Should-fix items, applied:**
+  - C002's scope and its failed tests in §4.1 and §10: P3's retention counts and the lexicon's 0.699 against 0.70;
+  - *a candidate mechanism*;
+  - which frames the stages were tested in;
+  - Box 1: its per-result statuses, its floors (with `τ_g`), its six frames and the origin of its axis;
+  - Table 2: block 1's exact MLP and the layer-1–2 reductions;
+  - §6 opens without the phrase the record rules out;
+  - 021's statuses, under a default added at §6's opening;
+  - *a readout program was written and explored*;
+  - Table 1: *008, 010*;
+  - *found* restored in the three superlatives.
+- **Notes, applied:**
+  - Figure 5's no-aggregate sentence;
+  - the rival's conditional new-frame share;
+  - Figure C1's caption;
+  - the `either` trace;
+  - 020's six of twelve floor conditions, and its values as a calibration record;
+  - 021's *not a claim of good prediction everywhere*;
+  - 022's lack of an aggregate label;
+  - the bounded-search caveat;
+  - a list of wording fixes.
+- **Re-verification of build 2: PASS WITH NOTES.** Two should-fix items and four notes, all applied in build 3:
+  - Figure 5's calibration draws are read descriptively: only one of the 10,000 draws lies at or below Y1/cue_final's
+    `g`, and *within its draws' range* is withdrawn;
+  - the stages were tested in exposed frames, new frames or both;
+  - Table 3's qualifier-only status cells are defined;
+  - Table 2 records 016's block-2 reduction;
+  - *each* is dropped from the three inputs;
+  - these review records are added.
+- **Final check of build 3: PASS WITH NOTES,** with no blocker and no should-fix item.
+  - Every cut kept the required qualifiers, negatives, statuses and scopes.
+  - Every moved passage kept its tag and trace.
+  - Two wording notes were applied: 007 had three descriptive baselines, and the tested-frames pointer names Table 3.
+  - The reviewer disclosed that three read-only scratch analyses ran outside the prescribed interpreter settings. They
+    only read the draft.
+
+### Narrative flow and redundancy: the restructure conforms
+
+- The restructure follows the adopted outline and reads as an argument. Bullets fell from 64 % to 13 % of the words.
+- **Two major findings, both applied with the claims blocker:**
+  - the reference-state vocabulary is now defined in §2;
+  - the scope qualifiers and the negatives are restored.
+- **Should and minor items, applied:**
+  - terms defined at first use: the E-only chain, the no-harm guard, the decoded read, P1, the channels, the pattern
+    term, the development, calibration and reserve data, the ladder's levels, licensed and informative frames, and
+    `LN₂`;
+  - every figure is used by the text;
+  - Y1 and Y2 are used only for populations, in the text and in F2's and F3's labels;
+  - handoffs to Table 2;
+  - repetition cut.
+- **Re-check of build 2:** 18 of 19 findings resolved, with length open: 7,305 words against build 1's 6,637. The
+  reviewer proposed 24 ranked cuts of 499 words, plus an optional 25th.
+  - **Taken:** ranks 2–13 and 15–22. Four technical passages moved to a paragraph at the end of Appendix A: 007's
+    replication, 011's frame names, the exploratory manipulations and the upstream chain's lineage.
+  - **Not taken:**
+    - rank 1, moving Figure 6 to Appendix C, since the adopted outline keeps it in §7; this is left to the reviewer;
+    - rank 14, since the figure-data audit wants *weight-only* in Figure 3's caption;
+    - ranks 23 and 24, so that RASP's precedent and the literature review's frozen protocol stay;
+    - rank 25, which was optional.
+  - Six minor flow items were applied, among them splits of §1's and §6's longest passages. The wrap script no longer
+    starts a line with a token that Markdown would read as a list marker.
+- **Length:** about 7,000 words from the abstract to the conclusion, without headings, against the reviewer's target of
+  6,000–6,500. Moving Figure 6 would save about 110 more.
+
+### Figures: PASS WITH NOTES, twice
+
+- **The v3 changes.** Titles and notes were removed from the images, and F1a and F6a were added. No plotted value,
+  colour or pattern changed, and regeneration is byte-identical.
+  - Three notes, applied: A is defined in Figure C1's caption; the README says *no figure titles or footnote notes*;
+    Figure 3's caption says *weight-only apart from the frozen axis*.
+- **The relabelling.** F2's rows and F3's panels no longer use 009's and 011's own Y1 and Y2. Only the announced
+  labels changed.
+  - Two notes, applied: *009's read-out test*; and §6 now says that 022's C4 passed, and that only its measured share
+    is descriptive.
