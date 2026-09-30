@@ -337,3 +337,17 @@ was applied, and each was re-checked before the draft was committed. The reports
   labels changed.
   - Two notes, applied: *009's read-out test*; and §6 now says that 022's C4 passed, and that only its measured share
     is descriptive.
+
+### TMLR page count: Figure 6 moved to Appendix C
+
+- On 2026-09-30 the reviewer set the rule: the page count in the mandatory TMLR template decides the cuts, not the
+  word count.
+  - At 12 pages of main content or fewer, keep the draft.
+  - Slightly over 12, first move Figure 6 to Appendix C.
+  - Still materially over 12, consider moving Figure 4 as well.
+  - The three small cuts skipped earlier stay skipped.
+- The [page-count build](tmlr-build/README.md) found:
+  - about 13.4 pages of main text as committed at `298769e`, with Figure 6 alone on a float page;
+  - about 12.3 pages after the flow review's cut 1 moved Figure 6 to Appendix C as Figure C3.
+- Figure 6 is therefore now Figure C3, and Figure 4 stays in the body. The claims review's final check had raised no
+  claim-strength objection to cut 1.

@@ -167,8 +167,9 @@ block-0 attention. It plots no data.
 drawn for the body of draft v3 as its Figure 5, from the same data as F6: 023's `g` per condition against its floor
 `F`, with the calibration draws' range and median, on a zoomed axis.
 
-**In draft v3** the figures are numbered by first citation: Figure 1 is F1a, Figure 2 F4, Figure 3 F3, Figure 4 F5,
-Figure 5 F6a and Figure 6 F1; in the appendices, Figure A1 is F7, Figure C1 F2 and Figure C2 F8. F6 is not used there.
+**In draft v3** the figures are numbered by first citation: Figure 1 is F1a, Figure 2 F4, Figure 3 F3, Figure 4 F5
+and Figure 5 F6a; in the appendices, Figure A1 is F7, Figure C1 F2, Figure C2 F8 and Figure C3 F1. F6 is not used
+there. F1 moved from §7 to Appendix C after the TMLR page-count build of 2026-09-30.
 
 ## Where the figures go beyond the audit's plan
 

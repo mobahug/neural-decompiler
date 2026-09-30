@@ -22,6 +22,9 @@ test is worth running is to be decided only after a full draft exists.
   result, and the chronology, supplementary figures and audit trail in appendices. It adds no claim, and no number that
   the record does not state. Its first build had three independent read-only reviews, applied before it was committed
   ([reviews of draft v3](paper-review-v3-2026-09-30/README.md)).
+- [TMLR page-count build](tmlr-build/README.md): draft v3 in the mandatory TMLR template, built to measure the
+  main text's length. About 12.3 pages, with Figure 6 moved to Appendix C by the reviewer's rule. It is not the
+  submission build.
 - [Paper-level review of draft v2](paper-review-2026-09-30/README.md) — three independent read-only reviews: claim
   strength, applied in v2's revision 1; narrative flow and redundancy, whose outline the reviewer adopted for draft v3;
   and submission format, after which the reviewer chose TMLR.
