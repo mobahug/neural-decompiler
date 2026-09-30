@@ -140,3 +140,39 @@ repository.
 
 After these changes, the checker passes on v1: 22 quotes and 142 citation groups. The five new groups are the traces
 added for the count of experiments and the new §8 statements.
+
+### Revision 2 and the record corrections: verification PASS WITH NOTES, no blocker
+
+Revision 2 applies the fifteen wording corrections of the
+[figure-data audit](figures/figure-data-audit-2026-09-30.md). A separate documentation-only commit corrects the same
+021 wording in C003, the synthesis, the readiness assessment and the literature review. One independent agent verified
+both, read-only.
+- **Verified:**
+  - All fifteen corrections are applied and match the record, including the four tokens with `either` noted as
+    different, and 021's Y1 with exposed nouns and the separate Y3.
+  - No existing number changed. Every added number matches its source.
+  - Appendix A is identical to the source map's overview in all 21 rows, and Appendix B matches the audit's verdicts.
+  - The record corrections are exact and documentation-only. C003 keeps its registered wording, quoted with provenance
+    in its status history, and its maturity, disposition, evidence and gates are unchanged.
+- **Should-fix,** two, both done:
+  1. §9's new status tag covered the whole bullet, including the prospective read-out. It now sits on the off-axis part
+     only.
+  2. C003's new row named the wrong section; the exposed nouns are stated in its scope.
+- **Notes,** done:
+  - the diagram note now says the layer-0 MLP runs in parallel, not before attention as drawn;
+  - the 019 row's notation is defined;
+  - the 0.080 margin names its metric;
+  - Y3 is named;
+  - F6's values carry their outcomes;
+  - F7 adds the never-run chips of 006 and 020;
+  - Appendix A's 021 note cites the wiring's line;
+  - the header mentions Appendix B;
+  - the `P1` note covers every label with P1;
+  - C003's quote runs to the end of the phrase;
+  - the literature review's correction note is exact about what changed;
+  - the paper README counts two redesigns, not three.
+
+  One optional clarification in the synthesis was left as is, because the verification judged its wording accurate:
+  it lists new cues and new nouns as the union of Y1 and Y3.
+
+After these changes, the checker passes on every edited file.
