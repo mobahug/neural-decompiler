@@ -18,12 +18,14 @@ test is worth running is to be decided only after a full draft exists.
   new relative to existing work, under a [protocol](literature-review/protocol-2026-09-28.md) frozen before any search.
   Its [verification record](literature-review/verification-2026-09-28.md) archives the read-only checks of every cited
   work and of the review's logic.
-
 - [Figure-data audit](figures/figure-data-audit-2026-09-30.md) — read-only: every value the planned figures F1–F8 would
   plot, traced to committed evidence, with its status and a verdict per panel. No figure is rejected; two need a
   record-supported redesign, F1 and F3's panel A. It also lists corrections for the next draft revision.
+- [Figures](figures/README.md) — F1–F8, drawn only from what the audit supports, by scripts that read every value from
+  a pinned commit and check it against its source. The README gives the provenance, the status colours, a draft caption
+  for each figure and where the figures go beyond the audit's plan.
 
-Figures come next, drawn only from what the audit supports. No new experiment is planned before them.
+No new experiment is planned.
 
 The drafts claim nothing beyond the registered claims, [C002](../claims/C002-count-cued-noun-number-circuit.md) and
 [C003](../claims/C003-frame-conditioned-decoded-program.md). Where a draft and a record disagree, the record wins.
