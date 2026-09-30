@@ -19,7 +19,11 @@ test is worth running is to be decided only after a full draft exists.
   Its [verification record](literature-review/verification-2026-09-28.md) archives the read-only checks of every cited
   work and of the review's logic.
 
-Figures come next, after a figure-data audit (the drafts' Appendix B). No new experiment is planned before them.
+- [Figure-data audit](figures/figure-data-audit-2026-09-30.md) — read-only: every value the planned figures F1–F8
+  would plot, traced to committed evidence, with its status and a verdict per panel. No figure is rejected; three
+  panels need a record-supported redesign. It also lists corrections for the next draft revision.
+
+Figures come next, drawn only from what the audit supports. No new experiment is planned before them.
 
 The drafts claim nothing beyond the registered claims, [C002](../claims/C002-count-cued-noun-number-circuit.md) and
 [C003](../claims/C003-frame-conditioned-decoded-program.md). Where a draft and a record disagree, the record wins.
