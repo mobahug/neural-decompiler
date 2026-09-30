@@ -176,3 +176,72 @@ both, read-only.
   it lists new cues and new nouns as the union of Y1 and Y3.
 
 After these changes, the checker passes on every edited file.
+
+## Draft v2
+
+Draft v2 (2026-09-30) is draft v1, revision 2, with Figures 1–8 embedded and captioned. It had a paper-level review in
+three independent, read-only parts, each by its own reviewer. The full reports are in
+[`paper-review-2026-09-30/`](paper-review-2026-09-30/README.md); their line numbers refer to draft v2 before revision 1.
+
+### Claim strength: PASS WITH NOTES, no blocker
+
+- **Six should-fix items and fourteen notes,** all wording or trace fixes, applied in revision 1:
+  - 023's frozen reading is quoted from its preregistration; the word *small* is now attributed to its closure notes;
+  - §9's findings carry their statuses, and the block-2 and block-0 findings their scope;
+  - *the mechanism* became *a candidate mechanism* or *one mechanistic decomposition*;
+  - the abstract's localization names its two cue pairs and three templates;
+  - the protocol's precedents follow the literature review: several 2026 studies, not one;
+  - Figure 3's *not committed* is traced to the figure-data audit.
+- **Notes, done:**
+  - the locked subset's scope, new cues in exposed frames;
+  - `every`'s small on-axis part and 008's `AXIS_ARTIFACT`;
+  - status tags on the transport heading and on 007's replication, whose fresh frames lie beyond C002's declared frames;
+  - κ described as a closure of channel D's contribution;
+  - 025 as a rotation along a decoded direction;
+  - the outcome-bearing tests listed with 024's and 025's;
+  - 024's binding threshold, a permutation null;
+  - 021's negative new-frame label, from the coordinated condition alone;
+  - the captions of Figures 1, 5, 6 and 7;
+  - C003's maturity, `LOCALIZED`;
+  - the rivals counted as five tests of four accounts;
+  - the conditional qualifier dated from 013;
+  - byte-identity tied to matplotlib 3.11.2.
+- After revision 1 the checker passes: 32 quotes, 196 citation groups, 43 labels.
+- **Verification of revision 1: PASS WITH NOTES.** Every item was applied correctly, and the edits add no overclaim.
+  Six minor notes, done:
+  - Figure 6's caption says that neither plotted value is a frozen condition of 021's Y1 or Y2;
+  - §9 says what passed: three conditions of `g`, relative to the ceiling;
+  - 008's rule is said to use a different axis measure;
+  - the header counts one added value from the record;
+  - a line left short by reflowing is joined;
+  - the format summary gives cuts of about 40–45 %.
+
+### Narrative flow and redundancy: eight major findings, pending a decision
+
+- The draft reads as an audited record rather than an argument. The proposals are moves, cuts and definitions that
+  change no number and no claim:
+  - an introduction that says why the question matters and what was found, with the definitions in a setup section;
+  - a one-paragraph abstract;
+  - a worked example of one stage program, the encoding read, and a table of what each stage computes exactly from the
+    measured state and what it reduces or locks;
+  - one home per result: one extended table in §5; 023's table with Figure 6's panel A; Appendix A or Figure 7; Figure
+    8 in an appendix;
+  - each figure where its claim is made, without the titles and notes inside the images;
+  - prose in place of most bullets, and the real-swap section framed as the protocol at work, from 020 to 023;
+  - §9 halved, and a conclusion that follows the contributions;
+  - about 6,150 words from the abstract to the conclusion, against about 7,500 now.
+- Not applied: they restructure the paper, so they wait for the reviewer's decision.
+
+### Submission format: depends on the venue, none recommended
+
+- TMLR and *Computational Linguistics* fit without major cuts; venues with 8–9 pages need cuts of about 40–45 %.
+- Needed for any submission:
+  - remove the internal header, the hidden audit trail and the internal pointers;
+  - rewrite the abstract as one plain paragraph;
+  - disclose the use of AI agents in the protocol's reviews, the literature search and the reviews of the drafts;
+  - make the figures legible in print, without titles inside the images;
+  - number and caption the tables;
+  - complete the bibliographic records, and cite the model and the library;
+  - replace the paragraph on the project's record with a citable snapshot, and ship the audit trail as supplementary
+    material.
+- The venue type, the template and the target length come first; the report gives a conversion plan for each.

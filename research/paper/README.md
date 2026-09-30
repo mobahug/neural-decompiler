@@ -13,6 +13,11 @@ test is worth running is to be decided only after a full draft exists.
   checker validates. Its relation to prior work is completed from the literature review, and its contributions follow
   the reviewer's decision of 2026-09-29: the prediction-versus-causation boundary is no longer a separate contribution,
   and stays in the abstract, §7 and the conclusion.
+- [Draft v2](draft-v2-2026-09-30.md) — internal, not for circulation. It is draft v1, revision 2, with its figures:
+  Figures 1–8 are embedded where the text first relies on them, each with a caption traced like the body, and Appendix
+  B lists them. Revision 1 applies the paper-level claim-strength review.
+- [Paper-level review of draft v2](paper-review-2026-09-30/README.md) — three independent read-only reviews: claim
+  strength, applied; narrative flow and redundancy, and submission format, both pending a decision.
 - [Reviews of the drafts](reviews.md) — the independent read-only reviews and what was done about each finding.
 - [Literature review](literature-review/review-2026-09-28.md) — the first step of v1 preparation: what in the draft is
   new relative to existing work, under a [protocol](literature-review/protocol-2026-09-28.md) frozen before any search.
