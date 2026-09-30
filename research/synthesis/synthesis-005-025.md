@@ -265,7 +265,7 @@ cue token w
 | routing | frame-specific membership (019) | [prospective]; aggregate | [prospective, conditional]; aggregate |
 | head pattern | the attention row and `ΔT` (017) | [prospective] | [prospective, conditional] |
 | upstream error | its localization to block-0 attention (022) | [prospective] | [prospective, conditional] |
-| end to end, 020's `p_t` wiring | `Δc` (021) | [prospective] for new cues and nouns; small margin | [unestablished] (coordinated) |
+| end to end, 020's `p_t` wiring | `Δc` (021) | [prospective] for new cues with exposed nouns; small margin; new nouns [prospective] (Y3) | [unestablished] (coordinated) |
 | end to end, the completed chain | `Δc`, relative to the ceiling (023) | Y1/coordinated [prospective]; Y1/cue_final [unestablished] at the envelope | [prospective, conditional] |
 | readout error | its rank association with nounness (024) | [prospective]; predictive, not causal | — |
 
@@ -384,3 +384,10 @@ These are listed as the records state them. None is proposed here as a next expe
 
 - It does not change C002. What the synthesis implies for the claim is for a separate claim review.
 - It does not propose an experiment. Whether a scientifically justified new sequence exists is step 3.
+
+## Corrections
+
+- **2026-09-30, documentation only.** §4's table row for 021 read “[prospective] for new cues and nouns; small margin”
+  (research/synthesis/synthesis-005-025.md@3d87d3c:268). 021's small-margin Y1 pass used exposed nouns (021:129); the
+  new nouns were tested separately, in Y3 (021:138). The row now says so, following the
+  [figure-data audit](../paper/figures/figure-data-audit-2026-09-30.md#record-notes). No finding changes.

@@ -53,8 +53,9 @@ data it had not seen:
   (009–019). This held for new cues, and in new frames for most stages, conditional on the frames' measured reference
   states; 015 Y2 and 018 Y2 were not established.
 - **Under real cue swaps,** they predicted the contrast change `Δc` end to end:
-  - on 020's wiring, for new cues and nouns in exposed frames, pooled over templates, by a small margin; without
-    positive skill in coordinated frames; and not in new frames, where its label was negative (021);
+  - on 020's wiring, for new cues in exposed frames with exposed nouns, pooled over templates, by a small margin, and
+    for new nouns in a separate test; without positive skill in coordinated frames; and not in new frames, where its
+    label was negative (021);
   - once block 0 was completed, relative to the ceiling, for new determiner-like, quantity and adjective cues. Three
     conditions pass and Y1/cue_final is an `ENVELOPE_ONLY_FAILURE`; there is no aggregate label (023).
 - No decoded program predicted the E-patch's own contrast shift. 009's contrast rule was never locked, and 007's
@@ -365,3 +366,11 @@ in aggregate (019).
 - It runs and proposes no experiment; §4 names one primary test and one secondary candidate for the decision.
 - It does not make the novelty statement final; that needs the literature review.
 - It does not choose a venue or a paper format.
+
+## Corrections
+
+- **2026-09-30, documentation only.** §1's account of 021 read “on 020's wiring, for new cues and nouns in exposed
+  frames, pooled over templates, by a small margin” (research/synthesis/paper-readiness-2026-09-28.md@139755d:56). 021's
+  small-margin Y1 pass used exposed nouns (021:129); the new nouns were tested separately, in Y3 (021:138). The line now
+  says so, following the [figure-data audit](../paper/figures/figure-data-audit-2026-09-30.md#record-notes). No
+  finding or recommendation changes.

@@ -376,9 +376,10 @@ by rules frozen before the target prompts were executed:
     point and routing (018, 019), and the head's pattern change (017), for new cues [prospective], and in new frames
     for most stages [prospective, conditional; 015 and 018 Y2 unestablished] (E007–E015);
 - **for a real cue swap:**
-  - the contrast change on 020's wiring, for new cues and nouns in exposed frames, pooled over templates, with a small
-    margin [prospective]. In coordinated frames it had no positive skill, in exposed frames (−0.014 [descriptive]) or
-    new ones (Y2 unestablished), plausibly because of the wiring defect (E018, E019, E025);
+  - the contrast change on 020's wiring, for new cues in exposed frames with exposed nouns, pooled over templates, with
+    a small margin [prospective], and for new nouns over the same pairs [prospective]. In coordinated frames it had no
+    positive skill, in exposed frames (−0.014 [descriptive]) or new ones (Y2 unestablished), plausibly because of the
+    wiring defect (E018, E019, E025);
   - the localization of the E-only chain's remaining error primarily to block-0 attention [prospective; Y2
     conditional] (E020);
   - with block 0 completed, the contrast change relative to the ceiling for new determiner-like, quantity and
@@ -422,3 +423,4 @@ The programs are prospectively predictive; their causal gates are unestablished.
 | Date | Previous maturity | New maturity | Previous disposition | New disposition | Reason | Evidence |
 |---|---|---|---|---|---|---|
 | 2026-09-28 | — | `LOCALIZED` | — | `ACTIVE` | Registered from the frozen draft at `b1f6247`, after three independent read-only reviews of the first draft and of revisions 2 and 3, each PASS WITH NOTES with no blocker. Revision 4 answered every should-fix item of the third, and the registration's independent check confirmed the answers. Level 0–2 gates satisfied (see *Evidence gates*). Level 3 not established: no preregistered, outcome-bearing necessity, sufficiency or control test of a decoded variable, and the one preregistered intervention on a decoded direction did not establish its predicted effect (E024). Prospectively predictive; causal gates unestablished. Sits beside C002 and does not supersede it. | E001–E027 |
+| 2026-09-30 | `LOCALIZED` | `LOCALIZED` | `ACTIVE` | `ACTIVE` | Documentation-only correction of the supported conclusion's population wording, found by the [figure-data audit](../paper/figures/figure-data-audit-2026-09-30.md#record-notes). As registered, the line read “the contrast change on 020's wiring, for new cues and nouns in exposed frames, pooled over templates, with a small margin [prospective]” (research/claims/C003-frame-conditioned-decoded-program.md@eeff9ff:379–380). 021's small-margin Y1 pass used exposed nouns (021:129), as this claim's scope already states; the new nouns were tested separately, in Y3, `NOUN_READOUT_FIXED` (021:138). Both are in E018. The line now says so. The wording came from the frozen draft, which stays as frozen. Evidence, gates, maturity, disposition and scientific content are unchanged. | E018 |
