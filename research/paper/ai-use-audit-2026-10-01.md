@@ -1,11 +1,12 @@
 # Audit of the statement on AI tools, 2026-10-01
 
-**Status:** revision 3. This is a read-only audit for the statement on AI tools that TMLR requires as a first-page
-footnote. It changes no record. It checks [draft v3](draft-v3-2026-09-30.md)'s statement against the project's history
-and proposes a replacement. Revision 1 failed an independent read-only review on one blocker: its proposed statement
-could turn decisions the record gives to the project's reviewer into the authors' own. Revision 2 applied every finding
-of that review, and its re-check passed with notes, which revision 3 applies ([Review](#review)). The replacement cannot
-be completed until the author answers §4, and the statement must not be frozen before then.
+**Status:** revision 3, with the author's answers of 2026-10-01 in §9. This is a read-only audit for the statement on AI
+tools that TMLR requires as a first-page footnote. It changes no record. It checks [draft v3](draft-v3-2026-09-30.md)'s
+statement against the project's history and proposes a replacement. Revision 1 failed an independent read-only review on
+one blocker: its proposed statement could turn decisions the record gives to the project's reviewer into the authors'
+own. Revision 2 applied every finding of that review, and its re-check passed with notes, which revision 3 applies
+([Review](#review)). The replacement cannot be completed until the author answers §4, and the statement must not be
+frozen before then.
 
 ## 1. Purpose and method
 
@@ -272,6 +273,45 @@ was, and the author should judge whether the submission meets that expectation.
 3. Draft v3's §3 says who reviewed at each gate (§5, point 7).
 4. An independent read-only check compares the final statement and the method text with this audit.
 5. The de-anonymized version gives the true number of authors.
+
+## 9. The author's answers and the final statement
+
+On 2026-10-01 the author answered §4's first two questions.
+- **The project's reviewer** is ChatGPT. The author consulted it and relayed its text. It proposed the decisions that
+  the record gives as the reviewer's, and the author chose what to adopt. This is §4's second case, so the statement
+  takes variant B. The statement on AI tools in draft v3 was ChatGPT's text in the same way.
+- **The origins.** The author chose the problem and the main directions. AI proposed the designs and the options, and
+  the author chose among them.
+
+The answers did not single out Codex. The statement names it on the evidence of §2, which the author may correct. The
+lock commits stay as §3 gives them. The assistant acted only on the author's messages, so every lock was committed by
+the author or on the author's instruction. For 021–024 the record does not keep those messages.
+
+The final statement, for the draft and the TMLR build:
+
+> **Use of AI tools.** Generative AI tools were used extensively in this work: Anthropic's Claude, through the Claude
+> Code agent, and OpenAI's Codex and ChatGPT. The authors chose the research problem and the main directions of the
+> work. AI assistants proposed the experimental designs and the options among them. ChatGPT, which the authors consulted
+> as a reviewer, proposed the project's decisions, from design approvals and changes to lock sign-offs and claim
+> registrations. The authors chose among the options, decided which proposals to adopt, and authorized each
+> preregistration lock before its confirmation run. AI assistants drafted the designs, preregistrations and decision
+> rules; wrote the analysis code and tests; ran every phase of every experiment, including each single preregistered
+> confirmation run, under protocols frozen before the runs; performed the literature searches, reading the sources
+> partly through a page-summarizing tool; drafted the experiment reports and their interpretations, the claim records,
+> the cross-experiment synthesis, the figures and this manuscript; and ran the exploratory diagnostics and design spikes
+> that preceded later designs. Separate read-only instances of the same assistant reviewed the implementations, the
+> freezes, calibrations, locks and confirmations (with committed records from Experiment 023 on), the claim records, the
+> synthesis, the literature review, the figures and every draft. These reviews and assistant-written scripts checked
+> every reported number against the committed experimental record and every bibliographic record against its source; key
+> paraphrases of prior work were spot-checked. The authors take full responsibility for the manuscript.
+
+The method text, for draft v3's §3 (§5, point 7):
+
+> The project used AI assistants throughout (see the statement on AI tools). A coding agent implemented each design and
+> ran every phase. Separate read-only instances of the same agent reviewed each implementation and, from 021 on, each
+> lock, with committed records of the freezes, calibrations and confirmations from 023 on. The decisions at the gates,
+> from design approvals to lock sign-offs, were proposed by ChatGPT, which the authors consulted as a reviewer, and
+> adopted by the authors.
 
 ## Review
 
