@@ -434,3 +434,214 @@ As written, the line understates Claude's part in choosing the paper's behavior.
 - **N11:** resolved (lines 246–249, 254–256).
 - **N12:** resolved (lines 234–235, 266).
 - **N13:** resolved (lines 82, 109–112).
+
+---
+
+# Final check of the statement on AI tools and the method text
+
+A third read-only check, kept as returned and wrapped at 120 columns. It compared draft v3's statement and §3 passage,
+uncommitted at the time, with the audit's §9 as committed in `4493745`. Its line numbers refer to those files. §9 now
+applies its findings.
+
+**Verdict: PASS WITH NOTES.** There is no blocker. Both texts in the draft match the audit's §9 word for word. The
+checker exits 0, every new trace resolves, and the build renders all three edits correctly without leaking the author's
+identity. There are four SHOULDs:
+- two wordings go beyond, or blur, what §9 supports (S1, S2);
+- two items rest on answers the author has not given (S3, S4).
+
+Each wording fix also has to go into the audit's §9 in a new commit, with the trace commit updated, so that check A
+stays true.
+
+## BLOCKER
+None.
+
+## SHOULD
+
+**S1. ChatGPT is credited with every decision (draft line 40–41, "the project's decisions"; §3 line 192–194, "The
+decisions at the gates").**
+- **What §9 supports.** §9 limits ChatGPT to "the decisions that the record gives as the reviewer's"
+  (audit@4493745:280–281). Variant B kept that qualifier (audit:234–236); the final text drops it.
+- **Decisions the record gives to the user:**
+  - 005's design was to be "explicitly approved by the user" (005 design:1110–1113; the screening report:182 calls 005
+    "user-approved");
+  - 018's definitions were "Tightened before review, at the user's request" (018 design:458);
+  - 020's revision 3 was "authorized by the user on the diagnostic's evidence" (020 design:478–479);
+  - 012's lock was installed "at the user's instruction" (message of 5cea6c4).
+- **Decisions the record does not assign:** most approvals of 006–021, and the phase authorizations of 022–024 (023
+  plan:339–340; 024 plan:661).
+- **The effect.** Both sentences give ChatGPT the author's own decisions. The listed range also leaves out reviewer
+  decisions the record does show:
+  - writing the paper, its venue and the framing of its contributions (research/paper/README.md@7f2cce1:3–5, 13–15, 20);
+  - the floor reviews of 021 and 023 (021 plan:326; 023 FLOOR-REVIEW.md:19).
+- **Fix for the statement:** "ChatGPT, which the authors consulted as a reviewer, proposed the decisions that the
+  project's records give to its reviewer, from design approvals and changes to lock sign-offs, claim registrations, and
+  the decision to write this paper, its venue and the framing of its contributions."
+- **Fix for §3:** "The decisions that the records give to the project's reviewer, from design approvals and
+  calibration-floor reviews to lock sign-offs, were proposed by ChatGPT, which the authors consulted as a reviewer, and
+  adopted by the authors."
+
+**S2. "Separate read-only instances of the same assistant" has no clear antecedent (line 47).**
+- The previous sentence's subject is plural, "AI assistants". The nearest singular assistant is ChatGPT, introduced as
+  "a reviewer" (line 40).
+- So the sentence can be read as ChatGPT checking Claude's work, a cross-model check the record does not show. The
+  reviewers were Claude instances run from the operator's own session (audit:87; 023 evidence README:3–4).
+- **Fix:** "Separate read-only instances of Claude, the assistant that wrote the code and ran the experiments, reviewed
+  …".
+- §3's "the same agent" is clear after "A coding agent". Optional there: "The coding agent, Claude Code, implemented …".
+
+**S3. Codex is named on an inference the author has not confirmed (line 38).**
+- The audit identifies Codex only "by inference from branch names" (audit:45–59).
+- §9 says: "The answers did not single out Codex. The statement names it on the evidence of §2, which the author may
+  correct." (audit:286).
+- The re-check's Note 10 asked for the author's confirmation before naming Codex without brackets
+  (ai-use-audit-review:395–399).
+- The methodology commits `37d209a` and `d1427c7` were made on main, not on a codex/ branch.
+- **Fix:** before submission, record the author's one-line confirmation in §9 in place of line 286's caveat, and if
+  possible what Codex did (001–004, the instrumentation package, the screening design, the methodology). If the author
+  does not confirm, drop Codex: "…and OpenAI's ChatGPT".
+
+**S4. The statement says nothing about who wrote the research methodology and the claim registry.**
+- **The audit leaves it open:**
+  - its methodology row is classed §4 (audit:83);
+  - §4 says the record "does not say … who wrote the methodology" (audit:174);
+  - §4 also says "The statement must not be frozen before they are answered" (audit:153).
+- §9 answers "§4's first two questions" (audit:279), but its answer on origins (283–284) covers the problem, the
+  directions, the designs and the options, not the methodology.
+- **The paper relies on it:**
+  - the evidence ladder and its gates (draft:196–199, traced to docs/RESEARCH_METHODOLOGY.md);
+  - contribution 1's "every claim graded on one evidence ladder" (draft:100–101).
+- It was written in the Codex period, without a trailer (`37d209a`, `d1427c7`, 2026-09-15).
+- **Fix:** ask the author and record the answer in §9.
+  - If AI drafted it: "AI assistants drafted the research methodology and its evidence ladder, the designs,
+    preregistrations and decision rules; …".
+  - If the author did: add it to the authors' sentence.
+
+## NOTE
+
+- **N1. "authorized each preregistration lock" (line 42) drops variant B's "committed or" (audit:236–237).**
+  - §9 says "every lock was committed by the author or on the author's instruction" (audit:287–288).
+  - By inference, the author installed and committed eleven locks: 005, 007, 009, 011 and 013–019 (audit:115–117). In
+    the runners, install is one of six phases, and the plans give it to the user (009 plan:56, 62).
+  - Next to "ran every phase" (line 43), the current wording slightly understates the authors' own act.
+  - Fix: "and committed or authorized each preregistration lock before its confirmation run".
+- **N2. "ran every phase of every experiment, including each single preregistered confirmation run, under protocols
+  frozen before the runs" (lines 43–44) is accurate.**
+  - "each" covers the 17 locked experiments' confirmations. It does not imply that 006, 008, 010 or 020 had one.
+  - Every run ran under a design or lock fixed before it:
+    - 005's protocol v2, whose M3 rule was amended after Tier A but before any later run (source-map@b722e9c:265);
+    - 020's re-run, after its tolerance amendment (020:69–81).
+  - An editor may still read "frozen" as "never amended after results were seen". Optional: "under protocols fixed
+    before each run (Table A2 lists the amendments)".
+- **N3. §3 lines 188–192: "with committed records of the freezes, calibrations and confirmations from 023 on" does not
+  say who reviewed those phases.**
+  - Placed after the agents' reviews, it reads as if agents reviewed the calibrations from 023 on.
+  - The audit gives the agents 022's and 024's calibrations, and the freezes and confirmations from 023 on. It gives the
+    floors of 021 and 023 to the reviewer (audit:141–147). The message of `a0e41a9` keeps "the floor review" apart from
+    "the independent lock review".
+  - Optional fix: "…reviewed each implementation, each lock from 021 on, and, from 023 on, the freezes, the
+    confirmations and 024's calibration, with committed records."
+- **N4. "each implementation" (§3 line 189) rests only on the plans for 005 and 006.**
+  - No commit message, README or design records those two reviews. The cited trace, 005 plan:178, is a checklist
+    requirement.
+  - For 007–025 the reviews are recorded: the "harden experiment 0NN against the implementation review" commits, 010
+    design:5, 021:61, 022:117, 023:172–173 and 024:22. The audit's own wording is "as the plans require" (audit:132).
+  - "read-only" is first recorded for an implementation review at 023:172.
+  - Optional: add 021:61, 022:117 and 023:172–173 to the trace, or write "as the plans required".
+- **N5. Gaps in the traces.**
+  - The statement's trace (line 52) leaves out audit@4493745:286–288, which is what the Codex naming and "authorized
+    each preregistration lock" rest on. Add it.
+  - §3's "implemented each design" is traced to 011 plan:50, 54. Those lines show the agent running the phases, not
+    implementing them. Add audit@4493745:84, or 011 plan:44–45.
+  - `4493745` is a local commit. Others can resolve these traces only after it is pushed.
+- **N6. "key paraphrases of prior work were spot-checked" (lines 50–51) overstates the check.**
+  - The verification spot-checked "the paraphrases, numbers and relation lines of the key entries"
+    (verification@7f2cce1:6–7; audit:204–205).
+  - Fix: "the paraphrases of the key prior works were spot-checked".
+- **N7. "The authors chose the research problem" (lines 38–39) is the author's answer, but hides where the behavior came
+  from.**
+  - An AI-run screening proposed the behavior studied, and the author approved it (screening report:3, 182;
+    audit:163–166). The statement covers this only through "the options among them".
+  - Optional, since TMLR weighs whether ideas are human-sourced: "…the research problem, the behavior studied (from
+    candidates an AI-run screening proposed) and the main directions."
+- **N8. Nothing needs adding about the earlier statement.** It was ChatGPT's text (audit:282). The new statement
+  replaces it, and "drafted … this manuscript" covers the fact that the new one is AI-drafted.
+- **N9. The edits lengthen the main text and stretch page 9.**
+  - **Main text.** A scratch Tectonic build of HEAD ends the main text 3.05 in down page 13, about 12.2 pages, as
+    tmlr-build/README.md records. The current build ends it 5.54 in down, about 12.5 pages. References still begin on
+    page 13, and the last page is still 27.
+  - **Layout.** Table 4 moves from page 9 to page 10, which leaves stretched white space on page 9 (after Figure 4's
+    caption and before §6).
+  - **Warnings.** Tectonic now reports five underfull \vbox warnings (main.tex:26, 164 and 209 at badness 10000; 238;
+    247), against one at HEAD.
+  - The README's rule ("still materially over 12, consider moving Figure 4") may now need a decision. The pending
+    pdfLaTeX build should be checked at page 9.
+- **N10. The header's "Before submission" list (lines 10–13) is incomplete.**
+  - It leaves out this check (audit §8, item 4) and the author's answers for S3 and S4.
+  - build/main.pdf (14:13) was compiled by Tectonic (build.log shows xdvipdfmx), so the pdfLaTeX build is still pending.
+  - The uncommitted tmlr-build/README.md already says the build was "compiled with pdfLaTeX". That file, build.sh,
+    submission-checklist.md and supplement.py changed during this review and were not reviewed. Reconcile them when that
+    work lands.
+- **N11. Appendix D's figures paragraph.**
+  - The anonymous sentence (md2tex.py:196–197; PDF p. 27) reads correctly. Optional reordering: "…and separate read-only
+    AI agents reviewed the figures' provenance and drawing."
+  - The Markdown says the figures' README gives "read-only reviews by separate AI agents" (line 928). That README only
+    says "Two independent read-only reviews" (figures/README.md:236). The AI attribution is in
+    paper-review-v3-2026-09-30/README.md:3–4 and figure-data-audit:17, 468.
+- **N12. Two optional additions.**
+  - §3 could say "(see the statement on AI tools on the first page)", since the build sets the statement as an unmarked
+    footnote.
+  - Line 94's "A literature review, run under a protocol frozen before any search" could add "by AI agents". The format
+    review's MUST 14 asked for that in the text (format.md@7f2cce1:181); for now only the footnote says it.
+
+## Checked and correct
+
+- **A. Word-for-word match.**
+  - After removing the TMLR marker and the hidden comments, and normalizing whitespace, the draft's statement (lines
+    37–52) equals audit@4493745:292–306.
+  - The §3 passage (lines 186–194) equals audit@4493745:310–314. Both are plain ASCII.
+- **D. Checker and traces.**
+  - The checker printed "checked 27 quotes, 238 citation groups, 2 commit hashes and 43 labels … PASS" and exited with
+    status 0.
+  - Every new trace was opened and supports its sentence, within the scope limits in S1, N4 and N5:
+    - audit 279–284 and 292–306;
+    - 011 plan:50, 54;
+    - 005 plan:178;
+    - 021:81–83, an independent read-only lock review, after which the reviewer authorized the confirmation;
+    - 022:147–148, lock committed after the independent lock review;
+    - 023 evidence README:3–4, run records and independent reviews, with scripts run from the session's scratchpad.
+  - The cited files are unchanged from `d7c5e62` to HEAD, and the audit is unchanged since `4493745`.
+- **B. Claims the record or the author's answers support:**
+  - Claude through Claude Code (audit:40–44);
+  - ChatGPT as the reviewer the author consulted, and the authors choosing the problem, the directions and among the
+    options (audit:280–284);
+  - AI-drafted designs, locks and rules; code; every phase run by AI; the literature searches and the page-summarizing
+    tool; the drafted texts; the diagnostics and design spikes (audit:82–91, 167–172);
+  - the agent reviews, with committed records from 023 (audit:131–149; Table A2);
+  - every reported number and every bibliographic record checked (audit:90, 198–205);
+  - every lock authorized by the author or on the author's instruction (audit:287–288).
+- **C. Consistency elsewhere in the draft.**
+  - No "independent review" claim remains; "independently trained" at line 538 is unrelated.
+  - Nothing implies human reviewers.
+  - Table A2's note that committed review records start at 023 agrees with both new passages.
+  - The header's "the reviewer" is ChatGPT, and the build strips the header.
+  - "we ran", "we localized" and "We tested" are the authors' voice and do not conflict with the statement.
+- **E. The build.**
+  - main.tex is byte-identical to a fresh md2tex.py run on the current draft. It differs from HEAD's build in exactly
+    three places.
+  - The footnote in main.tex and on PDF page 1 equals the draft's statement. It is unmarked, carries no marker or
+    comment text, sets apostrophes as ’ (there are no dashes in it), and is complete through "for the manuscript." on
+    page 1.
+  - The §3 passage is complete on page 4, and Appendix D is correct on page 27.
+  - No author name, mobahug, repository link, repo path, .md file or project hash appears in main.tex or the PDF text.
+    The only long hex string is the pinned Pythia revision. "github" appears only in the TransformerLens reference.
+- **F. TMLR fit.**
+  - The disclosure is a first-page footnote. It names the tools, states the division of work and the authors' full
+    responsibility, and "the authors" does not reveal how many there are.
+  - An editor can see the authors' part: choosing the problem and the directions, choosing among AI proposals, adopting
+    ChatGPT's proposed decisions and authorizing the locks. They can also see that AI drafted, coded, ran, searched,
+    wrote and reviewed.
+  - Wording that could mislead toward more AI involvement than recorded: S1, S3, N1. Toward stronger human sourcing or
+    verification: S2, S4, N6, N7.
+
+Nothing in the repository was changed. The regenerated main.tex, the HEAD comparison build and the page renders are in
+the scratchpad's finalai/ folder.

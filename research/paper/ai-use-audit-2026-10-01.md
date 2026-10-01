@@ -276,42 +276,54 @@ was, and the author should judge whether the submission meets that expectation.
 
 ## 9. The author's answers and the final statement
 
-On 2026-10-01 the author answered §4's first two questions.
+On 2026-10-01 the author answered §4's questions.
 - **The project's reviewer** is ChatGPT. The author consulted it and relayed its text. It proposed the decisions that
   the record gives as the reviewer's, and the author chose what to adopt. This is §4's second case, so the statement
   takes variant B. The statement on AI tools in draft v3 was ChatGPT's text in the same way.
 - **The origins.** The author chose the problem and the main directions. AI proposed the designs and the options, and
-  the author chose among them.
+  the author chose among them. The behavior studied was proposed by the behavior screening (§4), and the author approved
+  it.
+- **Codex.** Codex did the work of 2026-09-14 to 2026-09-16 under the author's direction: Experiments 001–004, the
+  instrumentation package and the design of the behavior screening (§2).
+- **The methodology and the claim registry.** An AI assistant, Codex or ChatGPT, drafted them at the author's direction,
+  and the author approved them.
 
-The answers did not single out Codex. The statement names it on the evidence of §2, which the author may correct. The
-lock commits stay as §3 gives them. The assistant acted only on the author's messages, so every lock was committed by
-the author or on the author's instruction. For 021–024 the record does not keep those messages.
+The lock commits stay as §3 gives them. The assistant acted only on the author's messages, so every lock was committed
+by the author or on the author's instruction. For 021–024 the record does not keep those messages.
 
-The final statement, for the draft and the TMLR build:
+The final statement, for the draft and the TMLR build. It takes the final check's findings into account (*Review*).
+ChatGPT's share is limited to the decisions the records give to the reviewer, since the records give others to the user
+(§3). The reviews are attributed to Claude by name.
 
 > **Use of AI tools.** Generative AI tools were used extensively in this work: Anthropic's Claude, through the Claude
 > Code agent, and OpenAI's Codex and ChatGPT. The authors chose the research problem and the main directions of the
-> work. AI assistants proposed the experimental designs and the options among them. ChatGPT, which the authors consulted
-> as a reviewer, proposed the project's decisions, from design approvals and changes to lock sign-offs and claim
-> registrations. The authors chose among the options, decided which proposals to adopt, and authorized each
-> preregistration lock before its confirmation run. AI assistants drafted the designs, preregistrations and decision
-> rules; wrote the analysis code and tests; ran every phase of every experiment, including each single preregistered
-> confirmation run, under protocols frozen before the runs; performed the literature searches, reading the sources
-> partly through a page-summarizing tool; drafted the experiment reports and their interpretations, the claim records,
-> the cross-experiment synthesis, the figures and this manuscript; and ran the exploratory diagnostics and design spikes
-> that preceded later designs. Separate read-only instances of the same assistant reviewed the implementations, the
-> freezes, calibrations, locks and confirmations (with committed records from Experiment 023 on), the claim records, the
-> synthesis, the literature review, the figures and every draft. These reviews and assistant-written scripts checked
-> every reported number against the committed experimental record and every bibliographic record against its source; key
-> paraphrases of prior work were spot-checked. The authors take full responsibility for the manuscript.
+> work, and approved the behavior studied, which an AI-run screening proposed. AI assistants proposed the experimental
+> designs and the options among them. ChatGPT, which the authors consulted as a reviewer, proposed the decisions that
+> the project's records give to its reviewer: design approvals and changes, lock sign-offs, claim registrations, and the
+> decision to write this paper, its venue and the framing of its contributions. The authors chose among the options,
+> decided which proposals to adopt, and committed or authorized each preregistration lock before its confirmation run.
+> Codex implemented the first experiments, which this paper does not report, and the instrumentation package that the
+> later ones use, and it drafted the design of the behavior screening. AI assistants drafted the research methodology
+> and its evidence ladder, the designs, preregistrations and decision rules; wrote the analysis code and tests; ran
+> every phase of every experiment, including each single preregistered confirmation run, under protocols fixed before
+> each run (Table A2 lists the amendments); performed the literature searches, reading the sources partly through a
+> page-summarizing tool; drafted the experiment reports and their interpretations, the claim records, the
+> cross-experiment synthesis, the figures and this manuscript; and ran the exploratory diagnostics and design spikes
+> that preceded later designs. Separate read-only instances of Claude, which wrote most of the code and ran the
+> experiments, reviewed the implementations, freezes, calibrations, locks and confirmations (with committed records from
+> Experiment 023 on), the claim records, the synthesis, the literature review, the figures and every draft. These
+> reviews and assistant-written scripts checked every reported number against the committed experimental record and
+> every bibliographic record against its source; the paraphrases of the key prior works were spot-checked. The authors
+> take full responsibility for the manuscript.
 
 The method text, for draft v3's §3 (§5, point 7):
 
-> The project used AI assistants throughout (see the statement on AI tools). A coding agent implemented each design and
-> ran every phase. Separate read-only instances of the same agent reviewed each implementation and, from 021 on, each
-> lock, with committed records of the freezes, calibrations and confirmations from 023 on. The decisions at the gates,
-> from design approvals to lock sign-offs, were proposed by ChatGPT, which the authors consulted as a reviewer, and
-> adopted by the authors.
+> The project used AI assistants throughout (see the statement on AI tools). The coding agent, Claude Code, implemented
+> each design and ran every phase. Separate read-only instances of the same agent reviewed each implementation, each
+> lock from 021 on, the calibrations of 022 and 024, and, from 023 on, the freezes and the confirmations, with committed
+> records. The decisions that the records give to the project's reviewer, from design approvals and calibration-floor
+> reviews to lock sign-offs, were proposed by ChatGPT, which the authors consulted as a reviewer, and adopted by the
+> authors.
 
 ## Review
 
@@ -340,3 +352,18 @@ all 26 findings were resolved. It raised one new SHOULD and thirteen notes, all 
 - the paper decisions, the methodology's later changes, the claim texts and the diagnostics' sources are stated exactly;
 - the statement brackets Codex and says *a page-summarizing tool* until the author confirms both, and it counts
   experiments by number.
+
+A final read-only check (the report's third part) compared the draft's statement and method text with §9 as committed in
+`4493745`. Its verdict was PASS WITH NOTES, with no blocker: both texts matched §9 word for word, and every trace
+resolved. Its four SHOULDs were applied in §9 above:
+- ChatGPT's share is limited to the decisions the records give to the reviewer;
+- the reviews are attributed to Claude by name;
+- the author confirmed Codex;
+- the author's answer on the methodology is recorded.
+
+Its notes were applied too:
+- *committed or authorized*;
+- *protocols fixed before each run*, with Table A2's amendments;
+- the paraphrase check;
+- the behavior's origin in the screening;
+- the method text's scope and traces.
