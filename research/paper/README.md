@@ -27,6 +27,10 @@ test is worth running is to be decided only after a full draft exists.
   cleaned up toward the submission build, with BibTeX references and print variants of the figures, and had a final
   claim, citation and layout review ([reviews of the cleanup](tmlr-build/reviews-2026-10-01/README.md)). The main text
   runs to about 12.2 pages. It is not yet the submission build: the statement on AI tools is still open.
+- [Audit of the statement on AI tools](ai-use-audit-2026-10-01.md): draft v3's statement against the project's
+  history. It records what AI did in each activity and what the record cannot settle, and it proposes a statement that
+  waits for the author's answers. It had an independent read-only review and a re-check
+  ([review](ai-use-audit-review-2026-10-01.md)).
 - [Paper-level review of draft v2](paper-review-2026-09-30/README.md) — three independent read-only reviews: claim
   strength, applied in v2's revision 1; narrative flow and redundancy, whose outline the reviewer adopted for draft v3;
   and submission format, after which the reviewer chose TMLR.
