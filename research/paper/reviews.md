@@ -351,3 +351,37 @@ was applied, and each was re-checked before the draft was committed. The reports
   - about 12.3 pages after the flow review's cut 1 moved Figure 6 to Appendix C as Figure C3.
 - Figure 6 is therefore now Figure C3, and Figure 4 stays in the body. The claims review's final check had raised no
   claim-strength objection to cut 1.
+
+### Submission-build cleanup: three reviews, then re-checks
+
+- On 2026-10-01, after `3d47ee9` was pushed, the reviewer asked for a cleanup toward the submission build:
+  - fix the two overflowing table cells;
+  - convert the bibliography to BibTeX;
+  - make F1, F2 and F7 print-friendly;
+  - rebuild the anonymous TMLR PDF;
+  - run one final claim, citation and layout review.
+- **What changed.**
+  - **Tables:** no column is narrower than its longest word, and long identifiers may break after their underscores.
+  - **Bibliography:** `references.bib` holds the 63 references, built from the publishers' records and checked by
+    `check_bib.py`. §2 now cites the model and TransformerLens.
+  - **Print variants:** F1, F1a, F2, F3, F5, F7 (in two parts) and F8 are drawn at the text width. The screen figures
+    are unchanged.
+  - **Anonymity:** Appendix D is written without the repository, its commits and its paths.
+- **The reviews** are kept in [tmlr-build/reviews-2026-10-01/](tmlr-build/reviews-2026-10-01/README.md).
+  - **Claims:** PASS WITH NOTES. All three SHOULDs were applied: a garbled sentence, the traceable hash and paths, and
+    the status definitions' lost brackets. The re-check, also PASS WITH NOTES, found that the anonymous paragraph on
+    the record's caveats claimed too much, and that two provenance statements were out of date. Both were fixed.
+  - **Citations:** PASS WITH NOTES. The venue findings were applied. Grant et al. is now ICLR 2026 and Zhang et al.
+    ICML 2026, and the ICML and JMLR entries carry their volumes and pages. The re-check passed.
+  - **Layout:** FAIL on three blockers, all fixed. The re-check found two small items, both fixed: the Appendix C
+    heading alone on its page, and Figure 3's key overlapping panel A2.
+  - **Final check of those fixes:** PASS WITH NOTES. Its SHOULD was a regression from setting Figure C1 in place: the
+    `float` package, loaded after `hyperref`, duplicated every float's PDF anchor and pushed Figure C3's caption below
+    the text block. It now loads first. Its notes were applied, apart from the open statement on AI tools.
+- **The result.** About 12.2 pages of main text before the References, which begin on page 13. There are 27 pages in
+  all, and the log shows no overfull box.
+- **Still open:**
+  - the statement on AI tools, which refers to the author in the singular and claims more for the citation check
+    than the literature review did;
+  - the repository's visibility during anonymous review;
+  - a final pdfLaTeX check.

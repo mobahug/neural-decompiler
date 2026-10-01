@@ -14,8 +14,10 @@ for f in tmlr.sty tmlr.bst fancyhdr.sty math_commands.tex; do
         curl -fsSL "https://raw.githubusercontent.com/JmlrOrg/tmlr-style-file/$template_commit/$f" -o "$build/$f"
     fi
 done
-cp "$repo"/research/paper/figures/*.png "$build/figures/"
+cp "$repo"/research/paper/figures/*.png "$repo"/research/paper/figures/*-print*.pdf "$build/figures/"
+cp "$here/references.bib" "$build/"
 
+PYTHONDONTWRITEBYTECODE=1 "$repo/.venv/bin/python" "$here/check_bib.py" "$repo/research/paper/draft-v3-2026-09-30.md"
 PYTHONDONTWRITEBYTECODE=1 "$repo/.venv/bin/python" "$here/md2tex.py" \
     "$repo/research/paper/draft-v3-2026-09-30.md" "$build/main.tex"
 (cd "$build" && tectonic --keep-intermediates --keep-logs main.tex > build.log 2>&1)
