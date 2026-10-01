@@ -1,9 +1,10 @@
 # TMLR build of draft v3
 
-This folder builds [draft v3](../draft-v3-2026-09-30.md) in the mandatory TMLR template, as an anonymous PDF. The
-reviewer asked for the build on 2026-09-30, to let the page count rather than the word count decide the cuts. It was
-then cleaned up toward a submission build on 2026-10-01. The Markdown draft stays the canonical text, and this folder
-only converts it.
+This folder builds [draft v3](../draft-v3-2026-09-30.md) in the mandatory TMLR template, as an anonymous PDF, and the
+anonymized supplementary material. The reviewer asked for the build on 2026-09-30, to let the page count rather than
+the word count decide the cuts. On 2026-10-01 it was cleaned up into the submission build, and compiled with pdfLaTeX.
+The Markdown draft stays the canonical text, and this folder only converts it. What the submission still needs, and
+whose act each item is, is in the [submission checklist](submission-checklist.md).
 
 ## What it does
 
@@ -30,11 +31,25 @@ only converts it.
      after their underscores.
    - Body floats sit at the top or bottom of a text page. Appendix floats stay in their own appendix. An appendix
      that opens with a figure starts a new page, and that figure is set on the heading's page.
-4. **It compiles with Tectonic** (`brew install tectonic`), which runs BibTeX as needed. It then prints the page of
-   each figure and table, where the references begin, and the last page. Tectonic is XeTeX-based, while the official
-   template targets pdfLaTeX; both use the template's Latin Modern fonts.
+4. **It compiles.** By default it uses Tectonic (`brew install tectonic`), which runs BibTeX as needed.
+   `ENGINE=pdflatex ./build.sh` runs pdfLaTeX and BibTeX from the `PATH` instead. That is the engine the template
+   targets, and the submission PDF is built with it. Both use the template's Latin Modern fonts. The build then prints
+   the page of each figure and table, where the references begin, and the last page.
 
 The output goes to `build/`, which git ignores.
+
+The pdfLaTeX here is TinyTeX 2026.10 (TeX Live 2026, pdfTeX 1.40.29). It was installed on 2026-10-01 from
+`TinyTeX-1-darwin-v2026.10.tar.xz` of rstudio/tinytex-releases, after checking the file's published SHA-256. It sits in
+`~/Library/TinyTeX`, with `placeins` and `eso-pic` added by `tlmgr`. To use it:
+
+```bash
+PATH="$HOME/Library/TinyTeX/bin/universal-darwin:$PATH" ENGINE=pdflatex ./build.sh
+```
+
+`supplement.py` builds the supplementary ZIP into `build/supplement/`. It takes every tracked file at `HEAD`, apart
+from the binary arrays, which do not fit TMLR's 100 MB limit. It replaces the strings that identify the author, the
+account or the machine with placeholders, and it stops if any is left. It also adds a README for reviewers and lists
+of the excluded and the anonymized files.
 
 ## The bibliography
 
@@ -62,6 +77,7 @@ both, after an independent check of every entry against its source
 | 2026-09-30, Figure 6 moved to Appendix C as Figure C3 | about a third of the way down page 13, so about 12.3 pages | page 13 | 23 |
 | 2026-10-01, cleanup: BibTeX, the print variants, table widths, the anonymous Appendix D | about a fifth of the way down page 13, so about 12.2 pages | page 13 | 28 |
 | 2026-10-01, after the final layout review: Figure C1 on the heading's page of Appendix C | about a fifth of the way down page 13, so about 12.2 pages | page 13 | 27 |
+| 2026-10-01, the audited statement on AI tools and §3's sentence on the reviews; compiled with pdfLaTeX | about halfway down page 13, so about 12.5 pages | page 13 | 27 |
 
 In the first build, Figure 6 stood alone on a float page, page 11. The reviewer's rule of 2026-09-30:
 - at 12 pages or fewer, keep the draft;
@@ -69,12 +85,14 @@ In the first build, Figure 6 stood alone on a float page, page 11. The reviewer'
 - still materially over 12, consider moving Figure 4 as well.
 
 Figure 6 was therefore moved, and Figure 4 stays. The cleanup changed the appendices' length, mostly because the
-print variants and the full author lists are longer, but not the main text's.
+print variants and the full author lists are longer, but not the main text's. The audited statement on AI tools and
+§3's new sentence on the reviews brought the main text to about 12.5 pages. On 2026-10-01 the author chose to keep
+Figure 4 in the body. A main text over 12 pages gets a longer review window at TMLR, not a rejection.
 
 ## Limits
 
-- **It is not yet the submission build.** The statement on AI tools still needs its audit against the project's
-  history, and its wording in the anonymous build is open: it names the author in the singular.
-- **Tectonic is not pdfLaTeX.** The final PDF should be checked once with pdfLaTeX, the engine the template targets.
+- **The submission still needs the author's own acts.** The [submission checklist](submission-checklist.md) lists
+  them. Above all, the project's repository is public and should be private during review.
+- **The two engines** give the same pages, but not byte-identical PDFs. The submission PDF is pdfLaTeX's.
 - **Two-author citations** follow the template's style, with an ampersand (*Hao & Linzen, 2023*), where the draft
   writes *and*.

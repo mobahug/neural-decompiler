@@ -233,9 +233,9 @@ Each is presentational, uses only values or words the record commits, and is che
 
 ## Reviews
 
-Two independent read-only reviews checked the figures on 2026-09-30: one the data's provenance and statuses, the other
-the figures, their captions and the drawing code. Each had a re-review and a final check. No plotted value was ever
-found wrong, and nothing was found computed.
+Two independent read-only reviews, each by a separate AI agent, checked the figures on 2026-09-30: one the data's
+provenance and statuses, the other the figures, their captions and the drawing code. Each had a re-review and a final
+check. No plotted value was ever found wrong, and nothing was found computed.
 
 - **First round: both FAIL.**
   - Provenance, two blockers: F7 coloured 022's and 023's passes plain prospective though their Y2 conditions are

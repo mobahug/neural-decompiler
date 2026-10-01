@@ -385,3 +385,27 @@ was applied, and each was re-checked before the draft was committed. The reports
     than the literature review did;
   - the repository's visibility during anonymous review;
   - a final pdfLaTeX check.
+
+### The statement on AI tools: an audit, the author's answers and a final check
+
+- **The audit.** On 2026-10-01 the reviewer asked for draft v3's statement on AI tools to be audited against the
+  project's history before it was frozen. The [audit](ai-use-audit-2026-10-01.md) records:
+  - what AI did in each activity: drafting the designs and the methodology, writing the code, running every phase,
+    drafting the interpretations and the manuscript, searching the literature, and reviewing;
+  - what the record cannot settle.
+- **Its reviews.** Revision 1 failed its independent read-only review on one blocker: its proposed statement could
+  turn the reviewer's recorded decisions into the authors'. Revision 2 applied every finding, and its re-check passed
+  with notes, which revision 3 applied. The reports are in [the audit's reviews](ai-use-audit-review-2026-10-01.md).
+- **The author's answers** (§9):
+  - the project's reviewer is ChatGPT, which the author consulted, and whose proposals the author chose to adopt;
+  - the author chose the problem and the main directions, and AI proposed the designs and the options;
+  - Codex did the work of 2026-09-14 to 2026-09-16;
+  - an AI assistant drafted the methodology and the claim registry at the author's direction.
+- **The final statement** replaces the old one in the draft and the build. §3 now says who reviewed at each gate.
+  - A final read-only check of both texts passed with notes. ChatGPT's share is now limited to the decisions the
+    records give to the reviewer, and the reviews are attributed to Claude by name.
+  - The figures' README and Appendix D now say that the figures' reviews were done by AI agents.
+- **The submission build.** It is compiled with pdfLaTeX (TinyTeX 2026.10), which gives the same pages as Tectonic.
+  The main text runs to about 12.5 pages, and the author kept Figure 4 in the body. The anonymized supplementary ZIP is
+  about 85 MB. The [submission checklist](tmlr-build/submission-checklist.md) lists what remains. Above all, the
+  repository is public and should be made private by its owner.

@@ -193,7 +193,8 @@ ANONYMOUS = {
     "**The figures.**": (
         "**The figures.** Two scripts regenerate every figure. One reads every plotted value from a pinned commit and "
         "checks it and its status against the record; the other draws the figures, byte-identical from run to run. "
-        "Nothing in them is computed, and the figures had independent reviews of their provenance and drawing."),
+        "Nothing in them is computed, and separate read-only AI agents reviewed the figures' provenance and "
+        "drawing."),
     "**Record caveats.**": (
         "**Record caveats.** The record lists its own caveats, from errata and conclusions narrowed or restated at or "
         "after closure to digest mismatches it investigated and explained, inconsistencies in its records and "

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Page-count build of draft v3 in the mandatory TMLR template. This is not the submission build: see README.md.
+# Builds draft v3 in the mandatory TMLR template, as an anonymous PDF (see README.md). By default it compiles with
+# Tectonic; ENGINE=pdflatex runs pdfLaTeX and BibTeX instead, the engine the template targets, from the PATH.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -20,7 +21,12 @@ cp "$here/references.bib" "$build/"
 PYTHONDONTWRITEBYTECODE=1 "$repo/.venv/bin/python" "$here/check_bib.py" "$repo/research/paper/draft-v3-2026-09-30.md"
 PYTHONDONTWRITEBYTECODE=1 "$repo/.venv/bin/python" "$here/md2tex.py" \
     "$repo/research/paper/draft-v3-2026-09-30.md" "$build/main.tex"
-(cd "$build" && tectonic --keep-intermediates --keep-logs main.tex > build.log 2>&1)
+if [ "${ENGINE:-tectonic}" = pdflatex ]; then
+    latex=(pdflatex -interaction=nonstopmode -halt-on-error main.tex)
+    (cd "$build" && { "${latex[@]}" && bibtex main && "${latex[@]}" && "${latex[@]}" && "${latex[@]}"; } > build.log 2>&1)
+else
+    (cd "$build" && tectonic --keep-intermediates --keep-logs main.tex > build.log 2>&1)
+fi
 
 # The page of each body float, of the References heading, and of the last page, from the labels in main.aux.
 PYTHONDONTWRITEBYTECODE=1 "$repo/.venv/bin/python" - "$build/main.aux" <<'EOF'
