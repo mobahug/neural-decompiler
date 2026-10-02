@@ -1,11 +1,11 @@
 # Experiment 101: intervening on the component that L03.H04 reads, in coordinated frames — design
 
-**Status:** revision 3, 2026-10-01. A proposal for the reviewer's decision. It contains no code, has run no model,
-freezes no frame and computes no tolerance. Revision 1 had an independent read-only review: READY WITH CHANGES, with no
-blocker, eleven SHOULDs and twelve notes. Revision 2 applied all of them. Its re-check, READY WITH CHANGES with no
-blocker, raised four SHOULDs and eight notes, which revision 3 applies (§13). A check of revision 3's changes found it
-READY FOR DECISION, and its four cosmetic notes are applied. The reports are in the companion file
-[2026-10-01-experiment-101-design-reviews.md](2026-10-01-experiment-101-design-reviews.md).
+**Status:** revision 3, 2026-10-01, decided by the reviewer on 2026-10-02 (§14). This is the frozen design. It contains
+no code, has run no model, freezes no frame and computes no tolerance. Revision 1 had an independent read-only review:
+READY WITH CHANGES, with no blocker, eleven SHOULDs and twelve notes. Revision 2 applied all of them. Its re-check,
+READY WITH CHANGES with no blocker, raised four SHOULDs and eight notes, which revision 3 applies (§13). A check of
+revision 3's changes found it READY FOR DECISION, and its four cosmetic notes are applied. The reports are in the
+companion file [2026-10-01-experiment-101-design-reviews.md](2026-10-01-experiment-101-design-reviews.md).
 
 Experiment 101 is the first experiment of the project's second series. Experiment 025 remains the end of the first
 sequence (experiments/025-nounness-direction-intervention/README.md@8e571ba:285–286). Nothing here changes a frozen
@@ -499,3 +499,51 @@ If fewer than 36 candidates are eligible, the freeze writes nothing and the desi
   the reason for running now are fixed.
 - **The frames.** The eight candidates whose adjective is more than one token, the seven flagged picks and five
   noun-like or predicative backups are replaced.
+
+## 14. The reviewer's decision (2026-10-02)
+
+The reviewer authorized Experiment 101 on 2026-10-02 and decided §12 as proposed, with these rulings. They are part of
+the frozen design.
+
+- **D1, cues.** Approved. `one`/`two` is the primary pair. `three` and `many` stay explicitly secondary and cannot
+  rescue a failed primary result. The primary claim concerns the `one`/`two` contrast in coordinated frames, not number
+  in general.
+- **D2, the primary control.** Approved, with random directions secondary. The non-read part and the norm matching are
+  frozen by this design, before calibration:
+  - the non-read part is the centred off-read part of `Δx` at `p_c` (§2);
+  - the control edits have the centred length `s = |Δr|/‖w_c‖` along the centred unit `û_off`.
+
+  Neither calibration nor the lock may change them.
+- **D3, the removal value.** Approved. The plural prompt receives the reference's read coordinate. The midpoint is
+  strictly descriptive.
+- **D4, the head-only arms.** Approved as secondary. Editing the residual at the cue position reaches every component
+  that reads it, so the primary result concerns the read direction at that site. A statement specific to `L03.H04`
+  requires the head-only evidence and remains a separate, secondary conclusion.
+- **D5, the numbers.** Approved and frozen exactly:
+  - Holm thresholds of 26 and 25 of 36 for removal and installation;
+  - medians of at least 0.05;
+  - 25 of 36 for each direction count;
+  - 27 of 36 for the program's prediction;
+  - at least 30 of 36 frames for the behavioural precondition.
+
+  None is loosened after any outcome is seen.
+- **D6, the order.** Approved, with one hard constraint: every program prediction is generated and cryptographically
+  frozen before any target intervention result is observed. The table's digest is committed after stage 1 and checked
+  before stage 2 (§5, G6). Formal scoring then follows R and I, then D, then P.
+- **The frame-freeze guard.** The 36 frames are the first 36 eligible candidates of §11, in the listed order. They are
+  chosen by the tokenizer alone, with no model output, and frozen before calibration. No frame is replaced after the
+  freeze. A frame may be excluded only under a preregistered validity rule. There is none beyond §7's weak-shift rule,
+  which counts such a frame as a failure rather than excluding it.
+
+**The frozen claim hierarchy.**
+- **The primary question.** Does manipulating the decoded read direction at the cue-position residual causally alter the
+  `one`/`two` singular–plural choice in new coordinated frames? It is answered by removal (R), installation (I) and the
+  directional dose and reversal (D), each against the matched non-read control, with the labels of §7.
+- **The secondary question.** Is `L03.H04` specifically the component that mediates the effect? The head-only arms
+  answer it descriptively, and it cannot change the primary label.
+- **Generalization.** Does the effect extend to `three` and `many`? This is secondary only, and it cannot rescue a
+  failed primary result.
+- **If the primary passes but the head-only evidence does not support the head:** the decoded residual direction is
+  causal at this site, within the scope of §7, but its effect cannot be assigned uniquely to `L03.H04`.
+
+No model is run until the implementation and its review are complete.
