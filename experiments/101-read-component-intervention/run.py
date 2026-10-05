@@ -917,6 +917,7 @@ class Runner:
         if results:
             confirmation, _ = self._confirmation(base)
             lock, _ = self._installed_lock()
+            self._check_runtime(base.inputs.closure)  # the recompute runs under the recorded runtime, or the report refuses
             block["g6"] = self._g6_at_report(base, lock, confirmation)
         state["report"] = block
         text = ri.render_report(state)

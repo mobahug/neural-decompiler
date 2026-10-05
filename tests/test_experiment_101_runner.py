@@ -779,3 +779,21 @@ def test_the_calibration_and_the_secondary_records_carry_the_review_items(world,
     assert head["F_head_rem"]["criterion"] == "F_head_rem < 1.0" and "count" in head["F_head_ins_v"]
     per_arm = _state(runner)["confirmation"]["gates"]["per_arm"]
     assert set(per_arm["G5_output"]) == {"HEAD-NEC@two", "HEAD-SUF@two", "HEAD-NEC-V@two", "HEAD-SUF-V@two"}
+
+
+def test_g5_compares_the_recomputation_with_the_plain_runs_capture(world, base101, staged101, sandbox, monkeypatch):
+    """With each head arm's change amplified a thousandfold, the head arm's own capture is far from the unedited
+    recomputation; G5 still passes because it compares with the plain run's capture (and its landing check compares
+    the head arm's own capture with its replacement)."""
+    root = sandbox(staged101["root"])
+    runner, _ = make_runner(root, world, base101["config"])
+    original = ri.head_delta
+    monkeypatch.setattr(ri, "head_delta", lambda *args, **kwargs: 1000.0 * original(*args, **kwargs))
+    assert runner.confirm() == 0
+    state = _state(runner)
+    assert state["confirmation"]["gates"]["failures"] == []
+    saved = torch.load(runner.stage2_path)
+    index = {tag: row for row, tag in enumerate(base101["config"].tags())}
+    T = saved[f"{ri.frame_id_for(1)}/T_pt"].double()
+    gap = max(float((T[index[f"HEAD-{kind}@two"]] - T[index["PL@two" if kind.startswith("NEC") else "REF"]]).abs().max()) for kind in ("NEC", "SUF", "NEC-V", "SUF-V"))
+    assert gap > ri.TOLERANCES["G5_output"]  # comparing with the head arm's own capture would have failed G5
