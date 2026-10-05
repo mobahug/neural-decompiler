@@ -7,10 +7,10 @@
 (`docs/superpowers/specs/2026-10-01-experiment-101-read-component-intervention-design.md`, commits `a87e284` and
 `516df20`). Revision 2 applied the independent plan review of 2026-10-05, which found revision 1 NOT READY with two
 BLOCKERs, nine SHOULDs and fourteen NOTEs. Revision 3 applies the same reviewer's re-check of revision 2, READY WITH
-CHANGES with no BLOCKER, four SHOULDs and five NOTEs. § Changes maps every finding to its change. One point needs the
-reviewer's decision before implementation: the form of G4 (§ Decision needed). This is a plan only: there is no code, no
-runner, no freeze, no calibration, no lock and no prompt. No model runs until the implementation and its independent
-review are complete (design §14).
+CHANGES with no BLOCKER, four SHOULDs and five NOTEs. § Changes maps every finding to its change. The reviewer approved
+G4's form on 2026-10-05, with two rules frozen into this plan (§ G4's form and the reviewer's decision). This is a plan
+only: there is no code, no runner, no freeze, no calibration, no lock and no prompt. No model runs until the
+implementation and its independent review are complete (design §14).
 
 **Goal.** Implement the decided design:
 - **The intervention.** Exact edits of the residual entering layer 3 (`RESID_PRE.L3`) at the cue position `p_c`, in 36
@@ -165,7 +165,7 @@ Every called module is pinned by git blob, and the runner refuses any drift.
   - `DIRECTION_FREE`, the descriptive quantities with no success direction (the midpoint fractions, the PC-SWAP
     fractions, the additivity `F_rem + F_ins`, P's errors): weak frames are excluded from their summaries, with their
     count.
-- **Tolerances** (design §8; G4's form awaits the reviewer's decision):
+- **Tolerances** (design §8; G4's form as the reviewer decided it on 2026-10-05):
 
   | gate | check | tolerance |
   |---|---|---|
@@ -374,7 +374,9 @@ Every called module is pinned by git blob, and the runner refuses any drift.
     the sign-test power at that share).
   - **The revision triggers** of design §6, the only ones: a gate failure, `‖off_c‖ < s` in more than 6 frames,
     `Δc_full > −1` in more than 6 frames, a non-finite fraction. Any one gives `stopped_for_review` and exit 3, and
-    writes no calibration file. The size of an exposed result is never a trigger.
+    writes no calibration file; the failing values and their locations are recorded in the state. The size of an exposed
+    result is never a trigger. No trigger widens a tolerance: a G4 tolerance changes only by an explicit reviewed
+    amendment before the lock, and never after target results exist (§ G4's form and the reviewer's decision).
 - **`lock`.** It binds:
   - the frames (the confirmation file's sha256), `w_c` and every `v_j` (digests), the rule for `û_off`;
   - the program's blobs and dependencies, the calibration file's sha256, `τ_rem` and `τ_ins`;
@@ -412,12 +414,13 @@ Every called module is pinned by git blob, and the runner refuses any drift.
   4. It checks the accounting: `Counter(executed) == expected`, and set equality with the ledger.
   5. It reloads the measurements, checks their digests, and computes G2–G6 from them; the gate values are written before
      any is enforced.
-  6. On a gate failure, it writes the `NOT_INTERPRETABLE` result (§ Gates). Otherwise it recomputes the table once more
-     (G6), re-checks the committed inputs, computes the primary statistics and the label, and writes the result and the
-     completed phase in one atomic write.
-  7. Unless the result is `NOT_INTERPRETABLE`, an isolated step on 025's `_descriptives` pattern then computes the
-     secondary statistics, the bootstrap intervals and the per-arm records. A failure there is recorded and leaves the
-     result standing. Under `NOT_INTERPRETABLE` the step does not run: the saved measurements stay on disk under their
+  6. A gate failure is an integrity failure, handled by the incident procedure (§ Gates): no frame is dropped, replaced
+     or ignored, and no outcome is scored. Otherwise it recomputes the table once more (G6), re-checks the committed
+     inputs, computes the primary statistics and the label, and writes the result and the completed phase in one atomic
+     write.
+  7. After the result is written, an isolated step on 025's `_descriptives` pattern computes the secondary statistics,
+     the bootstrap intervals and the per-arm records. A failure there is recorded and leaves the result standing. After
+     an integrity failure or any other incident the step does not run: the saved measurements stay on disk under their
      digests for the confirmation review, and nothing derived from them is written beyond the gate values.
 - **`report`** renders `report.md` from the state, after recomputing the table from the committed states and the weights
   (G6). A mismatch is recorded in the state's report block, and the report then renders the outcome as
@@ -476,8 +479,8 @@ Every called module is pinned by git blob, and the runner refuses any drift.
 - **G4,** on the G4 runs: the residual-edit runs, namely `NOOP`, `NEC-READ`, `SUF-READ`, `NEC-AMP`, `SUF-NEG`,
   `NEC-HALF`, `SUF-HALF`, `NEC-OFF`, `SUF-OFF`, `PC-SWAP-PL` and `PC-SWAP-REF` of every cue and `NEC-ISO-j` and
   `SUF-ISO-j`; and the plain `PL@w` runs, which go beyond the design's "every residual-edit arm" and are named in the
-  decision. The head arms are excluded (design §8), and `REF`, whose change is zero. The form below awaits the
-  reviewer's decision (§ Decision needed).
+  decision. The head arms are excluded (design §8), and `REF`, whose change is zero. The form below is the one the
+  reviewer approved on 2026-10-05 (§ G4's form and the reviewer's decision).
   - `RESID_PRE.L3@p_t` equals the same prompt's plain run, bit for bit.
   - **023's I3, on each plain pair.** For each frame and cue `w`: `ul.i3_error(full_w, Δx3_w) ≤ 1e-4`, with `full_w =
     ul.compose_dx3(progs, ctx_w, b0c.FULL_MASK["coordinated"])` on the stage-1 state (calibration: the locked state) and
@@ -508,9 +511,12 @@ Every called module is pinned by git blob, and the runner refuses any drift.
 - **G7:** isolation and exact-once accounting.
 
 **What a gate failure does.**
-- **After the measurements are saved,** a failure of G2's geometry, G3, G4, G5 or G6 gives the result
-  `NOT_INTERPRETABLE`. The result holds the label, the failing gates, their values and locations, and nothing else. No
-  fraction, count, median or family statistic is computed or written, then or later.
+- **After the measurements are saved,** a failure of G2's geometry, G3, G4, G5 or G6 is an integrity failure, handled by
+  the incident procedure (the reviewer's rule 2). The gate values, already on disk, name every failing gate with its
+  value and location. The failure is recorded as a confirm incident (`_record_incident`), the confirmation is consumed,
+  and the report renders `NOT_INTERPRETABLE`. No frame is dropped, replaced or selectively ignored, and there is no
+  per-frame exclusion path: the statistics take all 36 frames in frozen order, or nothing. No fraction, count, median or
+  family statistic is computed or written, then or later.
 - **Inside a run,** a landing failure (`pm.run_patched`) or a non-finite contrast (`NounSet.contrasts`) raises, and is
   an incident.
 - **Before the ledger,** a failure is a refusal or a phase incident, as classified in § The prediction freeze.
@@ -519,16 +525,15 @@ Every called module is pinned by git blob, and the runner refuses any drift.
 
 - **Incidents** (exit 2), each recorded as in 025 (`_record_incident`, `_record_phase_incident`, `_preserve_partial`):
   - before a ledger: G1, the digest checks against the lock, and the barrier's incident items;
-  - after a ledger: any exception inside the phase, a landing failure, a non-finite contrast, a failed accounting, a
-    failed save or digest check, a failed result write, an interruption.
+  - after a ledger: any exception inside the phase, a landing failure, a non-finite contrast, a gate failure after the
+    measurements (G2–G6), a failed accounting, a failed save or digest check, a failed result write, an interruption.
 - **What an incident spends.** A stage-1 incident spends the 36 frames, since their reference prompts are in the ledger.
   A stage-2 incident spends the confirmation. Either way the report renders `NOT_INTERPRETABLE` ("an incident carries no
   result"), and a further attempt needs a new protocol version with new frames.
 - **Stops for review** (exit 3): a freeze shortfall or deviation; a calibration revision trigger.
 - **Refusals** (exit 1): as listed under § Global constraints and § The prediction freeze.
 - **Labels, not aborts:** the precondition (`BEHAVIOR_PRECONDITION_NOT_MET`, with R, I, D and P reported descriptively);
-  a gate failure after the measurements (`NOT_INTERPRETABLE`); an uninformative P
-  (`READ_COMPONENT_EFFECTS_PROGRAM_NOT_EVALUABLE`).
+  an uninformative P (`READ_COMPONENT_EFFECTS_PROGRAM_NOT_EVALUABLE`).
 
 ## One-shot protections and guarded launchers
 
@@ -566,7 +571,8 @@ Every called module is pinned by git blob, and the runner refuses any drift.
 ## Testing
 
 - **Tier A** (`tests/test_read_intervention.py`, unit):
-  - the pins, the blob table and the constants;
+  - the pins, the blob table and the constants, the tolerances among them (no code path changes a tolerance, and the
+    lock binds them);
   - the derived thresholds and tails;
   - the geometry and every edit formula on synthetic vectors, per arm type (exact read coordinates, centred lengths, the
     parallel and orthogonal metrics, `û_off`, the overshoot flags);
@@ -589,9 +595,10 @@ Every called module is pinned by git blob, and the runner refuses any drift.
     forward) → stage1 (only S1 keys; a sealed model; the stage-1 files and record) → confirm;
   - `confirm` refused without the committed stage-1 files (a refusal, nothing recorded), and incidents on a digest
     mismatch, a recompute mismatch and an S2 key in the ledger, each before any S2 key;
-  - accounting; each of G2–G6 failing gives `NOT_INTERPRETABLE` with no statistic; a landing failure and a non-finite
-    contrast give incidents; a failed result write; a failing secondary step leaves the result standing; the report, its
-    re-render and a report-time G6 mismatch;
+  - accounting; each of G2–G6 failing gives an incident, with the gate values on disk and no statistic; the statistics
+    refuse anything but the 36 frozen frames in order; a landing failure and a non-finite contrast give incidents; a
+    failed result write; a failing secondary step leaves the result standing; the report, its re-render and a
+    report-time G6 mismatch;
   - G5 against the plain runs' captures, and a head arm's own capture equal to its replacement;
   - the stage-1 write path under a fake write hook that mirrors the launcher's allow-list;
   - a refused production run with a test configuration.
@@ -638,9 +645,9 @@ Every called module is pinned by git blob, and the runner refuses any drift.
 
 ## Tasks (small reviewable commits; the checkboxes are for execution)
 
-- [ ] **1. The plan review.** Revision 1: NOT READY (2 BLOCKERs, 9 SHOULDs, 14 NOTEs). Revision 2: READY WITH CHANGES (4
-  SHOULDs, 5 NOTEs). Revision 3, with the final re-check's four NOTEs applied: READY TO IMPLEMENT once the reviewer
-  decides G4's form. Commit the plan, then record the decision.
+- [x] **1. The plan review.** Revision 1: NOT READY (2 BLOCKERs, 9 SHOULDs, 14 NOTEs). Revision 2: READY WITH CHANGES (4
+  SHOULDs, 5 NOTEs). Revision 3, with the final re-check's four NOTEs applied: READY TO IMPLEMENT; committed at
+  `96f0cc8`. The reviewer approved G4's form on 2026-10-05 (§ G4's form and the reviewer's decision).
 - [ ] **2. Skeleton.** `ri` constants, `Configuration` (with `PRODUCTION` and test configurations), `FROZEN_BLOBS`, the
   input pins, `assert_frozen_blobs`, `encode_nonfinite`. Tier-A pin tests.
 - [ ] **3. Geometry and edits.** Computations 1–4, and the G1 and G2 checks. Tier-A tests.
@@ -678,7 +685,7 @@ After task 11, and only then, the phases begin: restore 020's results file, then
 - Any tier-C failure.
 - An implementation-review BLOCKER that cannot be fixed within the design.
 
-## Decision needed: the form of G4 (review B1)
+## G4's form and the reviewer's decision (review B1)
 
 Design §8 names, for every residual-edit arm, "023's I3 and I4" and "020's readout and Level-1 identities", without
 restating their forms. Revision 1 gated the exact chain fed the measured `Δx3` against the measured `Δc` at 1e-3 nats.
@@ -690,7 +697,7 @@ maximum of 0.0119 for this computation in contrast form
 floor in the float32 forward's own attention scores (`src/neural_decompiler/readout_decompilation.py:72–79`).
 Calibration would have stopped on trigger 1, and no run could have reached confirm.
 
-The plan's choice, for the reviewer to confirm or change:
+The plan's proposal:
 1. **023's I3 as 023 defined it,** on each plain pair rather than per arm: the FULL composition against the measured
    `Δx3`, relative 1e-4. Per arm it would fail by construction for PC-SWAP-PL, whose measured `Δx3(p_c)` is exactly
    zero.
@@ -723,11 +730,40 @@ has not been tested under layer-3 residual edits; NEC-AMP doubles the read chang
 quantity on the exposed runs exactly as `confirm` will, and records each maximum per arm. A failure there is revision
 trigger 1, before the lock.
 
+### The reviewer's decision (2026-10-05)
+
+The reviewer approved the proposed form as it stands: the six checks above, with their tolerances. The reasons given:
+- the tolerances sit above the known float32 floors without being so loose that a wiring mistake could pass;
+- enforcing an exact float64 reconstruction at 1e-3 on the Level-1 calculation would be wrong, given the known floor of
+  about 0.0119;
+- Level-1 is not loosened above 2e-2 in advance, although its margin is the tightest and NEC-AMP doubles the edit.
+  Calibration exists to find whether the new intervention introduces a numerical floor absent from the earlier runs, and
+  such a floor would deserve an explicit amendment, not extra tolerance added beforehand;
+- the head-only arms are excluded because they intervene downstream of the residual-edit identities that G4 checks.
+
+Two rules are frozen with it:
+1. **No silent tolerance tuning.** Calibration may test whether the frozen G4 tolerances are viable on the exposed runs,
+   but it may not widen them. If any G4 threshold fails during calibration, the phase stops before the lock, the failure
+   is documented, and only an explicit reviewed amendment may change a tolerance. No G4 tolerance may change after
+   target results exist.
+2. **G4 is an integrity gate, not an outcome filter.** A target-frame G4 failure never causes that frame to be dropped,
+   replaced or selectively ignored. Outcome scoring stops, and the integrity failure is reviewed under the experiment's
+   incident procedure. The 36 frames are frozen and never replaced.
+
+How the plan implements them:
+- **Rule 1.** The tolerances are module constants, pinned by a tier-A test and bound in the lock, which refuses any that
+  differ from the constants. No function takes a tolerance from calibration data. A calibration G4 failure is revision
+  trigger 1: `stopped_for_review`, exit 3, no calibration file, and the failing values and locations recorded in the
+  state.
+- **Rule 2.** A gate failure after the measurements is a confirm incident, recorded with the gate values (§ What a gate
+  failure does). The statistics take all 36 frozen frames in order, or nothing; they have no exclusion parameter. The
+  plan applies the same procedure to every post-measurement gate, G2–G6, so that there is one path.
+
 ## Changes
 
 ### Revision 2 (the review of revision 1)
 
-- **B1, G4's form:** as above, pending the reviewer's decision. `ul.i3_error` and `b0c.FULL_MASK` are now used.
+- **B1, G4's form:** as above; approved on 2026-10-05. `ul.i3_error` and `b0c.FULL_MASK` are now used.
 - **B2, key collisions:** every tag except `S1` and `REF` carries its cue (`ARM@cue`); a tier-A test asserts 1,980
   distinct S2 keys.
 - **S1, G6 without stage-1 logits:** G6 compares the stage-2 REF run's `pm.contrasts` with `c_ref`, and its `x3(p_c)`,
@@ -782,3 +818,11 @@ trigger 1, before the lock.
   (351, 391 with 024's cues, 431 with 025's); a stage-1 file found after the ledger is an incident; the table is always
   computed with `fractions_for_weak` off, recorded in its metadata and tested with a predicted-weak frame; the G3 row of
   the tolerance table aligned with the Gates section.
+
+### The reviewer's decision (2026-10-05)
+
+- G4's form approved as proposed, with the two frozen rules: no silent tolerance tuning, and G4 as an integrity gate,
+  not an outcome filter.
+- A gate failure after the measurements (G2–G6) is now handled by the incident procedure; revision 3 wrote it as a
+  `NOT_INTERPRETABLE` result. Either way no statistic is computed and the report renders `NOT_INTERPRETABLE`.
+- The calibration stop records the failing values and locations; no trigger widens a tolerance.
