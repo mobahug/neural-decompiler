@@ -516,6 +516,62 @@ def test_the_measured_values_the_weak_switch_and_the_head_guards():
     assert ri.frame_values(schedule, tensors, config, fractions_for_weak=False)["two"]["fractions"]["head_install_share"] is None
 
 
+def _calibration_inputs(n=36, *, weak=0, overshoot=0, nonfinite=False):
+    config = ri.PRODUCTION
+    frame_ids = [f"f{i:02d}" for i in range(n)]
+    values, predicted, pairs = [], [], {}
+    for i, frame_id in enumerate(frame_ids):
+        full = -0.5 if i < weak else -4.0
+        error = (i + 1) / 1000.0  # |F̂_rem − F_rem| = (i + 1)/1000: the 33rd of 36 sorted is 0.033
+        fractions = {"F_rem": 0.5, "F_rem_off": 0.8, "F_ins": 0.5, "F_ins_off": 0.2, "N": 0.3, "S": 0.3, "F_half_rem": 0.7, "F_half_ins": 0.3,
+                     "F_swap_pl": 0.1, "F_swap_ref": 0.9, "additivity": 1.0}
+        if nonfinite and i == 3:
+            fractions["F_rem"] = math.inf
+        values.append({"dc_full": full, "weak": full > ri.WEAK_SHIFT, "A_amp": -0.5, "A_neg": 0.5, "fractions": fractions})
+        predicted.append({"weak": False, "fractions": {"F_rem": 0.5 + error, "F_ins": 0.5 - error / 2}})
+        pairs[frame_id] = {label: {"s": 2.0 + i / 100, "overshoot": i < overshoot} for label in config.cue_labels}
+    table = {"content_sha256": "t" * 64, "frames": {frame_id: {"cues": {label: predicted[i] for label in config.cue_labels}} for i, frame_id in enumerate(frame_ids)}}
+    values_by_cue = {label: values for label in config.cue_labels}
+    return frame_ids, values_by_cue, table, pairs
+
+
+def test_calibration_tau_is_the_33rd_of_all_36_and_the_triggers_fire_above_six():
+    frame_ids, values_by_cue, table, pairs = _calibration_inputs()
+    results = ri.calibration_results(frame_ids, values_by_cue, table, pairs, ri.GateBook(), {"passed": True}, ri.PRODUCTION)
+    assert results["tau"]["rem"] == pytest.approx(0.033) and results["tau"]["ins"] == pytest.approx(0.0165) and results["tau"]["evaluable"] is True
+    assert not results["stopped"] and results["min_s"]["two"] == {"s": 2.0, "at": "f00"} and results["table_content_sha256"] == "t" * 64
+    for weak, fired in ((6, False), (7, True)):
+        results = ri.calibration_results(*_calibration_inputs(weak=weak), ri.GateBook(), {"passed": True}, ri.PRODUCTION)
+        assert results["triggers"]["weak"]["fired"] is fired and results["stopped"] is fired
+        assert results["tau"]["rem"] is not None  # weak frames' fractions enter τ (calibration's switch is on)
+    for overshoot, fired in ((6, False), (7, True)):
+        results = ri.calibration_results(*_calibration_inputs(overshoot=overshoot), ri.GateBook(), {"passed": True}, ri.PRODUCTION)
+        assert results["triggers"]["overshoot"]["fired"] is fired
+    results = ri.calibration_results(*_calibration_inputs(nonfinite=True), ri.GateBook(), {"passed": True}, ri.PRODUCTION)
+    assert results["triggers"]["nonfinite_fraction"]["fired"] and results["tau"]["rem"] is None and results["tau"]["evaluable"] is False
+    book = ri.GateBook()
+    book.tol("G4_level1", 0.03, "f01|two|767|NEC-AMP@two", "NEC-AMP@two")
+    results = ri.calibration_results(*_calibration_inputs(), book, {"passed": False}, ri.PRODUCTION, extra_failures=["G1"])
+    assert results["triggers"]["gate_failure"]["gates"] == ["G4_level1", "G1", "environment"] and results["stopped"]
+
+
+def test_the_statistics_constants_design_and_plan_are_pinned_literally():
+    assert ri.statistics_constants() == {
+        "weak_shift": -1.0, "holm_alpha": "1/40", "median_floor": 0.05, "tau_cap": 0.2, "tau_floor": 0.02, "head_share_guard": 0.05, "bootstrap": 10000,
+        "bootstrap_seed": 20261001, "interval_ranks": [250, 9750],
+        "worst": {"N": None, "N_nonfinite": "-inf", "S": None, "S_nonfinite": "-inf", "A_amp": None, "A_amp_nonfinite": "+inf", "A_neg": None,
+                  "A_neg_nonfinite": "-inf", "head_share": None, "head_share_nonfinite": "-inf", "iso_margin": None, "iso_margin_nonfinite": "-inf",
+                  "F_head_rem": None, "F_head_rem_nonfinite": "+inf", "F_head_ins": None, "F_head_ins_nonfinite": "-inf"},
+        "direction_free": ["F_half_rem", "F_half_ins", "F_swap_pl", "F_swap_ref", "additivity", "P_error_rem", "P_error_ins"],
+        "head_counts": {"F_head_rem": ["F_head_rem", -1, 1.0], "F_head_rem_v": ["F_head_rem", -1, 1.0], "F_head_ins": ["F_head_ins", 1, 0.0],
+                        "F_head_ins_v": ["F_head_ins", 1, 0.0]}}
+    assert ri.DESIGN == {"path": "docs/superpowers/specs/2026-10-01-experiment-101-read-component-intervention-design.md", "revision": 3, "commit": "a87e284",
+                         "decision": "516df20"}
+    assert ri.PLAN == {"path": "docs/superpowers/plans/2026-10-05-experiment-101-read-component-intervention-plan.md", "revision": 3, "commit": "96f0cc8",
+                       "decision": "1e48c1c"}
+    assert len(ri.NUMBER_WORDS) == 42 and {"one", "two", "dozen", "several", "pair"} <= set(ri.NUMBER_WORDS)
+
+
 # ---------------------------------------------------------------------------
 # The gate book, the phase rules, the scientific paths, the rendering.
 
@@ -665,6 +721,13 @@ def _guard_101_prompts_and_outcomes(monkeypatch, tokenizer) -> None:
 
     for name in ("frame_values", "main_fractions", "primary_statistics", "secondary_statistics", "calibration_results", "prediction_table", "predict_cue"):
         monkeypatch.setattr(ri, name, refuse)
+    original_contrast = ul.contrast_of
+
+    def contrast_of(progs, state, dx3):
+        assert not state.frame.frame_id.startswith("coordinated-adjective-101-"), "the frozen readout was applied to a 101 frame"
+        return original_contrast(progs, state, dx3)
+
+    monkeypatch.setattr(ul, "contrast_of", contrast_of)
 
 
 @pytest.fixture(scope="module")

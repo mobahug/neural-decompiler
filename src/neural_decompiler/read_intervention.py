@@ -262,8 +262,12 @@ TAU_FLOOR = 0.02
 HEAD_SHARE_GUARD = 0.05
 BOOTSTRAP = 10_000
 BOOTSTRAP_SEED = 20261001
-WORST = {"N": -math.inf, "S": -math.inf, "A_amp": math.inf, "A_neg": -math.inf, "head_share": -math.inf, "iso_margin": -math.inf}
+WORST = {"N": -math.inf, "S": -math.inf, "A_amp": math.inf, "A_neg": -math.inf, "head_share": -math.inf, "iso_margin": -math.inf,
+         "F_head_rem": math.inf, "F_head_ins": -math.inf}
 DIRECTION_FREE = ("F_half_rem", "F_half_ins", "F_swap_pl", "F_swap_ref", "additivity", "P_error_rem", "P_error_ins")
+SUMMARY_FREE = DIRECTION_FREE[:5]  # the direction-free fractions summarized per cue (P's errors are summarized with the program's)
+HEAD_COUNTS = {"F_head_rem": ("F_head_rem", -1, 1.0), "F_head_rem_v": ("F_head_rem", -1, 1.0), "F_head_ins": ("F_head_ins", 1, 0.0),
+               "F_head_ins_v": ("F_head_ins", 1, 0.0)}  # name -> (WORST key, the predicted sign against the reference value, the reference value)
 
 
 def binomial_tail(n: int, k: int) -> Fraction:
@@ -1692,7 +1696,7 @@ def secondary_statistics(frame_ids: Sequence[str], values_by_cue: Mapping[str, S
         stratum[label] = {"R_count": _count(cue_values, "N", 1), "I_count": _count(cue_values, "S", 1), "A_amp_negative": _count(cue_values, "A_amp", -1),
                           "A_neg_positive": _count(cue_values, "A_neg", 1), "weak": sum(1 for entry in cue_values if entry["weak"]),
                           "medians": {name: median_with_interval(_family_values(cue_values, name), index) for name in ("N", "S", "A_amp", "A_neg")},
-                          "direction_free": {name: median_with_interval(_direction_free(cue_values, name), index) for name in DIRECTION_FREE[:5]}}
+                          "direction_free": {name: median_with_interval(_direction_free(cue_values, name), index) for name in SUMMARY_FREE}}
     out["stratum"] = stratum
     iso = {}
     for name in ("iso_rem_margin", "iso_ins_margin"):
@@ -1700,13 +1704,15 @@ def secondary_statistics(frame_ids: Sequence[str], values_by_cue: Mapping[str, S
         iso[name] = {"positive": sum(1 for value, entry in zip(per_frame, values) if not entry["weak"] and value > 0.0), **median_with_interval(per_frame, index)}
     out["isotropic"] = iso
     head: dict[str, Any] = {}
-    for name in ("F_head_rem", "F_head_rem_v", "F_head_ins", "F_head_ins_v"):
-        head[name] = median_with_interval(_direction_free(values, name), index)
+    for name, (worst, sign, reference) in HEAD_COUNTS.items():
+        per_frame = [WORST[worst] if entry["weak"] else float(entry["fractions"][name]) for entry in values]
+        counted = sum(1 for value, entry in zip(per_frame, values) if not entry["weak"] and (value - reference) * sign > 0.0)
+        head[name] = {"count": counted, "criterion": f"{name} {'<' if sign < 0 else '>'} {reference}", **median_with_interval(per_frame, index)}
     for name in ("head_removal_share", "head_removal_share_v", "head_install_share", "head_install_share_v"):
         per_frame, guarded = _guarded(values, name, WORST["head_share"])
         head[name] = {**median_with_interval(per_frame, index), "guard_excluded": guarded}
     out["head"] = head
-    out["direction_free"] = {name: median_with_interval(_direction_free(values, name), index) for name in DIRECTION_FREE[:5]}
+    out["direction_free"] = {name: median_with_interval(_direction_free(values, name), index) for name in SUMMARY_FREE}
     errors = {"P_error_rem": [], "P_error_ins": [], "N_hat_minus_N": [], "S_hat_minus_S": []}
     for frame in primary["frames"]:
         defined = frame.get("P_error_rem") is not None
@@ -1812,10 +1818,14 @@ def calibration_results(frame_ids: Sequence[str], values_by_cue: Mapping[str, Se
              "P": binomial_power(n, shares["P_agree"], config.p_threshold)}
     reports = {frame_id: {"pairs": dict(pairs[frame_id]), "dc_full": {label: values_by_cue[label][i]["dc_full"] for label in config.cue_labels}}
                for i, frame_id in enumerate(frame_ids)}
+    # G2's practical floor: float32 rounding of x′ is about 1e-6·‖x‖, so a frame with s near 0.01 would strain G2's relative 1e-4 at
+    # confirm; the calibration review reads the smallest s per cue
+    min_s = {label: min(((pairs[frame_id][label]["s"], frame_id) for frame_id in frame_ids), key=lambda item: item[0]) for label in config.cue_labels}
     distributions = {name: sorted(value for value in _family_values(values, name) if math.isfinite(value)) for name in ("N", "S", "A_amp", "A_neg")}
     distributions.update({"P_error_rem": sorted(errors_rem), "P_error_ins": sorted(errors_ins)})
     return encode_nonfinite({"tau": tau, "triggers": triggers, "stopped": any(entry["fired"] for entry in triggers.values()), "shares": shares,
-                             "power": power, "reports": reports, "distributions": distributions})
+                             "power": power, "reports": reports, "distributions": distributions, "table_content_sha256": table["content_sha256"],
+                             "min_s": {label: {"s": value, "at": frame_id} for label, (value, frame_id) in min_s.items()}})
 
 
 def calibration_payload(*, config: Configuration, confirmation_binding_: Mapping[str, Any], results: Mapping[str, Any], gates: Mapping[str, Any],
@@ -1826,7 +1836,8 @@ def calibration_payload(*, config: Configuration, confirmation_binding_: Mapping
                "design": dict(DESIGN), "plan": dict(PLAN), "configuration": config.to_json(), "confirmation_101": dict(confirmation_binding_),
                "protocol_code_commit": protocol_code_commit, "tau": dict(results["tau"]), "triggers": dict(results["triggers"]), "gates": dict(gates),
                "environment": dict(environment), "g1": dict(g1), "shares": dict(results["shares"]), "power": dict(results["power"]),
-               "reports": dict(results["reports"]), "distributions": dict(results["distributions"]),
+               "reports": dict(results["reports"]), "distributions": dict(results["distributions"]), "min_s": dict(results["min_s"]),
+               "table_content_sha256": results["table_content_sha256"], "module_blob": own_blob(), "tolerances": dict(TOLERANCES),
                "keys": {"count": int(n_keys), "sha256": keys_sha256}, "measurements_sha256": dict(tensors_sha256)}
     payload = encode_nonfinite(payload)
     payload["content_sha256"] = rc.content_digest(payload)
@@ -1841,6 +1852,8 @@ def load_calibration_101(path: Path, config: Configuration, confirmation: Confir
         raise PhaseError("the calibration file was written under another configuration or against another confirmation file")
     if any(entry.get("fired") for entry in payload["triggers"].values()) or not _finite(payload["tau"].get("rem")) or not _finite(payload["tau"].get("ins")):
         raise PhaseError("the calibration file records a revision trigger or no τ; it cannot be installed")
+    if payload.get("module_blob") != own_blob() or payload.get("tolerances") != json.loads(pm.canonical_json(TOLERANCES)):
+        raise PhaseError("the calibration was computed with another analysis module or other tolerances (rule 1: no silent tolerance tuning)")
     return payload
 
 
@@ -1862,7 +1875,11 @@ STATISTICS = {
                  "A_amp = Δc(NEC-AMP) − Δc_full, A_neg = Δc(SUF-NEG); a weak frame's fractions are not computed at confirm",
     "median": "the middle value for odd n; the mean of the n/2-th and (n/2 + 1)-th sorted values for even n (18th and 19th of 36); the mean of an "
               "infinite and a finite value is the infinite one",
-    "worst": "a weak frame enters a median as its worst value: −∞ for N, S, A_neg, the head shares and the isotropic margins; +∞ for A_amp",
+    "worst": "a weak frame enters a median as its worst value: −∞ for N, S, A_neg, F_head_ins, the head shares and the isotropic margins; +∞ for "
+             "A_amp and F_head_rem",
+    "head_counts": "the head arms' counts (descriptive): F_head_rem < 1 and F_head_rem_v < 1 (the head-only removal leaves less than the full "
+                   "shift), F_head_ins > 0 and F_head_ins_v > 0 (the head-only installation produces some of it); weak frames fail; the shares are "
+                   "reported only under their guards, a guard-excluded frame counted and left out",
     "direction_free": "the midpoint and PC-SWAP fractions, the additivity and P's errors exclude weak frames, with their count",
     "strict": "N_f > 0, S_f > 0, A_amp < 0, A_neg > 0 strictly; ties fail; the precondition counts Δc_full ≤ −1; P agrees when both errors are ≤ "
               "max(τ, 0.02); medians pass at ≥ 0.05; counts pass at ≥ the threshold; P is not evaluable when τ_rem or τ_ins > 0.20",
@@ -1909,7 +1926,8 @@ def build_lock(*, run_id: str, protocol_code_commit: str, digests: Mapping[str, 
 def statistics_constants() -> dict[str, Any]:
     return encode_nonfinite({"weak_shift": WEAK_SHIFT, "holm_alpha": f"{HOLM_ALPHA.numerator}/{HOLM_ALPHA.denominator}", "median_floor": MEDIAN_FLOOR,
                              "tau_cap": TAU_CAP, "tau_floor": TAU_FLOOR, "head_share_guard": HEAD_SHARE_GUARD, "bootstrap": BOOTSTRAP, "bootstrap_seed": BOOTSTRAP_SEED,
-                             "interval_ranks": list(interval_ranks()), "worst": dict(WORST), "direction_free": list(DIRECTION_FREE)})
+                             "interval_ranks": list(interval_ranks()), "worst": dict(WORST), "direction_free": list(DIRECTION_FREE),
+                             "head_counts": {name: list(spec) for name, spec in HEAD_COUNTS.items()}})
 
 
 def render_preregistration(lock: Mapping[str, Any]) -> str:
@@ -1930,7 +1948,8 @@ def render_preregistration(lock: Mapping[str, Any]) -> str:
              f"- The isotropic controls: {geometry['k_iso']} per frame, tag `{geometry['iso_tag']}`", f"- û_off: {geometry['u_off_rule']}",
              f"- The cue order {', '.join(lock['cue_order'])}; the run order per frame: {', '.join(lock['run_order'])}", "",
              "## The statistics", ""]
-    lines += [f"- **{name}**: {lock['statistics'][name]}" for name in ("fractions", "median", "worst", "direction_free", "strict", "holm", "bootstrap")]
+    lines += [f"- **{name}**: {lock['statistics'][name]}" for name in ("fractions", "median", "worst", "direction_free", "strict", "holm", "bootstrap",
+                                                                        "head_counts")]
     lines += [f"- **R**: {lock['semantics']['families']['R']}; **I**: {lock['semantics']['families']['I']}",
               f"- Holm thresholds {holm[0]} and {holm[1]} of {config['n_frames']}; median floor {lock['constants']['median_floor']}",
               f"- **D**: {lock['semantics']['families']['D']}; each count at least {config['d_threshold']} of {config['n_frames']}",

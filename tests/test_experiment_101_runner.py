@@ -651,3 +651,131 @@ def test_stage1_refuses_a_path_the_write_hook_does_not_allow_before_its_ledger(w
             runner.stage1()
     state = _state(runner)
     assert state["executed_prompt_keys"] == [] and state["phases"]["stage1"]["status"] == "not_started" and not spy.plain
+
+
+def test_a_calibration_gate_failure_stops_for_review_with_the_values_and_no_file(world, base101, frozen101, sandbox, monkeypatch):
+    root = sandbox(frozen101)
+    runner, logs = make_runner(root, world, base101["config"])
+    original_tol = ri.GateBook.tol
+    monkeypatch.setattr(ri.GateBook, "tol", lambda self, name, value, where, arm: original_tol(self, name, 0.5 if name == "G4_level1" else value, where, arm))
+    assert runner.calibrate() == 3 and "gate_failure" in logs[-1]
+    state = _state(runner)
+    assert state["phases"]["calibrate"]["status"] == "stopped_for_review" and not runner.output("candidate-calibration-v1.json").exists()
+    gates = state["calibration"]["gates"]
+    assert "G4_level1" in gates["failures"] and gates["tolerance"]["G4_level1"]["max"] == 0.5 and gates["tolerance"]["G4_level1"]["at"]
+    assert state["calibration"]["stopped"]["triggers"]["gate_failure"]["gates"] == ["G4_level1"]
+
+
+def test_a_failed_environment_check_stops_the_calibration(world, base101, frozen101, sandbox, monkeypatch):
+    root = sandbox(frozen101)
+    runner, logs = make_runner(root, world, base101["config"])
+    monkeypatch.setattr(ri, "state_drift", lambda now, recorded: 1.0)
+    assert runner.calibrate() == 3
+    state = _state(runner)
+    assert "environment" in state["calibration"]["stopped"]["triggers"]["gate_failure"]["gates"]
+
+
+def test_calibrate_refuses_a_key_of_a_confirmation_manifest(world, base101, frozen101, sandbox, monkeypatch):
+    root = sandbox(frozen101)
+    runner, _ = make_runner(root, world, base101["config"], model_loader=_refuse)
+    original = runner_module.Runner._base
+
+    def with_reserved(self):
+        base = original(self)
+        frame = next(frame for frame in base.inputs.pool.frames if frame.template_id == ri.TEMPLATE)
+        return dataclasses.replace(base, manifests=base.manifests | {base.inputs.pool.reference_prompt(frame).key})
+
+    monkeypatch.setattr(runner_module.Runner, "_base", with_reserved)
+    with pytest.raises(ri.PhaseError, match="in a confirmation manifest"):
+        runner.calibrate()
+
+
+def test_lock_refuses_code_changed_since_calibration(world, base101, calibrated101, sandbox):
+    root = sandbox(calibrated101["root"])
+    runner, logs = make_runner(root, world, base101["config"], changed_paths=lambda commit: ["src/neural_decompiler/read_intervention.py"])
+    with pytest.raises(ri.PhaseError, match="changed since the calibration"):
+        runner.lock()
+    runner, logs = make_runner(root, world, base101["config"])
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(ri, "own_blob", lambda: "0" * 40)
+        with pytest.raises(ri.PhaseError, match="another analysis module"):
+            runner.lock()
+    assert _state(runner)["phases"]["lock"]["status"] == "not_started"
+
+
+def test_lock_runs_no_forward(world, base101, calibrated101, sandbox):
+    root = sandbox(calibrated101["root"])
+    runner, logs = make_runner(root, world, base101["config"])
+    with pytest.MonkeyPatch.context() as patch:
+        spy = ForwardSpy(patch)
+        assert runner.lock() == 0, logs[-3:]
+    assert not spy.plain and not spy.patched
+
+
+def test_lock_records_an_incident_when_the_exposed_table_does_not_reproduce(world, base101, calibrated101, sandbox, monkeypatch):
+    root = sandbox(calibrated101["root"])
+    runner, _ = make_runner(root, world, base101["config"])
+    original = ri.prediction_table
+    monkeypatch.setattr(ri, "prediction_table", lambda *args, **kwargs: {**original(*args, **kwargs), "content_sha256": "0" * 64})
+    assert runner.lock() == 2
+    assert _state(runner)["phases"]["lock"]["incidents"] and not runner.output("candidate-lock.json").exists()
+
+
+def test_a_confirm_incident_names_the_confirm_commit(world, base101, staged101, sandbox, monkeypatch):
+    root = sandbox(staged101["root"])
+    confirm_commit = "c" * 40
+    runner, _ = make_runner(root, world, base101["config"], git_state=lambda: {"commit": confirm_commit, "dirty": False})
+    original = rd.NounSet.contrasts
+    calls = {"n": 0}
+
+    def contrasts(self, logits):
+        calls["n"] += 1
+        if calls["n"] == 3:
+            raise pm.IncidentError("non-finite contrast for cat")
+        return original(self, logits)
+
+    monkeypatch.setattr(rd.NounSet, "contrasts", contrasts)
+    assert runner.confirm() == 2
+    state = _state(runner)
+    assert state["confirmation"]["incident"]["commit"] == confirm_commit != state["phases"]["calibrate"]["commit"]
+    assert confirm_commit in ri.render_report(state)
+
+
+def test_an_accounting_failure_is_an_incident(world, base101, staged101, sandbox, monkeypatch):
+    root = sandbox(staged101["root"])
+    runner, _ = make_runner(root, world, base101["config"])
+    original = ri.stage_runs
+
+    def short(model, progs, schedules, geometry, config, *, executed, out, logits, log=None):
+        original(model, progs, schedules, geometry, config, executed=executed, out=out, logits=logits, log=log)
+        executed.pop()
+
+    monkeypatch.setattr(ri, "stage_runs", short)
+    assert runner.confirm() == 2
+    confirmation = _state(runner)["confirmation"]
+    assert "accounting failed" in confirmation["incident"]["message"] and confirmation["accounting"]["equal"] is False and "results" not in confirmation
+
+
+def test_the_barrier_refuses_a_stage1_record_of_another_lock(world, base101, staged101, sandbox):
+    from neural_decompiler import block0_completion as b0c
+
+    root = sandbox(staged101["root"])
+    runner, _ = make_runner(root, world, base101["config"])
+    state = _state(runner)
+    state["stage1"]["lock_sha256"] = "0" * 64
+    state["stage1"]["digest"] = b0c.stage_one_digest(state["stage1"])
+    runner._write(state)
+    assert runner.confirm() == 2
+    assert "different lock" in _state(runner)["phases"]["confirm"]["incidents"][-1]["message"]
+
+
+def test_the_calibration_and_the_secondary_records_carry_the_review_items(world, base101, calibrated101, confirmed101, sandbox):
+    payload = json.loads((calibrated101["root"] / ri.CALIBRATION_RELATIVE_PATH).read_text())
+    assert set(payload["min_s"]) == {"two", "alt"} and payload["module_blob"] == ri.own_blob() and payload["tolerances"] == ri.TOLERANCES
+    assert len(payload["table_content_sha256"]) == 64
+    root = sandbox(confirmed101["root"])
+    runner, _ = make_runner(root, world, base101["config"])
+    head = _state(runner)["confirmation"]["secondary"]["statistics"]["head"]
+    assert head["F_head_rem"]["criterion"] == "F_head_rem < 1.0" and "count" in head["F_head_ins_v"]
+    per_arm = _state(runner)["confirmation"]["gates"]["per_arm"]
+    assert set(per_arm["G5_output"]) == {"HEAD-NEC@two", "HEAD-SUF@two", "HEAD-NEC-V@two", "HEAD-SUF-V@two"}

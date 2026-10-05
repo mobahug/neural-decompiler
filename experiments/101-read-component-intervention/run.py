@@ -383,7 +383,7 @@ class Runner:
     def _record_incident(self, state: dict[str, Any], phase: str, error: BaseException) -> None:
         """An incident of a running confirm (after its ledger): on disk before anything slow runs, with its commit."""
         entry_phase = state.get("phases", {}).get(phase, {})
-        entry = self._incident_entry(phase, error, str(entry_phase.get("commit") or state.get("protocol_code_commit") or ""))
+        entry = self._incident_entry(phase, error, str(entry_phase.get("commit") or entry_phase.get("confirm_commit") or state.get("protocol_code_commit") or ""))
         state["confirmation"] = rc.json_safe(state.get("confirmation") or {})
         state["confirmation"]["incident"] = entry
         self._write(state)
@@ -446,6 +446,13 @@ class Runner:
         recorded = dict(lock["dependencies"]["model"])
         now = {**recorded, "parameters_sha256": rr.parameters_digest(model), "embedding_sha256": rr.embedding_digest(progs.weights.W_E)}
         cr.verify_dependencies(recorded, now, "the lock (the model)")
+
+    def _check_stage1_binding(self, lock: Mapping[str, Any], confirmation: ri.Confirmation101, progs: ul.ModelPrograms, model: Any, noun_keys: Sequence[str]) -> None:
+        """The lock's stage-1 binding re-derived from the frozen frames and the loaded model (a refusal on any difference)."""
+        expected = ri.stage1_binding(confirmation.frames, self.config, d_model=int(progs.weights.W_E.shape[1]), n_heads=int(model.cfg.n_heads),
+                                     n_nouns=len(progs.nouns.nouns), noun_keys=noun_keys)
+        if pm.canonical_json(expected) != pm.canonical_json(lock["stage1"]):
+            raise PhaseError("the lock's stage-1 binding is not the one the frozen frames and the model give")
 
     def _geometry_against_lock(self, lock: Mapping[str, Any], progs: ul.ModelPrograms, geometry: ri.ReadGeometry, frame_ids: Sequence[str]) -> dict[str, Any]:
         """G1 and the digests of ``w_c`` and every ``v_j``, recomputed from the weights and compared with the lock bit for
@@ -593,6 +600,9 @@ class Runner:
         state = self._state_for("lock", base.digests)
         if (state.get("calibration") or {}).get("content_sha256") != calibration["content_sha256"]:
             raise PhaseError("the installed calibration file is not the candidate this run's calibration wrote")
+        changed = self.changed_paths(state["phases"]["calibrate"]["commit"])
+        if changed is None or ri.scientific_changes(changed):
+            raise PhaseError(f"scientific paths changed since the calibration ({changed}); τ and the G4 record bind the code they were computed with")
         cr.assert_ledger_isolated(state["executed_prompt_keys"], base.forbidden | confirmation.untagged_keys(), "Experiment 101's ledger before stage 1")
         runtime = self._check_runtime(base.inputs.closure)
         commit = self._provenance()["protocol_code_commit"]
@@ -615,6 +625,13 @@ class Runner:
                 dependencies = ri.scientific_dependencies(base.inputs, parameters_sha256=parameters_sha, embedding_sha256=rr.embedding_digest(progs.weights.W_E))
                 stage1 = ri.stage1_binding(confirmation.frames, self.config, d_model=geometry.d_model, n_heads=n_heads, n_nouns=len(progs.nouns.nouns),
                                            noun_keys=noun_keys)
+                exposed = self._exposed_frames(base.inputs)
+                locked = base.inputs.closure["exploration"]["locked_states"]
+                states = {frame.frame_id: rd.state_from_locked(locked[frame.frame_id], frame) for frame in exposed}
+                table = ri.prediction_table(progs, exposed, states, geometry, self.config, noun_keys, fractions_for_weak=True)
+                if table["content_sha256"] != calibration["table_content_sha256"]:
+                    raise IncidentError("the exposed prediction table does not reproduce across processes bit for bit (the calibration's digest); "
+                                        "no 101 prompt has run")
             recheck = self._recheck()
             if not recheck["ok"]:
                 raise IncidentError(f"the committed inputs no longer verify at lock: {recheck['message']}; no lock was written")
@@ -659,6 +676,7 @@ class Runner:
             self._model_dependencies(lock, model, progs)
             noun_keys = self._check_nouns(progs, base.inputs)
             geometry = ri.read_geometry(base.inputs.lock_011)
+            self._check_stage1_binding(lock, confirmation, progs, model, noun_keys)
             try:
                 check = self._geometry_against_lock(lock, progs, geometry, [frame.frame_id for frame in confirmation.frames])
             except IncidentError as error:
@@ -716,21 +734,13 @@ class Runner:
 
     # -- confirm ----------------------------------------------------------------
 
-    def _barrier(self, lock: Mapping[str, Any], confirmation: ri.Confirmation101, progs: ul.ModelPrograms, geometry: ri.ReadGeometry,
-                 noun_keys: Sequence[str]) -> Barrier:
-        """The hard boundary, on the state re-read from disk: the stage-1 record reproduces its digest and names this
-        lock; the committed files are the ones stage 1 wrote; the states table verifies against the lock's layout and
-        metadata, and every state reproduces its digest; the table recomputed from the committed states and the weights
-        equals the committed table bit for bit; no S2 key is in the ledger. Any failure is an incident."""
-        state = rd.load_results_state(self.results_path)
-        record = state.get("stage1")
-        if record is None or record.get("digest") != b0c.stage_one_digest(record):
-            raise IncidentError("the stage-1 record does not reproduce its digest; no S2 prompt may run")
-        if record.get("lock_sha256") != lock["content_sha256"]:
-            raise IncidentError("the stage-1 record was written under a different lock")
+    def _committed_stage1(self, lock: Mapping[str, Any], confirmation: ri.Confirmation101, record: Mapping[str, Any]) -> tuple[dict[str, rd.FrameState020], dict[str, Any]]:
+        """The committed stage-1 files re-read from disk against the stage-1 record: each file's sha256 and path, the
+        states table against the lock's layout and metadata, every state's digest, the table's digest and its bound
+        construction. Any failure is an incident (the caller records it)."""
         paths = self.stage1_paths()
         for name, path in paths.items():
-            if rc.file_sha256(path) != record["files"][name]["sha256"] or record["files"][name]["path"] != str(path.relative_to(self.root)):
+            if record["files"][name]["path"] != str(path.relative_to(self.root)) or rc.file_sha256(path) != record["files"][name]["sha256"]:
                 raise IncidentError(f"the committed stage-1 file {name} is not the one stage 1 wrote")
         index = json.loads(paths["states_index"].read_text(encoding="utf-8"))
         ul.verify_table_index(index, layout=lock["stage1"]["states"]["layout"], meta=lock["stage1"]["states"]["meta"])
@@ -738,14 +748,33 @@ class Runner:
         if {frame_id: rd.state_digest(entry) for frame_id, entry in sorted(locked.items())} != record["state_digests"]:
             raise IncidentError("a committed stage-1 state does not reproduce its digest")
         states = {frame.frame_id: rd.state_from_locked(locked[frame.frame_id], frame) for frame in confirmation.frames}
-        committed = json.loads(paths["table"].read_text(encoding="utf-8"))
-        if committed.get("content_sha256") != record["table_content_sha256"] or committed["content_sha256"] != rc.content_digest(committed):
+        table = json.loads(paths["table"].read_text(encoding="utf-8"))
+        if table.get("content_sha256") != record["table_content_sha256"] or table["content_sha256"] != rc.content_digest(table):
             raise IncidentError("the committed table does not reproduce its digest")
-        if {key: committed.get(key) for key in lock["stage1"]["table"]} != dict(lock["stage1"]["table"]):
+        if {key: table.get(key) for key in lock["stage1"]["table"]} != dict(lock["stage1"]["table"]):
             raise IncidentError("the committed table's construction is not the bound one")
+        return states, table
+
+    def _recompute_table(self, progs: ul.ModelPrograms, confirmation: ri.Confirmation101, states: Mapping[str, rd.FrameState020], geometry: ri.ReadGeometry,
+                         noun_keys: Sequence[str], committed: Mapping[str, Any]) -> bool:
         with pytest_free_guard():
             recomputed = ri.prediction_table(progs, confirmation.frames, states, geometry, self.config, noun_keys)
-        if pm.canonical_json(recomputed) != pm.canonical_json(committed):
+        return pm.canonical_json(recomputed) == pm.canonical_json(committed)
+
+    def _barrier(self, lock: Mapping[str, Any], confirmation: ri.Confirmation101, progs: ul.ModelPrograms, geometry: ri.ReadGeometry,
+                 noun_keys: Sequence[str]) -> Barrier:
+        """The hard boundary, on the state re-read from disk: the stage-1 record reproduces its digest and names this
+        lock; the committed files are the ones stage 1 wrote (``_committed_stage1``); the table recomputed from the
+        committed states and the weights equals the committed table bit for bit; no S2 key is in the ledger. Any failure
+        is an incident."""
+        state = rd.load_results_state(self.results_path)
+        record = state.get("stage1")
+        if record is None or record.get("digest") != b0c.stage_one_digest(record):
+            raise IncidentError("the stage-1 record does not reproduce its digest; no S2 prompt may run")
+        if record.get("lock_sha256") != lock["content_sha256"]:
+            raise IncidentError("the stage-1 record was written under a different lock")
+        states, committed = self._committed_stage1(lock, confirmation, record)
+        if not self._recompute_table(progs, confirmation, states, geometry, noun_keys, committed):
             raise IncidentError("the table recomputed from the committed states and the weights differs from the committed table")
         overlap = set(confirmation.s2_keys()) & set(state["executed_prompt_keys"])
         if overlap:
@@ -771,6 +800,7 @@ class Runner:
             self._model_dependencies(lock, model, progs)
             noun_keys = self._check_nouns(progs, base.inputs)
             geometry = ri.read_geometry(base.inputs.lock_011)
+            self._check_stage1_binding(lock, confirmation, progs, model, noun_keys)
             try:
                 self._geometry_against_lock(lock, progs, geometry, [frame.frame_id for frame in confirmation.frames])
                 barrier = self._barrier(lock, confirmation, progs, geometry, noun_keys)
@@ -814,9 +844,9 @@ class Runner:
                 if failures:
                     raise IncidentError(f"integrity failure after the measurements: gates {failures} failed; outcome scoring stops, no frame is dropped or "
                                         f"replaced, and the failure is reviewed under the incident procedure")
-                with pytest_free_guard():
-                    again = ri.prediction_table(progs, confirmation.frames, barrier.states, geometry, self.config, noun_keys)
-                g6 = {"bitwise_equal": pm.canonical_json(again) == pm.canonical_json(barrier.table)}
+                reread_states, reread_table = self._committed_stage1(lock, confirmation, barrier.record)
+                g6 = {"bitwise_equal": pm.canonical_json(reread_table) == pm.canonical_json(barrier.table)
+                      and self._recompute_table(progs, confirmation, reread_states, geometry, noun_keys, reread_table)}
                 state["confirmation"]["g6_before_result"] = g6
                 self._write(state)
                 if not g6["bitwise_equal"]:
@@ -901,9 +931,9 @@ class Runner:
         return 0
 
     def _g6_at_report(self, base: Base, lock: Mapping[str, Any], confirmation: ri.Confirmation101) -> dict[str, Any]:
-        """G6 at the report: the table recomputed from the committed states and the weights (no forward pass) against the
-        committed table. A mismatch is recorded, and the report then renders NOT_INTERPRETABLE; the result is never
-        rewritten."""
+        """G6 at the report: the committed stage-1 files against the stage-1 record, and the table recomputed from the
+        committed states and the weights (no forward pass) against the committed table. A mismatch is recorded, and the
+        report then renders NOT_INTERPRETABLE; the result is never rewritten."""
         model = self.model_loader(PYTHIA_70M)
         try:
             progs = ul.ModelPrograms.from_model(model, base.inputs)
@@ -911,17 +941,11 @@ class Runner:
             del model
             gc.collect()
         try:
+            state = rd.load_results_state(self.results_path)
             noun_keys = self._check_nouns(progs, base.inputs)
             geometry = ri.read_geometry(base.inputs.lock_011)
-            paths = self.stage1_paths()
-            index = json.loads(paths["states_index"].read_text(encoding="utf-8"))
-            ul.verify_table_index(index, layout=lock["stage1"]["states"]["layout"], meta=lock["stage1"]["states"]["meta"])
-            locked = ri.states_from_blocks(ul.read_table(paths["states_data"], index), confirmation.frames)
-            states = {frame.frame_id: rd.state_from_locked(locked[frame.frame_id], frame) for frame in confirmation.frames}
-            committed = json.loads(paths["table"].read_text(encoding="utf-8"))
-            with pytest_free_guard():
-                recomputed = ri.prediction_table(progs, confirmation.frames, states, geometry, self.config, noun_keys)
-            equal = pm.canonical_json(recomputed) == pm.canonical_json(committed)
+            states, committed = self._committed_stage1(lock, confirmation, state["stage1"])
+            equal = self._recompute_table(progs, confirmation, states, geometry, noun_keys, committed)
             return {"bitwise_equal": equal, "message": "" if equal else "the recomputed table differs", "at": pm.utc_now()}
         except Exception as error:
             return {"bitwise_equal": False, "message": f"{type(error).__name__}: {error}", "at": pm.utc_now()}
