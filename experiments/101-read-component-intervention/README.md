@@ -1,10 +1,12 @@
 # Experiment 101: Is the Read Component at the Cue Position Causal for the `one`/`two` Choice?
 
-**Status (2026-10-14): FROZEN — the freeze ran once; calibrate is next.** The implementation passed its review and
-re-check (READY FOR PHASES, `40829d2`). The phases run on the branch `exp101-phases`. The freeze (tokenizer only) ran
-once at `40829d2` and wrote `confirmation-v1.json`, installed byte-identically in `a857f9a`; its independent AI review
-found PASS WITH NOTES, with no blocker ([evidence](evidence/README.md)). No calibration, lock, stage 1 or confirmation
-has run, and no 101 prompt has been executed.
+**Status (2026-10-14): CALIBRATED — the freeze and the calibration ran once; the lock is next, and the user commits
+it.** The implementation passed its review and re-check (READY FOR PHASES, `40829d2`). The phases run on the branch
+`exp101-phases`. The freeze (tokenizer only) ran once at `40829d2`: `confirmation-v1.json`, installed in `a857f9a`. The
+calibration (exposed, exploratory; spent data) ran once at `8f65062`: no revision trigger, every gate held (G4 included),
+`τ_rem` 0.0252 and `τ_ins` 0.0351; `calibration-v1.json`, installed in `d502777`. Both independent AI reviews found PASS
+WITH NOTES, with no blocker ([evidence](evidence/README.md)). No lock, stage 1 or confirmation has run, and no 101 prompt
+has been executed.
 
 Experiment 101 opens the second series (Neural Decompiler II), numbered from 101. It is the causal test of claim
 [C003](../../research/claims/C003-frame-conditioned-decoded-program.md) that the paper-readiness assessment named:
@@ -48,7 +50,11 @@ remove, install, double and reverse the component of the residual entering layer
 2. **`calibrate`** (exposed, exploratory) re-captures the 36 exposed coordinated reference states, runs every arm on
    them, computes G1–G6, `τ_rem` and `τ_ins`, and evaluates the four revision triggers. A trigger stops for review and
    writes no calibration file; no trigger widens a tolerance. The candidate `calibration-v1.json` is installed,
-   committed and reviewed.
+   committed and reviewed. **Done on 2026-10-14:** complete, no trigger; τ_rem 0.025153865322968608, τ_ins
+   0.03511072680382421 (P evaluable); G4's tightest margin Level-1's, 0.010654 against 2e-2 (1.88×); file sha256
+   `6b1db338…`, content sha256 `1eb1fe68…`, installed in `d502777`
+   ([evidence/calibrate-2026-10-14/](evidence/calibrate-2026-10-14/README.md)); AI review PASS WITH NOTES
+   ([evidence/calibration-review-2026-10-14/](evidence/calibration-review-2026-10-14/README.md)).
 3. **`lock`** (weights only; every forward refused) writes the candidate `preregistration-lock.json` and
    `preregistration.md`, installed byte-identically, committed and reviewed.
 4. **`stage1`** runs only the 36 reference prompts, seals the model, computes the program's table from the states and
@@ -90,6 +96,19 @@ The local outputs stay in `outputs/experiment-101/`.
    - N8: later test-gate logs record their HEAD and time.
    - N12, a process lapse: the install commit `a857f9a` was made after the review's report stated its verdict but before
      the reviewer had handed back; the final verdict was unchanged. Later phases wait for the hand-back.
+4. **The calibration answers the G4 question with evidence.** Every frozen G4 tolerance held on the 1,800 exposed G4
+   runs; no amendment was needed or made. The tightest margin is Level-1's, 1.88× (0.010654 against 2e-2, one stratum
+   arm in the frame `018-3`; `two`'s arms at most 0.00501). The calibration review traced the two outliers to float32
+   rounding in the measured blocks 4–5 (020's attention-score floor), not to the edit, and estimated the chance that one
+   of the confirm's G4 runs exceeds 2e-2 at about 0.3 % (0.02–1 %; about 10 % at the 95th percentile of a heavy-tailed
+   frame bootstrap). Such a failure would make the confirmation `NOT_INTERPRETABLE` (rule 2). This is for the user's
+   lock decision; no tolerance changes (rule 1).
+5. **The calibration review's notes** ([REVIEW.md](evidence/calibration-review-2026-10-14/REVIEW.md)): SF1 (preserve the
+   calibrate evidence; complete its README) is answered by the evidence commit after `d502777`; N2 (calibration's G6 is
+   a same-process check; the cross-process G6 runs at confirm), N3 (I4 is vacuous on reference-prompt runs, by design),
+   N4 (`coordinated-adjective-1`'s spent keys ran three times in all, with bit-identical results), N5 (the run log
+   records admissions), N6 (a harmless `.git/index` refresh) and N7 (descriptive observations) are recorded in the
+   calibrate evidence.
 
 ## Report and closure
 

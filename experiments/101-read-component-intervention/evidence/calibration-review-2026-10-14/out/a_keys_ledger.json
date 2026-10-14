@@ -1,0 +1,200 @@
+{
+ "design_candidates": {
+  "count": 60,
+  "sha256_of_texts": "35d03b1676eee64eee26b8dccf1aa42e3d3318a6bfb846a6781d277a825750f5",
+  "sequences": 240
+ },
+ "frozen_frames_match_design_tokenization": 144,
+ "exposed_frames": {
+  "count": 36,
+  "p_c_histogram": {
+   "5": 19,
+   "6": 9,
+   "7": 6,
+   "4": 2
+  },
+  "retokenized_ok": true
+ },
+ "my_keys": {
+  "count": 2016,
+  "distinct": 2016,
+  "s1": 36,
+  "runs": 1980,
+  "planned_sha256_mine": "5d4bcb51049766b9ac07c2fd872609d8e83469454d9f85c056325e850226488f"
+ },
+ "state_ledger": {
+  "calibration_executed_count": 2016,
+  "equal_to_mine_as_sets": true,
+  "calibration_executed_sorted": true,
+  "planned": {
+   "count": 2016,
+   "sha256": "5d4bcb51049766b9ac07c2fd872609d8e83469454d9f85c056325e850226488f"
+  },
+  "planned_sha256_equal_mine": true,
+  "candidate_keys": {
+   "count": 2016,
+   "sha256": "5d4bcb51049766b9ac07c2fd872609d8e83469454d9f85c056325e850226488f"
+  },
+  "executed_prompt_keys": [],
+  "accounting": {
+   "equal": true,
+   "executed": 2016,
+   "planned": 2016
+  },
+  "measurements_n_executed": 2016
+ },
+ "run_log": {
+  "lines": 2016,
+  "n_sequence_ok": true,
+  "distinct": 2016,
+  "equal_to_mine_as_sets": true,
+  "order_equals_my_expected_order": true,
+  "max_count": 1
+ },
+ "record_rehearsal": {
+  "exit_status": 0,
+  "error": null,
+  "events": {
+   "mode": "rehearsal",
+   "load_model": 0,
+   "refused": [],
+   "forbidden_reads": [],
+   "forbidden_writes": [],
+   "output_writes": [],
+   "output_renames": [],
+   "sanctioned_runs": 0,
+   "sanctioned_forward_calls": 0,
+   "calibrate_invocations": 0
+  },
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "tree_after": "",
+  "launcher_sha256": "0ad9d0e1c49e136c8d765628f31845de5cdae4ad322d03f54acb5785caa6bed8",
+  "head": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+  "post": null,
+  "started_at": "2026-10-14T08:43:31.596934+00:00",
+  "ended_at": "2026-10-14T08:43:42.706875+00:00"
+ },
+ "record_smoke": {
+  "exit_status": 0,
+  "error": null,
+  "events": {
+   "mode": "smoke",
+   "load_model": 1,
+   "refused": [
+    "torch.nn.Module.__call__ outside a sanctioned call (TransformerBridge)",
+    "model.forward outside a sanctioned call",
+    "pm.capture_prompt outside a sanctioned call",
+    "ri.run_arm for coordinated-adjective-2|ref|581|REF: not a key of this mode's manifest",
+    "ri.run_arm for coordinated-adjective-1|ref|581|REF: a second time",
+    "ri.capture_reference for coordinated-adjective-1|ref|581|S1: a second time",
+    "rd.capture_frame_020 outside a sanctioned call"
+   ],
+   "forbidden_reads": [],
+   "forbidden_writes": [],
+   "output_writes": [],
+   "output_renames": [],
+   "sanctioned_runs": 56,
+   "sanctioned_forward_calls": 19040,
+   "calibrate_invocations": 0
+  },
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "tree_after": "",
+  "launcher_sha256": "0ad9d0e1c49e136c8d765628f31845de5cdae4ad322d03f54acb5785caa6bed8",
+  "head": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+  "post": null,
+  "started_at": "2026-10-14T08:44:02.889691+00:00",
+  "ended_at": "2026-10-14T08:44:28.606259+00:00"
+ },
+ "record_production": {
+  "exit_status": 0,
+  "error": null,
+  "events": {
+   "mode": "production",
+   "load_model": 1,
+   "refused": [],
+   "forbidden_reads": [],
+   "forbidden_writes": [],
+   "output_writes": [
+    "os.mkdir experiment-101",
+    ".results-picbk0fo.json",
+    "os.mkdir experiment-101",
+    "calibration-measurements.pt",
+    "os.mkdir experiment-101",
+    ".results-fp684ef0.json",
+    "os.mkdir experiment-101",
+    ".results-56nijel4.json",
+    "os.mkdir experiment-101",
+    ".results-h8ni7rh3.json",
+    "os.mkdir experiment-101",
+    "candidate-calibration-v1.json",
+    "os.mkdir experiment-101",
+    ".results-pn0guyv7.json"
+   ],
+   "output_renames": [
+    ".results-picbk0fo.json -> results.json",
+    ".results-fp684ef0.json -> results.json",
+    ".results-56nijel4.json -> results.json",
+    ".results-h8ni7rh3.json -> results.json",
+    ".results-pn0guyv7.json -> results.json"
+   ],
+   "sanctioned_runs": 2016,
+   "sanctioned_forward_calls": 685440,
+   "calibrate_invocations": 1
+  },
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/calibration-measurements.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json"
+  ],
+  "tree_after": "",
+  "launcher_sha256": "0ad9d0e1c49e136c8d765628f31845de5cdae4ad322d03f54acb5785caa6bed8",
+  "head": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+  "post": {
+   "keys_done": 2016,
+   "all_keys_ran_once": true,
+   "outputs": [
+    "calibration-measurements.pt",
+    "candidate-calibration-v1.json",
+    "results.json"
+   ]
+  },
+  "started_at": "2026-10-14T08:44:44.080816+00:00",
+  "ended_at": "2026-10-14T08:51:04.506751+00:00"
+ },
+ "launcher_sha256_file": "0ad9d0e1c49e136c8d765628f31845de5cdae4ad322d03f54acb5785caa6bed8",
+ "production_exit_file": "exit 0",
+ "isolation": {
+  "untagged_prompts": 144,
+  "all_in_020_ledger": true,
+  "in_any_manifest": {
+   "020": 0,
+   "022": 0,
+   "023": 0,
+   "024": 0,
+   "025_untagged": 0
+  },
+  "manifest_sizes": {
+   "020": 3060,
+   "022": 3060,
+   "023": 3060,
+   "024": 4320,
+   "025_untagged": 4320
+  },
+  "tagged_overlap_with_101_manifest": 0,
+  "untagged_overlap_with_101": 0
+ },
+ "token_sequences": {
+  "calibration_prompt_sequences": 144,
+  "forbidden_101_sequences": 240,
+  "overlap": 0,
+  "prefix_relations": 0
+ },
+ "smoke_frame_keys": 56,
+ "write_attempts": []
+}

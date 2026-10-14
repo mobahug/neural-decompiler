@@ -1,0 +1,57 @@
+{
+ "level1_mine": {
+  "n_g4_runs": 1800,
+  "n_residual_edit_runs": 1692,
+  "max": 0.01065409333770706,
+  "argmax": "coordinated-adjective-018-3|many|1142|NEC-HALF@many",
+  "recorded_max": 0.010654093338573478,
+  "recorded_at": "coordinated-adjective-018-3|many|1142|NEC-HALF@many",
+  "per_arm_max_abs_diff_vs_recorded": 6.248779271800231e-12,
+  "per_arm_max_rel_diff_vs_recorded": 1.402889032392778e-09
+ },
+ "ceiling_mine": {},
+ "diag": {},
+ "E1_mine": {
+  "max": 0.016048049608030555,
+  "at": "coordinated-adjective-018-3|ref|581|SUF-OFF@many",
+  "recorded": {
+   "at": "coordinated-adjective-018-3|ref|581|SUF-OFF@many",
+   "max": 0.01604804962948845
+  }
+ },
+ "ceiling_error_mine": {
+  "max": 1.3026119633869637,
+  "at": "coordinated-adjective-019-4|ref|581|PC-SWAP-REF@many",
+  "recorded": {
+   "at": "coordinated-adjective-019-4|ref|581|PC-SWAP-REF@many",
+   "max": 1.3026119633869389
+  }
+ },
+ "ceiling_means_max_abs_diff": 1.7819079545233762e-12,
+ "g5_mine": {
+  "row_max": 5.679527298352305e-06,
+  "row_at": "coordinated-adjective-019-4|ref|581|HEAD-SUF@two",
+  "output_max": 1.1179697058660842e-05,
+  "output_at": "coordinated-adjective-019-4|ref|581|HEAD-SUF@two",
+  "recorded_row": {
+   "at": "coordinated-adjective-019-4|ref|581|HEAD-SUF@two",
+   "max": 5.6795272982412826e-06,
+   "tolerance": 0.0001
+  },
+  "recorded_output": {
+   "at": "coordinated-adjective-019-4|ref|581|HEAD-SUF@two",
+   "max": 1.1179697058660842e-05,
+   "tolerance": 0.001
+  }
+ },
+ "head_delta_summary": {
+  "max_abs_diff": 1.887379141862766e-15,
+  "replacements_reconstructed": 144,
+  "n": 144
+ },
+ "f32_chain_noise": {
+  "max": 0.0033377702090180428,
+  "median": 0.0004986615355795365
+ },
+ "write_attempts": []
+}

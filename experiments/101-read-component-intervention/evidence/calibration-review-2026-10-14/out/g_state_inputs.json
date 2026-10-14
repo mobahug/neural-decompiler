@@ -1,0 +1,29 @@
+{
+ "inputs_equal_runner_digests": true,
+ "n_inputs": 42,
+ "versions_equal_now": true,
+ "configuration_equal": true,
+ "module_blobs_equal_frozen": true,
+ "assert_frozen_blobs": true,
+ "design_plan": true,
+ "model": {
+  "model_id": "EleutherAI/pythia-70m-deduped",
+  "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+ },
+ "calibrate_rerun_refused": "calibrate is complete; it runs once in this protocol version (a stop for review is never retried automatically)",
+ "lock_eligible": true,
+ "preflight_rehearsal": {
+  "count": 20,
+  "all_true": true
+ },
+ "preflight_smoke": {
+  "count": 20,
+  "all_true": true
+ },
+ "preflight_production": {
+  "count": 21,
+  "all_true": true
+ },
+ "git_index_mtime_unchanged": true,
+ "write_attempts": []
+}

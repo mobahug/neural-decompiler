@@ -1,0 +1,162 @@
+{
+ "mode": "rehearsal",
+ "environment": {
+  "head": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+  "branch": "exp101-phases",
+  "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+  "head_is_descendant_of_origin_main": true,
+  "commits_ahead_of_origin_main": 8,
+  "repository": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "cwd": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "launcher_path": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/calibrate/launch_calibrate.py",
+  "launcher_sha256": "0ad9d0e1c49e136c8d765628f31845de5cdae4ad322d03f54acb5785caa6bed8",
+  "mode": "rehearsal",
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "transformer_lens": "3.9.0",
+  "huggingface_hub": "1.31.0",
+  "numpy": "2.5.3",
+  "torch_num_threads": 4,
+  "model": {
+   "model_id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "device": "cpu",
+   "dtype": "float32"
+  },
+  "checkpoint": {
+   "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "files": {
+    "config.json": {
+     "sha256": "002050231a9b1ec3ac77aa6b9b3bbdc4d923f4068a7dd33b8da72a9bd6ad9a43",
+     "bytes": 567
+    },
+    "model.safetensors": {
+     "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+     "bytes": 166029852
+    },
+    "special_tokens_map.json": {
+     "sha256": "6f50ab5a5a509a1c309d6171f339b196a900dc9c99ad0408ff23bb615fdae7ad",
+     "bytes": 99
+    },
+    "tokenizer.json": {
+     "sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+     "bytes": 2113710
+    },
+    "tokenizer_config.json": {
+     "sha256": "70e38394e494931c6f773ba41e19460dd4436526b852207367f04341b4066d3f",
+     "bytes": 396
+    }
+   }
+  },
+  "env_flags": {
+   "HF_HUB_OFFLINE": "1",
+   "TRANSFORMERS_OFFLINE": null,
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONHASHSEED": null,
+   "OMP_NUM_THREADS": null,
+   "MKL_NUM_THREADS": null,
+   "TOKENIZERS_PARALLELISM": null,
+   "CUDA_VISIBLE_DEVICES": null,
+   "VIRTUAL_ENV": null,
+   "CALIBRATE101_MODE": "rehearsal"
+  },
+  "recorded_at": "2026-10-14T08:43:31.591930+00:00"
+ },
+ "started_at": "2026-10-14T08:43:31.596934+00:00",
+ "preflight": {
+  "N1_cwd_is_repo_root": true,
+  "N1_tree_clean": true,
+  "N1_runner_git_state_at_root": {
+   "ok": true,
+   "detail": {
+    "commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+    "dirty": false
+   }
+  },
+  "N1_head_descends_from_origin_main": {
+   "ok": true,
+   "detail": 8
+  },
+  "freeze_record_is_the_production_freeze": true,
+  "N2_environment_identity_with_freeze_run": {
+   "ok": true,
+   "detail": []
+  },
+  "all_pinned_blobs": true,
+  "module_binding_ri": {
+   "ok": true,
+   "detail": {
+    "git_head": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "imported_file": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "own_blob": "d7db6197140fe871da591b5c578cc675f05f7d69"
+   }
+  },
+  "runner_binding": {
+   "ok": true,
+   "detail": {
+    "git_head": "27a111c04c2d1441b09629e753abd60b95ba6c04",
+    "file": "27a111c04c2d1441b09629e753abd60b95ba6c04"
+   }
+  },
+  "production_configuration": true,
+  "confirmation_is_the_frozen_file": {
+   "ok": true,
+   "detail": {
+    "file": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+    "content": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a"
+   }
+  },
+  "confirmation_committed_at_head": true,
+  "no_results_state_yet": true,
+  "outputs_dir_holds_nothing": {
+   "ok": true,
+   "detail": []
+  },
+  "calibrate_eligible": true,
+  "runtime_and_versions_equal_020_explore": true,
+  "calibration_keys_2016_distinct": {
+   "ok": true,
+   "detail": 2016
+  },
+  "calibration_keys_spent_exposed_only": true,
+  "calibration_keys_disjoint_from_101": true,
+  "no_calibration_prompt_is_a_101_token_sequence": true
+ },
+ "aliases_wrapped": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.read_intervention.capture_reference",
+  "neural_decompiler.read_intervention.run_arm",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ],
+ "logs": [],
+ "ended_at": "2026-10-14T08:43:42.706875+00:00",
+ "exit_status": 0,
+ "error": null,
+ "events": {
+  "mode": "rehearsal",
+  "load_model": 0,
+  "refused": [],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "output_writes": [],
+  "output_renames": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "sanctioned_runs": 0,
+  "sanctioned_forward_calls": 0,
+  "calibrate_invocations": 0
+ },
+ "sealing": {},
+ "tree_after": ""
+}

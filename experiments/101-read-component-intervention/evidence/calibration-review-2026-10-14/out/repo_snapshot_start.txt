@@ -1,0 +1,49 @@
+Wed Oct 14 08:57:00 UTC 2026
+8f65062627c77815adf9289c3fe60191d9fc3c17
+status-end
+e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13  outputs/experiment-101/calibration-measurements.pt
+6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90  outputs/experiment-101/candidate-calibration-v1.json
+935a0df2a560525955602bc525275e2348cd09f68bdff43cee8bdecfa3e7f29e  outputs/experiment-101/results.json
+outputs/experiment-101/calibration-measurements.pt 1791967722 Oct 14 11:48:42 2026
+outputs/experiment-101/candidate-calibration-v1.json 1791967864 Oct 14 11:51:04 2026
+outputs/experiment-101/results.json 1791967864 Oct 14 11:51:04 2026
+.git/index 1791967411 Oct 14 11:43:31 2026
+total 0
+drwxr-xr-x@ 28 gaborhorvath-ulenius  staff  896 Oct 14 11:45 .
+drwxr-xr-x  21 gaborhorvath-ulenius  staff  672 Oct  5 17:42 ..
+drwxr-xr-x@  6 gaborhorvath-ulenius  staff  192 Sep 14 21:47 experiment-001
+drwxr-xr-x@  6 gaborhorvath-ulenius  staff  192 Sep 15 16:33 experiment-002
+drwxr-xr-x@  7 gaborhorvath-ulenius  staff  224 Sep 15 16:57 experiment-003
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff  288 Sep 15 17:50 experiment-004
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff  288 Sep 18 12:24 experiment-005
+drwxr-xr-x@  6 gaborhorvath-ulenius  staff  192 Sep 18 13:47 experiment-006
+drwxr-xr-x@ 10 gaborhorvath-ulenius  staff  320 Sep 18 18:05 experiment-007
+drwxr-xr-x@  5 gaborhorvath-ulenius  staff  160 Sep 18 19:21 experiment-008
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff  288 Sep 18 21:29 experiment-009
+drwxr-xr-x@  5 gaborhorvath-ulenius  staff  160 Sep 18 22:26 experiment-010
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 19 13:41 experiment-011
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 19 15:57 experiment-012
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 19 17:44 experiment-013
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 19 21:00 experiment-014
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 20 08:10 experiment-015
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 20 13:30 experiment-016
+drwxr-xr-x@ 10 gaborhorvath-ulenius  staff  320 Sep 20 20:13 experiment-017
+drwxr-xr-x@  6 gaborhorvath-ulenius  staff  192 Sep 21 14:00 experiment-018
+drwxr-xr-x@  8 gaborhorvath-ulenius  staff  256 Sep 21 22:31 experiment-019
+drwxr-xr-x@  7 gaborhorvath-ulenius  staff  224 Sep 22 21:36 experiment-020
+drwxr-xr-x@ 18 gaborhorvath-ulenius  staff  576 Sep 23 15:26 experiment-021
+drwxr-xr-x@ 21 gaborhorvath-ulenius  staff  672 Sep 24 11:15 experiment-022
+drwxr-xr-x@ 15 gaborhorvath-ulenius  staff  480 Sep 24 21:15 experiment-023
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff  288 Sep 25 23:27 experiment-024
+drwxr-xr-x@  7 gaborhorvath-ulenius  staff  224 Sep 27 14:13 experiment-025
+drwxr-xr-x@  5 gaborhorvath-ulenius  staff  160 Oct 14 11:51 experiment-101
+./tests/__pycache__
+./experiments/020-readout-decompilation/__pycache__
+./experiments/009-head-transport-rule/__pycache__
+./experiments/010-read-direction-assembly/__pycache__
+./experiments/005-regular-plural-mechanism/__pycache__
+./experiments/011-encoding-read-prospective/__pycache__
+./experiments/012-layer-correction-token-local/__pycache__
+./experiments/002-capital-selectivity/__pycache__
+./experiments/014-neuron-1987-feature/__pycache__
+./experiments/006-low-rank-cue-decompilation/__pycache__

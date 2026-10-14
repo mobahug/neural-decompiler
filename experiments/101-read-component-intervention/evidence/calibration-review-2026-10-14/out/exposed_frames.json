@@ -1,0 +1,561 @@
+{
+ "coordinated-adjective-1": {
+  "prefix": [
+   46,
+   8432,
+   285,
+   32794,
+   14998
+  ],
+  "suffix": [
+   6627
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Mira and Noah packed {cue} bright"
+ },
+ "coordinated-adjective-2": {
+  "prefix": [
+   45,
+   6736,
+   285,
+   38900,
+   8653
+  ],
+  "suffix": [
+   1355
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Lena and Omar displayed {cue} small"
+ },
+ "coordinated-adjective-new-1": {
+  "prefix": [
+   1145,
+   66,
+   285,
+   29989,
+   16264
+  ],
+  "suffix": [
+   10058
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Ana and Luis painted {cue} tiny"
+ },
+ "coordinated-adjective-new-2": {
+  "prefix": [
+   44,
+   2284,
+   285,
+   31336,
+   4824
+  ],
+  "suffix": [
+   5536
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Kai and Sara carried {cue} heavy"
+ },
+ "coordinated-adjective-fresh-1": {
+  "prefix": [
+   51,
+   23096,
+   285,
+   44846,
+   20045
+  ],
+  "suffix": [
+   8342
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Ravi and Elena sorted {cue} plain"
+ },
+ "coordinated-adjective-fresh-2": {
+  "prefix": [
+   47,
+   6464,
+   285,
+   36172,
+   24982
+  ],
+  "suffix": [
+   5536
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Nora and Felix stacked {cue} heavy"
+ },
+ "coordinated-adjective-009-1": {
+  "prefix": [
+   42,
+   1473,
+   285,
+   308,
+   4921,
+   16042
+  ],
+  "suffix": [
+   30006
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Ida and Tomas counted {cue} shiny"
+ },
+ "coordinated-adjective-009-2": {
+  "prefix": [
+   58,
+   316,
+   2375,
+   285,
+   8939,
+   376,
+   15312
+  ],
+  "suffix": [
+   6906
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Yusuf and Petra wrapped {cue} thin"
+ },
+ "coordinated-adjective-011-1": {
+  "prefix": [
+   4015,
+   80,
+   285,
+   41151,
+   13130
+  ],
+  "suffix": [
+   3790
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Leo and Maya labeled {cue} round"
+ },
+ "coordinated-adjective-011-2": {
+  "prefix": [
+   49,
+   363,
+   5973,
+   285,
+   10354,
+   284,
+   47405
+  ],
+  "suffix": [
+   2602
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Priya and Jonas bundled {cue} soft"
+ },
+ "coordinated-adjective-012-1": {
+  "prefix": [
+   46941,
+   80,
+   285,
+   3052,
+   4595,
+   20618
+  ],
+  "suffix": [
+   6507
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Hugo and Amara folded {cue} flat"
+ },
+ "coordinated-adjective-012-2": {
+  "prefix": [
+   47,
+   324,
+   571,
+   285,
+   40537,
+   49127
+  ],
+  "suffix": [
+   38907
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Nadia and Erik hauled {cue} dusty"
+ },
+ "coordinated-adjective-013-1": {
+  "prefix": [
+   46,
+   366,
+   80,
+   285,
+   496,
+   265,
+   11974
+  ],
+  "suffix": [
+   4076
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Mateo and Ines washed {cue} clean"
+ },
+ "coordinated-adjective-013-2": {
+  "prefix": [
+   52,
+   1171,
+   571,
+   285,
+   30115,
+   8686
+  ],
+  "suffix": [
+   13155
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Sofia and Anders bought {cue} loose"
+ },
+ "coordinated-adjective-014-1": {
+  "prefix": [
+   48,
+   4175,
+   285,
+   47040,
+   41902
+  ],
+  "suffix": [
+   18176
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Omar and Lucia piled {cue} neat"
+ },
+ "coordinated-adjective-014-2": {
+  "prefix": [
+   24234,
+   1240,
+   285,
+   20358,
+   6358,
+   14287
+  ],
+  "suffix": [
+   9685
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Farah and Tobias lifted {cue} wet"
+ },
+ "coordinated-adjective-015-1": {
+  "prefix": [
+   11223,
+   785,
+   285,
+   28712,
+   13037
+  ],
+  "suffix": [
+   6079
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Emma and Marco gathered {cue} dry"
+ },
+ "coordinated-adjective-015-2": {
+  "prefix": [
+   17232,
+   285,
+   27261,
+   10607
+  ],
+  "suffix": [
+   5890
+  ],
+  "p_c": 4,
+  "p_t": 5,
+  "text": "Sam and Julia loaded {cue} warm"
+ },
+ "coordinated-adjective-016-1": {
+  "prefix": [
+   45,
+   16726,
+   285,
+   329,
+   6156,
+   7141
+  ],
+  "suffix": [
+   5412
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Liam and Ava stored {cue} cold"
+ },
+ "coordinated-adjective-016-2": {
+  "prefix": [
+   59,
+   3703,
+   285,
+   48511,
+   24610
+  ],
+  "suffix": [
+   5352
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Zoe and Theo shipped {cue} fresh"
+ },
+ "coordinated-adjective-016-3": {
+  "prefix": [
+   47,
+   1758,
+   285,
+   1780,
+   30986,
+   6804
+  ],
+  "suffix": [
+   5026
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Nina and Arjun mixed {cue} thick"
+ },
+ "coordinated-adjective-016-4": {
+  "prefix": [
+   38,
+   6458,
+   285,
+   28712,
+   12331
+  ],
+  "suffix": [
+   6863
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Elif and Marco tied {cue} tight"
+ },
+ "coordinated-adjective-017-1": {
+  "prefix": [
+   2019,
+   4595,
+   285,
+   8397,
+   14998
+  ],
+  "suffix": [
+   3511
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Clara and Dev packed {cue} hot"
+ },
+ "coordinated-adjective-017-2": {
+  "prefix": [
+   40805,
+   285,
+   5171,
+   4824
+  ],
+  "suffix": [
+   4484
+  ],
+  "p_c": 4,
+  "p_t": 5,
+  "text": "Anna and Paul carried {cue} cool"
+ },
+ "coordinated-adjective-017-3": {
+  "prefix": [
+   38,
+   6156,
+   285,
+   6270,
+   49127
+  ],
+  "suffix": [
+   16109
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Eva and Tom hauled {cue} damp"
+ },
+ "coordinated-adjective-017-4": {
+  "prefix": [
+   2422,
+   547,
+   285,
+   6029,
+   5608
+  ],
+  "suffix": [
+   29990
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Alice and Ben served {cue} crisp"
+ },
+ "coordinated-adjective-018-1": {
+  "prefix": [
+   42,
+   6148,
+   285,
+   35503,
+   27251
+  ],
+  "suffix": [
+   6032
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Ivan and Rosa carved {cue} smooth"
+ },
+ "coordinated-adjective-018-2": {
+  "prefix": [
+   25324,
+   1240,
+   285,
+   3189,
+   74,
+   41502
+  ],
+  "suffix": [
+   14530
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Jonah and Mei rinsed {cue} pale"
+ },
+ "coordinated-adjective-018-3": {
+  "prefix": [
+   38,
+   14797,
+   285,
+   611,
+   1171,
+   74,
+   36756
+  ],
+  "suffix": [
+   7227
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Ella and Kofi trimmed {cue} rough"
+ },
+ "coordinated-adjective-018-4": {
+  "prefix": [
+   51,
+   3097,
+   285,
+   399,
+   5629,
+   37907
+  ],
+  "suffix": [
+   18988
+  ],
+  "p_c": 6,
+  "p_t": 7,
+  "text": "Ruth and Dario tasted {cue} sour"
+ },
+ "coordinated-adjective-019-1": {
+  "prefix": [
+   35,
+   6321,
+   80,
+   285,
+   13729,
+   893,
+   30363
+  ],
+  "suffix": [
+   5890
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Bruno and Greta baked {cue} warm"
+ },
+ "coordinated-adjective-019-2": {
+  "prefix": [
+   42,
+   4448,
+   285,
+   6939,
+   80,
+   28990,
+   3026
+  ],
+  "suffix": [
+   4076
+  ],
+  "p_c": 7,
+  "p_t": 8,
+  "text": "Iris and Milo scrubbed {cue} clean"
+ },
+ "coordinated-adjective-019-3": {
+  "prefix": [
+   43468,
+   936,
+   285,
+   45931,
+   10912
+  ],
+  "suffix": [
+   6507
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Otto and Vera arranged {cue} flat"
+ },
+ "coordinated-adjective-019-4": {
+  "prefix": [
+   39,
+   31655,
+   285,
+   5332,
+   14245
+  ],
+  "suffix": [
+   13827
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Fiona and Jack dried {cue} stiff"
+ },
+ "coordinated-adjective-019-5": {
+  "prefix": [
+   41,
+   3230,
+   285,
+   48961,
+   25530
+  ],
+  "suffix": [
+   6906
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Hana and Piet sliced {cue} thin"
+ },
+ "coordinated-adjective-019-6": {
+  "prefix": [
+   44,
+   4405,
+   285,
+   36669,
+   35273
+  ],
+  "suffix": [
+   6627
+  ],
+  "p_c": 5,
+  "p_t": 6,
+  "text": "Kurt and Dana brushed {cue} bright"
+ }
+}

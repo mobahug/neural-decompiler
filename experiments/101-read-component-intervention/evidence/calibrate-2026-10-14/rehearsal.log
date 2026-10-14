@@ -1,0 +1,2 @@
+{"mode": "rehearsal", "started_at": "2026-10-14T08:43:31.596934+00:00", "ended_at": "2026-10-14T08:43:42.706875+00:00", "exit_status": 0, "error": null}
+{"mode": "rehearsal", "load_model": 0, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "output_writes": [], "output_renames": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "calibrate_invocations": 0}

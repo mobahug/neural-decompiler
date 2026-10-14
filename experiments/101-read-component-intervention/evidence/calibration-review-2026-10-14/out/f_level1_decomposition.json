@@ -1,0 +1,191 @@
+{
+ "max_abs_diff_vs_frozen": 7.36558123520803e-12,
+ "top10": {
+  "coordinated-adjective-018-3|many|1142|NEC-HALF@many": {
+   "level1": 0.01065409333770687,
+   "frozen_level1": 0.010654093338573478,
+   "noun": "army",
+   "part_h6_at_max": -0.008619506226337479,
+   "part_readout_at_max": -0.0020345871113693903,
+   "part_h6_inf": 0.008619506226337479,
+   "part_readout_inf": 0.00269240604714982,
+   "dh6_err_inf": 0.006257929032951637,
+   "block3_pc_err_inf": 2.7508118944474802e-05,
+   "dw_norm_at_max": 0.5372149056018924
+  },
+  "coordinated-adjective-011-1|ref|581|SUF-NEG@many": {
+   "level1": 0.007277081765295677,
+   "frozen_level1": 0.0072770817663274645,
+   "noun": "cross",
+   "part_h6_at_max": -0.006251005559695875,
+   "part_readout_at_max": -0.0010260762055998018,
+   "part_h6_inf": 0.006251005559695875,
+   "part_readout_inf": 0.0022718325810116985,
+   "dh6_err_inf": 0.002385432669231413,
+   "block3_pc_err_inf": 7.90468373993436e-05,
+   "dw_norm_at_max": 0.7063849035975844
+  },
+  "coordinated-adjective-019-5|three|1264|PL@three": {
+   "level1": 0.0054137684789780744,
+   "frozen_level1": 0.005413768477989578,
+   "noun": "bus",
+   "part_h6_at_max": -0.0033738231102961687,
+   "part_readout_at_max": -0.002039945368681906,
+   "part_h6_inf": 0.0033738231102961687,
+   "part_readout_inf": 0.002686126972475833,
+   "dh6_err_inf": 0.001799534245249923,
+   "block3_pc_err_inf": 1.3924384450358929e-05,
+   "dw_norm_at_max": 0.5546833244060787
+  },
+  "coordinated-adjective-018-3|ref|581|PC-SWAP-REF@many": {
+   "level1": 0.005253209476560878,
+   "frozen_level1": 0.005253209476643761,
+   "noun": "army",
+   "part_h6_at_max": -0.0032273590849258237,
+   "part_readout_at_max": -0.0020258503916350534,
+   "part_h6_inf": 0.0032273590849258237,
+   "part_readout_inf": 0.0024679489907253327,
+   "dh6_err_inf": 0.002023594582554189,
+   "block3_pc_err_inf": 3.429457758141741e-05,
+   "dw_norm_at_max": 0.5372149056018924
+  },
+  "coordinated-adjective-018-3|ref|581|SUF-NEG@three": {
+   "level1": 0.005176064124428588,
+   "frozen_level1": 0.005176064121498403,
+   "noun": "army",
+   "part_h6_at_max": -0.0030568059466681025,
+   "part_readout_at_max": -0.0021192581777604858,
+   "part_h6_inf": 0.003923677397719748,
+   "part_readout_inf": 0.0034929930024496514,
+   "dh6_err_inf": 0.00239784698139367,
+   "block3_pc_err_inf": 5.084805078503507e-05,
+   "dw_norm_at_max": 0.5372149056018924
+  },
+  "coordinated-adjective-017-4|many|1142|PC-SWAP-PL@many": {
+   "level1": 0.005029699126940935,
+   "frozen_level1": 0.0050296991270611935,
+   "noun": "train",
+   "part_h6_at_max": 0.0003326300523081918,
+   "part_readout_at_max": 0.004697069074632743,
+   "part_h6_inf": 0.0007292075147239289,
+   "part_readout_inf": 0.004697069074632743,
+   "dh6_err_inf": 0.0006239403319452386,
+   "block3_pc_err_inf": 8.506338932834367e-05,
+   "dw_norm_at_max": 0.5346426997571381
+  },
+  "coordinated-adjective-015-2|cardinal:pl|767|NEC-OFF@two": {
+   "level1": 0.005008229835833843,
+   "frozen_level1": 0.00500822983509952,
+   "noun": "island",
+   "part_h6_at_max": -0.0008370580129415587,
+   "part_readout_at_max": -0.004171171822892283,
+   "part_h6_inf": 0.0012083481687615789,
+   "part_readout_inf": 0.004171171822892283,
+   "dh6_err_inf": 0.0005373460578752542,
+   "block3_pc_err_inf": 0.00015745958974555663,
+   "dw_norm_at_max": 0.483664797495032
+  },
+  "coordinated-adjective-016-3|ref|581|SUF-ISO-7@two": {
+   "level1": 0.004905485898813884,
+   "frozen_level1": 0.004905485896900208,
+   "noun": "tunnel",
+   "part_h6_at_max": -0.00034730526769287244,
+   "part_readout_at_max": -0.004558180631121012,
+   "part_h6_inf": 0.0005100240455016283,
+   "part_readout_inf": 0.004558180631121012,
+   "dh6_err_inf": 0.0006257373064002536,
+   "block3_pc_err_inf": 0.0003869981606774431,
+   "dw_norm_at_max": 0.5154844472021178
+  },
+  "coordinated-adjective-011-1|ref|581|PC-SWAP-REF@many": {
+   "level1": 0.004905131429360866,
+   "frozen_level1": 0.00490513143387572,
+   "noun": "wish",
+   "part_h6_at_max": -0.004254434127300068,
+   "part_readout_at_max": -0.0006506973020607987,
+   "part_h6_inf": 0.004254434127300068,
+   "part_readout_inf": 0.0033413162987940837,
+   "dh6_err_inf": 0.0018862502487224653,
+   "block3_pc_err_inf": 3.736188931058315e-05,
+   "dw_norm_at_max": 0.6895533620362038
+  },
+  "coordinated-adjective-018-3|many|1142|NEC-AMP@many": {
+   "level1": 0.00488261186812736,
+   "frozen_level1": 0.004882611870296039,
+   "noun": "army",
+   "part_h6_at_max": -0.0035812386640319584,
+   "part_readout_at_max": -0.0013013732040954018,
+   "part_h6_inf": 0.0035812386640319584,
+   "part_readout_inf": 0.0028286491154867477,
+   "dh6_err_inf": 0.0024328333149199466,
+   "block3_pc_err_inf": 2.905157064803099e-05,
+   "dw_norm_at_max": 0.5372149056018924
+  }
+ },
+ "median_part_h6_inf": 0.0008931645121971923,
+ "median_part_readout_inf": 0.0028291164601186303,
+ "max_part_h6_inf": [
+  0.008619506226337479,
+  "coordinated-adjective-018-3|many|1142|NEC-HALF@many"
+ ],
+ "max_part_readout_inf": [
+  0.0048650232835418805,
+  "coordinated-adjective-013-1|cardinal:pl|767|PL@two"
+ ],
+ "max_block3_pc_err": [
+  0.0011815619470457728,
+  "coordinated-adjective-fresh-1|ref|581|SUF-OFF@many"
+ ],
+ "median_block3_pc_err": 5.025615159215402e-05,
+ "max_dh6_err": [
+  0.006257929032951637,
+  "coordinated-adjective-018-3|many|1142|NEC-HALF@many"
+ ],
+ "median_dh6_err": 0.0006776920388744667,
+ "dw_norm": {
+  "median": 0.5430749315009217,
+  "max": 0.7063849035975844,
+  "argmax": "cross",
+  "army": 0.5372149056018924,
+  "cross": 0.7063849035975844,
+  "rank_army": 43,
+  "rank_cross": 1
+ },
+ "argmax_noun_counts_top50": {
+  "bus": 7,
+  "army": 5,
+  "wish": 5,
+  "brush": 4,
+  "train": 4,
+  "island": 3,
+  "dish": 3,
+  "cross": 2
+ },
+ "frame_018_3_runs_above_0.0045": [
+  [
+   0.01065409333770687,
+   "coordinated-adjective-018-3|many|1142|NEC-HALF@many"
+  ],
+  [
+   0.005253209476560878,
+   "coordinated-adjective-018-3|ref|581|PC-SWAP-REF@many"
+  ],
+  [
+   0.005176064124428588,
+   "coordinated-adjective-018-3|ref|581|SUF-NEG@three"
+  ],
+  [
+   0.00488261186812736,
+   "coordinated-adjective-018-3|many|1142|NEC-AMP@many"
+  ],
+  [
+   0.004833429788238615,
+   "coordinated-adjective-018-3|many|1142|NEC-OFF@many"
+  ],
+  [
+   0.004691596770917857,
+   "coordinated-adjective-018-3|many|1142|PL@many"
+  ]
+ ],
+ "write_attempts": []
+}

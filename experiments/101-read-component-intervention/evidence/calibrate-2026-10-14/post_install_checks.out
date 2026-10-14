@@ -1,0 +1,33 @@
+{
+ "install_commit": "d502777c869eb7345dc05af0f5bc8445877e9b27",
+ "checks": {
+  "install_commit_touches_exactly_the_file": true,
+  "committed_bytes_equal_the_candidate": true,
+  "committed_bytes_equal_working_file": true,
+  "file_sha256_is_the_state's": true,
+  "content_sha256_recomputes_and_is_the_state's": true,
+  "state_calibrate_complete": true,
+  "state_lock_not_started": true,
+  "no_confirmation_key_in_ledger": true,
+  "calibration_executed_2016": true,
+  "runner_validate_exit_0": true,
+  "runner_loads_the_calibration": true,
+  "tolerances_are_the_frozen_constants": true,
+  "no_trigger_fired": true,
+  "tree_clean_after_install": true,
+  "nothing_refused": true
+ },
+ "all_true": true,
+ "tau": {
+  "cap": 0.2,
+  "evaluable": true,
+  "floor": 0.02,
+  "ins": 0.03511072680382421,
+  "rank": 33,
+  "rem": 0.025153865322968608
+ },
+ "validate_log": [
+  "module blobs 20 verified; 022\u2013025's committed files and 020's confirmation file verified; confirmation ef35650678e9\u2026 (36 frames, 1980 S2 keys); calibration \u03c4_rem 0.025153865322968608, \u03c4_ins 0.03511072680382421; no lock installed"
+ ],
+ "refused": []
+}

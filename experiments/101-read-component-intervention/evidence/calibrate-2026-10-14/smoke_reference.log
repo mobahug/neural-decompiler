@@ -1,0 +1,2 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:18,  4.06it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 306.41it/s]
+{"frame": "coordinated-adjective-1", "runs": 55, "tensors": 71, "state_digest": "5788023017262ab041a49828affc59ea005f6b2d6465eaa7d9fe45209e7a8e2b"}

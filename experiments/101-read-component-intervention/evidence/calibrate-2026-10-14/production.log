@@ -1,0 +1,40 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:26,  2.79it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 205.83it/s]
+  frame 1/36 (coordinated-adjective-1): 55 runs
+  frame 2/36 (coordinated-adjective-2): 55 runs
+  frame 3/36 (coordinated-adjective-new-1): 55 runs
+  frame 4/36 (coordinated-adjective-new-2): 55 runs
+  frame 5/36 (coordinated-adjective-fresh-1): 55 runs
+  frame 6/36 (coordinated-adjective-fresh-2): 55 runs
+  frame 7/36 (coordinated-adjective-009-1): 55 runs
+  frame 8/36 (coordinated-adjective-009-2): 55 runs
+  frame 9/36 (coordinated-adjective-011-1): 55 runs
+  frame 10/36 (coordinated-adjective-011-2): 55 runs
+  frame 11/36 (coordinated-adjective-012-1): 55 runs
+  frame 12/36 (coordinated-adjective-012-2): 55 runs
+  frame 13/36 (coordinated-adjective-013-1): 55 runs
+  frame 14/36 (coordinated-adjective-013-2): 55 runs
+  frame 15/36 (coordinated-adjective-014-1): 55 runs
+  frame 16/36 (coordinated-adjective-014-2): 55 runs
+  frame 17/36 (coordinated-adjective-015-1): 55 runs
+  frame 18/36 (coordinated-adjective-015-2): 55 runs
+  frame 19/36 (coordinated-adjective-016-1): 55 runs
+  frame 20/36 (coordinated-adjective-016-2): 55 runs
+  frame 21/36 (coordinated-adjective-016-3): 55 runs
+  frame 22/36 (coordinated-adjective-016-4): 55 runs
+  frame 23/36 (coordinated-adjective-017-1): 55 runs
+  frame 24/36 (coordinated-adjective-017-2): 55 runs
+  frame 25/36 (coordinated-adjective-017-3): 55 runs
+  frame 26/36 (coordinated-adjective-017-4): 55 runs
+  frame 27/36 (coordinated-adjective-018-1): 55 runs
+  frame 28/36 (coordinated-adjective-018-2): 55 runs
+  frame 29/36 (coordinated-adjective-018-3): 55 runs
+  frame 30/36 (coordinated-adjective-018-4): 55 runs
+  frame 31/36 (coordinated-adjective-019-1): 55 runs
+  frame 32/36 (coordinated-adjective-019-2): 55 runs
+  frame 33/36 (coordinated-adjective-019-3): 55 runs
+  frame 34/36 (coordinated-adjective-019-4): 55 runs
+  frame 35/36 (coordinated-adjective-019-5): 55 runs
+  frame 36/36 (coordinated-adjective-019-6): 55 runs
+calibration complete: τ_rem 0.025153865322968608, τ_ins 0.03511072680382421 (P evaluable True); candidate /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json. Install it byte-identical as experiments/101-read-component-intervention/calibration-v1.json, commit, and stop for the calibration review before lock.
+{"mode": "production", "started_at": "2026-10-14T08:44:44.080816+00:00", "ended_at": "2026-10-14T08:51:04.506751+00:00", "exit_status": 0, "error": null}
+{"mode": "production", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "output_writes": ["os.mkdir experiment-101", ".results-picbk0fo.json", "os.mkdir experiment-101", "calibration-measurements.pt", "os.mkdir experiment-101", ".results-fp684ef0.json", "os.mkdir experiment-101", ".results-56nijel4.json", "os.mkdir experiment-101", ".results-h8ni7rh3.json", "os.mkdir experiment-101", "candidate-calibration-v1.json", "os.mkdir experiment-101", ".results-pn0guyv7.json"], "output_renames": [".results-picbk0fo.json -> results.json", ".results-fp684ef0.json -> results.json", ".results-56nijel4.json -> results.json", ".results-h8ni7rh3.json -> results.json", ".results-pn0guyv7.json -> results.json"], "sanctioned_runs": 2016, "sanctioned_forward_calls": 685440, "calibrate_invocations": 1}
