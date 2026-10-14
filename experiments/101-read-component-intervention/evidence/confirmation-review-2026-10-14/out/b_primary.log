@@ -1,0 +1,43 @@
+PASS table_file_sha256
+PASS table_content_digest
+PASS table_construction_bound_by_lock
+PASS tau_from_lock
+PASS constants_from_lock
+PASS mean_vs_fsum_tiny  1.7763568394002505e-15
+PASS table_internally_consistent_for_two
+{
+ "weak_frames": 0,
+ "precondition": 36,
+ "R_count": 36,
+ "I_count": 36,
+ "R_p": "1/68719476736",
+ "I_p": "1/68719476736",
+ "holm": {
+  "R": true,
+  "I": true
+ },
+ "R_median": 1.0063799347533808,
+ "I_median": 1.0350265212692265,
+ "R_pass": true,
+ "I_pass": true,
+ "A_amp_negative": 28,
+ "A_neg_positive": 36,
+ "median_A_amp": -0.135958514636076,
+ "median_A_neg": 0.9223115172567244,
+ "D_pass": true,
+ "P_agreements": 33,
+ "P_pass": true,
+ "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+ "tail_26": 0.005665492091793567,
+ "tail_25": 0.014408359827939421,
+ "tail_24": 0.03262266761157662,
+ "tail_27": 0.001966586511116475
+}
+PASS label_equal  READ_COMPONENT_EFFECTS_AS_PREDICTED
+PASS precondition_equal
+PASS R_equal
+PASS I_equal
+PASS D_equal
+PASS P_equal
+PASS per_frame_records_bit_for_bit  []
+failed: []

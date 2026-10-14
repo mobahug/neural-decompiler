@@ -1,0 +1,2 @@
+^D{"mode": "production", "started_at": "2026-10-14T14:06:29.792039+00:00", "ended_at": "2026-10-14T14:06:38.033290+00:00", "exit_status": null, "error": "RuntimeError: production refuses a terminal on stdout or stderr: launch it detached with its output to a file"}
+{"mode": "production", "load_model": 0, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 0, "signals": []}

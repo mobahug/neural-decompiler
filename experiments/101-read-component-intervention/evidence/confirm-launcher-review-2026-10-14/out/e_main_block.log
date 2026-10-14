@@ -1,0 +1,13 @@
+correct                      exit=0    sentinel=True  records=1 record_error=None                                                         state=complete incident=None partial=False
+incident_after_ledger        exit=2    sentinel=True  records=1 record_error=None                                                         state=running incident=integrity failure after the measurements partial=True
+sigterm_after_ledger         exit=1    sentinel=True  records=1 record_error=KeyboardInterrupt: signal 15                                 state=running incident=signal 15 partial=True
+sighup_under_nohup           exit=1    sentinel=True  records=1 record_error=KeyboardInterrupt: signal 1                                  state=running incident=signal 1 partial=True
+sigterm_during_tree_after    exit=-2   sentinel=True  records=0 record_error=None                                                         state=complete incident=None partial=False
+refusal_before_ledger        exit=1    sentinel=True  records=1 record_error=PhaseError: confirm already started or recorded an incident  state=not_started incident=None partial=False
+preflight_refuses            exit=1    sentinel=False records=1 record_error=RuntimeError: preflight failed: N1_tree_clean (None)         state=not_started incident=None partial=False
+sentinel_exists              exit=1    sentinel=True  records=1 record_error=FileExistsError: [Errno 17] File exists: '/private/tmp/claud state=not_started incident=None partial=False
+earlier_records              exit=0    sentinel=True  records=2 record_error=None                                                         state=complete incident=None partial=False
+git_fails_after              exit=0    sentinel=True  records=1 record_error=None                                                         state=complete incident=None partial=False
+keys_not_all_run             exit=0    sentinel=True  records=1 record_error=None                                                         state=complete incident=None partial=False
+refusal_swallowed            exit=0    sentinel=True  records=1 record_error=None                                                         state=complete incident=None partial=False
+nohup_control 0 SIGHUP disposition: 1 | still running after SIGHUP

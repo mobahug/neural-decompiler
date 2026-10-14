@@ -1,0 +1,393 @@
+calibration: dict[9]
+  accounting: dict[3]
+    equal: true
+    executed: 2016
+    planned: 2016
+  candidate_path: "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json"
+  ceilings: dict[36]
+    coordinated-adjective-009-1: {"NEC-AMP@many": -5.2023581141551425, "NEC-AMP@three": -5.285842199454035, "NEC-AMP@two": -5.133189846579787, "NEC-HALF@many": -4.55659305725634, "NEC-HALF@thre
+    coordinated-adjective-009-2: {"NEC-AMP@many": -6.183665035537957, "NEC-AMP@three": -5.772239906640016, "NEC-AMP@two": -5.840131264128134, "NEC-HALF@many": -4.543388879281802, "NEC-HALF@thre
+    coordinated-adjective-011-1: {"NEC-AMP@many": -4.76639970626587, "NEC-AMP@three": -4.837567984737169, "NEC-AMP@two": -4.887277701666265, "NEC-HALF@many": -3.9003006846716675, "NEC-HALF@thre
+    coordinated-adjective-011-2: {"NEC-AMP@many": -4.944588094266103, "NEC-AMP@three": -4.83434997032911, "NEC-AMP@two": -4.913159610428515, "NEC-HALF@many": -3.7140366122573187, "NEC-HALF@thre
+    coordinated-adjective-012-1: {"NEC-AMP@many": -6.168264422231046, "NEC-AMP@three": -6.083757358500258, "NEC-AMP@two": -6.101629810894002, "NEC-HALF@many": -4.870636091510653, "NEC-HALF@thre
+    coordinated-adjective-012-2: {"NEC-AMP@many": -5.282229311246408, "NEC-AMP@three": -5.267094758628337, "NEC-AMP@two": -5.217395958837521, "NEC-HALF@many": -4.421386962920533, "NEC-HALF@thre
+    coordinated-adjective-013-1: {"NEC-AMP@many": -4.890366896022036, "NEC-AMP@three": -4.88479843279211, "NEC-AMP@two": -4.684233178887121, "NEC-HALF@many": -3.5994234745576494, "NEC-HALF@thre
+    coordinated-adjective-013-2: {"NEC-AMP@many": -4.686344177806228, "NEC-AMP@three": -4.546064703432488, "NEC-AMP@two": -4.5476200343068305, "NEC-HALF@many": -3.5664905106542157, "NEC-HALF@th
+    coordinated-adjective-014-1: {"NEC-AMP@many": -4.355905122865336, "NEC-AMP@three": -4.27435685507722, "NEC-AMP@two": -4.321029831747736, "NEC-HALF@many": -4.090135747691852, "NEC-HALF@three
+    coordinated-adjective-014-2: {"NEC-AMP@many": -6.463111158026831, "NEC-AMP@three": -5.921349149040314, "NEC-AMP@two": -5.958996227083755, "NEC-HALF@many": -4.96681485155769, "NEC-HALF@three
+    coordinated-adjective-015-1: {"NEC-AMP@many": -5.07052344177151, "NEC-AMP@three": -5.0887666408269885, "NEC-AMP@two": -4.969326628733816, "NEC-HALF@many": -4.584851189282524, "NEC-HALF@thre
+    coordinated-adjective-015-2: {"NEC-AMP@many": -5.987979506264267, "NEC-AMP@three": -5.793618788722685, "NEC-AMP@two": -5.825279866384485, "NEC-HALF@many": -4.923877658879594, "NEC-HALF@thre
+    coordinated-adjective-016-1: {"NEC-AMP@many": -4.261564161661927, "NEC-AMP@three": -3.87754187345633, "NEC-AMP@two": -3.9069838883317503, "NEC-HALF@many": -3.888265280057241, "NEC-HALF@thre
+    coordinated-adjective-016-2: {"NEC-AMP@many": -4.2399000641616835, "NEC-AMP@three": -4.2788256992640035, "NEC-AMP@two": -4.2692993958910295, "NEC-HALF@many": -3.7292849527815637, "NEC-HALF@
+    coordinated-adjective-016-3: {"NEC-AMP@many": -3.992290101058571, "NEC-AMP@three": -4.017449519068382, "NEC-AMP@two": -3.913363611854887, "NEC-HALF@many": -3.0598822906401466, "NEC-HALF@thr
+    coordinated-adjective-016-4: {"NEC-AMP@many": -6.025164163347497, "NEC-AMP@three": -5.898355818022728, "NEC-AMP@two": -6.010091053137161, "NEC-HALF@many": -4.0510080224689, "NEC-HALF@three"
+    coordinated-adjective-017-1: {"NEC-AMP@many": -3.9162502728756006, "NEC-AMP@three": -3.67335757115498, "NEC-AMP@two": -3.6556154075513785, "NEC-HALF@many": -3.1784851997218144, "NEC-HALF@th
+    coordinated-adjective-017-2: {"NEC-AMP@many": -5.567572028858089, "NEC-AMP@three": -5.4613571135184635, "NEC-AMP@two": -5.463286289309023, "NEC-HALF@many": -4.08378973118069, "NEC-HALF@thre
+    coordinated-adjective-017-3: {"NEC-AMP@many": -5.936135770670335, "NEC-AMP@three": -5.896529429406545, "NEC-AMP@two": -5.9374405650172335, "NEC-HALF@many": -4.295810485655391, "NEC-HALF@thr
+    coordinated-adjective-017-4: {"NEC-AMP@many": -5.367137931459166, "NEC-AMP@three": -5.3275813396871, "NEC-AMP@two": -5.359737375055657, "NEC-HALF@many": -3.864448036795561, "NEC-HALF@three"
+    coordinated-adjective-018-1: {"NEC-AMP@many": -5.710207401271935, "NEC-AMP@three": -5.577257737714699, "NEC-AMP@two": -5.656741260854936, "NEC-HALF@many": -4.078273644315972, "NEC-HALF@thre
+    coordinated-adjective-018-2: {"NEC-AMP@many": -3.198136345754028, "NEC-AMP@three": -2.951425928787893, "NEC-AMP@two": -2.9516674004827546, "NEC-HALF@many": -2.71368974029076, "NEC-HALF@thre
+    coordinated-adjective-018-3: {"NEC-AMP@many": -2.8429443368483107, "NEC-AMP@three": -3.021204227082863, "NEC-AMP@two": -2.9470941441421297, "NEC-HALF@many": -2.276734192151803, "NEC-HALF@th
+    coordinated-adjective-018-4: {"NEC-AMP@many": -5.831382605243425, "NEC-AMP@three": -5.992101866845972, "NEC-AMP@two": -5.936899642577337, "NEC-HALF@many": -3.8690112310063904, "NEC-HALF@thr
+    coordinated-adjective-019-1: {"NEC-AMP@many": -5.211518177517009, "NEC-AMP@three": -5.270523086175083, "NEC-AMP@two": -5.194974218492703, "NEC-HALF@many": -3.600831028284831, "NEC-HALF@thre
+    coordinated-adjective-019-2: {"NEC-AMP@many": -4.941867781461193, "NEC-AMP@three": -5.002818430132073, "NEC-AMP@two": -5.0363453131107825, "NEC-HALF@many": -3.6587172307828477, "NEC-HALF@th
+    coordinated-adjective-019-3: {"NEC-AMP@many": -6.2724366207028295, "NEC-AMP@three": -6.202030571809907, "NEC-AMP@two": -6.150518942275999, "NEC-HALF@many": -5.227013689842066, "NEC-HALF@thr
+    coordinated-adjective-019-4: {"NEC-AMP@many": -5.006098681829184, "NEC-AMP@three": -4.814089830566882, "NEC-AMP@two": -4.838604694728597, "NEC-HALF@many": -3.654749194001896, "NEC-HALF@thre
+    coordinated-adjective-019-5: {"NEC-AMP@many": -5.03115425467736, "NEC-AMP@three": -4.866685270106923, "NEC-AMP@two": -4.905577412040523, "NEC-HALF@many": -4.843950282234284, "NEC-HALF@three
+    coordinated-adjective-019-6: {"NEC-AMP@many": -5.656752684409602, "NEC-AMP@three": -5.556512880427829, "NEC-AMP@two": -5.711495779086704, "NEC-HALF@many": -4.156860352194432, "NEC-HALF@thre
+    coordinated-adjective-1: {"NEC-AMP@many": -5.272552306859137, "NEC-AMP@three": -4.957217818380026, "NEC-AMP@two": -4.99900075655439, "NEC-HALF@many": -4.4062268634020185, "NEC-HALF@thre
+    coordinated-adjective-2: {"NEC-AMP@many": -5.741936777376401, "NEC-AMP@three": -5.344841464394072, "NEC-AMP@two": -5.384444334299632, "NEC-HALF@many": -5.180603924116756, "NEC-HALF@thre
+    coordinated-adjective-fresh-1: {"NEC-AMP@many": -4.166312117694179, "NEC-AMP@three": -4.420968977344464, "NEC-AMP@two": -4.361358753409922, "NEC-HALF@many": -3.749684134229643, "NEC-HALF@thre
+    coordinated-adjective-fresh-2: {"NEC-AMP@many": -4.105960014258706, "NEC-AMP@three": -4.097238677133937, "NEC-AMP@two": -4.010769316702452, "NEC-HALF@many": -3.726858554557477, "NEC-HALF@thre
+    coordinated-adjective-new-1: {"NEC-AMP@many": -4.9296693362574056, "NEC-AMP@three": -4.559378570751854, "NEC-AMP@two": -4.48475149712289, "NEC-HALF@many": -3.724920833674534, "NEC-HALF@thre
+    coordinated-adjective-new-2: {"NEC-AMP@many": -5.643076041640944, "NEC-AMP@three": -5.262873195758571, "NEC-AMP@two": -5.216743135340157, "NEC-HALF@many": -4.570036560150008, "NEC-HALF@thre
+  content_sha256: "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e"
+  file_sha256: "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90"
+  gates: dict[6]
+    bitwise: {"G3_noop": {"checked": 36, "failures": 0, "first": null}, "G4_x3_pt": {"checked": 1692, "failures": 0, "first": null}, "G5_landing": {"checked": 144, "failures
+    failures: []
+    g1: []
+    per_arm: {"G2_direction": {"NEC-AMP@many": 2.0107876531031107e-07, "NEC-AMP@three": 1.8661819077719176e-07, "NEC-AMP@two": 1.5930487438825952e-07, "NEC-HALF@many": 3.494
+    recorded: {"E1": {"at": "coordinated-adjective-018-3|ref|581|SUF-OFF@many", "max": 0.01604804962948845}, "ceiling_error": {"at": "coordinated-adjective-019-4|ref|581|PC-S
+    tolerance: {"G2_direction": {"at": "coordinated-adjective-018-3|ref|581|SUF-HALF@three", "max": 5.372883062119448e-07, "tolerance": 0.0001}, "G2_length": {"at": "coordinat
+  measurements: dict[4]
+    logits_sha256: {"coordinated-adjective-009-1": ["a3a3bb3179cbd8099c7b1ede34e798a9c4bd97cecd4bdd7eb7daaf886c57cf79", "f091e6a96eda3f20fa6bd308b4e3542b1df865abf131dcb371ebb710cb
+    n_executed: 2016
+    path: "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/calibration-measurements.pt"
+    tensors_sha256: {"coordinated-adjective-009-1/T_pt": "99f178315663681b85a67917007ad0f8c4b85a979c87a2c7cd5fa7cc55d78508", "coordinated-adjective-009-1/attn_pt": "24fd338f397fe96
+  planned: dict[2]
+    count: 2016
+    sha256: "5d4bcb51049766b9ac07c2fd872609d8e83469454d9f85c056325e850226488f"
+  tau: dict[6]
+    cap: 0.2
+    evaluable: true
+    floor: 0.02
+    ins: 0.03511072680382421
+    rank: 33
+    rem: 0.025153865322968608
+calibration_executed: list[2016]
+  [0]: "coordinated-adjective-009-1|cardinal:pl|767|HEAD-NEC-V@two"
+  [1]: "coordinated-adjective-009-1|cardinal:pl|767|HEAD-NEC@two"
+  [2]: "coordinated-adjective-009-1|cardinal:pl|767|NEC-AMP@two"
+  [3]: "coordinated-adjective-009-1|cardinal:pl|767|NEC-HALF@two"
+  ... (2016 items)
+configuration: dict[18]
+  cues: list[3]
+    [0]: ["two", 767]
+    [1]: ["three", 1264]
+    [2]: ["many", 1142]
+  d_threshold: 25
+  expected_picks: list[36]
+    [0]: 1
+    [1]: 2
+    [2]: 3
+    [3]: 4
+    ... (36 items)
+  exposed_frames: 36
+  frame_candidates: list[60]
+    [0]: "Aria and Ben carried {cue} large"
+    [1]: "Cora and Dan folded {cue} soft"
+    [2]: "Eli and Faye stacked {cue} gray"
+    [3]: "Gus and Hope washed {cue} sticky"
+    ... (60 items)
+  holm_thresholds: list[2]
+    [0]: 26
+    [1]: 25
+  k_iso: 8
+  max_overshoot_frames: 6
+  max_weak_frames: 6
+  n_frames: 36
+  n_scored_nouns: 79
+  name: "production"
+  p_threshold: 27
+  precondition: 30
+  reference: list[2]
+    [0]: "ref"
+    [1]: 581
+  runs_per_frame: 55
+  tags: list[55]
+    [0]: "REF"
+    [1]: "PL@two"
+    [2]: "NOOP@two"
+    [3]: "NEC-READ@two"
+    ... (55 items)
+  tau_rank: 33
+confirmation: dict[10]
+  accounting: dict[4]
+    equal: true
+    executed: 1980
+    ledger: 1980
+    manifest: 1980
+  barrier: dict[3]
+    passed: true
+    stage1_digest: "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f"
+    table_content_sha256: "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+  ceilings: dict[36]
+    coordinated-adjective-101-01: {"NEC-AMP@many": -5.287160683541738, "NEC-AMP@three": -4.682168434357554, "NEC-AMP@two": -4.619038629999339, "NEC-HALF@many": -4.395847122937947, "NEC-HALF@thre
+    coordinated-adjective-101-02: {"NEC-AMP@many": -5.425528144140581, "NEC-AMP@three": -5.14266940597901, "NEC-AMP@two": -5.19122209780694, "NEC-HALF@many": -4.523592881565796, "NEC-HALF@three"
+    coordinated-adjective-101-03: {"NEC-AMP@many": -4.610654811399497, "NEC-AMP@three": -4.544029419771306, "NEC-AMP@two": -4.3527951943291034, "NEC-HALF@many": -3.622537476353313, "NEC-HALF@thr
+    coordinated-adjective-101-04: {"NEC-AMP@many": -5.247756807392808, "NEC-AMP@three": -4.927218875176393, "NEC-AMP@two": -4.752927913152502, "NEC-HALF@many": -4.010185315292557, "NEC-HALF@thre
+    coordinated-adjective-101-05: {"NEC-AMP@many": -5.135540842023367, "NEC-AMP@three": -5.0169895854898785, "NEC-AMP@two": -5.00098458590765, "NEC-HALF@many": -3.713538275745819, "NEC-HALF@thre
+    coordinated-adjective-101-06: {"NEC-AMP@many": -6.208698008340462, "NEC-AMP@three": -6.498669146601842, "NEC-AMP@two": -6.498103092800849, "NEC-HALF@many": -5.701827718495582, "NEC-HALF@thre
+    coordinated-adjective-101-07: {"NEC-AMP@many": -5.021572772439295, "NEC-AMP@three": -4.426981942174126, "NEC-AMP@two": -4.444180412483766, "NEC-HALF@many": -4.388332578685118, "NEC-HALF@thre
+    coordinated-adjective-101-08: {"NEC-AMP@many": -4.629193092133948, "NEC-AMP@three": -4.649413619128987, "NEC-AMP@two": -4.507535982179534, "NEC-HALF@many": -3.545998735965908, "NEC-HALF@thre
+    coordinated-adjective-101-09: {"NEC-AMP@many": -4.45039790483362, "NEC-AMP@three": -4.554208151313731, "NEC-AMP@two": -4.491640919276644, "NEC-HALF@many": -3.816997492439744, "NEC-HALF@three
+    coordinated-adjective-101-10: {"NEC-AMP@many": -6.398555750696682, "NEC-AMP@three": -6.126898618914958, "NEC-AMP@two": -6.157794373237181, "NEC-HALF@many": -3.8374201072113103, "NEC-HALF@thr
+    coordinated-adjective-101-11: {"NEC-AMP@many": -5.50173734063519, "NEC-AMP@three": -5.535032393418535, "NEC-AMP@two": -5.558979605823625, "NEC-HALF@many": -3.784319886825366, "NEC-HALF@three
+    coordinated-adjective-101-12: {"NEC-AMP@many": -6.3352343106258795, "NEC-AMP@three": -5.791600706391236, "NEC-AMP@two": -5.846410450573908, "NEC-HALF@many": -4.579427612469702, "NEC-HALF@thr
+    coordinated-adjective-101-13: {"NEC-AMP@many": -3.9407709135977167, "NEC-AMP@three": -3.9905166668303798, "NEC-AMP@two": -4.012103040037831, "NEC-HALF@many": -3.552555536580355, "NEC-HALF@th
+    coordinated-adjective-101-14: {"NEC-AMP@many": -6.620387601285462, "NEC-AMP@three": -6.550096321211415, "NEC-AMP@two": -6.562584049252425, "NEC-HALF@many": -5.552253536301857, "NEC-HALF@thre
+    coordinated-adjective-101-15: {"NEC-AMP@many": -4.832825426893945, "NEC-AMP@three": -4.765329541266909, "NEC-AMP@two": -4.742359688983114, "NEC-HALF@many": -4.704987475725309, "NEC-HALF@thre
+    coordinated-adjective-101-16: {"NEC-AMP@many": -4.6178608102991365, "NEC-AMP@three": -4.6844040233375965, "NEC-AMP@two": -4.763300686826038, "NEC-HALF@many": -4.146997656078609, "NEC-HALF@th
+    coordinated-adjective-101-17: {"NEC-AMP@many": -4.96842886997546, "NEC-AMP@three": -4.89855909170588, "NEC-AMP@two": -4.661661831176491, "NEC-HALF@many": -3.423024943413619, "NEC-HALF@three"
+    coordinated-adjective-101-18: {"NEC-AMP@many": -5.663249558182083, "NEC-AMP@three": -5.390859769356627, "NEC-AMP@two": -5.516528792576978, "NEC-HALF@many": -4.204929942281875, "NEC-HALF@thre
+    coordinated-adjective-101-19: {"NEC-AMP@many": -4.884219249241542, "NEC-AMP@three": -4.828646128654998, "NEC-AMP@two": -4.88995604459449, "NEC-HALF@many": -4.035779501730472, "NEC-HALF@three
+    coordinated-adjective-101-20: {"NEC-AMP@many": -6.865056034364129, "NEC-AMP@three": -6.928198784302088, "NEC-AMP@two": -6.823533159613038, "NEC-HALF@many": -5.129093044097224, "NEC-HALF@thre
+    coordinated-adjective-101-21: {"NEC-AMP@many": -6.753383569354232, "NEC-AMP@three": -6.28100393207509, "NEC-AMP@two": -6.230787069155548, "NEC-HALF@many": -4.8031931490322295, "NEC-HALF@thre
+    coordinated-adjective-101-22: {"NEC-AMP@many": -5.853764123579294, "NEC-AMP@three": -5.912631422725336, "NEC-AMP@two": -5.916739807473858, "NEC-HALF@many": -4.746606973206574, "NEC-HALF@thre
+    coordinated-adjective-101-23: {"NEC-AMP@many": -6.961219048866974, "NEC-AMP@three": -6.5442080684560215, "NEC-AMP@two": -6.674191573158528, "NEC-HALF@many": -5.773204403837711, "NEC-HALF@thr
+    coordinated-adjective-101-24: {"NEC-AMP@many": -5.997958256189883, "NEC-AMP@three": -6.02314064136456, "NEC-AMP@two": -5.988678235173477, "NEC-HALF@many": -4.19906801550827, "NEC-HALF@three"
+    coordinated-adjective-101-25: {"NEC-AMP@many": -4.573049899165723, "NEC-AMP@three": -4.4894720814952205, "NEC-AMP@two": -4.574644444163639, "NEC-HALF@many": -4.031066988409483, "NEC-HALF@thr
+    coordinated-adjective-101-26: {"NEC-AMP@many": -6.134672475541717, "NEC-AMP@three": -6.084382630000256, "NEC-AMP@two": -5.989449675687252, "NEC-HALF@many": -5.53171104260786, "NEC-HALF@three
+    coordinated-adjective-101-27: {"NEC-AMP@many": -4.9677087878301736, "NEC-AMP@three": -4.838407155540663, "NEC-AMP@two": -4.8327843471015814, "NEC-HALF@many": -3.931609958009677, "NEC-HALF@th
+    coordinated-adjective-101-28: {"NEC-AMP@many": -5.3922479154380705, "NEC-AMP@three": -5.452419984688995, "NEC-AMP@two": -5.3904864018092145, "NEC-HALF@many": -3.9061931246682335, "NEC-HALF@t
+    coordinated-adjective-101-29: {"NEC-AMP@many": -4.867737273586026, "NEC-AMP@three": -4.971792466512596, "NEC-AMP@two": -5.025688102244487, "NEC-HALF@many": -3.746463527768902, "NEC-HALF@thre
+    coordinated-adjective-101-30: {"NEC-AMP@many": -6.143563852657419, "NEC-AMP@three": -5.915122015819522, "NEC-AMP@two": -5.776778854655358, "NEC-HALF@many": -4.414751678913684, "NEC-HALF@thre
+    coordinated-adjective-101-31: {"NEC-AMP@many": -6.963680581270749, "NEC-AMP@three": -6.586272446092621, "NEC-AMP@two": -6.681625941158599, "NEC-HALF@many": -4.801933343802877, "NEC-HALF@thre
+    coordinated-adjective-101-32: {"NEC-AMP@many": -5.568631346253035, "NEC-AMP@three": -5.006716816729774, "NEC-AMP@two": -4.992242563782537, "NEC-HALF@many": -4.17983631230668, "NEC-HALF@three
+    coordinated-adjective-101-33: {"NEC-AMP@many": -6.114197502555137, "NEC-AMP@three": -5.817242001755852, "NEC-AMP@two": -5.833051882425888, "NEC-HALF@many": -4.290888054954104, "NEC-HALF@thre
+    coordinated-adjective-101-34: {"NEC-AMP@many": -4.895879822751473, "NEC-AMP@three": -4.681703772818958, "NEC-AMP@two": -4.753928060050549, "NEC-HALF@many": -4.51493778224697, "NEC-HALF@three
+    coordinated-adjective-101-35: {"NEC-AMP@many": -4.745731041417023, "NEC-AMP@three": -4.861385915322641, "NEC-AMP@two": -4.91375751494187, "NEC-HALF@many": -4.086875242907579, "NEC-HALF@three
+    coordinated-adjective-101-36: {"NEC-AMP@many": -4.636868668969602, "NEC-AMP@three": -4.474114708302952, "NEC-AMP@two": -4.582752621260193, "NEC-HALF@many": -4.293554002749832, "NEC-HALF@thre
+  completed_at: "2026-10-14T17:42:32+00:00"
+  g6_before_result: dict[1]
+    bitwise_equal: true
+  gates: dict[5]
+    bitwise: {"G3_noop": {"checked": 36, "failures": 0, "first": null}, "G4_x3_pt": {"checked": 1692, "failures": 0, "first": null}, "G5_landing": {"checked": 144, "failures
+    failures: []
+    per_arm: {"G2_direction": {"NEC-AMP@many": 1.8456755891158668e-07, "NEC-AMP@three": 2.4717210251687286e-07, "NEC-AMP@two": 2.2760282008814904e-07, "NEC-HALF@many": 3.898
+    recorded: {"E1": {"at": "coordinated-adjective-101-28|ref|581|SUF-ISO-5@two", "max": 0.021729698774050097}, "ceiling_error": {"at": "coordinated-adjective-101-20|many|114
+    tolerance: {"G2_direction": {"at": "coordinated-adjective-101-28|three|1264|NEC-HALF@three", "max": 4.4754376760951094e-07, "tolerance": 0.0001}, "G2_length": {"at": "coor
+  lock_sha256: "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  results: dict[10]
+    D: {"A_amp_negative": 28, "A_neg_positive": 36, "descriptive_pass": true, "median_A_amp": -0.135958514636076, "median_A_neg": 0.9223115172567244, "reached": true, 
+    I: {"count": 36, "holm_rejected": true, "median": 1.0350265212692265, "median_floor": 0.05, "p_value": "1/68719476736", "p_value_float": 1.4551915228366852e-11, "r
+    P: {"agreements": 33, "descriptive_pass": true, "evaluable": true, "reached": true, "result": "PASS", "tau_ins": 0.03511072680382421, "tau_rem": 0.0251538653229686
+    R: {"count": 36, "holm_rejected": true, "median": 1.0063799347533808, "median_floor": 0.05, "p_value": "1/68719476736", "p_value_float": 1.4551915228366852e-11, "r
+    cue: "two"
+    frames: [{"A_amp": -0.17726309088211956, "A_neg": 1.016728268393987, "F_ins": 0.9798691714271172, "F_ins_hat": 0.982183644059459, "F_ins_off": -0.017295159245857297, "F
+    holm: {"alpha": "1/40", "thresholds": [26, 25]}
+    n: 36
+    outcome: {"label": "READ_COMPONENT_EFFECTS_AS_PREDICTED", "non_claims": ["no label says that the component is unused, or that it has no causal role", "no label assigns t
+    precondition: {"frames_at_most_minus_one": 36, "met": true, "required": 30}
+  secondary: dict[3]
+    records: {"coordinated-adjective-101-01": {"HEAD-NEC-V@two": {"delta_T": -0.042853972441619405, "delta_T_over_PL": -0.019302014907219004}, "HEAD-NEC@two": {"delta_T": -0
+    statistics: {"bootstrap": {"draws": 10000, "ranks": [250, 9750], "seed": 20261001}, "direction_free": {"F_half_ins": {"excluded": 0, "interval": [0.6651491976848017, 0.7618
+    values: {"many": [{"A_amp": -0.11370154272151911, "A_neg": 1.0190012485166131, "dc": {"NEC-AMP": -5.295844355715981, "NEC-HALF": -4.420331351364715, "NEC-OFF": -5.11005
+  stage2: dict[4]
+    logits_sha256: {"coordinated-adjective-101-01": ["bfa78dccce4d85b5126a169ea294175d20d73012c15a9a43db005a28963b8625", "7ddf717036342bd4b27e290b259c354bec1458451bf9fbc6591ad4f18
+    n_executed: 1980
+    path: "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/stage2-measurements.pt"
+    tensors_sha256: {"coordinated-adjective-101-01/T_pt": "8526d2f251678ccba7fb6237f6bc223015a8d768e58745867ed61d4e0670b8b8", "coordinated-adjective-101-01/attn_pt": "652f18884ecb1
+confirmation_101: dict[5]
+  content_sha256: "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a"
+  counts: dict[5]
+    S1-REF: 36
+    S2-TARGET: 1980
+    frames: 36
+    runs_per_frame: 55
+    untagged_prompts: 144
+  file_sha256: "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922"
+  manifest_sha256: "7c7c94942dc883505b97403042e095d8d616168f3a0a1d8cf495edef25f8b8bd"
+  path: "experiments/101-read-component-intervention/confirmation-v1.json"
+created_at: "2026-10-14T08:45:07+00:00"
+design: dict[4]
+  commit: "a87e284"
+  decision: "516df20"
+  path: "docs/superpowers/specs/2026-10-01-experiment-101-read-component-intervention-design.md"
+  revision: 3
+executed_prompt_keys: list[2016]
+  [0]: "coordinated-adjective-101-01|many|1142|NEC-AMP@many"
+  [1]: "coordinated-adjective-101-01|many|1142|NEC-HALF@many"
+  [2]: "coordinated-adjective-101-01|many|1142|NEC-OFF@many"
+  [3]: "coordinated-adjective-101-01|many|1142|NEC-READ@many"
+  ... (2016 items)
+experiment: "101"
+git_dirty: false
+inputs: dict[42]
+  020_prior_nouns_file: "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9"
+  023_cells_data_file: "d2ee71e58f4555360cc97dbfd883095f5673b636ddaaa6ca560fb7e7d899bba4"
+  023_cells_index_content: "d38305cb86624a4a1b7e70d21f85ed1b57c26e1d2f59f3ec7dbf2a940f582d16"
+  023_cells_index_file: "628181475e557728f257b428cd3c9e45a525129b6f099766c5a64fb37339a7fe"
+  023_confirmation_content: "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed"
+  023_confirmation_file: "5fadfa503f4fe35308cb4473220a1d9cd6f7a46e3852f638594b8081909825f4"
+  023_lock_content: "97ca520f342e212d5172b1476e9d5a80c6c2622f80a4f99f4e15e0a399007117"
+  023_lock_file: "4bd5a5b14627768d49398c273fa1ce387db2e4739d7d31b7258072ef48beac9c"
+  024_calibration_content: "09bf093ed2b961a935fc1728e2f7a71ef1373336f60dbdf7c8357e558fcfbce8"
+  024_calibration_file: "81fb499edf022ae6430beb2be1dbb36584a205ad3483d727ce98393643f2738d"
+  024_confirmation_content: "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87"
+  024_confirmation_file: "68510e1b902b5ee3442caf9c7bbbd337abe5bbbf04766d8bfa98c09e4b199b60"
+  024_lock_content: "a39668bfa75e693a7f886b41aeb4bc2c0787ba46f02cc8bd2fdf3d4dd4fc0739"
+  024_lock_file: "5c2a9b903803536d75a453f00b5da5bcf88c3298fd86193bda5525bc4c88798d"
+  025_confirmation_content: "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4"
+  025_confirmation_file: "54c8947c1f6b71d23de7a1f20cad1891571a16bd87849910fcd036825694b64a"
+  calibration_022_content: "46985fd59d9d22dc08c9344a2fa96eacaf832dfe954e84526fc76c5ac0d12f6d"
+  calibration_022_file: "db745653cfa8f411514e80839bf986bd6cbbe3e816e3bb3095cf43c2d9d11a87"
+  closure_020: "f2b1b5e793dad75f648fe1fb8347fde75c128a3ea00c0b14b4946814068fe9e0"
+  confirmation_006: "dbb8dbcef9ab201cb5555a3c1d988e3ca8ab70f742f10b12f80a856c9ebf5521"
+  confirmation_009: "6330b5a22f81455d90b42a412b8bccc325b5150fa6de58d90e341bfc8589095f"
+  confirmation_011: "174cf22214503836d5da3fc464a5f36fbb7cd9794ab74b00de0c793f12979358"
+  confirmation_012: "32892d23d8f853f6af71218a0562a6ffc7c375ae0fae81fc9566a79866964e07"
+  confirmation_013: "25f891e0a52da6cf60cd428f191010bf5cdc02d279b495b699f8cecc3e6c8f06"
+  confirmation_014: "a28edf831413489b2c8ffd4710bba4d742d4e542348120b0cab90c4f3ab3796d"
+  confirmation_015: "66afcba4cddb872c91a99611a1d0d726e0b2d88e2e2c4e240bfec393fa1ce633"
+  confirmation_016: "e5a3a4eb392e459117ebd7dfd132fffb66f02bbd0cd75b479f5ba1afd83e3855"
+  confirmation_017: "07fc6ea974e22300d2e4ea87a517204f9474351cddde010e69acc9ce9e969c8e"
+  confirmation_018: "e88c0625d105297ef45da0605a1c4453fa0d974791f0cef00af5c776907557f2"
+  confirmation_019: "87540d9b5dacd71cb2e87443e736822bcc6290325516aa8a65095794826db5a5"
+  confirmation_020: "e098e2b44a1702d2b35c20db2ce111358897ea867996024c3e51a79f379c309d"
+  confirmation_022_content: "af848ae4bd48551cffec67f169a2a6d7b47f0eaaa5d2451010cc4c8bfd8fcda9"
+  confirmation_022_file: "1a9afef0791171129bcf3d716b41e2139857851088a30620481757409a2e04d2"
+  extension: "1c6852547f1c2d8ecfe8a736599ba3670fac51e43c93f04057091c56ba179da5"
+  extract_020: "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b8013e2dea"
+  lock_011: "769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b"
+  lock_012: "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb"
+  lock_017: "b4fc9014ade7d21d2cd2e5be391ce6234e46fb46887880c0c4d03517d411ed72"
+  manifest: "1c50c2e8bbf95f9aa4331ac57899f77c2a6be6b17d4cb2a5ac4ecc332c5e703c"
+  results_020_file: "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00"
+  results_020_state: "2e5485dccb39c018eb02ee8d0a3086004399690a4dfd9c114008f057b23bf8f5"
+  table_022_file: "04659d5e8b20a70526e5862eb2b2de952b33496f25e3875de6c6254df2b8fd81"
+lock: dict[5]
+  candidate_path: "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json"
+  content_sha256: "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  preregistration_path: "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md"
+  preregistration_sha256: "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980"
+  written_at: "2026-10-14T09:32:09+00:00"
+model: dict[2]
+  model_id: "EleutherAI/pythia-70m-deduped"
+  revision: "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+module_blobs: dict[20]
+  attention_paths.py: "42f8d1588f1f960f60498854a9ccb911bc4e427a"
+  attention_patterns.py: "3f5acd65397bd11723ba6fc2ec4253f1d5c81943"
+  block0_completion.py: "16d310fc7fab5599ec83b8bd8162fb9613f8dad2"
+  capture.py: "4a4a78880b1c2ee410486d5bcfc1993ba2e9d316"
+  components.py: "28af3f3d8ba5512b6850f485f85ff88983bed24e"
+  cue_rotation.py: "622aa832ae29047c3060d989928236320374e227"
+  cue_suppression.py: "21253ee61c04796966dec4733909476a09404c0c"
+  encoding_read.py: "cab99c942de970332e726a5626b584242d4cf600"
+  frame_channels.py: "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8"
+  head_pattern.py: "386682fe0a47d093dfbee2507afc1df61811ab15"
+  head_transport.py: "936093a4e82c83e299a65a7c85529a7226f80c95"
+  interventions.py: "3a1e4186aeb3c8ae9625af336e8da7d2818505c7"
+  layer_correction.py: "04df0cc9a20093cc48ee5ef62da7f206bf1a3186"
+  models.py: "b1c6f03379af7e0918d0d1a6460a264651603fb2"
+  plural_mechanism.py: "d39da8a8d9931005d411258bcddbb7f9beed35e4"
+  read_assembly.py: "4820191e0e067b382b8f8807279405a7589f7059"
+  readout_calibration.py: "9107da975128d9b0383f3b346695675104e4cde9"
+  readout_decompilation.py: "caa73b40192f4c910dc63371bd19db75a3258339"
+  readout_routing.py: "e6cb37767d1d06c6ff40804a88eab569723afdb5"
+  upstream_localization.py: "465856962aa380747d1a4f1338d1d2762d03c9f9"
+phases: dict[5]
+  calibrate: dict[5]
+    commit: "8f65062627c77815adf9289c3fe60191d9fc3c17"
+    completed_at: "2026-10-14T08:51:04+00:00"
+    runtime: {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}
+    started_at: "2026-10-14T08:45:07+00:00"
+    status: "complete"
+  confirm: dict[6]
+    completed_at: "2026-10-14T17:42:32+00:00"
+    confirm_commit: "59d8ec49e9a34cb40f23b7c3928e8b36522972fe"
+    lock_sha256: "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+    runtime: {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}
+    started_at: "2026-10-14T17:38:22+00:00"
+    status: "complete"
+  lock: dict[4]
+    commit: "3621eec4b6a901119a4b96d4fdc07fa3b19652ab"
+    completed_at: "2026-10-14T09:32:09+00:00"
+    runtime: {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}
+    status: "complete"
+  report: dict[1]
+    status: "not_started"
+  stage1: dict[7]
+    awaiting_commit: true
+    commit: "961e81408e5c4da4fffdf9dfab0343e449a4e1f2"
+    completed_at: "2026-10-14T13:09:26+00:00"
+    geometry: {"bitwise_equal": true, "differing": []}
+    runtime: {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}
+    started_at: "2026-10-14T13:09:08+00:00"
+    status: "complete"
+plan: dict[4]
+  commit: "96f0cc8"
+  decision: "1e48c1c"
+  path: "docs/superpowers/plans/2026-10-05-experiment-101-read-component-intervention-plan.md"
+  revision: 3
+protocol_code_commit: "8f65062627c77815adf9289c3fe60191d9fc3c17"
+report: null
+run_id: "30ca8697c8702496"
+schema_version: 1
+stage1: dict[9]
+  commit: "961e81408e5c4da4fffdf9dfab0343e449a4e1f2"
+  digest: "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f"
+  executed: 36
+  files: dict[3]
+    states_data: {"path": "experiments/101-read-component-intervention/stage1/states.f64", "sha256": "1c7e51c049e1c61cf669f1783736054956073dc5af6947354b1d13c058ac5b66"}
+    states_index: {"path": "experiments/101-read-component-intervention/stage1/states.json", "sha256": "2b2c3a61b4a2ce05eba0dcf875c19bfdb1c2627da1ccb1e8d49710af95a873ca"}
+    table: {"path": "experiments/101-read-component-intervention/stage1/table.json", "sha256": "71d339cd1d7151ad57949384388679593264ac07dec8c9c944c121d9918795fa"}
+  frames: list[36]
+    [0]: {"frame_id": "coordinated-adjective-101-01", "p_c": 5, "p_t": 6}
+    [1]: {"frame_id": "coordinated-adjective-101-02", "p_c": 5, "p_t": 6}
+    [2]: {"frame_id": "coordinated-adjective-101-03", "p_c": 6, "p_t": 7}
+    [3]: {"frame_id": "coordinated-adjective-101-04", "p_c": 5, "p_t": 6}
+    ... (36 items)
+  lock_sha256: "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  noun_keys: list[79]
+    [0]: "cat"
+    [1]: "dog"
+    [2]: "book"
+    [3]: "lamp"
+    ... (79 items)
+  state_digests: dict[36]
+    coordinated-adjective-101-01: "9806cbf446a335c49c146c64ade3ca48ca7e15ac977a5c00f74a6ac294836c2a"
+    coordinated-adjective-101-02: "3dd8b2209b8449f0d72db8e2ebb4e94bd9749ed2785d3140f10a3a447279493a"
+    coordinated-adjective-101-03: "3a0bbbec035bbe38e554f9b0039481f4397d67c5003b7e696ed65c83e5af76bb"
+    coordinated-adjective-101-04: "55572e2053e78a05d68993dbc366be65f41d8d77bfbcc0c008da927173b468e5"
+    coordinated-adjective-101-05: "48f3d64600edd078843ea97ebd7d9ba062301f856c19ac42bf864a87f704a38f"
+    coordinated-adjective-101-06: "75ed1e35f9a0ea97a23a3178e1940ea036b37220fc700a12c9a3464ad9827915"
+    coordinated-adjective-101-07: "dfc25701ac150686e9d70e690b1b0e16464875502df98439ff6d83de93340046"
+    coordinated-adjective-101-08: "b88519c74f44472f051dc4f6fffd9c4f0ebf481431381852203505b92d5cbfac"
+    coordinated-adjective-101-09: "7d49c2236f1305e8b195532fff3b7656bf7cf3ae099904ae5ce8f2968a616e7f"
+    coordinated-adjective-101-10: "9f247fa5f615100364615418ab16e4c68a8f564f48077f6c4f9bfbe624012390"
+    coordinated-adjective-101-11: "48780b97c48eb9d2fa18d9ea347b6ca41621e47520577c6c41c2d073e84476e4"
+    coordinated-adjective-101-12: "1b611e15def05f8cee8a4d17f781b306bd67ff6073c300e2a11dc59bbd1a5d48"
+    coordinated-adjective-101-13: "f3c269d74f81f1d98c33d30eae186b055e5a94de9d409aaa5eb1bcef0f700b8e"
+    coordinated-adjective-101-14: "40406204da39022f018470e9e5fc70fa6f1265fe4586a35074e00988e6a29965"
+    coordinated-adjective-101-15: "408e105620bc7d4705d8f76dcd32e4697a3a35ec13de0bcac58d1c8a530cdb23"
+    coordinated-adjective-101-16: "cdeacf165bdf2c73e69e2af77361dc8975235441e4c1bac569b208ed529d3732"
+    coordinated-adjective-101-17: "2b01b977fa22f576c39aac4ab6fc854b2936b1959ef5a2d9897d559f4396ca7c"
+    coordinated-adjective-101-18: "78356c409b84a7b16258fe16d894e9162b418617959afbe4aa906b0d674f5c35"
+    coordinated-adjective-101-19: "b925c97bfbe0d62fc193e551d298368d9968b92077f9949fc38ed4ae1b8f86d1"
+    coordinated-adjective-101-20: "f355388ed379c45396167932249f4efea3605c1b696a6a4000a5c020e70e64e0"
+    coordinated-adjective-101-21: "edc9531100044cd491ed5f712c19b321849af735e73ceff4eef9ac2ff52fb189"
+    coordinated-adjective-101-22: "34131e7d747148ed75d4a73d7e1b987581c8b8923a36b3378f9d6bb742608d7c"
+    coordinated-adjective-101-23: "ce3ff1f057a50518972b28ad728f0b16048767de346fcdbe14cdb8bb3b19dd9e"
+    coordinated-adjective-101-24: "e94aff6f0ef41a8166f5100476c2743261f5b190086cccd873420afa052ab48a"
+    coordinated-adjective-101-25: "b1a8492420ada695a41a51a67257e55bb8e7425f55a7929b2261b6c87f9eed38"
+    coordinated-adjective-101-26: "edef3ef380791f94b0a0218afe813380845d3dca040676d2cd01dc98861d3d07"
+    coordinated-adjective-101-27: "3ab3e26ebf21812d03ac1c73fe332d240a6ebe376cafd8bd2f8f5cf464343c87"
+    coordinated-adjective-101-28: "7159775d3490661fc97f77d18a3cf61c481be838b11a618df232fefad9c80621"
+    coordinated-adjective-101-29: "67e418e6ea982d5d093848bc2bd941ca4312b7410ab36daddd68e735b1495742"
+    coordinated-adjective-101-30: "cb38223ced25ccee5abeff4904c558b997057f6c8523b7eb638b6055c25a970f"
+    coordinated-adjective-101-31: "bfe49fd55d47d2e856ff00d49a3c3af4db62070a520402bc2ae3b2a6de1a7f43"
+    coordinated-adjective-101-32: "c68d74f34f0cc79e52b0c4100209e82d4d6446fa304828d9a3be6ac4171b894e"
+    coordinated-adjective-101-33: "c153c16f7684635312e3b71264dbfb1283015da93ba5b60b120e39d21680b7ce"
+    coordinated-adjective-101-34: "ed3fa72be81cff0767d86dfbac9da589911bdbef512d894a2388e8406d31400c"
+    coordinated-adjective-101-35: "f92ce254a95b47f4c026247b624e9acac0708d2f6a468cb7314db4f31fe3c3fb"
+    coordinated-adjective-101-36: "7b71a9f9ead82775ee2bd0eb3e22961f19571716c65197c2fbd3347e899f42be"
+  table_content_sha256: "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+state_sha256: "1e3eaeb38ff59941ce7f6a788751d779691ca4fcfa8a4dfedfa0c0e35bd2f37a"
+versions: dict[5]
+  huggingface-hub: "1.31.0"
+  python: "3.12.13"
+  torch: "2.14.0"
+  transformer-lens: "3.9.0"
+  transformers: "5.17.0"

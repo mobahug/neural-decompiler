@@ -1,0 +1,2 @@
+{"mode": "production", "started_at": "2026-10-14T14:06:41.232937+00:00", "ended_at": "2026-10-14T14:06:49.496616+00:00", "exit_status": null, "error": "SystemExit: review clone: confirm is never called (patched out)"}
+{"mode": "production", "load_model": 0, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 1, "signals": []}

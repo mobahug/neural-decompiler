@@ -1,0 +1,25 @@
+ok  expected_ok=True  write_state_atomic (creates outputs/experiment-101): dfc20841669f0c7db3c9ee63e9e76adbcf0d4f69d4d8214a3360c750503981ab
+ok  expected_ok=True  write_state_atomic (again): 780c466c1b355067d0d7b72ecf234f9bf92966eb114ec8e3f9aa9ce139159dc6
+ERR expected_ok=False write_state_atomic with os.replace failing (cleanup unlink): OSError: injected failure of os.replace
+ok  expected_ok=True  no temporary left behind: list
+ok  expected_ok=True  save_durably measurements: None
+ok  expected_ok=True  torch.load measurements: list
+ok  expected_ok=True  save_durably partial: None
+ok  expected_ok=True  load_results_state: 780c466c1b355067d0d7b72ecf234f9bf92966eb114ec8e3f9aa9ce139159dc6
+ok  expected_ok=True  file_sha256 of a stage-1 file: ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356
+ok  expected_ok=True  read_bytes of a stage-1 file: 3
+ok  expected_ok=True  read 020's results: 3
+ok  expected_ok=True  fsync_directory of outputs: None
+ERR expected_ok=False CONTROL write a stage-1 file: PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9
+ERR expected_ok=False CONTROL write another output: PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9
+ERR expected_ok=False CONTROL write a source file: PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9
+ERR expected_ok=False CONTROL remove the measurements: PermissionError: confirm launcher (production): forbidden_writes: os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-deco
+ERR expected_ok=False CONTROL rename the measurements onto results.json: PermissionError: confirm launcher (production): forbidden_writes: os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-deco
+ERR expected_ok=False CONTROL mkdir under outputs: PermissionError: confirm launcher (production): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decom
+ERR expected_ok=False CONTROL read another experiment's outputs: PermissionError: confirm launcher (production): forbidden_reads: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b
+ERR expected_ok=False CONTROL O_RDONLY|O_TRUNC of a stage-1 file: PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9
+ERR expected_ok=False CONTROL relative write at the root: PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9
+ok  expected_ok=False PROBE torch.save to a path (C++ I/O, not judged): None
+unexpected: []
+outputs after: ['probe-torch-save.pt', 'results.json', 'stage2-measurements.pt', 'stage2-partial.pt']
+decided events in the mirror: 38 refused: 8

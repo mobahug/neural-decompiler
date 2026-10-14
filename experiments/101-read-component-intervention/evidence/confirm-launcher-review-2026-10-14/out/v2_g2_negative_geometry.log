@@ -1,0 +1,3 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:16,  4.62it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 347.99it/s]
+{"mode": "rehearsal", "started_at": "2026-10-14T14:05:29.100519+00:00", "ended_at": "2026-10-14T14:05:42.035411+00:00", "exit_status": null, "error": "IncidentError: the lock's geometry fields ['review-negative-control'] do not reproduce bit for bit; no 101 prompt may run"}
+{"mode": "rehearsal", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 0, "signals": []}

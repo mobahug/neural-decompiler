@@ -1,0 +1,15 @@
+numpy -> -
+torch -> [('open', '/dev/null'), ('open', '/dev/null'), ('open', '/dev/null'), ('open', '/dev/null'), ('open', 'nfirm-launcher-review/tmpdir_h2/rgzg3s1p'), ('os.remove', 'nfirm-launcher-review/tmpdir_h2/rgzg3s1p')]
+transformers -> [('tempfile.mkdtemp', 'rm-launcher-review/tmpdir_h2/tmpfi479shl'), ('os.mkdir', 'rm-launcher-review/tmpdir_h2/tmpfi479shl'), ('os.utime', 'eview/tmpdir_h2/tmpfi479shl/probe-source'), ('open', 'eview/tmpdir_h2/tmpfi479shl/probe-source'), ('os.link', 'eview/tmpdir_h2/tmpfi479shl/probe-source'), ('shutil.rmtree', 'rm-launcher-review/tmpdir_h2/tmpfi479shl'), ('os.remove', 'probe-source'), ('os.remove', 'probe-link'), ('os.rmdir', 'rm-launcher-review/tmpdir_h2/tmpfi479shl')]
+huggingface_hub -> -
+neural_decompiler.capture -> -
+neural_decompiler.interventions -> -
+neural_decompiler.models -> -
+neural_decompiler.block0_completion -> -
+neural_decompiler.cue_rotation -> -
+neural_decompiler.plural_mechanism -> -
+neural_decompiler.read_intervention -> -
+neural_decompiler.readout_calibration -> -
+neural_decompiler.readout_decompilation -> -
+neural_decompiler.upstream_localization -> -
+neural_decompiler.provenance -> -

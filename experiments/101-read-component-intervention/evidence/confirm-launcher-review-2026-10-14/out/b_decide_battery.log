@@ -1,0 +1,6 @@
+allowed 27/27; refused 40/40; rehearsal refuses 47/47 repo writes
+probe: relative write naming an allowed file, resolved from the working directory -> allow
+probe: case variant of the repository root (APFS case-insensitive) -> allow
+probe: an unhandled event (os.utime) on a stage-1 file -> allow
+probe: torch.save to a path raises no open event -> not judged: C++ file I/O (confirm never calls torch.save with a path)
+self-test (real root) ok: True | (mirror root) ok: True

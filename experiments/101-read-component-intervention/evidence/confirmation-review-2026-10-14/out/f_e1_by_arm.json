@@ -1,0 +1,225 @@
+{
+ "summary": {
+  "NEC-AMP@many": {
+   "E1_max": 0.0011068642693478857,
+   "denominator_at_E1_max": 1.5780189037322998,
+   "denominator_min": 1.3394027948379517,
+   "level1_max": 0.004575018056400815
+  },
+  "NEC-AMP@three": {
+   "E1_max": 0.0012808273301805851,
+   "denominator_at_E1_max": 1.8168385028839111,
+   "denominator_min": 1.2009600400924683,
+   "level1_max": 0.004473363231412009
+  },
+  "NEC-AMP@two": {
+   "E1_max": 0.0013489795280250657,
+   "denominator_at_E1_max": 1.2408461570739746,
+   "denominator_min": 1.197741985321045,
+   "level1_max": 0.005335370318413801
+  },
+  "NEC-HALF@many": {
+   "E1_max": 0.0016564545261637956,
+   "denominator_at_E1_max": 1.2966550588607788,
+   "denominator_min": 0.9401849508285522,
+   "level1_max": 0.0040806007062066385
+  },
+  "NEC-HALF@three": {
+   "E1_max": 0.0014905319370206505,
+   "denominator_at_E1_max": 1.2842681407928467,
+   "denominator_min": 0.8364038467407227,
+   "level1_max": 0.0042115843487859905
+  },
+  "NEC-HALF@two": {
+   "E1_max": 0.002325545101981334,
+   "denominator_at_E1_max": 0.9007148742675781,
+   "denominator_min": 0.8019058704376221,
+   "level1_max": 0.0061370445657060735
+  },
+  "NEC-ISO@two": {
+   "E1_max": 0.0025072708786111285,
+   "denominator_at_E1_max": 1.2109324932098389,
+   "denominator_min": 1.0533695220947266,
+   "level1_max": 0.0049662265347993895
+  },
+  "NEC-OFF@many": {
+   "E1_max": 0.0011990182090250044,
+   "denominator_at_E1_max": 1.3188536167144775,
+   "denominator_min": 1.121645450592041,
+   "level1_max": 0.0037779943402611593
+  },
+  "NEC-OFF@three": {
+   "E1_max": 0.0018710960746135647,
+   "denominator_at_E1_max": 1.5056743621826172,
+   "denominator_min": 1.0128040313720703,
+   "level1_max": 0.004686773430172764
+  },
+  "NEC-OFF@two": {
+   "E1_max": 0.0025400131295297917,
+   "denominator_at_E1_max": 1.2023868560791016,
+   "denominator_min": 1.0973412990570068,
+   "level1_max": 0.004497485596653306
+  },
+  "NEC-READ@many": {
+   "E1_max": 0.0031930842229382765,
+   "denominator_at_E1_max": 0.8320565223693848,
+   "denominator_min": 0.6202514171600342,
+   "level1_max": 0.004507756326317391
+  },
+  "NEC-READ@three": {
+   "E1_max": 0.0019268363935474597,
+   "denominator_at_E1_max": 0.654670000076294,
+   "denominator_min": 0.5159115791320801,
+   "level1_max": 0.0047521766984530145
+  },
+  "NEC-READ@two": {
+   "E1_max": 0.006606191026299408,
+   "denominator_at_E1_max": 0.5662493705749512,
+   "denominator_min": 0.4944651126861572,
+   "level1_max": 0.005255776424238023
+  },
+  "NOOP@two": {
+   "E1_max": 0.0015026235979489152,
+   "denominator_at_E1_max": 1.2937870025634766,
+   "denominator_min": 1.1081416606903076,
+   "level1_max": 0.00447290548073731
+  },
+  "PC-SWAP-PL@many": {
+   "E1_max": 0.002889711390107776,
+   "denominator_at_E1_max": 0.7306268215179443,
+   "denominator_min": 0.3977665901184082,
+   "level1_max": 0.004185558769232989
+  },
+  "PC-SWAP-PL@three": {
+   "E1_max": 0.002687383416176713,
+   "denominator_at_E1_max": 0.7572958469390869,
+   "denominator_min": 0.3583252429962158,
+   "level1_max": 0.004105696975349689
+  },
+  "PC-SWAP-PL@two": {
+   "E1_max": 0.004007407950854489,
+   "denominator_at_E1_max": 0.6092967987060547,
+   "denominator_min": 0.3809638023376465,
+   "level1_max": 0.004198920626055508
+  },
+  "PC-SWAP-REF@many": {
+   "E1_max": 0.001281763139496389,
+   "denominator_at_E1_max": 1.418357253074646,
+   "denominator_min": 1.0976446866989136,
+   "level1_max": 0.004414564955221856
+  },
+  "PC-SWAP-REF@three": {
+   "E1_max": 0.0013155508202274287,
+   "denominator_at_E1_max": 1.2333893775939941,
+   "denominator_min": 0.9343557357788086,
+   "level1_max": 0.0041709100353131134
+  },
+  "PC-SWAP-REF@two": {
+   "E1_max": 0.001649577860610964,
+   "denominator_at_E1_max": 1.1978044509887695,
+   "denominator_min": 0.9788550138473511,
+   "level1_max": 0.003821974320873167
+  },
+  "PL@many": {
+   "E1_max": 0.0016043391683863166,
+   "denominator_at_E1_max": 1.4840470552444458,
+   "denominator_min": 1.0688085556030273,
+   "level1_max": 0.0042052811564090575
+  },
+  "PL@three": {
+   "E1_max": 0.001350577230747263,
+   "denominator_at_E1_max": 1.0004355907440186,
+   "denominator_min": 1.0004355907440186,
+   "level1_max": 0.004080952380962621
+  },
+  "PL@two": {
+   "E1_max": 0.0015026235979489152,
+   "denominator_at_E1_max": 1.2937870025634766,
+   "denominator_min": 1.1081416606903076,
+   "level1_max": 0.00447290548073731
+  },
+  "SUF-HALF@many": {
+   "E1_max": 0.004349506029739641,
+   "denominator_at_E1_max": 0.6413304805755615,
+   "denominator_min": 0.4750014543533325,
+   "level1_max": 0.0043949199829782515
+  },
+  "SUF-HALF@three": {
+   "E1_max": 0.002198226432582752,
+   "denominator_at_E1_max": 0.6986806392669678,
+   "denominator_min": 0.48045456409454346,
+   "level1_max": 0.0040422811104132705
+  },
+  "SUF-HALF@two": {
+   "E1_max": 0.00300315959042288,
+   "denominator_at_E1_max": 0.6696642637252808,
+   "denominator_min": 0.5450963973999023,
+   "level1_max": 0.004143275970888816
+  },
+  "SUF-ISO@two": {
+   "E1_max": 0.021729698774050097,
+   "denominator_at_E1_max": 0.07705497741699219,
+   "denominator_min": 0.07705497741699219,
+   "level1_max": 0.004723285898313612
+  },
+  "SUF-NEG@many": {
+   "E1_max": 0.003966021511069708,
+   "denominator_at_E1_max": 0.3435354232788086,
+   "denominator_min": 0.3205239772796631,
+   "level1_max": 0.004101803314668806
+  },
+  "SUF-NEG@three": {
+   "E1_max": 0.005109151417902074,
+   "denominator_at_E1_max": 0.4651451110839844,
+   "denominator_min": 0.33236193656921387,
+   "level1_max": 0.004443890968917508
+  },
+  "SUF-NEG@two": {
+   "E1_max": 0.003530242111843086,
+   "denominator_at_E1_max": 0.46537160873413086,
+   "denominator_min": 0.34253644943237305,
+   "level1_max": 0.0052443283925158735
+  },
+  "SUF-OFF@many": {
+   "E1_max": 0.010510598482494452,
+   "denominator_at_E1_max": 0.1298809051513672,
+   "denominator_min": 0.09410667419433594,
+   "level1_max": 0.004276972064581663
+  },
+  "SUF-OFF@three": {
+   "E1_max": 0.015077411738382214,
+   "denominator_at_E1_max": 0.1392507553100586,
+   "denominator_min": 0.09118247032165527,
+   "level1_max": 0.003872712510479548
+  },
+  "SUF-OFF@two": {
+   "E1_max": 0.011183898974946602,
+   "denominator_at_E1_max": 0.15296173095703125,
+   "denominator_min": 0.11795806884765625,
+   "level1_max": 0.003826385744713723
+  },
+  "SUF-READ@many": {
+   "E1_max": 0.0018597247025953453,
+   "denominator_at_E1_max": 1.1071979999542236,
+   "denominator_min": 0.9009346961975098,
+   "level1_max": 0.003877817854576193
+  },
+  "SUF-READ@three": {
+   "E1_max": 0.002662710487336019,
+   "denominator_at_E1_max": 0.9976332187652588,
+   "denominator_min": 0.9022992849349976,
+   "level1_max": 0.00505246428510242
+  },
+  "SUF-READ@two": {
+   "E1_max": 0.0015474065563477139,
+   "denominator_at_E1_max": 1.1982842683792114,
+   "denominator_min": 0.9198610782623291,
+   "level1_max": 0.004380214294966933
+  }
+ },
+ "guard": {
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": []
+ }
+}

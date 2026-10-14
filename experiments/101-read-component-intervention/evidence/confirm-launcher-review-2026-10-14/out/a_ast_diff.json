@@ -1,0 +1,117 @@
+[
+ {
+  "function": "_path",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_inside",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_in_repo",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_temp_state",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "write_allowed",
+  "same_as_calibrate": null,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "decide",
+  "same_as_calibrate": null,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "_hook",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "hook_self_test",
+  "same_as_calibrate": null,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "_git",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_sha256_file",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_deny",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "_guarded_call",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_low_level",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_ledger_on_disk",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "_vector_digest",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": null
+ },
+ {
+  "function": "_sanctioned_run_arm",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": null
+ },
+ {
+  "function": "_refuse_capture_reference",
+  "same_as_calibrate": null,
+  "same_as_stage1v2": null
+ },
+ {
+  "function": "_sweep_aliases",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_seal_model",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "_counted_load",
+  "same_as_calibrate": true,
+  "same_as_stage1v2": true
+ },
+ {
+  "function": "preflight",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": false
+ },
+ {
+  "function": "smoke",
+  "same_as_calibrate": false,
+  "same_as_stage1v2": null
+ },
+ {
+  "function": "_signal_to_interrupt",
+  "same_as_calibrate": null,
+  "same_as_stage1v2": null
+ }
+]

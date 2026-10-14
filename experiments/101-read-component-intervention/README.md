@@ -1,13 +1,15 @@
 # Experiment 101: Is the Read Component at the Cue Position Causal for the `one`/`two` Choice?
 
-**Status (2026-10-14): STAGE 1 COMPLETE — the three stage-1 files await the user's commit; then confirm.** The freeze,
-the calibration, the lock and stage 1 ran once each, on the branch `exp101-phases`. The freeze: `confirmation-v1.json`,
-installed in `a857f9a`. The calibration (exposed, exploratory; spent data): no revision trigger, every gate held,
-`τ_rem` 0.0252 and `τ_ins` 0.0351, installed in `d502777`. The lock: committed by the user in `961e814` (content
-`8da97e35…`). Stage 1 (at `961e814`): only the 36 reference prompts, exit 0; it wrote `stage1/states.f64`,
-`stage1/states.json` and `stage1/table.json` (table content `9191800440af…`), which **the user commits** before confirm
-(the prediction freeze). Every phase's independent AI review found no blocker ([evidence](evidence/README.md)). No
-target (S2) prompt has run.
+**Status (2026-10-14): CLOSED — `READ_COMPONENT_EFFECTS_AS_PREDICTED`.** Every phase ran exactly once on the branch
+`exp101-phases`, each independently reviewed by a separate AI agent (no review is a human validation): the freeze
+(`a857f9a`), the calibration (`d502777`), the lock (committed by the user, `961e814`), stage 1 (its prediction table
+committed by the user, `59d8ec4`), confirm (at `59d8ec4`) and the report. Confirm: precondition 36/36; R 36/36 (median N
+1.006); I 36/36 (median S 1.035); D `A_amp` < 0 28/36 and `A_neg` > 0 36/36; P 33/36 within τ; every gate held; the
+confirmation review recomputed the label bit for bit. **Scope:** the read component of the residual entering layer 3 at
+the cue position, as every reader of that residual sees it, in coordinated frames, for the cue pair one/two — not
+`L03.H04` alone (≈88–89 % of the effect runs through its output), not beyond this pair, site, checkpoint and these 36
+frames. See the [closure](evidence/closure-2026-10-14.md) and the [final report](evidence/final-report-2026-10-14.md).
+A claim review is a separate decision and has not been made.
 
 Experiment 101 opens the second series (Neural Decompiler II), numbered from 101. It is the causal test of claim
 [C003](../../research/claims/C003-frame-conditioned-decoded-program.md) that the paper-readiness assessment named:
@@ -69,8 +71,12 @@ remove, install, double and reverse the component of the residual entering layer
    launcher re-check READY FOR PRODUCTION and the stage-1 review PASS WITH NOTES, no blocker.
 5. **`confirm`** (once; never resumed) passes the barrier, writes the ledger of all 1,980 S2 keys, runs each once,
    saves the measurements, checks the accounting, computes G2–G6, scores R, I, D and P, and writes the result in one
-   atomic write; then the secondary records.
-6. **`report`** recomputes the table (G6) and renders the report.
+   atomic write; then the secondary records. **Ran on 2026-10-14** at `59d8ec4` on the user's authorization: exit
+   0, `READ_COMPONENT_EFFECTS_AS_PREDICTED` ([evidence/confirm-2026-10-14/](evidence/confirm-2026-10-14/README.md));
+   confirmation review PASS WITH NOTES, no blocker, label recomputed
+   ([evidence/confirmation-review-2026-10-14/](evidence/confirmation-review-2026-10-14/README.md)).
+6. **`report`** recomputes the table (G6) and renders the report. **Ran on 2026-10-14:** G6 bit for bit; `report.md` `54f883ad…`
+   ([evidence/report-2026-10-14/](evidence/report-2026-10-14/README.md)).
 
 A gate failure after the measurements is an integrity failure under the incident procedure: no frame is dropped,
 replaced or ignored, no outcome is scored, and the report renders `NOT_INTERPRETABLE`.
@@ -123,7 +129,16 @@ The local outputs stay in `outputs/experiment-101/`.
    flag; the confirmation review or the report should recompute them from the saved measurements. N4: do not rewrite
    this branch. N9: keep the machine's environment fixed until confirm, since stage 1 compares the geometry with the
    lock bit for bit and a mismatch is a phase incident.
+7. **The closure** ([closure-2026-10-14.md](evidence/closure-2026-10-14.md)) answers the confirmation review's SF1 (the
+   per-frame overshoot report design §2 asks for: 0 of 36 frames flagged for every cue) and SF2 (the per-arm ceilings
+   and E₁), records its notes (the stratum `many` would fail D; D is saturation-limited; the head counts are nearly
+   vacuous; the scope's implicit limitations), and lists the competing explanations the design does and does not
+   exclude.
 
 ## Report and closure
 
-Not yet.
+- [The final report](evidence/final-report-2026-10-14.md) (`outputs/experiment-101/report.md`, byte-identical).
+- [The closure](evidence/closure-2026-10-14.md): the result, what it supports and does not, the secondary results, the
+  competing explanations, the overshoot and per-arm tables, the integrity record, and the decisions that remain.
+- [The confirmation-record extract](evidence/confirmation-record-2026-10-14.json) of the git-ignored final state (the
+  ledgers by count and digest).

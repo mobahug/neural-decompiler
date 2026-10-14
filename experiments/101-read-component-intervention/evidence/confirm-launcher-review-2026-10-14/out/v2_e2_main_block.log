@@ -1,0 +1,18 @@
+correct                    exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+incident_after_ledger      exit=2   sentinel=True  mode=0o644  records=1 error=None                                                 state=running incident=integrity failure after the  secondary_failures=no
+sigterm_after_ledger       exit=1   sentinel=True  mode=0o644  records=1 error=KeyboardInterrupt: signal 15                         state=running incident=signal 15 secondary_failures=no
+sighup_under_nohup         exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+sighup_without_nohup       exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+sigterm_before_ledger      exit=1   sentinel=True  mode=0o644  records=1 error=KeyboardInterrupt: signal 15                         state=not_started incident=None secondary_failures=no
+sigterm_during_secondary   exit=1   sentinel=True  mode=0o644  records=1 error=KeyboardInterrupt: signal 15                         state=complete incident=None secondary_failures=yes
+sigterm_in_post_block      exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+sigterm_during_tree_after  exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+tty_stdout                 exit=1   sentinel=False mode=None   records=1 error=RuntimeError: production refuses a terminal on stdou state=not_started incident=None secondary_failures=no
+tty_stderr_only            exit=1   sentinel=False mode=None   records=1 error=RuntimeError: production refuses a terminal on stdou state=not_started incident=None secondary_failures=no
+refusal_before_ledger      exit=1   sentinel=True  mode=0o644  records=1 error=PhaseError: confirm already started or recorded an i state=not_started incident=None secondary_failures=no
+preflight_refuses          exit=1   sentinel=False mode=None   records=1 error=RuntimeError: preflight failed: N1_tree_clean (None) state=not_started incident=None secondary_failures=no
+sentinel_exists            exit=1   sentinel=True  mode=0o644  records=1 error=FileExistsError: [Errno 17] File exists: '/private/t state=not_started incident=None secondary_failures=no
+git_fails_after            exit=0   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+keys_not_all_run           exit=1   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+refusal_swallowed          exit=1   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no
+forbidden_write_recorded   exit=1   sentinel=True  mode=0o644  records=1 error=None                                                 state=complete incident=None secondary_failures=no

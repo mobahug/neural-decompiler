@@ -1,0 +1,2 @@
+{"mode": "production", "started_at": "2026-10-14T13:40:31.858361+00:00", "ended_at": "2026-10-14T13:40:32.064557+00:00", "exit_status": null, "error": "RuntimeError: preflight failed: production_token_names_the_lock (None)"}
+{"mode": "production", "load_model": 0, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 0, "signals": []}

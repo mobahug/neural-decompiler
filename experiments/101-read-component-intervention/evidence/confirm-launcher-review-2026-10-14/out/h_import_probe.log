@@ -1,0 +1,6 @@
+numpy -> no write-type event
+torch -> [('open', ['/dev/null', 'r+', 16777218]), ('open', ['/dev/null', 'w', 16778753]), ('open', ['/dev/null', None, 16777218]), ('open', ['/dev/null', None, 16778753]), ('open', ['/scratchpad/exp101/confirm-launcher-review/tmpdir_h/poem8h8z', None, 16780034]), ('os.remove', ['/scratchpad/exp101/confirm-launcher-review/tmpdir_h/poem8h8z', -1])]
+transformers -> [('tempfile.mkdtemp', ['ratchpad/exp101/confirm-launcher-review/tmpdir_h/tmpumxg1n70']), ('os.mkdir', ['ratchpad/exp101/confirm-launcher-review/tmpdir_h/tmpumxg1n70', 448, -1]), ('os.utime', ['01/confirm-launcher-review/tmpdir_h/tmpumxg1n70/probe-source', None, None]), ('open', ['01/confirm-launcher-review/tmpdir_h/tmpumxg1n70/probe-source', None, 16777729]), ('os.link', ['01/confirm-launcher-review/tmpdir_h/tmpumxg1n70/probe-source', 'p101/confirm-launcher-review/tmpdir_h/tmpumxg1n70/probe-link', -1]), ('shutil.rmtree', ['ratchpad/exp101/confirm-launcher-review/tmpdir_h/tmpumxg1n70', None]), ('os.remove', ['probe-source', 3]), ('os.remove', ['probe-link', 3]), ('os.rmdir', ['ratchpad/exp101/confirm-launcher-review/tmpdir_h/tmpumxg1n70', -1])]
+huggingface_hub -> no write-type event
+neural_decompiler.read_intervention -> no write-type event
+transformer_lens.model_bridge -> [('os.mkdir', ['-launcher-review/tmpdir_h/torchinductor_gaborhorvath-ulenius', 511, -1])]

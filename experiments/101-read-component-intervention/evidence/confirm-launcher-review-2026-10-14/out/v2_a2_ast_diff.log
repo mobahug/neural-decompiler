@@ -1,0 +1,37 @@
+same     _counted_load
+same     _deny
+same     _git
+same     _guarded_call
+same     _hook
+same     _in_repo
+same     _inside
+same     _ledger_on_disk
+same     _low_level
+same     _path
+same     _refuse_capture_reference
+same     _sanctioned_run_arm
+same     _seal_model
+same     _sha256_file
+same     _signal_to_interrupt
+same     _sweep_aliases
+same     _temp_state
+same     _vector_digest
+added    barrier_dry_run
+same     decide
+same     hook_self_test
+same     preflight
+CHANGED  smoke
+same     write_allowed
+module-level statements added/changed in v2:
+   + 'Guarded launcher for Experiment 101\'s `confirm` (plan § The prediction freeze, § One-shot protections and guarded\nlaunchers; 025\'s confirm-launcher v3 patte
+   + SMOKE_REFERENCE_SHA256 = 'ba4698a55bd58f3638311f853743860a248e2d61caf3c80af9414531859df204'
+   + signal.signal(signal.SIGHUP, signal.SIG_IGN)
+   + try:     pre = preflight()     aliases += _sweep_aliases()     record['preflight'] = pre['checks']     record['aliases_wrapped'] = sorted(set(aliases))     if M
+   + os.fsync(fd)
+   + post = record.get('post') or {}
+   + post_ok = MODE != 'production' or (post.get('phase') == 'complete' and post.get('all_1980_ran_once') is True and (not events['refused']) and (not events['forbid
+   + sys.exit(0 if status == 0 and error is None and post_ok else status if isinstance(status, int) and status else 1)
+module-level statements removed/changed from v1:
+   - 'Guarded launcher for Experiment 101\'s `confirm` (plan § The prediction freeze, § One-shot protections and guarded\nlaunchers; 025\'s confirm-launcher v3 patte
+   - try:     pre = preflight()     aliases += _sweep_aliases()     record['preflight'] = pre['checks']     record['aliases_wrapped'] = sorted(set(aliases))     if M
+   - sys.exit(0 if status == 0 and error is None else status if isinstance(status, int) and status else 1)

@@ -1,0 +1,11 @@
+_base                                                            {'ok': True, 'seconds': 7.269}
+_confirmation                                                    {'ok': True, 'seconds': 0.038}
+_calibration                                                     {'ok': True, 'seconds': 0.028}
+_installed_lock                                                  {'ok': True, 'seconds': 0.001}
+load_results_state                                               {'ok': True, 'seconds': 0.006}
+_committed_stage1 (the barrier's and G6's re-read)               {'ok': True, 'seconds': 0.336}
+_recheck (success path before the result; incident recording)    {'ok': True, 'seconds': 13.256}
+_recheck_value                                                   {'ok': True}
+hook refusals: {'forbidden_reads': [], 'forbidden_writes': []}
+outputs paths opened: ['/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json']
+repo writes: []

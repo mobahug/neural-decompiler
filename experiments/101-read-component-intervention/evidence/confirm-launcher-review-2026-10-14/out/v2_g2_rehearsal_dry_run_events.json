@@ -1,0 +1,19 @@
+{
+ "label": "rehearsal_dry_run",
+ "control": null,
+ "state_sha256_before": "6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a",
+ "state_sha256_after": "6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a",
+ "state_unchanged": true,
+ "forward_attempts_refused_by_wrapper": 0,
+ "write_events_total": 19,
+ "write_events_in_clone": [],
+ "write_event_paths": [
+  "/dev/null",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_g2/d2g2g02k",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_g2/tmp4l4klkqw",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_g2/tmp4l4klkqw/probe-link",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_g2/tmp4l4klkqw/probe-source",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_g2/torchinductor_gaborhorvath-ulenius",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/v2/clone_launcher/rehearsal_run_20261014T140508306368Z.json"
+ ]
+}

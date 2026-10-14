@@ -1,0 +1,224 @@
+{
+ "mode": "rehearsal",
+ "environment": {
+  "head": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+  "branch": "exp101-phases",
+  "origin_branch": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+  "repository": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "launcher_path": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm/launch_confirm.py",
+  "launcher_sha256": "56a687f372605e5d6e16e2cc62bc9fd1197f21fdd8dccf0dda6d6ac75723309f",
+  "mode": "rehearsal",
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "transformer_lens": "3.9.0",
+  "huggingface_hub": "1.31.0",
+  "numpy": "2.5.3",
+  "torch_num_threads": 4,
+  "model": {
+   "model_id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "device": "cpu",
+   "dtype": "float32"
+  },
+  "checkpoint": {
+   "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "files": {
+    "config.json": {
+     "sha256": "002050231a9b1ec3ac77aa6b9b3bbdc4d923f4068a7dd33b8da72a9bd6ad9a43",
+     "bytes": 567
+    },
+    "model.safetensors": {
+     "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+     "bytes": 166029852
+    },
+    "special_tokens_map.json": {
+     "sha256": "6f50ab5a5a509a1c309d6171f339b196a900dc9c99ad0408ff23bb615fdae7ad",
+     "bytes": 99
+    },
+    "tokenizer.json": {
+     "sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+     "bytes": 2113710
+    },
+    "tokenizer_config.json": {
+     "sha256": "70e38394e494931c6f773ba41e19460dd4436526b852207367f04341b4066d3f",
+     "bytes": 396
+    }
+   }
+  },
+  "env_flags": {
+   "HF_HUB_OFFLINE": "1",
+   "TRANSFORMERS_OFFLINE": null,
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONHASHSEED": null,
+   "OMP_NUM_THREADS": null,
+   "MKL_NUM_THREADS": null,
+   "TOKENIZERS_PARALLELISM": null,
+   "VIRTUAL_ENV": null,
+   "GIT_OPTIONAL_LOCKS": "0",
+   "CONFIRM101_MODE": "rehearsal"
+  },
+  "recorded_at": "2026-10-14T17:36:27.061868+00:00"
+ },
+ "started_at": "2026-10-14T17:36:27.066301+00:00",
+ "preflight": {
+  "bytecode_writes_off": true,
+  "hf_hub_offline": true,
+  "N1_cwd_is_repo_root": true,
+  "N1_tree_clean": true,
+  "N1_runner_git_state_at_root": {
+   "ok": true,
+   "detail": {
+    "commit": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+    "dirty": false
+   }
+  },
+  "N2_environment_identity_with_lock_run": {
+   "ok": true,
+   "detail": []
+  },
+  "installed_lock_verifies": true,
+  "lock_and_preregistration_committed": true,
+  "module_binding_ri": {
+   "ok": true,
+   "detail": {
+    "lock": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "git_head": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "imported_file": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "own_blob": "d7db6197140fe871da591b5c578cc675f05f7d69"
+   }
+  },
+  "all_pinned_blobs": true,
+  "stage1_complete_awaiting_commit_no_incident": {
+   "ok": true,
+   "detail": {
+    "awaiting_commit": true,
+    "status": "complete"
+   }
+  },
+  "stage1_record_digest_reproduces": true,
+  "stage1_files_committed_and_equal_to_the_record": {
+   "ok": true,
+   "detail": {
+    "experiments/101-read-component-intervention/stage1/states.f64": true,
+    "experiments/101-read-component-intervention/stage1/states.json": true,
+    "experiments/101-read-component-intervention/stage1/table.json": true
+   }
+  },
+  "confirm_not_started": true,
+  "production_configuration": true,
+  "full_validate_lock_with_the_stage1_files": true,
+  "runtime_and_versions_equal_020_explore": true,
+  "ledger_is_exactly_the_36_s1_keys": true,
+  "s2_keys_1980_distinct": true,
+  "s2_keys_not_in_ledger_not_forbidden": true,
+  "hook_self_test": {
+   "ok": true,
+   "detail": {
+    "allowed": {
+     "mkdir outputs": true,
+     "state temporary": true,
+     "state rename": true,
+     "state temporary removed": true,
+     "measurements": true,
+     "partial measurements": true,
+     "read the measurements": true,
+     "read a stage-1 file": true,
+     "read 020's results": true
+    },
+    "refused": {
+     "a stage-1 file written": true,
+     "the lock written": true,
+     "a source file": true,
+     "another output file": true,
+     "a truncating read-only open": true,
+     "relative mkdir at the root": true,
+     "relative remove at the root": true,
+     "relative rename at the root": true,
+     "rename onto a stage-1 file": true,
+     "unresolvable dir_fd": true,
+     "remove a stage-1 file": true,
+     "read another experiment's outputs": true
+    },
+    "rehearsal_refuses_the_measurements": true,
+    "ok": true
+   }
+  }
+ },
+ "aliases_wrapped": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.read_intervention.capture_reference",
+  "neural_decompiler.read_intervention.run_arm",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ],
+ "barrier_dry_run": {
+  "model_dependencies": true,
+  "stage1_binding": true,
+  "geometry_against_lock": {
+   "bitwise_equal": true,
+   "differing": []
+  },
+  "barrier": {
+   "passed": true,
+   "stage1_digest": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f",
+   "table_content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+  },
+  "forward_calls": 0,
+  "ok": true
+ },
+ "logs": [],
+ "ended_at": "2026-10-14T17:36:55.127270+00:00",
+ "exit_status": 0,
+ "error": null,
+ "events": {
+  "mode": "rehearsal",
+  "load_model": 1,
+  "refused": [],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "sanctioned_runs": 0,
+  "sanctioned_forward_calls": 0,
+  "confirm_invocations": 0,
+  "signals": []
+ },
+ "sealing": {
+  "instances": 430,
+  "classes": [
+   "Dropout.forward",
+   "Embedding.forward",
+   "EmbeddingBridge.forward",
+   "GELUActivation.forward",
+   "GPTNeoXAttention.forward",
+   "GPTNeoXLayer.forward",
+   "GPTNeoXMLP.forward",
+   "GPTNeoXRotaryEmbedding.forward",
+   "HookPoint.forward",
+   "LayerNorm.forward",
+   "Linear.forward",
+   "LinearBridge.forward",
+   "MLPBridge.forward",
+   "NormalizationBridge.forward",
+   "RotaryEmbeddingBridge.forward",
+   "TransformerBridge.forward",
+   "TransformerBridge.run_with_hooks",
+   "TransformerBridge.run_with_cache",
+   "TransformerBridge.generate",
+   "UnembeddingBridge.forward"
+  ],
+  "signatures_kept": true
+ },
+ "tree_after": ""
+}

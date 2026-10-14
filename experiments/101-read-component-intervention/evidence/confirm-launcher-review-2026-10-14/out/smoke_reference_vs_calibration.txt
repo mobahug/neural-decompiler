@@ -1,0 +1,4 @@
+n 71 71
+tensors equal True
+logits equal True
+order of frames in calibration logits ['coordinated-adjective-009-1', 'coordinated-adjective-009-2', 'coordinated-adjective-011-1']

@@ -1,0 +1,51 @@
+{
+ "steps": {
+  "_base": {
+   "ok": true,
+   "seconds": 7.269
+  },
+  "_confirmation": {
+   "ok": true,
+   "seconds": 0.038
+  },
+  "_calibration": {
+   "ok": true,
+   "seconds": 0.028
+  },
+  "_installed_lock": {
+   "ok": true,
+   "seconds": 0.001
+  },
+  "load_results_state": {
+   "ok": true,
+   "seconds": 0.006
+  },
+  "_committed_stage1 (the barrier's and G6's re-read)": {
+   "ok": true,
+   "seconds": 0.336
+  },
+  "_recheck (success path before the result; incident recording)": {
+   "ok": true,
+   "seconds": 13.256
+  },
+  "_recheck_value": {
+   "ok": true
+  }
+ },
+ "hook_refusals": {
+  "forbidden_reads": [],
+  "forbidden_writes": []
+ },
+ "outputs_paths_opened": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"
+ ],
+ "hook_outputs_reads": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"
+ ],
+ "repo_writes": [],
+ "n_events": 1579,
+ "committed_states": 36,
+ "logs": []
+}

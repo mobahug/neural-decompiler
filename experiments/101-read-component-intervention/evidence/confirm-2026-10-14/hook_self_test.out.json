@@ -1,0 +1,29 @@
+{
+ "allowed": {
+  "mkdir outputs": true,
+  "state temporary": true,
+  "state rename": true,
+  "state temporary removed": true,
+  "measurements": true,
+  "partial measurements": true,
+  "read the measurements": true,
+  "read a stage-1 file": true,
+  "read 020's results": true
+ },
+ "refused": {
+  "a stage-1 file written": true,
+  "the lock written": true,
+  "a source file": true,
+  "another output file": true,
+  "a truncating read-only open": true,
+  "relative mkdir at the root": true,
+  "relative remove at the root": true,
+  "relative rename at the root": true,
+  "rename onto a stage-1 file": true,
+  "unresolvable dir_fd": true,
+  "remove a stage-1 file": true,
+  "read another experiment's outputs": true
+ },
+ "rehearsal_refuses_the_measurements": true,
+ "ok": true
+}

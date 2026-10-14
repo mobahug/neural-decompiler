@@ -1,0 +1,4 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.30it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 321.69it/s]
+report written to /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/report.md
+{"mode": "production", "exit_status": 0, "error": null, "state_before": "1e3eaeb38ff59941ce7f6a788751d779691ca4fcfa8a4dfedfa0c0e35bd2f37a", "state_after": "c803fe973e87327181b73aefcf9949ef6154d02753caa0b321c0a81971377451", "report_sha256": "54f883adfea90c4ddef306ed7265ce65a82d9b74aca4dde934b64e0ad9d53e2a"}
+{"mode": "production", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "report_invocations": 1}

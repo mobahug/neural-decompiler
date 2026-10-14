@@ -1,0 +1,173 @@
+PASS lock_011_content_digest
+PASS noun_keys_equal_lock
+PASS checkpoint_sha256_equals_production_record
+PASS w_c_digest_equals_lock  0.7659205190757624
+PASS G1_read_weight_from_checkpoint  0.0
+PASS iso_directions_digests_equal_lock  []
+PASS G1_basis_v_j  6.661338147750939e-16
+PASS states_data_sha256_equals_index
+PASS G2_replacements_rebuilt_bit_for_bit  []
+PASS G3_noop_bit_for_bit_36  []
+PASS G4_x3_pt_bit_for_bit_all_non_plain_runs  []
+PASS G5_landing_144  []
+PASS head_replacement_is_captured_plus_delta  []
+PASS G6_ref_vs_stage1_36  []
+PASS G2_r_within_tolerance  {'max': 3.250715452374209e-08, 'at': 'coordinated-adjective-101-21|SUF-ISO-3@two', 'tolerance': 0.0001, 'margin': 3076.2458746416423}
+PASS G2_length_within_tolerance  {'max': 3.522923544900152e-08, 'at': 'coordinated-adjective-101-14|SUF-HALF@three', 'tolerance': 0.0001, 'margin': 2838.551524763057}
+PASS G2_direction_within_tolerance  {'max': 4.4754376760951094e-07, 'at': 'coordinated-adjective-101-28|NEC-HALF@three', 'tolerance': 0.0001, 'margin': 223.44183348622028}
+PASS G2_u_off32_within_tolerance  {'max': 5.512119094497336e-09, 'at': 'coordinated-adjective-101-21|three', 'tolerance': 1e-06, 'margin': 181.41843143379913}
+PASS G3_pass_through_within_tolerance  {'max': 7.273629307746887e-07, 'at': 'coordinated-adjective-101-34|NEC-ISO-5@two', 'tolerance': 0.0001, 'margin': 137.4829480153649}
+PASS G4_readout_within_tolerance  {'max': 0.004697435723753474, 'at': 'coordinated-adjective-101-04|SUF-NEG@two', 'tolerance': 0.02, 'margin': 4.257642078818921}
+PASS G5_row_within_tolerance  {'max': 7.057777231644913e-06, 'at': 'coordinated-adjective-101-13|HEAD-NEC@two', 'tolerance': 0.0001, 'margin': 14.168766839456284}
+PASS G5_output_within_tolerance  {'max': 1.2984793744452716e-05, 'at': 'coordinated-adjective-101-13|HEAD-NEC@two', 'tolerance': 0.001, 'margin': 77.0131601379663}
+{
+ "G2_r": {
+  "max": 3.250715452374209e-08,
+  "at": "coordinated-adjective-101-21|SUF-ISO-3@two"
+ },
+ "G2_length": {
+  "max": 3.522923544900152e-08,
+  "at": "coordinated-adjective-101-14|SUF-HALF@three"
+ },
+ "G2_direction": {
+  "max": 4.4754376760951094e-07,
+  "at": "coordinated-adjective-101-28|NEC-HALF@three"
+ },
+ "G2_u_off32": {
+  "max": 5.512119094497336e-09,
+  "at": "coordinated-adjective-101-21|three"
+ },
+ "G3_pass_through": {
+  "max": 7.273629307746887e-07,
+  "at": "coordinated-adjective-101-34|NEC-ISO-5@two"
+ },
+ "pass_through_other": {
+  "max": 6.780028343200684e-07,
+  "at": "coordinated-adjective-101-24|PL@two"
+ },
+ "G4_readout": {
+  "max": 0.004697435723753474,
+  "at": "coordinated-adjective-101-04|SUF-NEG@two"
+ },
+ "logit_contrast_all": {
+  "max": 0.0033389466179762906,
+  "at": "coordinated-adjective-101-06|HEAD-SUF-V@two"
+ },
+ "G5_row": {
+  "max": 7.057777231644913e-06,
+  "at": "coordinated-adjective-101-13|HEAD-NEC@two"
+ },
+ "G5_output": {
+  "max": 1.2984793744452716e-05,
+  "at": "coordinated-adjective-101-13|HEAD-NEC@two"
+ },
+ "head_delta_full_rel": {
+  "max": 7.655647271353187e-15,
+  "at": "coordinated-adjective-101-18|HEAD-SUF@two"
+ },
+ "head_delta_value_rel": {
+  "max": 0.0,
+  "at": ""
+ },
+ "G6_x3_all_REF": {
+  "max": 0.0,
+  "at": ""
+ }
+}
+PASS head_deltas_reproduce  (7.655647271353187e-15, 0.0)
+PASS logit_contrast_consistency_every_run_within_2e-2  (0.0033389466179762906, 'coordinated-adjective-101-06|HEAD-SUF-V@two')
+PASS x3_all_REF_equals_stage1_x3_all_bitwise  (0.0, '')
+{
+ "G2_r": {
+  "mine": 3.250715452374209e-08,
+  "mine_at": "coordinated-adjective-101-21|SUF-ISO-3@two",
+  "state": 3.250715452374209e-08,
+  "state_at": "coordinated-adjective-101-21|ref|581|SUF-ISO-3@two"
+ },
+ "G2_length": {
+  "mine": 3.522923544900152e-08,
+  "mine_at": "coordinated-adjective-101-14|SUF-HALF@three",
+  "state": 3.522923544900152e-08,
+  "state_at": "coordinated-adjective-101-14|ref|581|SUF-HALF@three"
+ },
+ "G2_direction": {
+  "mine": 4.4754376760951094e-07,
+  "mine_at": "coordinated-adjective-101-28|NEC-HALF@three",
+  "state": 4.4754376760951094e-07,
+  "state_at": "coordinated-adjective-101-28|three|1264|NEC-HALF@three"
+ },
+ "G2_u_off32": {
+  "mine": 5.512119094497336e-09,
+  "mine_at": "coordinated-adjective-101-21|three",
+  "state": 5.512119094497336e-09,
+  "state_at": "coordinated-adjective-101-21|three"
+ },
+ "G3_pass_through": {
+  "mine": 7.273629307746887e-07,
+  "mine_at": "coordinated-adjective-101-34|NEC-ISO-5@two",
+  "state": 7.273629307746887e-07,
+  "state_at": "coordinated-adjective-101-34|two|767|NEC-ISO-5@two"
+ },
+ "G4_readout": {
+  "mine": 0.004697435723753474,
+  "mine_at": "coordinated-adjective-101-04|SUF-NEG@two",
+  "state": 0.004697435723753474,
+  "state_at": "coordinated-adjective-101-04|ref|581|SUF-NEG@two"
+ },
+ "G5_row": {
+  "mine": 7.057777231644913e-06,
+  "mine_at": "coordinated-adjective-101-13|HEAD-NEC@two",
+  "state": 7.05777723297718e-06,
+  "state_at": "coordinated-adjective-101-13|two|767|HEAD-NEC@two"
+ },
+ "G5_output": {
+  "mine": 1.2984793744452716e-05,
+  "mine_at": "coordinated-adjective-101-13|HEAD-NEC@two",
+  "state": 1.2984793747117251e-05,
+  "state_at": "coordinated-adjective-101-13|two|767|HEAD-NEC@two"
+ }
+}
+{
+ "overshoot_two": {
+  "flagged": 0,
+  "ratio_min": 0.3062488738999189,
+  "ratio_median": [
+   0.4063918727095277,
+   0.4090888987027345
+  ],
+  "ratio_max": 0.48340993776513036,
+  "s_median": [
+   2.540025104850458,
+   2.556518903024671
+  ],
+  "off_c_median": [
+   6.235545681085237,
+   6.2373941268368975
+  ],
+  "dr_range": [
+   1.6484150489703113,
+   2.319647331499249
+  ]
+ },
+ "overshoot_three": {
+  "flagged": 0,
+  "ratio_min": 0.23834813978939798,
+  "ratio_max": 0.38227136578405696,
+  "dr_range": [
+   1.4693824565634035,
+   2.0630650776610597
+  ]
+ },
+ "overshoot_many": {
+  "flagged": 0,
+  "ratio_min": 0.25164450122474824,
+  "ratio_max": 0.3492815928478343,
+  "dr_range": [
+   1.3569789379057293,
+   2.0522118276620045
+  ]
+ }
+}
+PASS layer_norm_records_reproduce  0.0
+PASS manipulation_delta_T_reproduce  0.0
+failed: []

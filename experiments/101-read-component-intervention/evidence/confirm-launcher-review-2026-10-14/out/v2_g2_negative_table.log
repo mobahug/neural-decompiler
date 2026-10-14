@@ -1,0 +1,3 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:17,  4.28it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 322.21it/s]
+{"mode": "rehearsal", "started_at": "2026-10-14T14:05:46.001403+00:00", "ended_at": "2026-10-14T14:06:12.684876+00:00", "exit_status": null, "error": "IncidentError: the table recomputed from the committed states and the weights differs from the committed table"}
+{"mode": "rehearsal", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "sanctioned_runs": 0, "sanctioned_forward_calls": 0, "confirm_invocations": 0, "signals": []}

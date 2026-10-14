@@ -1,0 +1,53 @@
+{
+ "mode": "production",
+ "launcher_sha256": "e9e176a5af86bca29e4c25cae56878e23d604caff76be3c4a0f06bc7411376ee",
+ "head": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+ "tree_before": "",
+ "started_at": "2026-10-14T18:21:50.319199+00:00",
+ "aliases": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ],
+ "state_before": "1e3eaeb38ff59941ce7f6a788751d779691ca4fcfa8a4dfedfa0c0e35bd2f37a",
+ "report_block": {
+  "g6": {
+   "at": "2026-10-14T18:22:21+00:00",
+   "bitwise_equal": true,
+   "message": ""
+  },
+  "path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/report.md",
+  "renders": 1,
+  "sha256": "54f883adfea90c4ddef306ed7265ce65a82d9b74aca4dde934b64e0ad9d53e2a",
+  "written_at": "2026-10-14T18:22:21+00:00"
+ },
+ "report_sha256": "54f883adfea90c4ddef306ed7265ce65a82d9b74aca4dde934b64e0ad9d53e2a",
+ "state_after": "c803fe973e87327181b73aefcf9949ef6154d02753caa0b321c0a81971377451",
+ "logs": [
+  "report written to /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/report.md"
+ ],
+ "ended_at": "2026-10-14T18:22:22.099793+00:00",
+ "exit_status": 0,
+ "error": null,
+ "events": {
+  "mode": "production",
+  "load_model": 1,
+  "refused": [],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/report.md",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-hh71o64s.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101"
+  ],
+  "report_invocations": 1
+ }
+}

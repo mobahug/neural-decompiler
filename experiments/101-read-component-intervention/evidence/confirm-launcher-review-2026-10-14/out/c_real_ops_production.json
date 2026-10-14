@@ -1,0 +1,549 @@
+{
+ "mode": "production",
+ "mirror": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production",
+ "steps": {
+  "write_state_atomic (creates outputs/experiment-101)": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "dfc20841669f0c7db3c9ee63e9e76adbcf0d4f69d4d8214a3360c750503981ab"
+  },
+  "write_state_atomic (again)": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "780c466c1b355067d0d7b72ecf234f9bf92966eb114ec8e3f9aa9ce139159dc6"
+  },
+  "write_state_atomic with os.replace failing (cleanup unlink)": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "OSError: injected failure of os.replace",
+   "trace": "   ^^^^\n  File \"/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/scripts/c_real_ops.py\", line 93, in write_with_failure\n    return rr.write_state_atomic(OUTPUTS / \"results.json\", {**state, \"n\": 3})\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py\", line 1743, in write_state_atomic\n    os.replace(temporary, path)\nOSError: injected failure of os.replace\n"
+  },
+  "no temporary left behind": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "list"
+  },
+  "save_durably measurements": {
+   "ok": true,
+   "expected_ok": true,
+   "value": null
+  },
+  "torch.load measurements": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "list"
+  },
+  "save_durably partial": {
+   "ok": true,
+   "expected_ok": true,
+   "value": null
+  },
+  "load_results_state": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "780c466c1b355067d0d7b72ecf234f9bf92966eb114ec8e3f9aa9ce139159dc6"
+  },
+  "file_sha256 of a stage-1 file": {
+   "ok": true,
+   "expected_ok": true,
+   "value": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+  },
+  "read_bytes of a stage-1 file": {
+   "ok": true,
+   "expected_ok": true,
+   "value": 3
+  },
+  "read 020's results": {
+   "ok": true,
+   "expected_ok": true,
+   "value": 3
+  },
+  "fsync_directory of outputs": {
+   "ok": true,
+   "expected_ok": true,
+   "value": null
+  },
+  "CONTROL write a stage-1 file": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+   "trace": "orvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1047, in write_text\n    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json\n"
+  },
+  "CONTROL write another output": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/other.pt",
+   "trace": "other.pt\"), expect_ok=False)\n                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/src/neural_decompiler/readout_routing.py\", line 1722, in save_durably\n    with open(path, \"wb\") as handle:\n         ^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/other.pt\n"
+  },
+  "CONTROL write a source file": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/src/neural_decompiler/read_intervention.py",
+   "trace": "File \"/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1047, in write_text\n    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/src/neural_decompiler/read_intervention.py\n"
+  },
+  "CONTROL remove the measurements": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+   "trace": "^^^^^^^^^^\n  File \"/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/scripts/c_real_ops.py\", line 63, in recording_hook\n    return real_hook(event, args)\n           ^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt\n"
+  },
+  "CONTROL rename the measurements onto results.json": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+   "trace": "rding_hook\n    return real_hook(event, args)\n           ^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json\n"
+  },
+  "CONTROL mkdir under outputs": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/sub",
+   "trace": "ROL mkdir under outputs\", lambda: (OUTPUTS / \"sub\").mkdir(), expect_ok=False)\n                                               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1311, in mkdir\n    os.mkdir(self, mode)\nPermissionError: confirm launcher (production): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/sub\n"
+  },
+  "CONTROL read another experiment's outputs": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_reads: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-025/results.json",
+   "trace": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1027, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_reads: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-025/results.json\n"
+  },
+  "CONTROL O_RDONLY|O_TRUNC of a stage-1 file": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+   "trace": "^^^^\n  File \"/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/scripts/c_real_ops.py\", line 63, in recording_hook\n    return real_hook(event, args)\n           ^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json\n"
+  },
+  "CONTROL relative write at the root": {
+   "ok": false,
+   "expected_ok": false,
+   "error": "PermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/stray.json",
+   "trace": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1047, in write_text\n    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: confirm launcher (production): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/stray.json\n"
+  },
+  "PROBE torch.save to a path (C++ I/O, not judged)": {
+   "ok": true,
+   "expected_ok": false,
+   "value": null
+  }
+ },
+ "decisions": [
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "tempfile.mkstemp",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-ixelbmk2.json"
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-ixelbmk2.json",
+    null,
+    16780034
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "open",
+   "args": [
+    3,
+    "w",
+    16778753
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-ixelbmk2.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (creates outputs/experiment-101)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "tempfile.mkstemp",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-wrjtysa8.json"
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-wrjtysa8.json",
+    null,
+    16780034
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "open",
+   "args": [
+    3,
+    "w",
+    16778753
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-wrjtysa8.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic (again)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic with os.replace failing (cleanup unlink)",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic with os.replace failing (cleanup unlink)",
+   "event": "tempfile.mkstemp",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-pea36qii.json"
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic with os.replace failing (cleanup unlink)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-pea36qii.json",
+    null,
+    16780034
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic with os.replace failing (cleanup unlink)",
+   "event": "open",
+   "args": [
+    3,
+    "w",
+    16778753
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "write_state_atomic with os.replace failing (cleanup unlink)",
+   "event": "os.remove",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/.results-pea36qii.json",
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably measurements",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably measurements",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+    "w",
+    16778753
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably measurements",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "torch.load measurements",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+    "r",
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably partial",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably partial",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-partial.pt",
+    "w",
+    16778753
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "save_durably partial",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "load_results_state",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+    "r",
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "file_sha256 of a stage-1 file",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/states.f64",
+    "r",
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "read_bytes of a stage-1 file",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+    "r",
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "read 020's results",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-020/results.json",
+    "r",
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "fsync_directory of outputs",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "CONTROL write a stage-1 file",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+    "w",
+    16778753
+   ],
+   "decision": [
+    "forbidden_writes",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  {
+   "step": "CONTROL write another output",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "decision": "allow"
+  },
+  {
+   "step": "CONTROL write another output",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/other.pt",
+    "w",
+    16778753
+   ],
+   "decision": [
+    "forbidden_writes",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/other.pt"
+   ]
+  },
+  {
+   "step": "CONTROL write a source file",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/src/neural_decompiler/read_intervention.py",
+    "w",
+    16778753
+   ],
+   "decision": [
+    "forbidden_writes",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/src/neural_decompiler/read_intervention.py"
+   ]
+  },
+  {
+   "step": "CONTROL remove the measurements",
+   "event": "os.remove",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+    -1
+   ],
+   "decision": [
+    "forbidden_writes",
+    "os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt"
+   ]
+  },
+  {
+   "step": "CONTROL rename the measurements onto results.json",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "decision": [
+    "forbidden_writes",
+    "os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json"
+   ]
+  },
+  {
+   "step": "CONTROL mkdir under outputs",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/sub",
+    511,
+    -1
+   ],
+   "decision": [
+    "forbidden_writes",
+    "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/sub"
+   ]
+  },
+  {
+   "step": "CONTROL read another experiment's outputs",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-025/results.json",
+    "r",
+    16777216
+   ],
+   "decision": [
+    "forbidden_reads",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-025/results.json"
+   ]
+  },
+  {
+   "step": "CONTROL O_RDONLY|O_TRUNC of a stage-1 file",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+    null,
+    16778240
+   ],
+   "decision": [
+    "forbidden_writes",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  }
+ ],
+ "unexpected": {},
+ "refusals_recorded_by_the_hook": {
+  "forbidden_writes": [
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/other.pt",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/src/neural_decompiler/read_intervention.py",
+   "os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt",
+   "os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/stage2-measurements.pt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/results.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-101/sub",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/experiments/101-read-component-intervention/stage1/table.json",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/stray.json"
+  ],
+  "forbidden_reads": [
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_c_production/outputs/experiment-025/results.json"
+  ]
+ },
+ "outputs_after": [
+  "probe-torch-save.pt",
+  "results.json",
+  "stage2-measurements.pt",
+  "stage2-partial.pt"
+ ]
+}

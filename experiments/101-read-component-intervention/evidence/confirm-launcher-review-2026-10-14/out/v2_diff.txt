@@ -1,0 +1,136 @@
+--- reviewed/launch_confirm.py	2026-10-14 16:12:34
++++ reviewed_v2/launch_confirm_v2.py	2026-10-14 16:57:23
+@@ -10,7 +10,7 @@
+ **`rehearsal`** — never calls `confirm`, allows no forward, writes nothing in the repository. The preflight:
+ - N1: the repository root; a clean tree; the runner's own git state; HEAD, the branch and `origin/exp101-phases`
+   recorded;
+-- N2: the environment against the lock run's record (and the stage-1 run's, once committed);
++- N2: the environment against the lock run's record;
+ - `-B` and `HF_HUB_OFFLINE=1` required;
+ - the installed lock and preregistration (hashes, rendering, committed), the module binding (the 20 pinned blobs; `ri`'s
+   own blob equal to the lock's and the git blob at HEAD);
+@@ -21,7 +21,11 @@
+ - the runner's `_state_for("confirm")` and `_validated_lock` (with the stage-1 files as extra tracked paths); the 020
+   runtime and versions;
+ - the 1,980 S2 keys: distinct, none in the ledger, none forbidden;
+-- the hook's self-test under the production rules.
++- the hook's self-test under the production rules;
++- then, weights only (the review's N7): the model loaded under every guard, its digests against the lock, the noun keys,
++  the stage-1 binding, the geometry against the lock bit for bit, and the runner's own barrier (the committed stage-1
++  files re-read and the table recomputed bit for bit), exactly as `confirm` will run them before its ledger. Nothing is
++  written; no forward pass.
+ 
+ **`smoke`** — engineering only: the same preflight, then exactly the production guards with one exposed (spent) frame's
+ 55 run keys (`coordinated-adjective-1` of 020's pool, through the same `ri.stage_runs`), compared bit for bit with the
+@@ -38,8 +42,11 @@
+ - **N4.** The audit hook allows repository writes only to `outputs/experiment-101/results.json` (through its
+   `.results-*.json` temporary files and their renames), `stage2-measurements.pt` and `stage2-partial.pt`, and the
+   `mkdir` of `outputs/experiment-101/`; it fails closed on any path it cannot resolve.
+-- **Signals.** SIGTERM and SIGHUP raise `KeyboardInterrupt`, so that the runner records an interruption after the ledger
+-  as an incident (the stage-1 re-check's N2). Launch it detached (`nohup`), and do not interrupt it.
++- **Signals** (the review's S1 and N1). SIGHUP is ignored for the whole run, so a closed terminal cannot interrupt it
++  (`nohup` semantics kept). During `confirm()` only, SIGTERM raises `KeyboardInterrupt`, so that the runner records an
++  interruption after the ledger as an incident; once `confirm()` returns or raises, SIGTERM is ignored while the record is
++  written. Production refuses to start when stdout or stderr is a terminal: launch it detached (`nohup`), with its output
++  to a file (never through a pipe or `tee`), and do not interrupt it.
+ - **Logging.** Every sanctioned run is appended, with its key and its replacement's digest, to
+   `production_runs.jsonl` here, at admission.
+ """
+@@ -69,9 +76,11 @@
+ LAUNCHER_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+ LOCK_RUN_RECORD = EXPERIMENT_DIR / "evidence/lock-2026-10-14/lock_run.json"
+ SMOKE_REFERENCE = HERE.parent / "calibrate" / "smoke_reference.pt"
++SMOKE_REFERENCE_SHA256 = "ba4698a55bd58f3638311f853743860a248e2d61caf3c80af9414531859df204"  # as committed in evidence/calibrate-2026-10-14/SHA256SUMS
+ WRITABLE = {OUTPUTS / "results.json", OUTPUTS / "stage2-measurements.pt", OUTPUTS / "stage2-partial.pt"}
+ READABLE_OUTPUTS = (ROOT / "outputs/experiment-020/results.json", OUTPUTS)
+ 
++signal.signal(signal.SIGHUP, signal.SIG_IGN)  # the review's S1: a closed terminal never interrupts the run
+ os.chdir(ROOT)
+ if Path.cwd().resolve() != ROOT:
+     raise SystemExit(f"cwd {Path.cwd()} is not the repository root {ROOT}")
+@@ -494,6 +503,28 @@
+     test = hook_self_test()
+     need("hook_self_test", test["ok"], test)
+     return {"checks": checks, "runner": runner, "base": base, "confirmation": confirmation, "logs": logs, "s2": s2}
++
++
++def barrier_dry_run(pre: dict) -> dict:
++    """Weights only, nothing written: everything confirm runs before its ledger, with the runner's own functions (the
++    model load counted and sealed; no forward pass)."""
++    runner, base, confirmation = pre["runner"], pre["base"], pre["confirmation"]
++    out = {}
++    lock, _ = runner._installed_lock()
++    model = models.load_model(models.PYTHIA_70M)
++    progs = ul.ModelPrograms.from_model(model, base.inputs)
++    runner._model_dependencies(lock, model, progs)
++    out["model_dependencies"] = True
++    noun_keys = runner._check_nouns(progs, base.inputs)
++    geometry = ri.read_geometry(base.inputs.lock_011)
++    runner._check_stage1_binding(lock, confirmation, progs, model, noun_keys)
++    out["stage1_binding"] = True
++    out["geometry_against_lock"] = runner._geometry_against_lock(lock, progs, geometry, [frame.frame_id for frame in confirmation.frames])
++    barrier = runner._barrier(lock, confirmation, progs, geometry, noun_keys)
++    out["barrier"] = {"passed": True, "stage1_digest": barrier.record["digest"], "table_content_sha256": barrier.table["content_sha256"]}
++    out["forward_calls"] = events["sanctioned_forward_calls"]
++    out["ok"] = out["geometry_against_lock"].get("bitwise_equal") is True and out["forward_calls"] == 0
++    return out
+ 
+ 
+ def smoke(pre: dict) -> dict:
+@@ -509,7 +540,11 @@
+     logits: dict = {}
+     executed: list = []
+     ri.stage_runs(model, progs, [schedule], geometry, ri.PRODUCTION, executed=executed, out=out, logits=logits)
++    if _sha256_file(SMOKE_REFERENCE) != SMOKE_REFERENCE_SHA256:
++        raise RuntimeError("the smoke reference is not the committed one")
+     reference = torch.load(SMOKE_REFERENCE)
++    if set(reference["keys"][1:]) != {run.key for run in schedule}:
++        raise RuntimeError("the smoke reference's runs are not this frame's 55 keys")
+     mine = {name: rc.tensor_digest(value) for name, value in out.items()}
+     result = {"frame": schedule[0].frame.frame_id, "runs": len(executed), "tensors_equal_unguarded": mine == reference["tensors_sha256"],
+               "logits_equal_unguarded": logits == reference["logits_sha256"], "sealing": dict(sealing)}
+@@ -546,19 +581,24 @@
+     record["preflight"] = pre["checks"]
+     record["aliases_wrapped"] = sorted(set(aliases))
+     if MODE == "rehearsal":
+-        status = 0
++        record["barrier_dry_run"] = barrier_dry_run(pre)
++        status = 0 if record["barrier_dry_run"]["ok"] else 1
+     elif MODE == "smoke":
+         record["smoke"] = smoke(pre)
+         status = 0 if record["smoke"]["ok"] else 1
+     else:
+-        signal.signal(signal.SIGTERM, _signal_to_interrupt)
+-        signal.signal(signal.SIGHUP, _signal_to_interrupt)
+-        fd = os.open(sentinel, os.O_CREAT | os.O_EXCL | os.O_WRONLY)  # after the preflight, immediately before the one confirm
++        if os.isatty(1) or os.isatty(2):
++            raise RuntimeError("production refuses a terminal on stdout or stderr: launch it detached with its output to a file")
++        fd = os.open(sentinel, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)  # after the preflight, immediately before the one confirm
+         os.write(fd, LAUNCHER_SHA256.encode())
+         os.close(fd)
+         allowed_keys.update(pre["s2"])
+         events["confirm_invocations"] += 1
+-        status = pre["runner"].confirm()  # the one confirm
++        signal.signal(signal.SIGTERM, _signal_to_interrupt)  # during confirm only: an interruption after the ledger becomes an incident
++        try:
++            status = pre["runner"].confirm()  # the one confirm
++        finally:
++            signal.signal(signal.SIGTERM, signal.SIG_IGN)  # the record is written whatever happens next
+         state = rd.load_results_state(OUTPUTS / "results.json")
+         confirmation_block = state.get("confirmation") or {}
+         record["post"] = {"phase": state["phases"]["confirm"].get("status"), "incident": confirmation_block.get("incident"),
+@@ -579,9 +619,13 @@
+ stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+ fd = os.open(HERE / f"{MODE}_run_{stamp}.json", os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+ os.write(fd, (json.dumps(record, indent=1, default=str) + "\n").encode("utf-8"))
++os.fsync(fd)
+ os.close(fd)
+ print(json.dumps({key: record.get(key) for key in ("mode", "started_at", "ended_at", "exit_status", "error")}), flush=True)
+ print(json.dumps({key: value for key, value in events.items() if key != "outputs_reads"}, default=str), flush=True)
+ if MODE == "production" and record.get("post"):
+     print(json.dumps({k: v for k, v in record["post"].items() if k not in ("accounting",)}, default=str), flush=True)
+-sys.exit(0 if status == 0 and error is None else (status if isinstance(status, int) and status else 1))
++post = record.get("post") or {}
++post_ok = MODE != "production" or (post.get("phase") == "complete" and post.get("all_1980_ran_once") is True and not events["refused"]
++                                   and not events["forbidden_writes"] and not events["forbidden_reads"])
++sys.exit(0 if status == 0 and error is None and post_ok else (status if isinstance(status, int) and status else 1))

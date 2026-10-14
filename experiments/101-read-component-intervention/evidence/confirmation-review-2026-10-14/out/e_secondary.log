@@ -1,0 +1,126 @@
+PASS tau_lock_equals_calibration_file  {'cap': 0.2, 'evaluable': True, 'floor': 0.02, 'ins': 0.03511072680382421, 'rank': 33, 'rem': 0.025153865322968608}
+PASS secondary_statistics_reproduced_independently  []
+PASS bootstrap_intervals_bit_for_bit  []
+{
+ "stratum_three": {
+  "R_count": 36,
+  "I_count": 36,
+  "A_amp_negative": 28,
+  "A_neg_positive": 36,
+  "weak": 0,
+  "median_N": 0.9547267278115054,
+  "median_S": 1.0154184531529116,
+  "median_A_amp": -0.1345199391811711,
+  "median_A_neg": 0.9282133850870251,
+  "median_F_rem": 0.051712075987340775,
+  "median_F_ins": 0.9944051241325736,
+  "median_F_rem_off": 0.9977014136665112,
+  "median_F_ins_off": -0.021932811476011425,
+  "median_dc_full": -4.9578455671479436,
+  "median_F_swap_pl": 0.07852580206263055,
+  "median_F_swap_ref": 0.999414661724929
+ },
+ "stratum_many": {
+  "R_count": 36,
+  "I_count": 36,
+  "A_amp_negative": 23,
+  "A_neg_positive": 36,
+  "weak": 0,
+  "median_N": 0.7658030647906078,
+  "median_S": 0.9277257392723146,
+  "median_A_amp": -0.060752385779272,
+  "median_A_neg": 0.9305914383900314,
+  "median_F_rem": 0.21397174602073718,
+  "median_F_ins": 0.9355791164249572,
+  "median_F_rem_off": 0.9837299873874119,
+  "median_F_ins_off": 0.003749272451745218,
+  "median_dc_full": -5.335713446894779,
+  "median_F_swap_pl": 0.1518481969686253,
+  "median_F_swap_ref": 0.9905808492426154
+ },
+ "head_shares": {
+  "head_removal_share": 0.8816274276075726,
+  "head_removal_share_v": 0.8774007065456442,
+  "head_install_share": 0.8943155243735512,
+  "head_install_share_v": 0.8923580041570336
+ },
+ "read_share_of_centred_dx_squared": {
+  "min": 0.08574636108800689,
+  "median": 0.1425531194145797,
+  "max": 0.1894204242741858
+ },
+ "cos_dx_c_w_hat": {
+  "min": 0.29282479588997734,
+  "max": 0.43522456763627876
+ },
+ "program_pair_vs_measured": {
+  "max_abs_dr_error": 0.008414642946662276,
+  "max_abs_ratio_error": 0.003566681666591631,
+  "predicted_overshoot_frames": 0
+ },
+ "layer_norm_groups": {
+  "read (NEC-READ/SUF-READ)": {
+   "gamma3_e_over_sigma_median": 7.437379858268288,
+   "gamma_ln2_e_over_sigma_median": 5.902022466789398,
+   "sigma_median": 0.5700296872839241,
+   "sigma_min": 0.5165962895984175,
+   "sigma_max": 0.6495638180824744
+  },
+  "off (NEC-OFF/SUF-OFF)": {
+   "gamma3_e_over_sigma_median": 7.948922335410128,
+   "gamma_ln2_e_over_sigma_median": 6.082176355116323,
+   "sigma_median": 0.5526067409129505,
+   "sigma_min": 0.49577199694261215,
+   "sigma_max": 0.6237330714113738
+  },
+  "iso (16 arms)": {
+   "gamma3_e_over_sigma_median": 7.319327845414426,
+   "gamma_ln2_e_over_sigma_median": 5.736215345535107,
+   "sigma_median": 0.5794147411426986,
+   "sigma_min": 0.5191170745209329,
+   "sigma_max": 0.6666508868371401
+  },
+  "amp/neg": {
+   "gamma3_e_over_sigma_median": 7.145076144066184,
+   "gamma_ln2_e_over_sigma_median": 5.670061321973373,
+   "sigma_median": 0.5890746201868593,
+   "sigma_min": 0.5410442106125268,
+   "sigma_max": 0.671979576270464
+  }
+ }
+}
+{
+"HEAD-NEC-V@two": -0.0047,
+"HEAD-NEC@two": -0.0084,
+"HEAD-SUF-V@two": 0.9659,
+"HEAD-SUF@two": 0.9792,
+"NEC-AMP@two": 1.9431,
+"NEC-HALF@two": 0.499,
+"NEC-ISO-1@two": 0.9998,
+"NEC-ISO-2@two": 0.9909,
+"NEC-ISO-3@two": 0.9892,
+"NEC-ISO-4@two": 0.9895,
+"NEC-ISO-5@two": 0.9961,
+"NEC-ISO-6@two": 0.9942,
+"NEC-ISO-7@two": 1.0042,
+"NEC-ISO-8@two": 0.9972,
+"NEC-OFF@two": 1.0263,
+"NEC-READ@two": -0.0084,
+"NOOP@two": 1.0,
+"PC-SWAP-PL@two": -0.0287,
+"PC-SWAP-REF@two": 0.9505,
+"PL@two": 1.0,
+"SUF-HALF@two": 0.4841,
+"SUF-ISO-1@two": 0.0112,
+"SUF-ISO-2@two": 0.0009,
+"SUF-ISO-3@two": 0.0079,
+"SUF-ISO-4@two": 0.0045,
+"SUF-ISO-5@two": 0.0052,
+"SUF-ISO-6@two": 0.01,
+"SUF-ISO-7@two": 0.0159,
+"SUF-ISO-8@two": 0.0098,
+"SUF-NEG@two": -0.891,
+"SUF-OFF@two": 0.0032,
+"SUF-READ@two": 0.9792
+}
+failed: []

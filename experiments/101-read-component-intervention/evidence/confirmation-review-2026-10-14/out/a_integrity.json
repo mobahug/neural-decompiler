@@ -1,0 +1,314 @@
+{
+ "checks": {
+  "state_digest_reproduces": {
+   "ok": true,
+   "detail": "1e3eaeb38ff59941ce7f6a788751d779691ca4fcfa8a4dfedfa0c0e35bd2f37a"
+  },
+  "state_digest_is_the_launcher_post_record": {
+   "ok": true,
+   "detail": null
+  },
+  "results_file_sha256_is_outputs_after_confirm": {
+   "ok": true,
+   "detail": null
+  },
+  "result_write_digest_reconstructed_04221aa2": {
+   "ok": true,
+   "detail": "04221aa2f53eae384d2a49e7cc9ddea73a0063e6599a09bdffa93b257684ccfc"
+  },
+  "secondary_has_no_failures": {
+   "ok": true,
+   "detail": [
+    "records",
+    "statistics",
+    "values"
+   ]
+  },
+  "confirm_phase_complete": {
+   "ok": true,
+   "detail": {
+    "completed_at": "2026-10-14T17:42:32+00:00",
+    "confirm_commit": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+    "lock_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T17:38:22+00:00",
+    "status": "complete"
+   }
+  },
+  "no_incident_anywhere": {
+   "ok": true,
+   "detail": null
+  },
+  "report_not_started": {
+   "ok": true,
+   "detail": null
+  },
+  "lock_and_barrier": {
+   "ok": true,
+   "detail": null
+  },
+  "measurements_file_sha256_is_outputs_after_confirm": {
+   "ok": true,
+   "detail": null
+  },
+  "no_partial_file": {
+   "ok": true,
+   "detail": null
+  },
+  "tensor_digests_equal_state": {
+   "ok": true,
+   "detail": 2556
+  },
+  "n_executed_1980": {
+   "ok": true,
+   "detail": null
+  },
+  "run_order_55": {
+   "ok": true,
+   "detail": null
+  },
+  "frames_are_01_to_36_in_order": {
+   "ok": true,
+   "detail": null
+  },
+  "expected_s2_keys_distinct_1980": {
+   "ok": true,
+   "detail": null
+  },
+  "manifest_s2_equals_expected": {
+   "ok": true,
+   "detail": null
+  },
+  "manifest_s1_equals_expected": {
+   "ok": true,
+   "detail": null
+  },
+  "ledger_is_s1_plus_s2_exactly": {
+   "ok": true,
+   "detail": null
+  },
+  "run_log_1980_rows_numbered": {
+   "ok": true,
+   "detail": null
+  },
+  "run_log_order_is_frozen_order": {
+   "ok": true,
+   "detail": null
+  },
+  "run_log_no_s1_key": {
+   "ok": true,
+   "detail": null
+  },
+  "run_log_each_key_once": {
+   "ok": true,
+   "detail": null
+  },
+  "logged_replacement_digests_equal_saved_replacements": {
+   "ok": true,
+   "detail": []
+  },
+  "every_saved_replacement_landed_bitwise": {
+   "ok": true,
+   "detail": []
+  },
+  "run_kinds": {
+   "ok": true,
+   "detail": {
+    "plain": 144,
+    "residual": 1692,
+    "head": 144
+   }
+  },
+  "tensor_names_exactly_expected": {
+   "ok": true,
+   "detail": [
+    2556,
+    2556
+   ]
+  },
+  "all_tensors_finite": {
+   "ok": true,
+   "detail": []
+  },
+  "contrasts_shape_55x79": {
+   "ok": true,
+   "detail": null
+  },
+  "positions_equal_frozen_frames": {
+   "ok": true,
+   "detail": null
+  },
+  "logit_digests_55_per_frame": {
+   "ok": true,
+   "detail": null
+  },
+  "only_noop_and_pl_share_logits": {
+   "ok": true,
+   "detail": []
+  },
+  "launcher_one_confirm_one_load": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_no_refusal_no_forbidden": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_1980_sanctioned_runs_340_calls_each": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_sha256": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_head_and_tree": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_exit_0": {
+   "ok": true,
+   "detail": null
+  },
+  "nine_atomic_state_writes": {
+   "ok": true,
+   "detail": 9
+  },
+  "no_temp_state_left": {
+   "ok": true,
+   "detail": null
+  },
+  "only_allowed_outputs": {
+   "ok": true,
+   "detail": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-w9en66lw.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/stage2-measurements.pt",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-3iqui9f6.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-bc3hrs0p.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-vt1bu193.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-cqmj06s5.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-0zriqfud.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-hzac_dpv.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-jesizqqg.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-na58n3_o.json"
+   ]
+  }
+ },
+ "facts": {
+  "phases": {
+   "calibrate": {
+    "commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+    "completed_at": "2026-10-14T08:51:04+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T08:45:07+00:00",
+    "status": "complete"
+   },
+   "confirm": {
+    "completed_at": "2026-10-14T17:42:32+00:00",
+    "confirm_commit": "59d8ec49e9a34cb40f23b7c3928e8b36522972fe",
+    "lock_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T17:38:22+00:00",
+    "status": "complete"
+   },
+   "lock": {
+    "commit": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+    "completed_at": "2026-10-14T09:32:09+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "status": "complete"
+   },
+   "report": {
+    "status": "not_started"
+   },
+   "stage1": {
+    "awaiting_commit": true,
+    "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+    "completed_at": "2026-10-14T13:09:26+00:00",
+    "geometry": {
+     "bitwise_equal": true,
+     "differing": []
+    },
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T13:09:08+00:00",
+    "status": "complete"
+   }
+  },
+  "run_kinds": {
+   "plain": 144,
+   "residual": 1692,
+   "head": 144
+  },
+  "outputs_paths_touched_by_open": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-w9en66lw.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/stage2-measurements.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-3iqui9f6.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-bc3hrs0p.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-vt1bu193.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-cqmj06s5.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-0zriqfud.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-hzac_dpv.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-jesizqqg.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-na58n3_o.json"
+  ],
+  "confirm_times": {
+   "launcher_start": "2026-10-14T17:37:39.978066+00:00",
+   "confirm_started": "2026-10-14T17:38:22+00:00",
+   "confirm_completed": "2026-10-14T17:42:32+00:00",
+   "launcher_end": "2026-10-14T17:42:33.909456+00:00"
+  },
+  "outputs_mtimes": {
+   "candidate-preregistration.md": 1791970329.5840313,
+   "results.json": 1791999753.1320221,
+   "candidate-calibration-v1.json": 1791967864.29266,
+   "stage2-measurements.pt": 1791999647.3683476,
+   "candidate-lock.json": 1791970329.5829744,
+   "calibration-measurements.pt": 1791967722.4554563
+  }
+ }
+}

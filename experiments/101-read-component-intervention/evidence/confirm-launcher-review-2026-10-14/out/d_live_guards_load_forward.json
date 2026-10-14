@@ -1,0 +1,773 @@
+{
+ "launcher": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/reviewed/launch_confirm.py",
+ "tmpdir": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d",
+ "text": "The quick brown fox jumps over the lazy dog.",
+ "neutral_ids": [
+  510,
+  3158,
+  8516,
+  30013,
+  27287,
+  689,
+  253,
+  22658,
+  4370,
+  15
+ ],
+ "token_guard": {
+  "checked": 6,
+  "refused": 0
+ },
+ "guards": {
+  "aliases_at_import": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched",
+   "neural_decompiler.readout_decompilation.capture_frame_020",
+   "neural_decompiler.read_intervention.run_arm",
+   "neural_decompiler.read_intervention.capture_reference"
+  ],
+  "module_call_guarded": true
+ },
+ "sealing": {
+  "instances": 430,
+  "classes": 20,
+  "signatures_kept": true
+ },
+ "load_seconds": 1.8202707767486572,
+ "parameters_sha256": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+ "attempts": {
+  "(a) REF before the ledger is on disk": {
+   "refused": true,
+   "message": "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(a2) REF with the barrier passed but the keys absent": {
+   "refused": true,
+   "message": "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(a3) REF with the keys but no barrier": {
+   "refused": true,
+   "message": "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(b1) REF plain run": {
+   "refused": false,
+   "forward_calls": 340
+  },
+  "(b2) residual REPLACE at RESID_PRE.L3@p_c": {
+   "refused": false,
+   "forward_calls": 340
+  },
+  "(b3) head REPLACE at L03.H04@p_t": {
+   "refused": false,
+   "forward_calls": 340
+  },
+  "(c) model call": {
+   "refused": true,
+   "message": "torch.nn.Module.__call__ outside a sanctioned call (TransformerBridge) refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) model.forward": {
+   "refused": true,
+   "message": "model.forward outside a sanctioned call refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) pm.capture_prompt outside": {
+   "refused": true,
+   "message": "pm.capture_prompt outside a sanctioned call refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) pm.run_patched outside": {
+   "refused": true,
+   "message": "pm.run_patched outside a sanctioned call refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) ri.capture_reference": {
+   "refused": true,
+   "message": "ri.capture_reference in confirm refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) ri.run_arm a second time": {
+   "refused": true,
+   "message": "ri.run_arm for neutral-review|ref|0|REF: a second time refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) ri.run_arm outside the allowed set": {
+   "refused": true,
+   "message": "ri.run_arm for neutral-review|ref|0|SUF-READ@two: not a key of this mode's manifest refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) rd.capture_frame_020 directly": {
+   "refused": true,
+   "message": "rd.capture_frame_020 outside a sanctioned call refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  },
+  "(c) a second model load": {
+   "refused": true,
+   "message": "a second model load refused by the confirm launcher (production)",
+   "forward_calls": 0,
+   "refusals_logged": 1
+  }
+ },
+ "landing": {
+  "noop_logits_equal_plain_bitwise": true,
+  "head_noop_logits_equal_plain_bitwise": true
+ },
+ "post_run_computations": {
+  "primary_statistics": {
+   "label": "READ_COMPONENT_EFFECTS_NOT_ESTABLISHED",
+   "R": 14,
+   "I": 16
+  },
+  "run_records_frames": 36,
+  "secondary_statistics_keys": [
+   "bootstrap",
+   "direction_free",
+   "head",
+   "isotropic",
+   "layer_norm",
+   "manipulation_check",
+   "primary_medians",
+   "program",
+   "stratum"
+  ],
+  "encode_nonfinite": true,
+  "tensor_digest": "c97b8d3d38402166d3017a61841ffc47e6178a7a144857e3f35df1a00bcf8859",
+  "json_safe": true,
+  "save_load_digests_equal": true,
+  "ok": true,
+  "forward_calls_during": 0,
+  "refusals_during": 0
+ },
+ "events": {
+  "mode": "production",
+  "load_model": 2,
+  "refused": [
+   "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed",
+   "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed",
+   "ri.run_arm for neutral-review|ref|0|REF: the S2 ledger is not on disk with the barrier passed",
+   "torch.nn.Module.__call__ outside a sanctioned call (TransformerBridge)",
+   "model.forward outside a sanctioned call",
+   "pm.capture_prompt outside a sanctioned call",
+   "pm.run_patched outside a sanctioned call",
+   "ri.capture_reference in confirm",
+   "ri.run_arm for neutral-review|ref|0|REF: a second time",
+   "ri.run_arm for neutral-review|ref|0|SUF-READ@two: not a key of this mode's manifest",
+   "rd.capture_frame_020 outside a sanctioned call",
+   "a second model load"
+  ],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "outputs_reads": 0,
+  "sanctioned_runs": 3,
+  "sanctioned_forward_calls": 1020,
+  "confirm_invocations": 0,
+  "signals": []
+ },
+ "done_keys": [
+  "neutral-review|ref|0|REF",
+  "neutral-review|two|0|HEAD-NEC@two",
+  "neutral-review|two|0|NOOP@two"
+ ],
+ "live_judged": [
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "r+",
+    16777218
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16777218
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/23sj3v61",
+    null,
+    16780034
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.remove",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/23sj3v61",
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0",
+    448,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0/probe-source",
+    null,
+    16777729
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.link",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0/probe-source",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0/probe-link",
+    -1,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "shutil.rmtree",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0",
+    null
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.remove",
+   "args": [
+    "probe-source",
+    3
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.remove",
+   "args": [
+    "probe-link",
+    3
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.rmdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/tmpxk1e39j0",
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/tmpdir_d/torchinductor_gaborhorvath-ulenius",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "tokenizer",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/out/d_production_runs_mirror.jsonl",
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "frozen inputs + ModelPrograms + parameters digest",
+   "event": "open",
+   "args": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "frozen inputs + ModelPrograms + parameters digest",
+   "event": "open",
+   "args": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-zm78rft9.json",
+    null,
+    16780034
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    5,
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-zm78rft9.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-lv0f1f97.json",
+    null,
+    16780034
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    5,
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-lv0f1f97.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-_mmj2t0q.json",
+    null,
+    16780034
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    5,
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-_mmj2t0q.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(a) run_arm before the mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) mirror ledger",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-baw64izd.json",
+    null,
+    16780034
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) mirror ledger",
+   "event": "open",
+   "args": [
+    5,
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) mirror ledger",
+   "event": "os.rename",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/.results-baw64izd.json",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    -1,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) mirror ledger",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(b) sanctioned runs",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/results.json",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(d) post-run computations (synthetic)",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    511,
+    -1
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(d) post-run computations (synthetic)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/stage2-measurements.pt",
+    "w",
+    16778753
+   ],
+   "writing": true,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(d) post-run computations (synthetic)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101",
+    null,
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  },
+  {
+   "phase": "(d) post-run computations (synthetic)",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/mirror_d/outputs/experiment-101/stage2-measurements.pt",
+    "r",
+    16777216
+   ],
+   "writing": false,
+   "decision_at_event_time": "allow"
+  }
+ ],
+ "live_refusals": [],
+ "repo_writes": [],
+ "repo_outputs_paths_touched": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+ ],
+ "event_counts": {
+  "(a) run_arm before the mirror ledger | open": 12,
+  "(a) run_arm before the mirror ledger | os.mkdir": 3,
+  "(a) run_arm before the mirror ledger | os.rename": 3,
+  "(a) run_arm before the mirror ledger | tempfile.mkstemp": 3,
+  "(b) mirror ledger | open": 3,
+  "(b) mirror ledger | os.mkdir": 1,
+  "(b) mirror ledger | os.rename": 1,
+  "(b) mirror ledger | tempfile.mkstemp": 1,
+  "(b) sanctioned runs | open": 1,
+  "(d) post-run computations (synthetic) | open": 6,
+  "(d) post-run computations (synthetic) | os.mkdir": 1,
+  "frozen inputs + ModelPrograms + parameters digest | open": 24,
+  "imports | open": 5905,
+  "imports | os.link": 1,
+  "imports | os.mkdir": 2,
+  "imports | os.remove": 3,
+  "imports | os.rmdir": 1,
+  "imports | os.utime": 1,
+  "imports | shutil.rmtree": 1,
+  "imports | tempfile.mkdtemp": 1,
+  "load_model (counted, sealed) | open": 1412,
+  "seed_runtime | open": 8,
+  "tokenizer | open": 22,
+  "tokenizer | os.mkdir": 5
+ }
+}

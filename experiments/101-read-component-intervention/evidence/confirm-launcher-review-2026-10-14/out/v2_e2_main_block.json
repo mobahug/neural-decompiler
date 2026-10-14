@@ -1,0 +1,637 @@
+{
+ "correct": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140249866999Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x107600cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "incident_after_ledger": {
+  "exit": 2,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140251956807Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 2,
+  "record_post": {
+   "phase": "running",
+   "incident": {
+    "at": "2026-10-14T14:02:51+00:00",
+    "commit": "0000000000000000000000000000000000000000",
+    "message": "integrity failure after the measurements: gates ['G4_level1'] failed",
+    "phase": "confirm",
+    "recheck": {
+     "ok": true
+    },
+    "type": "IncidentError"
+   },
+   "label": null,
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": null,
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "c4cd75c65626d0156e94c775382e0bf683b1696cc447230d3bb3aa03d00a901c"
+  },
+  "record_signals": [],
+  "state_confirm_status": "running",
+  "state_incident": "integrity failure after the measurements: gates ['G4_level1'] failed",
+  "state_secondary_failures": null,
+  "partial_file": true,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10b300cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "vocations\": 1, \"signals\": []}\n{\"phase\": \"running\", \"incident\": {\"at\": \"2026-10-14T14:02:51+00:00\", \"commit\": \"0000000000000000000000000000000000000000\", \"message\": \"integrity failure after the measurements: gates ['G4_level1'] failed\", \"phase\": \"confirm\", \"recheck\": {\"ok\": true}, \"type\": \"IncidentError\"}, \"label\": null, \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"c4cd75c65626d0156e94c775382e0bf683b1696cc447230d3bb3aa03d00a901c\"}\n",
+  "stderr_tail": ""
+ },
+ "sigterm_after_ledger": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140253761028Z.json"
+  ],
+  "record_error": "KeyboardInterrupt: signal 15",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [
+   15
+  ],
+  "state_confirm_status": "running",
+  "state_incident": "signal 15",
+  "state_secondary_failures": null,
+  "partial_file": true,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10b328cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "INCIDENT (confirm): signal 15\n{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:02:53.737092+00:00\", \"ended_at\": \"2026-10-14T14:02:53.741730+00:00\", \"exit_status\": null, \"error\": \"KeyboardInterrupt: signal 15\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": [15]}\n",
+  "stderr_tail": ""
+ },
+ "sighup_under_nohup": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140257152553Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "1",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x109c00cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "sighup_without_nohup": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140300547579Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x108160cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "sigterm_before_ledger": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140302412739Z.json"
+  ],
+  "record_error": "KeyboardInterrupt: signal 15",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [
+   15
+  ],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10f500cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:03:02.395388+00:00\", \"ended_at\": \"2026-10-14T14:03:02.395899+00:00\", \"exit_status\": null, \"error\": \"KeyboardInterrupt: signal 15\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": [15]}\n",
+  "stderr_tail": ""
+ },
+ "sigterm_during_secondary": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140304358406Z.json"
+  ],
+  "record_error": "KeyboardInterrupt: signal 15",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [
+   15
+  ],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": {
+   "statistics": {
+    "message": "signal 15",
+    "type": "KeyboardInterrupt"
+   }
+  },
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10ff04cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:03:04.334080+00:00\", \"ended_at\": \"2026-10-14T14:03:04.336601+00:00\", \"exit_status\": null, \"error\": \"KeyboardInterrupt: signal 15\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": [15]}\n",
+  "stderr_tail": ""
+ },
+ "sigterm_in_post_block": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140308224893Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x116c28d60>",
+   "post_block_signal": "SIGTERM sent while the launcher reads the state for its post block",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "sigterm_during_tree_after": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140312238301Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x1094bcd60>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "tty_stdout": {
+  "exit": 1,
+  "sentinel": false,
+  "sentinel_mode": null,
+  "records": [
+   "production_run_20261014T140314185002Z.json"
+  ],
+  "record_error": "RuntimeError: production refuses a terminal on stdout or stderr: launch it detached with its output to a file",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": true,
+   "stderr_isatty": true,
+   "sighup_after_top_statement": "1",
+   "sigterm_at_exit": "0"
+  },
+  "stdout_tail": "^D\b\b{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:03:14.167278+00:00\", \"ended_at\": \"2026-10-14T14:03:14.167592+00:00\", \"exit_status\": null, \"error\": \"RuntimeError: production refuses a terminal on stdout or stderr: launch it detached with its output to a file\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 0, \"signals\": []}\n",
+  "stderr_tail": ""
+ },
+ "tty_stderr_only": {
+  "exit": 1,
+  "sentinel": false,
+  "sentinel_mode": null,
+  "records": [
+   "production_run_20261014T140316070498Z.json"
+  ],
+  "record_error": "RuntimeError: production refuses a terminal on stdout or stderr: launch it detached with its output to a file",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": true,
+   "sighup_after_top_statement": "1",
+   "sigterm_at_exit": "0"
+  },
+  "stdout_tail": "^D\b\b",
+  "stderr_tail": ""
+ },
+ "refusal_before_ledger": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140317879498Z.json"
+  ],
+  "record_error": "PhaseError: confirm already started or recorded an incident",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x107d88cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:03:17.862387+00:00\", \"ended_at\": \"2026-10-14T14:03:17.862716+00:00\", \"exit_status\": null, \"error\": \"PhaseError: confirm already started or recorded an incident\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n",
+  "stderr_tail": ""
+ },
+ "preflight_refuses": {
+  "exit": 1,
+  "sentinel": false,
+  "sentinel_mode": null,
+  "records": [
+   "production_run_20261014T140319664197Z.json"
+  ],
+  "record_error": "RuntimeError: preflight failed: N1_tree_clean (None)",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sigterm_at_exit": "0"
+  },
+  "stdout_tail": "{\"mode\": \"production\", \"started_at\": \"2026-10-14T14:03:19.647002+00:00\", \"ended_at\": \"2026-10-14T14:03:19.647167+00:00\", \"exit_status\": null, \"error\": \"RuntimeError: preflight failed: N1_tree_clean (None)\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 0, \"signals\": []}\n",
+  "stderr_tail": ""
+ },
+ "sentinel_exists": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140321482494Z.json"
+  ],
+  "record_error": "FileExistsError: [Errno 17] File exists: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/v2/main_block/sentinel_exists/launcher_dir/confirm.sentinel'",
+  "record_exit_status": null,
+  "record_post": null,
+  "record_signals": [],
+  "state_confirm_status": "not_started",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sigterm_at_exit": "0"
+  },
+  "stdout_tail": "00:00\", \"exit_status\": null, \"error\": \"FileExistsError: [Errno 17] File exists: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/v2/main_block/sentinel_exists/launcher_dir/confirm.sentinel'\"}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 0, \"signals\": []}\n",
+  "stderr_tail": ""
+ },
+ "git_fails_after": {
+  "exit": 0,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140323282326Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10bf00d60>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "00\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "keys_not_all_run": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140325091235Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 2,
+   "all_1980_ran_once": false,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x120900cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "0\", \"exit_status\": 0, \"error\": null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 2, \"all_1980_ran_once\": false, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "refusal_swallowed": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140326897534Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x113c00cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": " null}\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [\"a refusal some code swallowed\"], \"forbidden_reads\": [], \"forbidden_writes\": [], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ },
+ "forbidden_write_recorded": {
+  "exit": 1,
+  "sentinel": true,
+  "sentinel_mode": "0o644",
+  "records": [
+   "production_run_20261014T140328726628Z.json"
+  ],
+  "record_error": null,
+  "record_exit_status": 0,
+  "record_post": {
+   "phase": "complete",
+   "incident": null,
+   "label": "READ_COMPONENT_EFFECTS_AS_PREDICTED",
+   "keys_done": 3,
+   "all_1980_ran_once": true,
+   "accounting": {
+    "equal": true
+   },
+   "gate_failures": null,
+   "secondary_failures": null,
+   "state_sha256": "4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec"
+  },
+  "record_signals": [],
+  "state_confirm_status": "complete",
+  "state_incident": null,
+  "state_secondary_failures": null,
+  "partial_file": false,
+  "notes": {
+   "initial_sighup": "0",
+   "initial_sigterm": "0",
+   "stdout_isatty": false,
+   "stderr_isatty": false,
+   "sighup_after_top_statement": "1",
+   "sighup_inside_confirm": "1",
+   "sigterm_inside_confirm": "<function _signal_to_interrupt at 0x10be00cc0>",
+   "sigterm_at_exit": "1"
+  },
+  "stdout_tail": "\n{\"mode\": \"production\", \"load_model\": 1, \"refused\": [], \"forbidden_reads\": [], \"forbidden_writes\": [\"a refused write some code swallowed\"], \"sanctioned_runs\": 0, \"sanctioned_forward_calls\": 0, \"confirm_invocations\": 1, \"signals\": []}\n{\"phase\": \"complete\", \"incident\": null, \"label\": \"READ_COMPONENT_EFFECTS_AS_PREDICTED\", \"keys_done\": 3, \"all_1980_ran_once\": true, \"gate_failures\": null, \"secondary_failures\": null, \"state_sha256\": \"4f610a89837a3c1dd28ccf0752e86dc6396cf5442400f7b9affb44013c050eec\"}\n",
+  "stderr_tail": ""
+ }
+}

@@ -1,6 +1,6 @@
 # Experiment 101 — evidence
 
-**Status (2026-10-14):** the freeze, the calibration and the lock are installed (the lock by the user, `961e814`); stage 1 ran once and its three files await the user's commit; confirm follows.
+**Experiment 101 is CLOSED (2026-10-14): `READ_COMPONENT_EFFECTS_AS_PREDICTED`.** Every phase ran exactly once, and every review is an independent AI review, not a human validation. See [`closure-2026-10-14.md`](closure-2026-10-14.md).
 
 | directory | what |
 |---|---|
@@ -13,6 +13,13 @@
 | [`stage1-launcher-recheck-2026-10-14/`](stage1-launcher-recheck-2026-10-14/README.md) | the independent AI re-check of the stage-1 launcher version 2: **READY FOR PRODUCTION** |
 | [`stage1-2026-10-14/`](stage1-2026-10-14/README.md) | the guarded stage 1 (rehearsal; the one production run at `961e814`: exit 0, the 36 S1 keys once each) |
 | [`stage1-review-2026-10-14/`](stage1-review-2026-10-14/README.md) | the independent AI stage-1 review: **PASS WITH NOTES — no blocker**; the barrier passes on these bytes |
+| [`confirm-launcher-review-2026-10-14/`](confirm-launcher-review-2026-10-14/README.md) | the independent AI review of the confirm launcher: v1 READY WITH CHANGES, v2 **READY FOR PRODUCTION** |
+| [`confirm-2026-10-14/`](confirm-2026-10-14/README.md) | the guarded confirm (rehearsal with the barrier dry run, smoke, the one production run at `59d8ec4`: exit 0, 1,980 S2 keys once each) |
+| [`confirmation-review-2026-10-14/`](confirmation-review-2026-10-14/README.md) | the independent AI confirmation review: **PASS WITH NOTES — no blocker; the label recomputed bit for bit** |
+| [`report-2026-10-14/`](report-2026-10-14/README.md) | the guarded report (check and production; G6 at the report bit for bit) |
+| [`final-report-2026-10-14.md`](final-report-2026-10-14.md) | `outputs/experiment-101/report.md`, byte-identical (`54f883ad…`) |
+| [`confirmation-record-2026-10-14.json`](confirmation-record-2026-10-14.json) | the extract of the git-ignored final state (`c803fe97…`) |
+| [`closure-2026-10-14.md`](closure-2026-10-14.md) | **the closure**: the result and its scope, competing explanations, the overshoot and per-arm tables, integrity, next decisions |
 
 The freeze artifact `../confirmation-v1.json` was installed byte-identically in
 `a857f9a2326ff61cae8485deef2ab9337f5d6e02`:

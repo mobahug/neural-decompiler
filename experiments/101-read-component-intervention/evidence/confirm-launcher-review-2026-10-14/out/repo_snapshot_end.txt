@@ -1,0 +1,79 @@
+snapshot at 2026-10-14T13:52:33Z
+961e81408e5c4da4fffdf9dfab0343e449a4e1f2
+?? experiments/101-read-component-intervention/stage1/states.f64
+?? experiments/101-read-component-intervention/stage1/states.json
+?? experiments/101-read-component-intervention/stage1/table.json
+e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13  outputs/experiment-101/calibration-measurements.pt
+6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90  outputs/experiment-101/candidate-calibration-v1.json
+8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087  outputs/experiment-101/candidate-lock.json
+3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980  outputs/experiment-101/candidate-preregistration.md
+6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a  outputs/experiment-101/results.json
+1c7e51c049e1c61cf669f1783736054956073dc5af6947354b1d13c058ac5b66  experiments/101-read-component-intervention/stage1/states.f64
+2b2c3a61b4a2ce05eba0dcf875c19bfdb1c2627da1ccb1e8d49710af95a873ca  experiments/101-read-component-intervention/stage1/states.json
+71d339cd1d7151ad57949384388679593264ac07dec8c9c944c121d9918795fa  experiments/101-read-component-intervention/stage1/table.json
+6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90  experiments/101-read-component-intervention/calibration-v1.json
+6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922  experiments/101-read-component-intervention/confirmation-v1.json
+8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087  experiments/101-read-component-intervention/preregistration-lock.json
+445a76c7449e2a5d9667123bac3dc6f15e03290e96527e0a3a607744eb0a4ace  experiments/101-read-component-intervention/README.md
+3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980  experiments/101-read-component-intervention/preregistration.md
+9ce7e996a86915e7dc80a074adbffc676595242ca9c585ee664d7ef52b0b45c2  experiments/101-read-component-intervention/run.py
+76b08e174c477dc60eaa67d9e17cb1c7598a7f3277fa1bb4d31081d16ca9a9ad  src/neural_decompiler/__init__.py
+86ccf1ba6879b35bd8c974dfae35c5afc72b0f6917d305048ebb1cc8b56f914e  src/neural_decompiler/attention_paths.py
+2cd2727be4f22bb102537802529b0a45152a62592fedf69da7dd07524202dbe2  src/neural_decompiler/attention_patterns.py
+c3edd2b7636bdb03ce811d920c7068d92a44f2093f672c43959f8ce1e7991435  src/neural_decompiler/behavior.py
+88edb08bbc11858335932e9b0fe83fcbe5cd2c42a0dd55dc828476df828bb564  src/neural_decompiler/block0_completion.py
+3a427fd865a454ff7f795b975186795c884701d086daf0b1bbf2dd7cb8a43e8f  src/neural_decompiler/block_concentration.py
+b6bf14af3c956796c09862941ee6686f9730bc071f0d13dfd24610cef861710b  src/neural_decompiler/block_routing.py
+134f75c999b8a58cdca2b060fea15ef1106e0a805e4dc5ab664cd7d55621b85f  src/neural_decompiler/candidate_screening.py
+ad9eb17bffcad666c0a58654f6258f3b78ba24c15d68dfd8d10397a7df403cc3  src/neural_decompiler/capture.py
+56379d577abbe9c0cf6599f2ed137056f59bf8b922b4d55bcac0609a9f92f572  src/neural_decompiler/components.py
+41cb8b8360b3e999c005147ba209003104069d9b3e7f80871a04462bb3961bbb  src/neural_decompiler/cue_decompilation.py
+2529850c9b20ade2ae77b56eb0d9cf73360f9d2ebab4a8eff2c9802d11d8cd60  src/neural_decompiler/cue_rotation.py
+32108e5e6b9c0a7251b6c50d912edd5e1d61229f8db071373190e4d06642caf0  src/neural_decompiler/cue_suppression.py
+e803eb71cfbc70ab276328a4e8192bd6b6a4935e8b2ffc2fcab3dbbfa89ae9bf  src/neural_decompiler/encoding_read.py
+16562b895fe79a7098697239433ace73ee8a855797b30595cff8d0deb73d3d73  src/neural_decompiler/frame_channels.py
+0816bb2c7fc90a42763370d6004f7cf579f38cc20daf1b76fba16e75a07ad764  src/neural_decompiler/head_pattern.py
+854b6ebd8fcd0ed52887d7742567421e64f2f8b1c9aeddcff8b582ed720c4439  src/neural_decompiler/head_transport.py
+898105fe8efac697cc8c3ffb90d3e88f2a27d47d21737d3802fc255c44027d29  src/neural_decompiler/interventions.py
+5a58249d08445d8ec4d6e24f3b78326e0b4afe106b888af9b378cad1db02c2ff  src/neural_decompiler/layer_correction.py
+756741f056cc68ec349f207d354a842dd63b1fc88a26d5d49b584b643d5b106b  src/neural_decompiler/logit_lens.py
+dfa2b7fe6c1d0ab301e2b003c11cfafafb1bf786ab84e7f82f01ff9d3569e984  src/neural_decompiler/models.py
+7f3a60e20d162f7c88c25e4795b7d44587d405598f413295eb10280bef77650e  src/neural_decompiler/neuron_feature.py
+16a60b0d64a55b9cf3b8ed1722e79740e3317f3d843cde202e36ef891254afc9  src/neural_decompiler/plural_mechanism.py
+5c66ca6988af8b3d7c61c03926c5711e33dc1c635b45d3bf173f9ca4db840b3a  src/neural_decompiler/prompt_elicitation.py
+1cdc9ae12ee8128a244eb388c5f092a116b0a02d3f665aa10da1c872e11809f7  src/neural_decompiler/provenance.py
+b113bcb52887621d32349967c805a1cf83b1a6b39652bd8f18ee4228c14247f7  src/neural_decompiler/read_assembly.py
+a93be725812bd50b352ed6ff00977af47076e246bbc178c78dc808e7d9103ecd  src/neural_decompiler/read_intervention.py
+08ba6ffb7cff07f7497b5432abf508f5a7a17fd1d3e9353e9db29ae93397ce57  src/neural_decompiler/readout_calibration.py
+6d990a085c0eba11ff1fab32c4d2e3b133c154836390ae0feba91d6ed15fc390  src/neural_decompiler/readout_decompilation.py
+ba10c581eb7350b582f4c8a229decffbe746a6b11d094b37e8f76a53afa97c92  src/neural_decompiler/readout_routing.py
+ef4d66e6cb4f0af0cbc5329213ba91ead7b56c45c7728dffa09f73a84e57448a  src/neural_decompiler/scale_comparison.py
+5e61b429fb327cccbe6c5bc3596df3f5136a7d919d1a3a3bf64f56dff30d9f5d  src/neural_decompiler/selectivity.py
+6d86d5ed2d990091c78d1a9995eccfd737ba20486e653e70fc86983133179ec7  src/neural_decompiler/supervised_subspace.py
+0b0cdbbd7adb134f78d2bd541e91c5992036250ca35f452f26cb1e5c7cc8145d  src/neural_decompiler/upstream_localization.py
+outputs/experiment-101/calibration-measurements.pt 1791967722 65935899
+outputs/experiment-101/candidate-calibration-v1.json 1791967864 354086
+outputs/experiment-101/candidate-lock.json 1791970329 68943
+outputs/experiment-101/candidate-preregistration.md 1791970329 8703
+outputs/experiment-101/results.json 1791983366 648753
+experiments/101-read-component-intervention/stage1/states.f64 1791983366 5240064
+experiments/101-read-component-intervention/stage1/states.json 1791983366 34492
+experiments/101-read-component-intervention/stage1/table.json 1791983366 1946190
+.git/index 1791979563 151970
+total 360
+drwxr-xr-x   16 gaborhorvath-ulenius  staff     512 Oct 14 15:08 .
+drwxr-xr-x   21 gaborhorvath-ulenius  staff     672 Oct  5 17:42 ..
+-rw-r--r--@   1 gaborhorvath-ulenius  staff     107 Oct 14 15:06 COMMIT_EDITMSG
+-rw-r--r--@   1 gaborhorvath-ulenius  staff     243 Oct 14 15:07 FETCH_HEAD
+-rw-r--r--@   1 gaborhorvath-ulenius  staff      30 Oct 14 11:00 HEAD
+-rw-r--r--@   1 gaborhorvath-ulenius  staff      41 Oct  5 17:36 ORIG_HEAD
+-rw-r--r--@   1 gaborhorvath-ulenius  staff     470 Sep 16 19:47 config
+-rw-r--r--    1 gaborhorvath-ulenius  staff      73 Sep 14 21:03 description
+drwxr-xr-x   16 gaborhorvath-ulenius  staff     512 Sep 14 21:03 hooks
+-rw-r--r--@   1 gaborhorvath-ulenius  staff  151970 Oct 14 15:06 index
+drwxr-xr-x    3 gaborhorvath-ulenius  staff      96 Sep 14 21:03 info
+drwxr-xr-x    4 gaborhorvath-ulenius  staff     128 Sep 14 21:03 logs
+drwxr-xr-x  260 gaborhorvath-ulenius  staff    8320 Oct 14 15:07 objects
+-rw-r--r--    1 gaborhorvath-ulenius  staff     112 Sep 14 21:03 packed-refs
+drwxr-xr-x    6 gaborhorvath-ulenius  staff     192 Sep 14 21:11 refs
+drwxr-xr-x@   3 gaborhorvath-ulenius  staff      96 Sep 22 10:35 worktrees

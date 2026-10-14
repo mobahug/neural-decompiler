@@ -1,0 +1,255 @@
+{
+ "NEC-AMP@many": {
+  "per_noun_max": 1.0762546006384324,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.5231141256570337,
+  "mean_error_median": 0.009354297512899734,
+  "median_measured_mean_dc": -5.395705597310126
+ },
+ "NEC-AMP@three": {
+  "per_noun_max": 1.081478069069167,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.4403827367698101,
+  "mean_error_median": -0.013818470308066821,
+  "median_measured_mean_dc": -5.044214176226266
+ },
+ "NEC-AMP@two": {
+  "per_noun_max": 0.9624091801658103,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.4861738347707574,
+  "mean_error_median": -0.02067881558303508,
+  "median_measured_mean_dc": -5.064601463607595
+ },
+ "NEC-HALF@many": {
+  "per_noun_max": 0.99411922987262,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.3597892510791869,
+  "mean_error_median": 0.02011655925647604,
+  "median_measured_mean_dc": -4.221545255636867
+ },
+ "NEC-HALF@three": {
+  "per_noun_max": 0.7932359875963044,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.1280752089210484,
+  "mean_error_median": -0.01705304213092962,
+  "median_measured_mean_dc": -3.4655406324169302
+ },
+ "NEC-HALF@two": {
+  "per_noun_max": 0.6700469556617166,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.14378084545035374,
+  "mean_error_median": -0.008798991387525934,
+  "median_measured_mean_dc": -3.4427443878560124
+ },
+ "NEC-ISO@two": {
+  "per_noun_max": 0.8564187822163838,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.26694185467016496,
+  "mean_error_median": -0.01705858032395202,
+  "median_measured_mean_dc": -4.988607285897943
+ },
+ "NEC-OFF@many": {
+  "per_noun_max": 0.9629668990374549,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.2711173821854773,
+  "mean_error_median": 0.008979590498986667,
+  "median_measured_mean_dc": -5.138962371439874
+ },
+ "NEC-OFF@three": {
+  "per_noun_max": 0.7147279663771231,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.19459860991184996,
+  "mean_error_median": -0.020871034045415904,
+  "median_measured_mean_dc": -4.953916139240507
+ },
+ "NEC-OFF@two": {
+  "per_noun_max": 0.7524354890988629,
+  "at": "coordinated-adjective-101-09",
+  "mean_error_max_abs": 0.21345629217425888,
+  "mean_error_median": -0.017192593600960926,
+  "median_measured_mean_dc": -4.967995945411392
+ },
+ "NEC-READ@many": {
+  "per_noun_max": 1.1957220925786287,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.14764116245658743,
+  "mean_error_median": 0.02889204313908489,
+  "median_measured_mean_dc": -1.1903261595134498
+ },
+ "NEC-READ@three": {
+  "per_noun_max": 0.6985717209156208,
+  "at": "coordinated-adjective-101-26",
+  "mean_error_max_abs": 0.25462631175822215,
+  "mean_error_median": 0.005120259483331946,
+  "median_measured_mean_dc": -0.2751820238330691
+ },
+ "NEC-READ@two": {
+  "per_noun_max": 0.6890762247164641,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.15214509510053797,
+  "mean_error_median": 0.0025400336906369336,
+  "median_measured_mean_dc": 0.06495376780063257
+ },
+ "NOOP@two": {
+  "per_noun_max": 0.7075045819838923,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.2003810192712212,
+  "mean_error_median": -0.025790567183427093,
+  "median_measured_mean_dc": -4.921431529371044
+ },
+ "PC-SWAP-PL@many": {
+  "per_noun_max": 0.5268697293079905,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.1274999815849095,
+  "mean_error_median": -0.0041817812277594735,
+  "median_measured_mean_dc": -0.7280196177808542
+ },
+ "PC-SWAP-PL@three": {
+  "per_noun_max": 0.5789161205146882,
+  "at": "coordinated-adjective-101-28",
+  "mean_error_max_abs": 0.1239235067820108,
+  "mean_error_median": -0.001083021482436941,
+  "median_measured_mean_dc": -0.3570340313488924
+ },
+ "PC-SWAP-PL@two": {
+  "per_noun_max": 0.6910460763326075,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.11755078664268612,
+  "mean_error_median": 0.0010961661249998533,
+  "median_measured_mean_dc": -0.19957105419303695
+ },
+ "PC-SWAP-REF@many": {
+  "per_noun_max": 1.1601278852044885,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.4259881593327597,
+  "mean_error_median": 0.04453199662306773,
+  "median_measured_mean_dc": -5.230787059928797
+ },
+ "PC-SWAP-REF@three": {
+  "per_noun_max": 1.0339069262946587,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.24686925074587407,
+  "mean_error_median": -0.0010180092373843763,
+  "median_measured_mean_dc": -4.861284859572785
+ },
+ "PC-SWAP-REF@two": {
+  "per_noun_max": 0.9006333130473374,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.23870571044582434,
+  "mean_error_median": 0.0007344395980704022,
+  "median_measured_mean_dc": -4.892193371736551
+ },
+ "PL@many": {
+  "per_noun_max": 1.066421191843233,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.3966765155377727,
+  "mean_error_median": 0.02088876432795228,
+  "median_measured_mean_dc": -5.268455795094937
+ },
+ "PL@three": {
+  "per_noun_max": 0.9199371701917802,
+  "at": "coordinated-adjective-101-08",
+  "mean_error_max_abs": 0.18686848713527304,
+  "mean_error_median": -0.0105366340106956,
+  "median_measured_mean_dc": -4.8941140476661396
+ },
+ "PL@two": {
+  "per_noun_max": 0.7075045819838923,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.2003810192712212,
+  "mean_error_median": -0.025790567183427093,
+  "median_measured_mean_dc": -4.921431529371044
+ },
+ "SUF-HALF@many": {
+  "per_noun_max": 0.2942750215431462,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.053661062543385096,
+  "mean_error_median": -0.00023991540451318016,
+  "median_measured_mean_dc": -3.1072519036787973
+ },
+ "SUF-HALF@three": {
+  "per_noun_max": 0.30227960329253545,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.07853106388267816,
+  "mean_error_median": -0.0007333205879183069,
+  "median_measured_mean_dc": -3.2022705078125
+ },
+ "SUF-HALF@two": {
+  "per_noun_max": 0.3186337507575532,
+  "at": "coordinated-adjective-101-32",
+  "mean_error_max_abs": 0.10432266172104532,
+  "mean_error_median": -7.81666865501407e-05,
+  "median_measured_mean_dc": -3.5138588434533227
+ },
+ "SUF-ISO@two": {
+  "per_noun_max": 0.4814435750442716,
+  "at": "coordinated-adjective-101-17",
+  "mean_error_max_abs": 0.17938949978369081,
+  "mean_error_median": 0.0010366432685475768,
+  "median_measured_mean_dc": -0.06077710888053741
+ },
+ "SUF-NEG@many": {
+  "per_noun_max": 0.4747678327498033,
+  "at": "coordinated-adjective-101-34",
+  "mean_error_max_abs": 0.23721204621898984,
+  "mean_error_median": -0.009106842185784725,
+  "median_measured_mean_dc": 0.935940899426424
+ },
+ "SUF-NEG@three": {
+  "per_noun_max": 0.5445466642209975,
+  "at": "coordinated-adjective-101-34",
+  "mean_error_max_abs": 0.2648893099917513,
+  "mean_error_median": -0.008693232413364838,
+  "median_measured_mean_dc": 0.9344034315664557
+ },
+ "SUF-NEG@two": {
+  "per_noun_max": 0.597971908130587,
+  "at": "coordinated-adjective-101-34",
+  "mean_error_max_abs": 0.31600743258747965,
+  "mean_error_median": -0.008855853468968666,
+  "median_measured_mean_dc": 0.9259481309335443
+ },
+ "SUF-OFF@many": {
+  "per_noun_max": 0.2923489384514735,
+  "at": "coordinated-adjective-101-20",
+  "mean_error_max_abs": 0.07239256647726383,
+  "mean_error_median": 0.002076663079857939,
+  "median_measured_mean_dc": -0.01823792276503142
+ },
+ "SUF-OFF@three": {
+  "per_noun_max": 0.3725039065326656,
+  "at": "coordinated-adjective-101-03",
+  "mean_error_max_abs": 0.084626720705642,
+  "mean_error_median": -0.00017806882681103975,
+  "median_measured_mean_dc": 0.12338990803006329
+ },
+ "SUF-OFF@two": {
+  "per_noun_max": 0.35715581165367255,
+  "at": "coordinated-adjective-101-03",
+  "mean_error_max_abs": 0.11160637931708955,
+  "mean_error_median": 0.0015628617813053247,
+  "median_measured_mean_dc": 0.16380908821202506
+ },
+ "SUF-READ@many": {
+  "per_noun_max": 1.0015917610529579,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.1501909943753681,
+  "mean_error_median": -0.0036065579051527408,
+  "median_measured_mean_dc": -4.8734965264042724
+ },
+ "SUF-READ@three": {
+  "per_noun_max": 1.0015376991875318,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.14580769774170665,
+  "mean_error_median": -0.005173871101498584,
+  "median_measured_mean_dc": -4.892312351661392
+ },
+ "SUF-READ@two": {
+  "per_noun_max": 1.0592648634638646,
+  "at": "coordinated-adjective-101-21",
+  "mean_error_max_abs": 0.15458148146600248,
+  "mean_error_median": -0.004034870151731873,
+  "median_measured_mean_dc": -4.934366346914557
+ }
+}
+guard fired: False

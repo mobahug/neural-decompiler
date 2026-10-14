@@ -1,0 +1,679 @@
+{
+ "checks": {
+  "lock_011_content_digest": {
+   "ok": true,
+   "detail": null
+  },
+  "noun_keys_equal_lock": {
+   "ok": true,
+   "detail": null
+  },
+  "checkpoint_sha256_equals_production_record": {
+   "ok": true,
+   "detail": null
+  },
+  "w_c_digest_equals_lock": {
+   "ok": true,
+   "detail": 0.7659205190757624
+  },
+  "G1_read_weight_from_checkpoint": {
+   "ok": true,
+   "detail": 0.0
+  },
+  "iso_directions_digests_equal_lock": {
+   "ok": true,
+   "detail": []
+  },
+  "G1_basis_v_j": {
+   "ok": true,
+   "detail": 6.661338147750939e-16
+  },
+  "states_data_sha256_equals_index": {
+   "ok": true,
+   "detail": null
+  },
+  "G2_replacements_rebuilt_bit_for_bit": {
+   "ok": true,
+   "detail": []
+  },
+  "G3_noop_bit_for_bit_36": {
+   "ok": true,
+   "detail": []
+  },
+  "G4_x3_pt_bit_for_bit_all_non_plain_runs": {
+   "ok": true,
+   "detail": []
+  },
+  "G5_landing_144": {
+   "ok": true,
+   "detail": []
+  },
+  "head_replacement_is_captured_plus_delta": {
+   "ok": true,
+   "detail": []
+  },
+  "G6_ref_vs_stage1_36": {
+   "ok": true,
+   "detail": []
+  },
+  "G2_r_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 3.250715452374209e-08,
+    "at": "coordinated-adjective-101-21|SUF-ISO-3@two",
+    "tolerance": 0.0001,
+    "margin": 3076.2458746416423
+   }
+  },
+  "G2_length_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 3.522923544900152e-08,
+    "at": "coordinated-adjective-101-14|SUF-HALF@three",
+    "tolerance": 0.0001,
+    "margin": 2838.551524763057
+   }
+  },
+  "G2_direction_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 4.4754376760951094e-07,
+    "at": "coordinated-adjective-101-28|NEC-HALF@three",
+    "tolerance": 0.0001,
+    "margin": 223.44183348622028
+   }
+  },
+  "G2_u_off32_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 5.512119094497336e-09,
+    "at": "coordinated-adjective-101-21|three",
+    "tolerance": 1e-06,
+    "margin": 181.41843143379913
+   }
+  },
+  "G3_pass_through_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 7.273629307746887e-07,
+    "at": "coordinated-adjective-101-34|NEC-ISO-5@two",
+    "tolerance": 0.0001,
+    "margin": 137.4829480153649
+   }
+  },
+  "G4_readout_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 0.004697435723753474,
+    "at": "coordinated-adjective-101-04|SUF-NEG@two",
+    "tolerance": 0.02,
+    "margin": 4.257642078818921
+   }
+  },
+  "G5_row_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 7.057777231644913e-06,
+    "at": "coordinated-adjective-101-13|HEAD-NEC@two",
+    "tolerance": 0.0001,
+    "margin": 14.168766839456284
+   }
+  },
+  "G5_output_within_tolerance": {
+   "ok": true,
+   "detail": {
+    "max": 1.2984793744452716e-05,
+    "at": "coordinated-adjective-101-13|HEAD-NEC@two",
+    "tolerance": 0.001,
+    "margin": 77.0131601379663
+   }
+  },
+  "head_deltas_reproduce": {
+   "ok": true,
+   "detail": [
+    7.655647271353187e-15,
+    0.0
+   ]
+  },
+  "logit_contrast_consistency_every_run_within_2e-2": {
+   "ok": true,
+   "detail": [
+    0.0033389466179762906,
+    "coordinated-adjective-101-06|HEAD-SUF-V@two"
+   ]
+  },
+  "x3_all_REF_equals_stage1_x3_all_bitwise": {
+   "ok": true,
+   "detail": [
+    0.0,
+    ""
+   ]
+  },
+  "layer_norm_records_reproduce": {
+   "ok": true,
+   "detail": 0.0
+  },
+  "manipulation_delta_T_reproduce": {
+   "ok": true,
+   "detail": 0.0
+  }
+ },
+ "facts": {
+  "G1_read_weight_max_abs_independent": 0.0,
+  "maxima": {
+   "G2_r": {
+    "max": 3.250715452374209e-08,
+    "at": "coordinated-adjective-101-21|SUF-ISO-3@two"
+   },
+   "G2_length": {
+    "max": 3.522923544900152e-08,
+    "at": "coordinated-adjective-101-14|SUF-HALF@three"
+   },
+   "G2_direction": {
+    "max": 4.4754376760951094e-07,
+    "at": "coordinated-adjective-101-28|NEC-HALF@three"
+   },
+   "G2_u_off32": {
+    "max": 5.512119094497336e-09,
+    "at": "coordinated-adjective-101-21|three"
+   },
+   "G3_pass_through": {
+    "max": 7.273629307746887e-07,
+    "at": "coordinated-adjective-101-34|NEC-ISO-5@two"
+   },
+   "pass_through_other": {
+    "max": 6.780028343200684e-07,
+    "at": "coordinated-adjective-101-24|PL@two"
+   },
+   "G4_readout": {
+    "max": 0.004697435723753474,
+    "at": "coordinated-adjective-101-04|SUF-NEG@two"
+   },
+   "logit_contrast_all": {
+    "max": 0.0033389466179762906,
+    "at": "coordinated-adjective-101-06|HEAD-SUF-V@two"
+   },
+   "G5_row": {
+    "max": 7.057777231644913e-06,
+    "at": "coordinated-adjective-101-13|HEAD-NEC@two"
+   },
+   "G5_output": {
+    "max": 1.2984793744452716e-05,
+    "at": "coordinated-adjective-101-13|HEAD-NEC@two"
+   },
+   "head_delta_full_rel": {
+    "max": 7.655647271353187e-15,
+    "at": "coordinated-adjective-101-18|HEAD-SUF@two"
+   },
+   "head_delta_value_rel": {
+    "max": 0.0,
+    "at": ""
+   },
+   "G6_x3_all_REF": {
+    "max": 0.0,
+    "at": ""
+   }
+  },
+  "vs_state": {
+   "G2_r": {
+    "mine": 3.250715452374209e-08,
+    "mine_at": "coordinated-adjective-101-21|SUF-ISO-3@two",
+    "state": 3.250715452374209e-08,
+    "state_at": "coordinated-adjective-101-21|ref|581|SUF-ISO-3@two"
+   },
+   "G2_length": {
+    "mine": 3.522923544900152e-08,
+    "mine_at": "coordinated-adjective-101-14|SUF-HALF@three",
+    "state": 3.522923544900152e-08,
+    "state_at": "coordinated-adjective-101-14|ref|581|SUF-HALF@three"
+   },
+   "G2_direction": {
+    "mine": 4.4754376760951094e-07,
+    "mine_at": "coordinated-adjective-101-28|NEC-HALF@three",
+    "state": 4.4754376760951094e-07,
+    "state_at": "coordinated-adjective-101-28|three|1264|NEC-HALF@three"
+   },
+   "G2_u_off32": {
+    "mine": 5.512119094497336e-09,
+    "mine_at": "coordinated-adjective-101-21|three",
+    "state": 5.512119094497336e-09,
+    "state_at": "coordinated-adjective-101-21|three"
+   },
+   "G3_pass_through": {
+    "mine": 7.273629307746887e-07,
+    "mine_at": "coordinated-adjective-101-34|NEC-ISO-5@two",
+    "state": 7.273629307746887e-07,
+    "state_at": "coordinated-adjective-101-34|two|767|NEC-ISO-5@two"
+   },
+   "G4_readout": {
+    "mine": 0.004697435723753474,
+    "mine_at": "coordinated-adjective-101-04|SUF-NEG@two",
+    "state": 0.004697435723753474,
+    "state_at": "coordinated-adjective-101-04|ref|581|SUF-NEG@two"
+   },
+   "G5_row": {
+    "mine": 7.057777231644913e-06,
+    "mine_at": "coordinated-adjective-101-13|HEAD-NEC@two",
+    "state": 7.05777723297718e-06,
+    "state_at": "coordinated-adjective-101-13|two|767|HEAD-NEC@two"
+   },
+   "G5_output": {
+    "mine": 1.2984793744452716e-05,
+    "mine_at": "coordinated-adjective-101-13|HEAD-NEC@two",
+    "state": 1.2984793747117251e-05,
+    "state_at": "coordinated-adjective-101-13|two|767|HEAD-NEC@two"
+   }
+  },
+  "overshoot_two": {
+   "flagged": 0,
+   "ratio_min": 0.3062488738999189,
+   "ratio_median": [
+    0.4063918727095277,
+    0.4090888987027345
+   ],
+   "ratio_max": 0.48340993776513036,
+   "s_median": [
+    2.540025104850458,
+    2.556518903024671
+   ],
+   "off_c_median": [
+    6.235545681085237,
+    6.2373941268368975
+   ],
+   "dr_range": [
+    1.6484150489703113,
+    2.319647331499249
+   ]
+  },
+  "overshoot_three": {
+   "flagged": 0,
+   "ratio_min": 0.23834813978939798,
+   "ratio_max": 0.38227136578405696,
+   "dr_range": [
+    1.4693824565634035,
+    2.0630650776610597
+   ]
+  },
+  "overshoot_many": {
+   "flagged": 0,
+   "ratio_min": 0.25164450122474824,
+   "ratio_max": 0.3492815928478343,
+   "dr_range": [
+    1.3569789379057293,
+    2.0522118276620045
+   ]
+  },
+  "layer_norm_two": {
+   "NEC-READ@two": {
+    "sigma_med": [
+     0.5715100680608058,
+     0.5733525169970152
+    ],
+    "g3_max": 9.575054686296255,
+    "gln2_max": 7.598400131827421
+   },
+   "SUF-READ@two": {
+    "sigma_med": [
+     0.5681175351375266,
+     0.569349677073931
+    ],
+    "g3_max": 9.415830625917014,
+    "gln2_max": 7.472045930739765
+   },
+   "NEC-OFF@two": {
+    "sigma_med": [
+     0.5520274043759794,
+     0.5529548972473383
+    ],
+    "g3_max": 9.964166797532894,
+    "gln2_max": 7.775771219295414
+   },
+   "SUF-OFF@two": {
+    "sigma_med": [
+     0.5522585845785627,
+     0.5559827757106389
+    ],
+    "g3_max": 10.0796928339086,
+    "gln2_max": 7.865924663577399
+   },
+   "NEC-AMP@two": {
+    "sigma_med": [
+     0.5958935774009314,
+     0.5984516196458841
+    ],
+    "g3_max": 8.844702879229956,
+    "gln2_max": 7.01882060203084
+   },
+   "SUF-NEG@two": {
+    "sigma_med": [
+     0.5855295117719981,
+     0.5885255895751709
+    ],
+    "g3_max": 9.068142052688838,
+    "gln2_max": 7.196133514475556
+   },
+   "NEC-HALF@two": {
+    "sigma_med": [
+     0.5707658114769527,
+     0.5716406659169782
+    ],
+    "g3_max": 4.798108181841912,
+    "gln2_max": 3.8075966237809027
+   },
+   "SUF-HALF@two": {
+    "sigma_med": [
+     0.5646258677145117,
+     0.5646951892769194
+    ],
+    "g3_max": 4.7710632768937815,
+    "gln2_max": 3.7861348032852886
+   },
+   "PC-SWAP-PL@two": {
+    "sigma_med": [
+     0.5657722880912208,
+     0.5665331063129946
+    ],
+    "g3_max": 25.245718711614227,
+    "gln2_max": 19.278448543836195
+   },
+   "PC-SWAP-REF@two": {
+    "sigma_med": [
+     0.5751031659200349,
+     0.5754002523586004
+    ],
+    "g3_max": 25.41746014606837,
+    "gln2_max": 19.40959586607288
+   },
+   "NEC-ISO-1@two": {
+    "sigma_med": [
+     0.5772660540511648,
+     0.5776603989899584
+    ],
+    "g3_max": 9.47011956655176,
+    "gln2_max": 7.456405874132681
+   },
+   "NEC-ISO-2@two": {
+    "sigma_med": [
+     0.5802868230790823,
+     0.5872913839246301
+    ],
+    "g3_max": 9.409361174374466,
+    "gln2_max": 7.196723922614218
+   },
+   "NEC-ISO-3@two": {
+    "sigma_med": [
+     0.5802184348583396,
+     0.5876281147714172
+    ],
+    "g3_max": 9.28683471790006,
+    "gln2_max": 7.069158145244169
+   },
+   "NEC-ISO-4@two": {
+    "sigma_med": [
+     0.5831773456291179,
+     0.5884374434964603
+    ],
+    "g3_max": 9.073827223452463,
+    "gln2_max": 7.201871630385701
+   },
+   "NEC-ISO-5@two": {
+    "sigma_med": [
+     0.5782000107656378,
+     0.582071205589178
+    ],
+    "g3_max": 9.263741130592505,
+    "gln2_max": 7.204615269582262
+   },
+   "NEC-ISO-6@two": {
+    "sigma_med": [
+     0.5822662274629281,
+     0.5852512524902648
+    ],
+    "g3_max": 9.417995012995155,
+    "gln2_max": 7.18764319725732
+   },
+   "NEC-ISO-7@two": {
+    "sigma_med": [
+     0.5810569984363366,
+     0.5822442555972565
+    ],
+    "g3_max": 9.02296936488096,
+    "gln2_max": 7.267530438596877
+   },
+   "NEC-ISO-8@two": {
+    "sigma_med": [
+     0.5820578964441989,
+     0.5823497442398696
+    ],
+    "g3_max": 9.275329161607376,
+    "gln2_max": 7.205496232767843
+   },
+   "SUF-ISO-1@two": {
+    "sigma_med": [
+     0.5777858463230644,
+     0.5785938429134146
+    ],
+    "g3_max": 9.109412359173678,
+    "gln2_max": 7.172398970147479
+   },
+   "SUF-ISO-2@two": {
+    "sigma_med": [
+     0.574738543363896,
+     0.5762228417925317
+    ],
+    "g3_max": 9.7192719295908,
+    "gln2_max": 7.433758309872609
+   },
+   "SUF-ISO-3@two": {
+    "sigma_med": [
+     0.5803184699547234,
+     0.5818366490088511
+    ],
+    "g3_max": 9.550226709063177,
+    "gln2_max": 7.2696526658673495
+   },
+   "SUF-ISO-4@two": {
+    "sigma_med": [
+     0.5709360030978903,
+     0.5767875226580788
+    ],
+    "g3_max": 9.265861232779953,
+    "gln2_max": 7.354288483872452
+   },
+   "SUF-ISO-5@two": {
+    "sigma_med": [
+     0.5830288465799033,
+     0.5863072596155522
+    ],
+    "g3_max": 9.297032926588898,
+    "gln2_max": 7.2305070750067815
+   },
+   "SUF-ISO-6@two": {
+    "sigma_med": [
+     0.5763948013272376,
+     0.5766686218481246
+    ],
+    "g3_max": 9.472870919994161,
+    "gln2_max": 7.229523460311013
+   },
+   "SUF-ISO-7@two": {
+    "sigma_med": [
+     0.5732227348704105,
+     0.5791103491963522
+    ],
+    "g3_max": 9.323015233161962,
+    "gln2_max": 7.509201685219559
+   },
+   "SUF-ISO-8@two": {
+    "sigma_med": [
+     0.5732418782602595,
+     0.5736113935985625
+    ],
+    "g3_max": 9.212973747780197,
+    "gln2_max": 7.157055725737202
+   }
+  },
+  "manipulation_two": {
+   "PL@two": {
+    "median_ratio": 1.0,
+    "min": 1.0,
+    "max": 1.0
+   },
+   "NOOP@two": {
+    "median_ratio": 1.0,
+    "min": 1.0,
+    "max": 1.0
+   },
+   "NEC-READ@two": {
+    "median_ratio": -0.00838610001097267,
+    "min": -0.12012668140071968,
+    "max": 0.03175175820541133
+   },
+   "SUF-READ@two": {
+    "median_ratio": 0.9791683598358255,
+    "min": 0.8328067277895219,
+    "max": 1.0420494615035427
+   },
+   "NEC-OFF@two": {
+    "median_ratio": 1.0262655733418145,
+    "min": 0.9968913407164905,
+    "max": 1.0519607803965532
+   },
+   "SUF-OFF@two": {
+    "median_ratio": 0.0032248764322661506,
+    "min": -0.027591110436396327,
+    "max": 0.03628456593852022
+   },
+   "NEC-AMP@two": {
+    "median_ratio": 1.9431357595935141,
+    "min": 1.7466947027445114,
+    "max": 2.0574193386750887
+   },
+   "SUF-NEG@two": {
+    "median_ratio": -0.8910073155138425,
+    "min": -1.0518659295727466,
+    "max": -0.7876086719137565
+   },
+   "NEC-HALF@two": {
+    "median_ratio": 0.4989675860835039,
+    "min": 0.45333343028115863,
+    "max": 0.521480824313614
+   },
+   "SUF-HALF@two": {
+    "median_ratio": 0.48411630907096825,
+    "min": 0.42393242744423487,
+    "max": 0.5204792390688129
+   },
+   "PC-SWAP-PL@two": {
+    "median_ratio": -0.02869536160602865,
+    "min": -0.10731507706671127,
+    "max": 0.0332339706293335
+   },
+   "PC-SWAP-REF@two": {
+    "median_ratio": 0.9504753057381601,
+    "min": 0.8771822178815201,
+    "max": 1.0302913127785447
+   },
+   "NEC-ISO-1@two": {
+    "median_ratio": 0.9997865378746044,
+    "min": 0.9082034924491293,
+    "max": 1.083232247591778
+   },
+   "NEC-ISO-2@two": {
+    "median_ratio": 0.9909465595345766,
+    "min": 0.9391054272822128,
+    "max": 1.035854893675992
+   },
+   "NEC-ISO-3@two": {
+    "median_ratio": 0.9892328559275354,
+    "min": 0.9111172476139999,
+    "max": 1.0593116906506517
+   },
+   "NEC-ISO-4@two": {
+    "median_ratio": 0.9894601202911272,
+    "min": 0.8944873801743346,
+    "max": 1.0510625563847533
+   },
+   "NEC-ISO-5@two": {
+    "median_ratio": 0.9960565308175766,
+    "min": 0.9015569387132077,
+    "max": 1.0650265053106998
+   },
+   "NEC-ISO-6@two": {
+    "median_ratio": 0.994233434484932,
+    "min": 0.8872774824768598,
+    "max": 1.089390250518545
+   },
+   "NEC-ISO-7@two": {
+    "median_ratio": 1.0042173421525646,
+    "min": 0.9421631820857743,
+    "max": 1.0388606586985552
+   },
+   "NEC-ISO-8@two": {
+    "median_ratio": 0.9972177075620732,
+    "min": 0.9041847705618736,
+    "max": 1.057734396347431
+   },
+   "SUF-ISO-1@two": {
+    "median_ratio": 0.011218926412924872,
+    "min": -0.05580560498497651,
+    "max": 0.10670621884192807
+   },
+   "SUF-ISO-2@two": {
+    "median_ratio": 0.0008535289551395056,
+    "min": -0.03384513068843464,
+    "max": 0.06884491211147657
+   },
+   "SUF-ISO-3@two": {
+    "median_ratio": 0.007865506216173164,
+    "min": -0.06735572988553507,
+    "max": 0.09464039073687651
+   },
+   "SUF-ISO-4@two": {
+    "median_ratio": 0.004462534326543366,
+    "min": -0.07137331531503545,
+    "max": 0.08305558654342794
+   },
+   "SUF-ISO-5@two": {
+    "median_ratio": 0.005223725897832545,
+    "min": -0.06597957284798985,
+    "max": 0.09226699439450023
+   },
+   "SUF-ISO-6@two": {
+    "median_ratio": 0.010000448810660806,
+    "min": -0.09569791715331424,
+    "max": 0.08633480741486428
+   },
+   "SUF-ISO-7@two": {
+    "median_ratio": 0.015895611309817124,
+    "min": -0.059044347778017855,
+    "max": 0.0743572851248661
+   },
+   "SUF-ISO-8@two": {
+    "median_ratio": 0.009819007160610464,
+    "min": -0.06580362759026319,
+    "max": 0.08427874445454321
+   },
+   "HEAD-NEC@two": {
+    "median_ratio": -0.008386799389460232,
+    "min": -0.12012872080699197,
+    "max": 0.03175433867075389
+   },
+   "HEAD-SUF@two": {
+    "median_ratio": 0.9791680403572023,
+    "min": 0.8328130884206394,
+    "max": 1.0420496844976093
+   },
+   "HEAD-NEC-V@two": {
+    "median_ratio": -0.004702074473232479,
+    "min": -0.09500083270873284,
+    "max": 0.04410903604383162
+   },
+   "HEAD-SUF-V@two": {
+    "median_ratio": 0.965860505119918,
+    "min": 0.8490953005790374,
+    "max": 1.0372500437184697
+   }
+  }
+ }
+}

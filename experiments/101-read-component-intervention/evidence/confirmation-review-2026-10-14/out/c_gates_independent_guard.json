@@ -1,0 +1,44 @@
+{
+ "script": "c_gates_independent",
+ "dont_write_bytecode": true,
+ "env": {
+  "HF_HUB_OFFLINE": "1",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "GIT_OPTIONAL_LOCKS": "0",
+  "TMPDIR": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirmation-review/tmp"
+ },
+ "repo_write_refusals": [],
+ "outputs_read_refusals": [],
+ "outputs_reads": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/stage2-measurements.pt",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+ ],
+ "subprocess": [],
+ "subprocess_refusals": [],
+ "module_call_refusals": 0,
+ "entry_point_refusals": [],
+ "token_guard_hits": [],
+ "forbidden_sequences": 624,
+ "forward_guards_installed": true,
+ "sealed": null,
+ "model_loads": 0,
+ "self_test": {
+  "repo_write_refused": true,
+  "other_outputs_read_refused": true
+ },
+ "entry_points_replaced": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.read_assembly.capture_reference",
+  "neural_decompiler.read_intervention.capture_reference",
+  "neural_decompiler.read_intervention.run_arm",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ]
+}
