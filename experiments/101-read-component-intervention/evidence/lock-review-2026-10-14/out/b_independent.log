@@ -1,0 +1,115 @@
+PASS lock_file_sha256
+PASS lock_content_sha256_recomputes
+PASS lock_file_is_canonical_plus_newline
+PASS lock_top_level_keys
+PASS prereg_file_sha256
+PASS experiment_schema_kind
+PASS run_id_is_state_run_id
+PASS protocol_code_commit_is_head_and_lock_phase_commit
+PASS design_record
+PASS plan_record
+PASS design_commit_touches_the_file
+PASS design_decision_touches_the_file
+PASS plan_commit_touches_the_file
+PASS plan_decision_touches_the_file
+PASS configuration_equals_plan_and_design
+PASS run_order_equals_plan
+PASS cue_order_equals_plan
+PASS holm_26_25_tails
+PASS module_blobs_20
+PASS module_blobs_equal_git_head
+PASS module_blobs_equal_git_516df20
+PASS module_blobs_equal_working_files
+PASS dependencies_module_blobs_equal_lock_module_blobs
+PASS own_module_blob
+PASS plan_blob_table_equals_lock
+PASS inherited_025
+PASS confirmation_file_sha256
+PASS confirmation_content_sha256
+PASS confirmation_manifest_equals_mine
+PASS confirmation_manifest_sha256
+PASS confirmation_counts
+PASS confirmation_s1_s2_disjoint
+PASS confirmation_frames_are_candidates_1_36
+PASS confirmation_frames_tokenize_from_design
+PASS state_confirmation_binding_equals_lock
+PASS calibration_binding
+PASS calibration_content_recomputes
+PASS tau_is_33rd_of_36
+PASS tau_evaluable
+PASS calibration_no_trigger
+PASS calibration_confirmation_binding
+PASS calibration_module_blob_is_head
+PASS calibration_tolerances_equal_lock
+PASS lock_binds_only_tau_from_calibration
+PASS readout_020_blob
+PASS exposed_states_sha256
+PASS results_020_file
+PASS results_020_state
+PASS readout_020_frozen_input_digests_subset
+PASS embedding_sha256_from_raw_checkpoint
+PASS model_id_revision
+PASS checkpoint_file_sha256
+PASS dependencies_text_fields_present
+FAIL input_digests_traced_to_committed_files  -> ["table_022_file"]
+PASS inputs_count_42
+PASS noun_keys_79_in_pool_order
+PASS noun_keys_in_stage1_table_meta
+PASS noun_keys_equal_020_scorable_set
+PASS w_c_digest_torch_equals_lock
+PASS w_hat_digest_equals_lock
+PASS d_T_digest_equals_lock
+PASS w_c_norm_about_0766
+PASS G1_from_raw_weights_within_1e-9
+PASS iso_frames_are_the_frozen_frames_in_order
+PASS iso_tag_and_k
+PASS iso_digests_all_288_equal_lock (my torch-arithmetic implementation)
+PASS iso_unit_meanzero_orthogonal_1e-12
+PASS g1_values_in_lock_within_tolerance
+PASS u_off_rule_text
+PASS stage1_paths
+PASS stage1_layout_equals_mine
+PASS stage1_meta
+PASS layout_formula_matches_020_locked_states (108 entries)
+PASS stage1_table_meta
+PASS stage1_freeze_text
+PASS tolerances_equal_plan_table
+PASS constants
+PASS worst_values
+PASS direction_free
+PASS outcome_labels_order
+PASS outcome_conditions_match_design
+PASS scope_equals_design_7
+w_c: {
+ "norm_numpy_fsum": 0.7659205190757624,
+ "norm_torch": 0.7659205190757624,
+ "norm_lock": 0.7659205190757624,
+ "digest_numpy": "9ff59d9e76f1ddf1031192ee0dcd831a55ff4bb4de103f0ddb976045c470ea98",
+ "digest_torch": "253a4733d71243bb003c320cfe7fe0b183149294caee7bb2451c1be7c7a08bd8",
+ "digest_lock": "253a4733d71243bb003c320cfe7fe0b183149294caee7bb2451c1be7c7a08bd8",
+ "max_abs_numpy_vs_torch": 6.938893903907228e-18,
+ "w_hat_digest_torch": "f4e9701bd4f6e404fa9137aeb4de4c6ccb304e3b55b776f6766618d87766f905",
+ "w_hat_digest_lock": "f4e9701bd4f6e404fa9137aeb4de4c6ccb304e3b55b776f6766618d87766f905",
+ "d_T_digest": "ec1c0dfb8224b95a3666ece3f93b89c7d24889e1d99851f6027525215fcae81d",
+ "d_T_digest_lock": "ec1c0dfb8224b95a3666ece3f93b89c7d24889e1d99851f6027525215fcae81d",
+ "mean_w_c_numpy": -1.6263032587282567e-19
+}
+w_c from raw: {'max_abs_read_weight_raw_vs_011': 0.0, 'max_abs_w_c_raw_vs_011_centred': 0.0, 'tolerance_G1': 1e-09}
+iso: {
+ "digest_mismatches_torch_arith": [],
+ "digest_mismatches_numpy_arith": 288,
+ "worst": {
+  "norm": 2.220446049250313e-16,
+  "mean": 2.1667102790765003e-18,
+  "dot_w": 3.204600925170876e-17,
+  "dot_ones": 4.719159362332609e-17,
+  "np_vs_torch": 8.326672684688674e-17,
+  "pairwise_abs_cos_max": 0.1593006610739204
+ },
+ "n": 288
+}
+basis mine: {'ones_norm_minus_1': 1.1102230246251565e-16, 'w_hat_norm_minus_1': 0.0, 'ones_dot_w_hat': 1.3877787807814457e-17} g1 lock: {'basis_norms': 1.1102230246251565e-16, 'basis_orthogonal': 1.0408340855860843e-17, 'read_weight_max_abs': 0.0, 'v_dot_w': 5.898059818321144e-17, 'v_mean': 2.6020852139652106e-18, 'v_norm': 6.661338147750939e-16}
+params by HF names: {'digest': 'cd1417f2a82ed1888b94745f5c271a6d2f6762e0c152611443a05178fd719a7e', 'equals_lock': False, 'n_tensors': 94}
+tau: {'n_rem': 36, 'n_ins': 36, 'rank33_rem': 0.025153865322968608, 'rank33_ins': 0.03511072680382421, 'nearest_rank': 33} holm: {'thresholds': [26, 25], 'tails': [0.005665492091793567, 0.014408359827939421]}
+fs events: {"refused_repo_writes": [], "refused_output_reads": [], "outputs_reads": ["/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"], "writes_outside_repo_not_review": ["open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y1ulwn4g", "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y1ulwn4g"], "module_calls_refused": 0, "module_calls_with_101_sequence": 0, "entry_points_refused": [], "entry_point_101_hits": 0, "model_loads": 0, "sealed_instances": 0, "aliases_wrapped": []}
+PROBLEMS: ['input_digests_traced_to_committed_files']

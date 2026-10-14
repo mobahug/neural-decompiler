@@ -1,0 +1,119 @@
+PASS runner_is_production
+PASS validate_exits_0
+PASS inputs_equal_base_digests
+PASS lock_digest_keys_42
+PASS confirmation_binding_frozen
+PASS calibration_binding_frozen
+PASS frame_candidates_equal_design
+PASS untagged_101_keys_not_forbidden
+PASS second_lock_refused_by_assert_phase_allowed
+PASS second_lock_refused_through_runner_state_for
+PASS state_inputs_equal_base
+PASS state_versions_equal_now
+PASS own_blob
+PASS frozen_blobs
+PASS configuration_equals_PRODUCTION
+PASS statistics_text
+PASS constants
+PASS tolerances_equal_ri_TOLERANCES (rule 1)
+PASS semantics
+PASS outcome
+PASS run_and_cue_order
+PASS inherited_025
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:27,  2.70it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 204.37it/s]
+PASS parameters_sha256_mine_equals_frozen_equals_lock
+PASS embedding_sha256_mine_equals_frozen_equals_lock
+FAIL bridge_parameters_are_raw_checkpoint_tensors  -> ["gpt_neox.layers.0._original_component.attention.k._original_component.bias", "gpt_neox.layers.0._original_component.attention.k._original_component.weight", "gpt_neox.layers.0._original_component.attention.q._original_component.bias", "gpt_neox.layers.0._original_component.attention.q._original_component.weight", "gpt_neox.layers.0._original_component.attention.v._original_component.bias", "gpt_neox.layers.0._original_component.attention.v._original_component.weight", "gpt_neox.layers.1._original_component.attention.k._original_component.bias", "gpt_neox.layers.1._original_component.attention.k._original_component.weight", "gpt_neox.layers.1._original_component.attention.q._original_component.bias", "gpt_neox.layers.1._original_component.attention.q._original_component.weight"]
+PASS runner_model_dependencies_accepts_lock
+PASS noun_keys_frozen_equal_lock
+PASS read_geometry_equals_mine
+PASS geometry_block_reproduces_twice_bit_for_bit
+PASS geometry_block_equals_lock_bit_for_bit
+PASS enforce_g1_passes
+PASS iso_direction_equals_mine
+PASS exposed_table_reproduces_calibration_digest
+PASS table_false_meta_equals_lock_binding_after_round_trip
+PASS table_false_round_trip_canonical_equal
+PASS stage1_binding_frozen_equals_lock
+PASS stage1_layout_frozen_equals_mine
+PASS dependencies_frozen_equal_lock
+PASS build_lock_reproduces_candidate_byte_for_byte
+PASS render_preregistration_byte_for_byte
+PASS validate_lock_accepts_candidate_as_installed
+PASS validate_lock_refuses_every_negative_control
+PASS validate_lock_allows_committed_stage1_files
+PASS stage1_writer_and_reader_accept_the_locks_layout (synthetic values)
+{
+ "forbidden_keys": 47952,
+ "parameters": {
+  "mine": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+  "frozen": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+  "lock": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+  "n_named": 113,
+  "names_first": [
+   "gpt_neox.embed_in._original_component.weight",
+   "gpt_neox.final_layer_norm._original_component.bias",
+   "gpt_neox.final_layer_norm._original_component.weight",
+   "gpt_neox.layers.0._original_component.attention.k._original_component.bias",
+   "gpt_neox.layers.0._original_component.attention.k._original_component.weight",
+   "gpt_neox.layers.0._original_component.attention.o._original_component.bias"
+  ]
+ },
+ "bridge_params_matching_raw_tensors": {
+  "bridge": 113,
+  "raw": 94,
+  "unmatched": [
+   "gpt_neox.layers.0._original_component.attention.k._original_component.bias",
+   "gpt_neox.layers.0._original_component.attention.k._original_component.weight",
+   "gpt_neox.layers.0._original_component.attention.q._original_component.bias",
+   "gpt_neox.layers.0._original_component.attention.q._original_component.weight",
+   "gpt_neox.layers.0._original_component.attention.v._original_component.bias",
+   "gpt_neox.layers.0._original_component.attention.v._original_component.weight",
+   "gpt_neox.layers.1._original_component.attention.k._original_component.bias",
+   "gpt_neox.layers.1._original_component.attention.k._original_component.weight",
+   "gpt_neox.layers.1._original_component.attention.q._original_component.bias",
+   "gpt_neox.layers.1._original_component.attention.q._original_component.weight"
+  ]
+ },
+ "model_seconds": 6.7,
+ "w_c_max_abs": {
+  "ri_vs_mine_torch_arith": 0.0,
+  "ri_vs_mine_numpy_fsum": 6.938893903907228e-18,
+  "w_hat_ri_vs_mine": 0.0,
+  "norm_ri_minus_mine": 0.0,
+  "norm2_ri_minus_mine_sq": 0.0,
+  "d_T_ri_vs_011": 0.0
+ },
+ "read_weight_frozen_vs_raw_mine": 0.0,
+ "g1_frozen_value": 0.0,
+ "iso_max_abs_ri_vs_mine_any_arith": 8.326672684688674e-17,
+ "exposed_table_true": {
+  "content_sha256": "ce055e09c73613b74caae31222192f95528e6f58e101469917138786b2d9758f",
+  "calibration": "ce055e09c73613b74caae31222192f95528e6f58e101469917138786b2d9758f",
+  "seconds": 13.4
+ },
+ "exposed_table_false_digest": "081ddbe5af80cf0047ae39449f176d78400702b864995b2e32483666c70306dc",
+ "exposed_predicted_weak": 0
+}
+phase rules: {
+ "calibrate": "refused: calibrate is complete; it runs once in this protocol version (a stop for review is never retried automatically)",
+ "lock": "refused: lock already ran or recorded an incident; a new candidate lock requires a new protocol version",
+ "stage1": "allowed",
+ "confirm": "refused: confirm requires a completed stage 1",
+ "report": "refused: report requires a completed confirm or a recorded incident"
+}
+validate_lock simulations: {
+ "as_installed": "accepted",
+ "scientific_change": "refused: scientific paths changed since the lock: ['src/neural_decompiler/read_intervention.py']",
+ "run_py_change": "refused: scientific paths changed since the lock: ['experiments/101-read-component-intervention/run.py']",
+ "stage1_files_committed": "accepted",
+ "dirty_tree": "refused: a scientific phase requires a clean Git tree",
+ "untracked": "refused: the lock and the preregistration must be tracked and committed",
+ "lock_commit_not_ancestor": "refused: the lock commit is not an ancestor of the current commit",
+ "preregistration_edited": "refused: the installed preregistration is not the one this lock renders",
+ "tolerance_widened_and_redigested": "refused: the lock names a different noun order, wording, statistic, constant, tolerance or outcome table",
+ "tolerance_widened_state_not_updated": "refused: the installed lock is not the candidate this run wrote",
+ "noun_order_changed": "refused: the lock names a different noun order, wording, statistic, constant, tolerance or outcome table"
+}
+fs/model events: {"refused_repo_writes": [], "refused_output_reads": [], "outputs_reads": ["/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"], "writes_outside_repo_not_review": ["open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /dev/null", "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/aiqhlio_", "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/aiqhlio_", "tempfile.mkdtemp /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md", "os.mkdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md", "os.utime /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-source", "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-source", "os.link /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-source", "os.link /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-link", "shutil.rmtree /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md", "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-source", "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md/probe-link", "os.rmdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp_dmds9md", "os.mkdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/torchinductor_gaborhorvath-ulenius"], "module_calls_refused": 0, "module_calls_with_101_sequence": 0, "entry_points_refused": [], "entry_point_101_hits": 0, "model_loads": 1, "sealed_instances": 430, "aliases_wrapped": ["neural_decompiler.capture.run_capture", "neural_decompiler.interventions.run_interventions", "neural_decompiler.candidate_screening.run_capture", "neural_decompiler.candidate_screening.run_interventions", "neural_decompiler.plural_mechanism.run_capture", "neural_decompiler.plural_mechanism.run_interventions", "neural_decompiler.plural_mechanism.capture_prompt", "neural_decompiler.plural_mechanism.run_patched", "neural_decompiler.head_transport.capture_reference", "neural_decompiler.read_assembly.capture_reference", "neural_decompiler.layer_correction.capture_frame", "neural_decompiler.attention_paths.capture_frame_013", "neural_decompiler.head_pattern.capture_frame_017", "neural_decompiler.readout_decompilation.capture_frame_020", "neural_decompiler.readout_decompilation.measure_pair_with_boundaries", "neural_decompiler.readout_decompilation.measure_pair", "neural_decompiler.cue_rotation.measure_rotated", "neural_decompiler.read_intervention.run_arm", "neural_decompiler.read_intervention.capture_reference", "neural_decompiler.read_intervention.measure_frame", "neural_decompiler.read_intervention.stage_runs"]}
+PROBLEMS: ['bridge_parameters_are_raw_checkpoint_tensors']

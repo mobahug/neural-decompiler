@@ -1,0 +1,20 @@
+time_utc 2026-10-14T10:11:36Z
+head 3621eec4b6a901119a4b96d4fdc07fa3b19652ab
+branch exp101-phases
+status_untracked_all_begin
+status_untracked_all_end
+ignored_outputs_101
+!! outputs/experiment-101/calibration-measurements.pt
+!! outputs/experiment-101/candidate-calibration-v1.json
+!! outputs/experiment-101/candidate-lock.json
+!! outputs/experiment-101/candidate-preregistration.md
+!! outputs/experiment-101/results.json
+mtime 1791970198 .git/index
+mtime 1791972550 .git
+e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13  outputs/experiment-101/calibration-measurements.pt
+6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90  outputs/experiment-101/candidate-calibration-v1.json
+8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087  outputs/experiment-101/candidate-lock.json
+3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980  outputs/experiment-101/candidate-preregistration.md
+cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca  outputs/experiment-101/results.json
+repository files newer than the lock's end (12:32:10 local), outside .git:
+find_end

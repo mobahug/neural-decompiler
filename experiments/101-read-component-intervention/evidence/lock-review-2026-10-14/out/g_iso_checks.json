@@ -1,0 +1,34 @@
+{
+ "n": 288,
+ "digest_mismatches": 0,
+ "worst": {
+  "abs_norm_minus_1": 5.551115123125783e-16,
+  "abs_mean": 2.159934015498466e-18,
+  "abs_dot_w_c": 2.3617290272699622e-17,
+  "abs_dot_w_hat": 3.232325372325693e-17,
+  "max_abs_offdiag_cos": 0.15930066107392055
+ },
+ "w_c_norm": 0.7659205190757624,
+ "events": {
+  "refused_repo_writes": [],
+  "refused_output_reads": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json"
+  ],
+  "writes_outside_repo_not_review": [
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/6ibrh3ix",
+   "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/6ibrh3ix"
+  ],
+  "module_calls_refused": 0,
+  "module_calls_with_101_sequence": 0,
+  "entry_points_refused": [],
+  "entry_point_101_hits": 0,
+  "model_loads": 0,
+  "sealed_instances": 0,
+  "aliases_wrapped": []
+ }
+}

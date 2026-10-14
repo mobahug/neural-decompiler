@@ -1,0 +1,41 @@
+{
+ "reconstructed_pre_lock_state_sha256": "729c9cb56d54ede3b21ef73ed70a0ab0fb9e57c32300938ef4cac7095dd4c3ee",
+ "reconstructed_pre_lock_file_sha256": "935a0df2a560525955602bc525275e2348cd09f68bdff43cee8bdecfa3e7f29e",
+ "operator_state_before_dryrun": "935a0df2a560525955602bc525275e2348cd09f68bdff43cee8bdecfa3e7f29e",
+ "calibration_review_state_sha256_prefix": "729c9cb5",
+ "state_extract_keys": [
+  "calibration",
+  "calibration_executed",
+  "configuration_name",
+  "confirmation_101",
+  "created_at",
+  "executed_prompt_keys",
+  "gate_failures",
+  "inputs",
+  "kind",
+  "measurements",
+  "phases",
+  "protocol_code_commit",
+  "results_file_sha256",
+  "run_id",
+  "state_sha256",
+  "versions"
+ ],
+ "extract_state_sha256": "729c9cb56d54ede3b21ef73ed70a0ab0fb9e57c32300938ef4cac7095dd4c3ee",
+ "extract_results_file_sha256": "935a0df2a560525955602bc525275e2348cd09f68bdff43cee8bdecfa3e7f29e",
+ "events": {
+  "refused_repo_writes": [],
+  "refused_output_reads": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"
+  ],
+  "writes_outside_repo_not_review": [],
+  "module_calls_refused": 0,
+  "module_calls_with_101_sequence": 0,
+  "entry_points_refused": [],
+  "entry_point_101_hits": 0,
+  "model_loads": 0,
+  "sealed_instances": 0,
+  "aliases_wrapped": []
+ }
+}

@@ -1,6 +1,6 @@
 # Experiment 101 — evidence
 
-**Status (2026-10-14):** the freeze and the calibration ran once and are installed; the lock is next (the user commits it).
+**Status (2026-10-14):** the freeze and the calibration ran once and are installed; the lock ran once and its candidates await the user's commit ([DECISION.md](lock-2026-10-14/DECISION.md)).
 
 | directory | what |
 |---|---|
@@ -8,6 +8,8 @@
 | [`freeze-review-2026-10-14/`](freeze-review-2026-10-14/README.md) | the independent AI freeze review: **PASS WITH NOTES — no blocker**, and the disposition of each finding |
 | [`calibrate-2026-10-14/`](calibrate-2026-10-14/README.md) | the guarded calibration (rehearsal, smoke, the one production run at `8f65062`: 2,016 spent keys, exit 0, no trigger), the post-install checks (15/15), the state extract |
 | [`calibration-review-2026-10-14/`](calibration-review-2026-10-14/README.md) | the independent AI calibration review: **PASS WITH NOTES — no blocker**, the Level-1 risk estimate, and the disposition of each finding |
+| [`lock-2026-10-14/`](lock-2026-10-14/README.md) | the guarded lock (one dry run, the one production run at `3621eec`: exit 0, 0 module calls), **`DECISION.md`** for the user, and the prepared stage-1 launcher (not run) |
+| [`lock-review-2026-10-14/`](lock-review-2026-10-14/README.md) | the independent AI lock review: **PASS WITH NOTES — no blocker to committing the lock**, and the disposition of each finding |
 
 The freeze artifact `../confirmation-v1.json` was installed byte-identically in
 `a857f9a2326ff61cae8485deef2ab9337f5d6e02`:

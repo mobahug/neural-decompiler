@@ -1,0 +1,112 @@
+{
+ "head": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+ "branch": "exp101-phases",
+ "head_is_expected": true,
+ "tree_clean": true,
+ "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+ "ahead_of_origin_main": 10
+}
+installed: {
+ "confirmation-v1.json": {
+  "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+  "head_blob_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+  "working_equals_head": true,
+  "install_commit_changes": [
+   "A\texperiments/101-read-component-intervention/confirmation-v1.json"
+  ],
+  "committed_alone": true,
+  "content_sha256_recorded": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+  "content_sha256_recomputed": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+  "file_is_canonical_plus_newline": true
+ },
+ "calibration-v1.json": {
+  "file_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+  "head_blob_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+  "working_equals_head": true,
+  "install_commit_changes": [
+   "A\texperiments/101-read-component-intervention/calibration-v1.json"
+  ],
+  "committed_alone": true,
+  "content_sha256_recorded": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+  "content_sha256_recomputed": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+  "file_is_canonical_plus_newline": true
+ },
+ "calibration_equals_candidate_bytes": true
+}
+changed since 8f65062 outside evidence: ['experiments/101-read-component-intervention/README.md', 'experiments/101-read-component-intervention/calibration-v1.json']
+changed since 40829d2 in src/tests/run.py: []
+design: {'commits_touching': ["516df20 docs: experiment 101 design — the reviewer's decision of 2026-10-02", 'a87e284 docs: experiment 101 design, revision 3 — intervening on the component L03.H04 reads'], 'unchanged_since_decision': True} plan: {'commits_touching': ["1e48c1c docs: experiment 101 plan — the reviewer's decision on G4 (2026-10-05)", '96f0cc8 docs: experiment 101 implementation plan, revision 3 (plan only)'], 'unchanged_since_decision': True} True True
+read_intervention blob at HEAD: d7db6197140fe871da591b5c578cc675f05f7d69
+outputs: {
+ "calibration-measurements.pt": "e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13",
+ "candidate-calibration-v1.json": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+ "candidate-lock.json": "8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087",
+ "candidate-preregistration.md": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+ "results.json": "cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca"
+}
+state: {
+ "file_sha256": "cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca",
+ "state_sha256_recorded": "a4657f80eed3e23587ea44597b77ce064c432eea5623799c838acdb668f40e12",
+ "state_sha256_recomputed": "a4657f80eed3e23587ea44597b77ce064c432eea5623799c838acdb668f40e12",
+ "file_is_canonical_plus_newline": true,
+ "run_id": "30ca8697c8702496",
+ "executed_prompt_keys": [],
+ "calibration_executed_count": 2016,
+ "lock_block": {
+  "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+  "content_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+  "preregistration_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+  "preregistration_sha256": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+  "written_at": "2026-10-14T09:32:09+00:00"
+ },
+ "stage1": null,
+ "confirmation": null,
+ "report": null,
+ "protocol_code_commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+ "configuration_name": "production",
+ "incident_like_keys": [],
+ "lock_block_matches_candidates": {
+  "content_sha256": true,
+  "preregistration_sha256": true
+ },
+ "calibration_block": {
+  "content_sha256": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+  "file_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+  "tau": {
+   "cap": 0.2,
+   "evaluable": true,
+   "floor": 0.02,
+   "ins": 0.03511072680382421,
+   "rank": 33,
+   "rem": 0.025153865322968608
+  },
+  "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json"
+ },
+ "calibration_block_has": [
+  "accounting",
+  "candidate_path",
+  "ceilings",
+  "content_sha256",
+  "file_sha256",
+  "gates",
+  "measurements",
+  "planned",
+  "tau"
+ ],
+ "confirmation_101_binding": {
+  "content_sha256": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+  "counts": {
+   "S1-REF": 36,
+   "S2-TARGET": 1980,
+   "frames": 36,
+   "runs_per_frame": 55,
+   "untagged_prompts": 144
+  },
+  "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+  "manifest_sha256": "7c7c94942dc883505b97403042e095d8d616168f3a0a1d8cf495edef25f8b8bd",
+  "path": "experiments/101-read-component-intervention/confirmation-v1.json"
+ }
+}
+phases: {"calibrate": {"commit": "8f65062627c77815adf9289c3fe60191d9fc3c17", "completed_at": "2026-10-14T08:51:04+00:00", "runtime": {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}, "started_at": "2026-10-14T08:45:07+00:00", "status": "complete"}, "confirm": {"status": "not_started"}, "lock": {"commit": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab", "completed_at": "2026-10-14T09:32:09+00:00", "runtime": {"backend": "cpu", "control_seed": 20260924, "deterministic_algorithms": false, "device": "cpu", "dtype": "float32", "seed": 20260916, "torch_num_threads": 4}, "status": "complete"}, "report": {"status": "not_started"}, "stage1": {"status": "not_started"}}
+fs events: {"refused_repo_writes": [], "refused_output_reads": [], "outputs_reads": ["/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/calibration-measurements.pt", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md", "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"], "writes_outside_repo_not_review": [], "module_calls_refused": 0, "module_calls_with_101_sequence": 0, "entry_points_refused": [], "entry_point_101_hits": 0, "model_loads": 0, "sealed_instances": 0, "aliases_wrapped": []}
+wrote /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/lock-review/out/a_repo.json

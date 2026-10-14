@@ -1,0 +1,49 @@
+{
+ "summary": {
+  "whole_raw_tensor": 76,
+  "qkv_slice_of_raw": 36,
+  "unmatched": 1,
+  "unmatched_names": [
+   "lm_head._original_component.bias"
+  ],
+  "raw_tensors_not_used_whole": []
+ },
+ "lm_head_bias": {
+  "lm_head_bias_shape": [
+   50304
+  ],
+  "lm_head_bias_all_zero": true,
+  "raw_has_embed_out_bias": false
+ },
+ "events": {
+  "refused_repo_writes": [],
+  "refused_output_reads": [],
+  "outputs_reads": [],
+  "writes_outside_repo_not_review": [
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y7tkgcte",
+   "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y7tkgcte",
+   "tempfile.mkdtemp /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09",
+   "os.mkdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09",
+   "os.utime /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-source",
+   "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-source",
+   "os.link /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-source",
+   "os.link /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-link",
+   "shutil.rmtree /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09",
+   "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-source",
+   "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09/probe-link",
+   "os.rmdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/tmp2_ryur09",
+   "os.mkdir /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/torchinductor_gaborhorvath-ulenius"
+  ],
+  "module_calls_refused": 0,
+  "module_calls_with_101_sequence": 0,
+  "entry_points_refused": [],
+  "entry_point_101_hits": 0,
+  "model_loads": 1,
+  "sealed_instances": 430,
+  "aliases_wrapped": []
+ }
+}

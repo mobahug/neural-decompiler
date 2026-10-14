@@ -1,0 +1,551 @@
+{
+ "checks": {
+  "lock_file_sha256": {
+   "ok": true
+  },
+  "lock_content_sha256_recomputes": {
+   "ok": true,
+   "detail": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  },
+  "lock_file_is_canonical_plus_newline": {
+   "ok": true
+  },
+  "lock_top_level_keys": {
+   "ok": true,
+   "detail": [
+    "calibration_101",
+    "configuration",
+    "confirmation_101",
+    "constants",
+    "content_sha256",
+    "cue_order",
+    "dependencies",
+    "design",
+    "experiment",
+    "geometry",
+    "inherited_025",
+    "inputs",
+    "kind",
+    "module",
+    "module_blobs",
+    "noun_keys",
+    "outcome",
+    "plan",
+    "protocol_code_commit",
+    "run_id",
+    "run_order",
+    "schema_version",
+    "semantics",
+    "stage1",
+    "statistics",
+    "tolerances"
+   ]
+  },
+  "prereg_file_sha256": {
+   "ok": true
+  },
+  "experiment_schema_kind": {
+   "ok": true
+  },
+  "run_id_is_state_run_id": {
+   "ok": true
+  },
+  "protocol_code_commit_is_head_and_lock_phase_commit": {
+   "ok": true
+  },
+  "design_record": {
+   "ok": true
+  },
+  "plan_record": {
+   "ok": true
+  },
+  "design_commit_touches_the_file": {
+   "ok": true,
+   "detail": "a87e284"
+  },
+  "design_decision_touches_the_file": {
+   "ok": true,
+   "detail": "516df20"
+  },
+  "plan_commit_touches_the_file": {
+   "ok": true,
+   "detail": "96f0cc8"
+  },
+  "plan_decision_touches_the_file": {
+   "ok": true,
+   "detail": "1e48c1c"
+  },
+  "configuration_equals_plan_and_design": {
+   "ok": true,
+   "detail": []
+  },
+  "run_order_equals_plan": {
+   "ok": true
+  },
+  "cue_order_equals_plan": {
+   "ok": true
+  },
+  "holm_26_25_tails": {
+   "ok": true,
+   "detail": {
+    "thresholds": [
+     26,
+     25
+    ],
+    "tails": [
+     0.005665492091793567,
+     0.014408359827939421
+    ]
+   }
+  },
+  "module_blobs_20": {
+   "ok": true
+  },
+  "module_blobs_equal_git_head": {
+   "ok": true,
+   "detail": {}
+  },
+  "module_blobs_equal_git_516df20": {
+   "ok": true
+  },
+  "module_blobs_equal_working_files": {
+   "ok": true
+  },
+  "dependencies_module_blobs_equal_lock_module_blobs": {
+   "ok": true
+  },
+  "own_module_blob": {
+   "ok": true,
+   "detail": "d7db6197140fe871da591b5c578cc675f05f7d69"
+  },
+  "plan_blob_table_equals_lock": {
+   "ok": true,
+   "detail": []
+  },
+  "inherited_025": {
+   "ok": true
+  },
+  "confirmation_file_sha256": {
+   "ok": true
+  },
+  "confirmation_content_sha256": {
+   "ok": true
+  },
+  "confirmation_manifest_equals_mine": {
+   "ok": true
+  },
+  "confirmation_manifest_sha256": {
+   "ok": true
+  },
+  "confirmation_counts": {
+   "ok": true
+  },
+  "confirmation_s1_s2_disjoint": {
+   "ok": true
+  },
+  "confirmation_frames_are_candidates_1_36": {
+   "ok": true
+  },
+  "confirmation_frames_tokenize_from_design": {
+   "ok": true,
+   "detail": []
+  },
+  "state_confirmation_binding_equals_lock": {
+   "ok": true
+  },
+  "calibration_binding": {
+   "ok": true
+  },
+  "calibration_content_recomputes": {
+   "ok": true
+  },
+  "tau_is_33rd_of_36": {
+   "ok": true,
+   "detail": {
+    "n_rem": 36,
+    "n_ins": 36,
+    "rank33_rem": 0.025153865322968608,
+    "rank33_ins": 0.03511072680382421,
+    "nearest_rank": 33
+   }
+  },
+  "tau_evaluable": {
+   "ok": true
+  },
+  "calibration_no_trigger": {
+   "ok": true
+  },
+  "calibration_confirmation_binding": {
+   "ok": true
+  },
+  "calibration_module_blob_is_head": {
+   "ok": true
+  },
+  "calibration_tolerances_equal_lock": {
+   "ok": true
+  },
+  "lock_binds_only_tau_from_calibration": {
+   "ok": true,
+   "detail": []
+  },
+  "readout_020_blob": {
+   "ok": true
+  },
+  "exposed_states_sha256": {
+   "ok": true,
+   "detail": "26c21d6386ebfaf45cd33f1e9ceaae08a225d5c4ae3a5a9476e28bf1683b0f83"
+  },
+  "results_020_file": {
+   "ok": true
+  },
+  "results_020_state": {
+   "ok": true
+  },
+  "readout_020_frozen_input_digests_subset": {
+   "ok": true
+  },
+  "embedding_sha256_from_raw_checkpoint": {
+   "ok": true,
+   "detail": "9cd6f39b3adfdb74cffe046af459634982684bff9aef2a981760326f1748eaaf"
+  },
+  "model_id_revision": {
+   "ok": true
+  },
+  "checkpoint_file_sha256": {
+   "ok": true
+  },
+  "dependencies_text_fields_present": {
+   "ok": true
+  },
+  "input_digests_traced_to_committed_files": {
+   "ok": false,
+   "detail": [
+    "table_022_file"
+   ]
+  },
+  "inputs_count_42": {
+   "ok": true,
+   "detail": 42
+  },
+  "noun_keys_79_in_pool_order": {
+   "ok": true,
+   "detail": {
+    "n_all": 80,
+    "n_scorable": 79,
+    "dropped": [
+     "peach"
+    ]
+   }
+  },
+  "noun_keys_in_stage1_table_meta": {
+   "ok": true
+  },
+  "noun_keys_equal_020_scorable_set": {
+   "ok": true
+  },
+  "w_c_digest_torch_equals_lock": {
+   "ok": true
+  },
+  "w_hat_digest_equals_lock": {
+   "ok": true
+  },
+  "d_T_digest_equals_lock": {
+   "ok": true
+  },
+  "w_c_norm_about_0766": {
+   "ok": true,
+   "detail": [
+    0.7659205190757624,
+    0.7659205190757624
+   ]
+  },
+  "G1_from_raw_weights_within_1e-9": {
+   "ok": true,
+   "detail": {
+    "max_abs_read_weight_raw_vs_011": 0.0,
+    "max_abs_w_c_raw_vs_011_centred": 0.0,
+    "tolerance_G1": 1e-09
+   }
+  },
+  "iso_frames_are_the_frozen_frames_in_order": {
+   "ok": true
+  },
+  "iso_tag_and_k": {
+   "ok": true
+  },
+  "iso_digests_all_288_equal_lock (my torch-arithmetic implementation)": {
+   "ok": true,
+   "detail": []
+  },
+  "iso_unit_meanzero_orthogonal_1e-12": {
+   "ok": true,
+   "detail": {
+    "norm": 2.220446049250313e-16,
+    "mean": 2.1667102790765003e-18,
+    "dot_w": 3.204600925170876e-17,
+    "dot_ones": 4.719159362332609e-17,
+    "np_vs_torch": 8.326672684688674e-17,
+    "pairwise_abs_cos_max": 0.1593006610739204
+   }
+  },
+  "g1_values_in_lock_within_tolerance": {
+   "ok": true
+  },
+  "u_off_rule_text": {
+   "ok": true
+  },
+  "stage1_paths": {
+   "ok": true
+  },
+  "stage1_layout_equals_mine": {
+   "ok": true,
+   "detail": {
+    "n": 324,
+    "d_model": 512,
+    "n_heads": 8,
+    "c_ref_lengths_in_020": [
+     80
+    ]
+   }
+  },
+  "stage1_meta": {
+   "ok": true
+  },
+  "layout_formula_matches_020_locked_states (108 entries)": {
+   "ok": true,
+   "detail": []
+  },
+  "stage1_table_meta": {
+   "ok": true
+  },
+  "stage1_freeze_text": {
+   "ok": true
+  },
+  "tolerances_equal_plan_table": {
+   "ok": true
+  },
+  "constants": {
+   "ok": true
+  },
+  "worst_values": {
+   "ok": true
+  },
+  "direction_free": {
+   "ok": true
+  },
+  "outcome_labels_order": {
+   "ok": true
+  },
+  "outcome_conditions_match_design": {
+   "ok": true
+  },
+  "scope_equals_design_7": {
+   "ok": true
+  }
+ },
+ "holm": {
+  "thresholds": [
+   26,
+   25
+  ],
+  "tails": [
+   0.005665492091793567,
+   0.014408359827939421
+  ]
+ },
+ "tau_recompute": {
+  "n_rem": 36,
+  "n_ins": 36,
+  "rank33_rem": 0.025153865322968608,
+  "rank33_ins": 0.03511072680382421,
+  "nearest_rank": 33
+ },
+ "parameters_digest_by_hf_names": {
+  "digest": "cd1417f2a82ed1888b94745f5c271a6d2f6762e0c152611443a05178fd719a7e",
+  "equals_lock": false,
+  "n_tensors": 94
+ },
+ "input_match": {
+  "020_prior_nouns_file": [
+   "experiments/020-readout-decompilation/confirmation-v1.json"
+  ],
+  "023_cells_data_file": [
+   "experiments/023-block0-completion/exposed-cells.f64"
+  ],
+  "023_cells_index_content": [
+   "experiments/023-block0-completion/exposed-cells.json"
+  ],
+  "023_cells_index_file": [
+   "experiments/023-block0-completion/exposed-cells.json"
+  ],
+  "023_confirmation_content": [
+   "experiments/023-block0-completion/confirmation-v1.json"
+  ],
+  "023_confirmation_file": [
+   "experiments/023-block0-completion/confirmation-v1.json"
+  ],
+  "023_lock_content": [
+   "experiments/023-block0-completion/preregistration-lock.json"
+  ],
+  "023_lock_file": [
+   "experiments/023-block0-completion/preregistration-lock.json"
+  ],
+  "024_calibration_content": [
+   "experiments/024-readout-routing-nounness/calibration-v1.json"
+  ],
+  "024_calibration_file": [
+   "experiments/024-readout-routing-nounness/calibration-v1.json"
+  ],
+  "024_confirmation_content": [
+   "experiments/024-readout-routing-nounness/confirmation-v1.json"
+  ],
+  "024_confirmation_file": [
+   "experiments/024-readout-routing-nounness/confirmation-v1.json"
+  ],
+  "024_lock_content": [
+   "experiments/024-readout-routing-nounness/preregistration-lock.json"
+  ],
+  "024_lock_file": [
+   "experiments/024-readout-routing-nounness/preregistration-lock.json"
+  ],
+  "025_confirmation_content": [
+   "experiments/025-nounness-direction-intervention/confirmation-v1.json"
+  ],
+  "025_confirmation_file": [
+   "experiments/025-nounness-direction-intervention/confirmation-v1.json"
+  ],
+  "calibration_022_content": [
+   "experiments/022-upstream-error-localization/calibration-v1.json"
+  ],
+  "calibration_022_file": [
+   "experiments/022-upstream-error-localization/calibration-v1.json"
+  ],
+  "confirmation_022_content": [
+   "experiments/022-upstream-error-localization/confirmation-v1.json"
+  ],
+  "confirmation_022_file": [
+   "experiments/022-upstream-error-localization/confirmation-v1.json"
+  ],
+  "results_020_file": [
+   "outputs/experiment-020/results.json"
+  ],
+  "table_022_file": [
+   "<no committed file>"
+  ],
+  "lock_011": {
+   "path": "experiments/011-encoding-read-prospective/preregistration-lock.json",
+   "recorded": "769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b",
+   "recomputed": "769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b",
+   "lock": "769bfeacd7c49fc18bed2ff3c5cf8d5ea2be4231e9f8e9c493819b5d7ba69d0b"
+  },
+  "lock_012": {
+   "path": "experiments/012-layer-correction-token-local/preregistration-lock.json",
+   "recorded": "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb",
+   "recomputed": "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb",
+   "lock": "830abc3b4a2d86a8c904cc467d7b08223f0b197623945f1edb8f5edd55c2a6eb"
+  },
+  "lock_017": {
+   "path": "experiments/017-transport-head-pattern/preregistration-lock.json",
+   "recorded": "b4fc9014ade7d21d2cd2e5be391ce6234e46fb46887880c0c4d03517d411ed72",
+   "recomputed": "b4fc9014ade7d21d2cd2e5be391ce6234e46fb46887880c0c4d03517d411ed72",
+   "lock": "b4fc9014ade7d21d2cd2e5be391ce6234e46fb46887880c0c4d03517d411ed72"
+  },
+  "closure_020": {
+   "path": "experiments/020-readout-decompilation/closure.json",
+   "recorded": "f2b1b5e793dad75f648fe1fb8347fde75c128a3ea00c0b14b4946814068fe9e0",
+   "recomputed": "f2b1b5e793dad75f648fe1fb8347fde75c128a3ea00c0b14b4946814068fe9e0",
+   "lock": "f2b1b5e793dad75f648fe1fb8347fde75c128a3ea00c0b14b4946814068fe9e0"
+  },
+  "extract_020": {
+   "path": "experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json",
+   "recorded": "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b8013e2dea",
+   "recomputed": "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b8013e2dea",
+   "lock": "99f25ee6000d74cdc307fbaf645fd2b83a4c192e7d201c1c3249b4b8013e2dea"
+  },
+  "manifest": {
+   "path": "screening/behavior-candidates/manifest-v1.json",
+   "recorded": "1c50c2e8bbf95f9aa4331ac57899f77c2a6be6b17d4cb2a5ac4ecc332c5e703c",
+   "recomputed": "1c50c2e8bbf95f9aa4331ac57899f77c2a6be6b17d4cb2a5ac4ecc332c5e703c",
+   "lock": "1c50c2e8bbf95f9aa4331ac57899f77c2a6be6b17d4cb2a5ac4ecc332c5e703c"
+  },
+  "extension": {
+   "path": "experiments/005-regular-plural-mechanism/extension-v1.json",
+   "recorded": "1c6852547f1c2d8ecfe8a736599ba3670fac51e43c93f04057091c56ba179da5",
+   "recomputed": "1c6852547f1c2d8ecfe8a736599ba3670fac51e43c93f04057091c56ba179da5",
+   "lock": "1c6852547f1c2d8ecfe8a736599ba3670fac51e43c93f04057091c56ba179da5"
+  }
+ },
+ "w_c": {
+  "norm_numpy_fsum": 0.7659205190757624,
+  "norm_torch": 0.7659205190757624,
+  "norm_lock": 0.7659205190757624,
+  "digest_numpy": "9ff59d9e76f1ddf1031192ee0dcd831a55ff4bb4de103f0ddb976045c470ea98",
+  "digest_torch": "253a4733d71243bb003c320cfe7fe0b183149294caee7bb2451c1be7c7a08bd8",
+  "digest_lock": "253a4733d71243bb003c320cfe7fe0b183149294caee7bb2451c1be7c7a08bd8",
+  "max_abs_numpy_vs_torch": 6.938893903907228e-18,
+  "w_hat_digest_torch": "f4e9701bd4f6e404fa9137aeb4de4c6ccb304e3b55b776f6766618d87766f905",
+  "w_hat_digest_lock": "f4e9701bd4f6e404fa9137aeb4de4c6ccb304e3b55b776f6766618d87766f905",
+  "d_T_digest": "ec1c0dfb8224b95a3666ece3f93b89c7d24889e1d99851f6027525215fcae81d",
+  "d_T_digest_lock": "ec1c0dfb8224b95a3666ece3f93b89c7d24889e1d99851f6027525215fcae81d",
+  "mean_w_c_numpy": -1.6263032587282567e-19
+ },
+ "w_c_from_raw_weights": {
+  "max_abs_read_weight_raw_vs_011": 0.0,
+  "max_abs_w_c_raw_vs_011_centred": 0.0,
+  "tolerance_G1": 1e-09
+ },
+ "iso": {
+  "digest_mismatches_torch_arith": [],
+  "digest_mismatches_numpy_arith": 288,
+  "worst": {
+   "norm": 2.220446049250313e-16,
+   "mean": 2.1667102790765003e-18,
+   "dot_w": 3.204600925170876e-17,
+   "dot_ones": 4.719159362332609e-17,
+   "np_vs_torch": 8.326672684688674e-17,
+   "pairwise_abs_cos_max": 0.1593006610739204
+  },
+  "n": 288
+ },
+ "g1_lock": {
+  "basis_norms": 1.1102230246251565e-16,
+  "basis_orthogonal": 1.0408340855860843e-17,
+  "read_weight_max_abs": 0.0,
+  "v_dot_w": 5.898059818321144e-17,
+  "v_mean": 2.6020852139652106e-18,
+  "v_norm": 6.661338147750939e-16
+ },
+ "basis_mine": {
+  "ones_norm_minus_1": 1.1102230246251565e-16,
+  "w_hat_norm_minus_1": 0.0,
+  "ones_dot_w_hat": 1.3877787807814457e-17
+ },
+ "fs_events": {
+  "refused_repo_writes": [],
+  "refused_output_reads": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "writes_outside_repo_not_review": [
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /dev/null",
+   "open-for-write /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y1ulwn4g",
+   "os.remove /private/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/y1ulwn4g"
+  ],
+  "module_calls_refused": 0,
+  "module_calls_with_101_sequence": 0,
+  "entry_points_refused": [],
+  "entry_point_101_hits": 0,
+  "model_loads": 0,
+  "sealed_instances": 0,
+  "aliases_wrapped": []
+ },
+ "problems": [
+  "input_digests_traced_to_committed_files"
+ ]
+}

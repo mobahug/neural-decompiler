@@ -1,0 +1,11 @@
+{
+ "whole_raw_tensor": 76,
+ "qkv_slice_of_raw": 36,
+ "unmatched": 1,
+ "unmatched_names": [
+  "lm_head._original_component.bias"
+ ],
+ "raw_tensors_not_used_whole": []
+}
+events: {"refused_repo_writes": [], "refused_output_reads": [], "outputs_reads": [], "module_calls_refused": 0, "module_calls_with_101_sequence": 0, "entry_points_refused": [], "entry_point_101_hits": 0, "model_loads": 1, "sealed_instances": 430, "aliases_wrapped": []}
+{"lm_head_bias_shape": [50304], "lm_head_bias_all_zero": true, "raw_has_embed_out_bias": false}

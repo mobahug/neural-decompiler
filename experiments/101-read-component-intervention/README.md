@@ -1,12 +1,14 @@
 # Experiment 101: Is the Read Component at the Cue Position Causal for the `one`/`two` Choice?
 
-**Status (2026-10-14): CALIBRATED — the freeze and the calibration ran once; the lock is next, and the user commits
-it.** The implementation passed its review and re-check (READY FOR PHASES, `40829d2`). The phases run on the branch
-`exp101-phases`. The freeze (tokenizer only) ran once at `40829d2`: `confirmation-v1.json`, installed in `a857f9a`. The
-calibration (exposed, exploratory; spent data) ran once at `8f65062`: no revision trigger, every gate held (G4 included),
-`τ_rem` 0.0252 and `τ_ins` 0.0351; `calibration-v1.json`, installed in `d502777`. Both independent AI reviews found PASS
-WITH NOTES, with no blocker ([evidence](evidence/README.md)). No lock, stage 1 or confirmation has run, and no 101 prompt
-has been executed.
+**Status (2026-10-14): LOCK CANDIDATE — awaiting the user's commit.** The freeze, the calibration and the lock ran once
+each, on the branch `exp101-phases` (local; nothing pushed). The freeze (tokenizer only, at `40829d2`):
+`confirmation-v1.json`, installed in `a857f9a`. The calibration (exposed, exploratory; spent data; at `8f65062`): no
+revision trigger, every gate held (G4 included), `τ_rem` 0.0252 and `τ_ins` 0.0351; `calibration-v1.json`, installed in
+`d502777`. The lock (weights only, at `3621eec`): candidate lock `8da97e35…` and preregistration `3761b813…` in
+`outputs/experiment-101/`, **not installed** — design §9: "The user commits the lock". All three independent AI reviews
+found PASS WITH NOTES, with no blocker. **The decision, the recommendation and the commands are in
+[evidence/lock-2026-10-14/DECISION.md](evidence/lock-2026-10-14/DECISION.md).** No stage 1 or confirmation has run, and
+no 101 prompt has been executed.
 
 Experiment 101 opens the second series (Neural Decompiler II), numbered from 101. It is the causal test of claim
 [C003](../../research/claims/C003-frame-conditioned-decoded-program.md) that the paper-readiness assessment named:
@@ -56,7 +58,11 @@ remove, install, double and reverse the component of the residual entering layer
    ([evidence/calibrate-2026-10-14/](evidence/calibrate-2026-10-14/README.md)); AI review PASS WITH NOTES
    ([evidence/calibration-review-2026-10-14/](evidence/calibration-review-2026-10-14/README.md)).
 3. **`lock`** (weights only; every forward refused) writes the candidate `preregistration-lock.json` and
-   `preregistration.md`, installed byte-identically, committed and reviewed.
+   `preregistration.md`, installed byte-identically, committed and reviewed. **Ran on 2026-10-14** at `3621eec`: candidate lock content
+   sha256 `8da97e35…` (file `8dc6e6d3…`), preregistration `3761b813…`; AI review PASS WITH NOTES, no blocker
+   ([evidence/lock-2026-10-14/](evidence/lock-2026-10-14/README.md),
+   [evidence/lock-review-2026-10-14/](evidence/lock-review-2026-10-14/README.md)). **Not installed: the user commits
+   it.**
 4. **`stage1`** runs only the 36 reference prompts, seals the model, computes the program's table from the states and
    the weights, and writes `stage1/states.f64`, `stage1/states.json` and `stage1/table.json`. The user commits them.
 5. **`confirm`** (once; never resumed) passes the barrier, writes the ledger of all 1,980 S2 keys, runs each once,
@@ -109,6 +115,12 @@ The local outputs stay in `outputs/experiment-101/`.
    N4 (`coordinated-adjective-1`'s spent keys ran three times in all, with bit-identical results), N5 (the run log
    records admissions), N6 (a harmless `.git/index` refresh) and N7 (descriptive observations) are recorded in the
    calibrate evidence.
+6. **The lock review's notes** ([REVIEW.md](evidence/lock-review-2026-10-14/REVIEW.md)): no blocker to committing the lock.
+   Its S1–S3 concern the prepared stage-1 launcher (version 1; not part of the lock) and are applied in version 2, which
+   still needs a re-check before stage 1. N2: confirm does not record design §2's per-frame `s/‖off_c‖` and overshoot
+   flag; the confirmation review or the report should recompute them from the saved measurements. N4: do not rewrite
+   this branch. N9: keep the machine's environment fixed until confirm, since stage 1 compares the geometry with the
+   lock bit for bit and a mismatch is a phase incident.
 
 ## Report and closure
 

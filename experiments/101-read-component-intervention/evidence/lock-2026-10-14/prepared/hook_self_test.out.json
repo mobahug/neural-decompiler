@@ -1,0 +1,27 @@
+{
+ "allowed": {
+  "mkdir stage1": true,
+  "mkdir outputs": true,
+  "write states.f64": true,
+  "write states.json": true,
+  "write table.json": true,
+  "state temporary": true,
+  "state rename": true,
+  "state temporary removed": true,
+  "read stage1 file": true
+ },
+ "refused": {
+  "sibling in stage1": true,
+  "experiment file": true,
+  "source file": true,
+  "relative mkdir at the root": true,
+  "relative remove at the root": true,
+  "relative rename at the root": true,
+  "rename into the experiment": true,
+  "unresolvable dir_fd": true,
+  "mkdir elsewhere in the experiment": true,
+  "read another experiment's outputs": true
+ },
+ "rehearsal_refuses_stage1_writes": true,
+ "ok": true
+}

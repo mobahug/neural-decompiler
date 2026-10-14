@@ -1,0 +1,358 @@
+{
+ "head": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+ "branch": "exp101-phases",
+ "head_is_expected": true,
+ "porcelain_untracked_all": "",
+ "tree_clean": true,
+ "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+ "ahead_of_origin_main": 10,
+ "log": [
+  "3621eec4b6a901119a4b96d4fdc07fa3b19652ab evidence: experiment 101 calibration — guarded launcher, rehearsal, smoke, the one production run, checks, independent AI calibration review; README status CALIBRATED",
+  "d502777c869eb7345dc05af0f5bc8445877e9b27 data: experiment 101 calibration — calibration-v1.json, installed byte-identically",
+  "8f65062627c77815adf9289c3fe60191d9fc3c17 evidence: experiment 101 freeze — test gate, guarded launcher, run records, checks, independent AI freeze review; README status FROZEN",
+  "a857f9a2326ff61cae8485deef2ab9337f5d6e02 data: experiment 101 freeze — confirmation-v1.json, installed byte-identically",
+  "40829d21a795a501d9a61c953587b8afcf5f0b86 fix: experiment 101: the re-check's two optional notes (READY FOR PHASES)",
+  "4795f19e4ff5bac9f58fff45b1082d1e748514ed fix: experiment 101 implementation review (READY WITH CHANGES): every finding",
+  "aec5311b0f8338beb2a29972a75b4ba3b2c453a7 chore: experiment 101 integration: current experiment, ignore, READMEs (task 10)",
+  "439ac3c87858f463354414abfbea0703a70e0029 feat: experiment 101 runner and its tier-B tests (task 8)",
+  "af06afb984a4429a5e6b3dac8ab7c3219ffa4258 feat: experiment 101 module read_intervention (tasks 2-7, 9)",
+  "1e48c1c973444414178305ea14e3da7f6ce7d600 docs: experiment 101 plan — the reviewer's decision on G4 (2026-10-05)",
+  "96f0cc802337bf6a83e877bdfaabcde03d51d479 docs: experiment 101 implementation plan, revision 3 (plan only)",
+  "516df20fdaee82a9c6cc9208dc6b27113b016be8 docs: experiment 101 design — the reviewer's decision of 2026-10-02"
+ ],
+ "index_mtime": 1791970198.3997462,
+ "installed": {
+  "confirmation-v1.json": {
+   "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+   "head_blob_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+   "working_equals_head": true,
+   "commits_touching": [
+    "a857f9a2326ff61cae8485deef2ab9337f5d6e02"
+   ],
+   "install_commit_changes": [
+    "A\texperiments/101-read-component-intervention/confirmation-v1.json"
+   ],
+   "committed_alone": true,
+   "content_sha256_recorded": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+   "content_sha256_recomputed": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+   "file_is_canonical_plus_newline": true
+  },
+  "calibration-v1.json": {
+   "file_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+   "head_blob_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+   "working_equals_head": true,
+   "commits_touching": [
+    "d502777c869eb7345dc05af0f5bc8445877e9b27"
+   ],
+   "install_commit_changes": [
+    "A\texperiments/101-read-component-intervention/calibration-v1.json"
+   ],
+   "committed_alone": true,
+   "content_sha256_recorded": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+   "content_sha256_recomputed": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+   "file_is_canonical_plus_newline": true
+  },
+  "calibration_equals_candidate_bytes": true
+ },
+ "changed_since_calibrate_8f65062": [
+  "experiments/101-read-component-intervention/README.md",
+  "experiments/101-read-component-intervention/calibration-v1.json",
+  "experiments/101-read-component-intervention/evidence/README.md",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/README.md",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/SHA256SUMS",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/calibrate-8f65062627c77815adf9289c3fe60191d9fc3c17.sentinel",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/launch_calibrate.py",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/launcher_sha256_at_production.txt",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/post_install_checks.out",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/post_install_checks.py",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/production.exit",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/production.log",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/production_run.json",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/production_runs.jsonl",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/production_started_utc.txt",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/rehearsal.log",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/rehearsal_run.json",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/smoke.log",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/smoke_reference.log",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/smoke_reference.pt",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/smoke_reference.py",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/smoke_run.json",
+  "experiments/101-read-component-intervention/evidence/calibrate-2026-10-14/state_extract.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/PROMPT.md",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/README.md",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/REVIEW.md",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/SHA256SUMS",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/a_keys_ledger.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/b_state_measurements.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/b_values.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/c_exact_chain.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/c_per_run.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/d_frozen_crosscheck.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/d_per_run_frozen.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/e_tau_risk_descriptives.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/exposed_frames.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/f_level1_decomposition.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/forbidden_101_sequences.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/g_state_inputs.json",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/repo_snapshot_end.txt",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/out/repo_snapshot_start.txt",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/a_keys_ledger.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/b_state_measurements.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/c_exact_chain.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/common.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/d_frozen_crosscheck.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/e_tau_risk_descriptives.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/f_level1_decomposition.py",
+  "experiments/101-read-component-intervention/evidence/calibration-review-2026-10-14/scripts/g_state_inputs.py"
+ ],
+ "changed_since_calibrate_outside_evidence": [
+  "experiments/101-read-component-intervention/README.md",
+  "experiments/101-read-component-intervention/calibration-v1.json"
+ ],
+ "changed_since_impl_40829d2_in_src_tests_run": [],
+ "design": {
+  "commits_touching": [
+   "516df20 docs: experiment 101 design — the reviewer's decision of 2026-10-02",
+   "a87e284 docs: experiment 101 design, revision 3 — intervening on the component L03.H04 reads"
+  ],
+  "unchanged_since_decision": true
+ },
+ "plan": {
+  "commits_touching": [
+   "1e48c1c docs: experiment 101 plan — the reviewer's decision on G4 (2026-10-05)",
+   "96f0cc8 docs: experiment 101 implementation plan, revision 3 (plan only)"
+  ],
+  "unchanged_since_decision": true
+ },
+ "design_a87e284_is_revision3": true,
+ "plan_96f0cc8_is_revision3": true,
+ "ls_tree_head": {
+  "__init__.py": "83dbfb8331f3b21b0256b906c573ee99c28dab7f",
+  "attention_paths.py": "42f8d1588f1f960f60498854a9ccb911bc4e427a",
+  "attention_patterns.py": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+  "behavior.py": "45218ffb90b15140f948c023b9219ff85b11d672",
+  "block0_completion.py": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+  "block_concentration.py": "7e01ba21d8cfee17121195db2f49284808e040ab",
+  "block_routing.py": "4d4bd8c3f21fd156fa06faf0df4183bd499cadef",
+  "candidate_screening.py": "c691868faf900518de44c2a33cf7b040b8f4e354",
+  "capture.py": "4a4a78880b1c2ee410486d5bcfc1993ba2e9d316",
+  "components.py": "28af3f3d8ba5512b6850f485f85ff88983bed24e",
+  "cue_decompilation.py": "a43103fdae8adfebdd38f37a25a810a10d36a793",
+  "cue_rotation.py": "622aa832ae29047c3060d989928236320374e227",
+  "cue_suppression.py": "21253ee61c04796966dec4733909476a09404c0c",
+  "encoding_read.py": "cab99c942de970332e726a5626b584242d4cf600",
+  "frame_channels.py": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+  "head_pattern.py": "386682fe0a47d093dfbee2507afc1df61811ab15",
+  "head_transport.py": "936093a4e82c83e299a65a7c85529a7226f80c95",
+  "interventions.py": "3a1e4186aeb3c8ae9625af336e8da7d2818505c7",
+  "layer_correction.py": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+  "logit_lens.py": "5e5e45f8263faacfdf4b9764d16857abddd10e8f",
+  "models.py": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+  "neuron_feature.py": "a8290baea541d6562175f6e96c64dc70db6339a9",
+  "plural_mechanism.py": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+  "prompt_elicitation.py": "4ee50e37ecf0226583c82ce21c7a48001caf3e30",
+  "provenance.py": "28c4e5926fc4154d4b31ba9e5dde887e4f5aecaa",
+  "read_assembly.py": "4820191e0e067b382b8f8807279405a7589f7059",
+  "read_intervention.py": "d7db6197140fe871da591b5c578cc675f05f7d69",
+  "readout_calibration.py": "9107da975128d9b0383f3b346695675104e4cde9",
+  "readout_decompilation.py": "caa73b40192f4c910dc63371bd19db75a3258339",
+  "readout_routing.py": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "scale_comparison.py": "08f82d1d574ce9a57024c297c05d4ee4620502b9",
+  "selectivity.py": "eb06414e8a28ee2218e8df44b9e762d5b518bd30",
+  "supervised_subspace.py": "d7733d9c5a247ce431a7b257b886c8e7a5cedff0",
+  "upstream_localization.py": "465856962aa380747d1a4f1338d1d2762d03c9f9"
+ },
+ "ls_tree_516df20": {
+  "__init__.py": "83dbfb8331f3b21b0256b906c573ee99c28dab7f",
+  "attention_paths.py": "42f8d1588f1f960f60498854a9ccb911bc4e427a",
+  "attention_patterns.py": "3f5acd65397bd11723ba6fc2ec4253f1d5c81943",
+  "behavior.py": "45218ffb90b15140f948c023b9219ff85b11d672",
+  "block0_completion.py": "16d310fc7fab5599ec83b8bd8162fb9613f8dad2",
+  "block_concentration.py": "7e01ba21d8cfee17121195db2f49284808e040ab",
+  "block_routing.py": "4d4bd8c3f21fd156fa06faf0df4183bd499cadef",
+  "candidate_screening.py": "c691868faf900518de44c2a33cf7b040b8f4e354",
+  "capture.py": "4a4a78880b1c2ee410486d5bcfc1993ba2e9d316",
+  "components.py": "28af3f3d8ba5512b6850f485f85ff88983bed24e",
+  "cue_decompilation.py": "a43103fdae8adfebdd38f37a25a810a10d36a793",
+  "cue_rotation.py": "622aa832ae29047c3060d989928236320374e227",
+  "cue_suppression.py": "21253ee61c04796966dec4733909476a09404c0c",
+  "encoding_read.py": "cab99c942de970332e726a5626b584242d4cf600",
+  "frame_channels.py": "c95d6fb4c98b8069c26ec46e9d8f85eb927bb9e8",
+  "head_pattern.py": "386682fe0a47d093dfbee2507afc1df61811ab15",
+  "head_transport.py": "936093a4e82c83e299a65a7c85529a7226f80c95",
+  "interventions.py": "3a1e4186aeb3c8ae9625af336e8da7d2818505c7",
+  "layer_correction.py": "04df0cc9a20093cc48ee5ef62da7f206bf1a3186",
+  "logit_lens.py": "5e5e45f8263faacfdf4b9764d16857abddd10e8f",
+  "models.py": "b1c6f03379af7e0918d0d1a6460a264651603fb2",
+  "neuron_feature.py": "a8290baea541d6562175f6e96c64dc70db6339a9",
+  "plural_mechanism.py": "d39da8a8d9931005d411258bcddbb7f9beed35e4",
+  "prompt_elicitation.py": "4ee50e37ecf0226583c82ce21c7a48001caf3e30",
+  "provenance.py": "28c4e5926fc4154d4b31ba9e5dde887e4f5aecaa",
+  "read_assembly.py": "4820191e0e067b382b8f8807279405a7589f7059",
+  "readout_calibration.py": "9107da975128d9b0383f3b346695675104e4cde9",
+  "readout_decompilation.py": "caa73b40192f4c910dc63371bd19db75a3258339",
+  "readout_routing.py": "e6cb37767d1d06c6ff40804a88eab569723afdb5",
+  "scale_comparison.py": "08f82d1d574ce9a57024c297c05d4ee4620502b9",
+  "selectivity.py": "eb06414e8a28ee2218e8df44b9e762d5b518bd30",
+  "supervised_subspace.py": "d7733d9c5a247ce431a7b257b886c8e7a5cedff0",
+  "upstream_localization.py": "465856962aa380747d1a4f1338d1d2762d03c9f9"
+ },
+ "read_intervention_blob_head": "d7db6197140fe871da591b5c578cc675f05f7d69",
+ "outputs_101_listing": [
+  "calibration-measurements.pt",
+  "candidate-calibration-v1.json",
+  "candidate-lock.json",
+  "candidate-preregistration.md",
+  "results.json"
+ ],
+ "outputs_101_sha256": {
+  "calibration-measurements.pt": "e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13",
+  "candidate-calibration-v1.json": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+  "candidate-lock.json": "8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087",
+  "candidate-preregistration.md": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+  "results.json": "cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca"
+ },
+ "outputs_101_ignored_status": [
+  "!! outputs/experiment-101/calibration-measurements.pt",
+  "!! outputs/experiment-101/candidate-calibration-v1.json",
+  "!! outputs/experiment-101/candidate-lock.json",
+  "!! outputs/experiment-101/candidate-preregistration.md",
+  "!! outputs/experiment-101/results.json"
+ ],
+ "state": {
+  "file_sha256": "cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca",
+  "state_sha256_recorded": "a4657f80eed3e23587ea44597b77ce064c432eea5623799c838acdb668f40e12",
+  "state_sha256_recomputed": "a4657f80eed3e23587ea44597b77ce064c432eea5623799c838acdb668f40e12",
+  "file_is_canonical_plus_newline": true,
+  "run_id": "30ca8697c8702496",
+  "phases": {
+   "calibrate": {
+    "commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+    "completed_at": "2026-10-14T08:51:04+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T08:45:07+00:00",
+    "status": "complete"
+   },
+   "confirm": {
+    "status": "not_started"
+   },
+   "lock": {
+    "commit": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+    "completed_at": "2026-10-14T09:32:09+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "status": "complete"
+   },
+   "report": {
+    "status": "not_started"
+   },
+   "stage1": {
+    "status": "not_started"
+   }
+  },
+  "executed_prompt_keys": [],
+  "calibration_executed_count": 2016,
+  "lock_block": {
+   "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+   "content_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+   "preregistration_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+   "preregistration_sha256": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+   "written_at": "2026-10-14T09:32:09+00:00"
+  },
+  "stage1": null,
+  "confirmation": null,
+  "report": null,
+  "protocol_code_commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+  "configuration_name": "production",
+  "incident_like_keys": [],
+  "lock_block_matches_candidates": {
+   "content_sha256": true,
+   "preregistration_sha256": true
+  },
+  "calibration_block": {
+   "content_sha256": "1eb1fe68ac2d49228ff8eff6c72391cc0695eaeeb3ae82ed122f9aa738f42e1e",
+   "file_sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+   "tau": {
+    "cap": 0.2,
+    "evaluable": true,
+    "floor": 0.02,
+    "ins": 0.03511072680382421,
+    "rank": 33,
+    "rem": 0.025153865322968608
+   },
+   "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json"
+  },
+  "calibration_block_has": [
+   "accounting",
+   "candidate_path",
+   "ceilings",
+   "content_sha256",
+   "file_sha256",
+   "gates",
+   "measurements",
+   "planned",
+   "tau"
+  ],
+  "confirmation_101_binding": {
+   "content_sha256": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+   "counts": {
+    "S1-REF": 36,
+    "S2-TARGET": 1980,
+    "frames": 36,
+    "runs_per_frame": 55,
+    "untagged_prompts": 144
+   },
+   "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+   "manifest_sha256": "7c7c94942dc883505b97403042e095d8d616168f3a0a1d8cf495edef25f8b8bd",
+   "path": "experiments/101-read-component-intervention/confirmation-v1.json"
+  }
+ },
+ "lock_evidence_sha256": {
+  "DECISION.md": "7ee2f6f7dcf90da43559b398a5246ed62a06d4b8ec30344fd4717d6ca1df162d",
+  "README.md": "12d7d9bfecd044e79a468a308897471864e381e09dfdf0e2c7e83db4c3a2342b",
+  "dryrun.log": "628196714179fe33ef48de670cab5929ddca10a1dace460d55628847db0a4142",
+  "dryrun_run.json": "7768ef30ea744bce6e34af683a303a6ff58e634a9b7707743d72b852b5a7c8b2",
+  "launch_lock.py": "90e8159f97fc38234835c58e6443474677dfe0236ca48d09e6e67fe124e5e485",
+  "launcher_sha256_at_production.txt": "0837bafd92d5c0de76fc8076fe1e63eeea78d5e4eed8fc920b36abb5928644ed",
+  "lock.exit": "28d3b9e880a77975493dc7e359144c0295a4f694cfe0af4f928c22307bc5c320",
+  "lock.log": "c306135acc773541d0d4bb159789083a0284892f5d7abcd3d441b8beb502fa47",
+  "lock.sentinel": "6c2c645453887bed8b54ff822eae002d11a67e089e129858af02d33596faec1e",
+  "lock_run.json": "4d98ec9fd26d135ee59a3f3e91a294bf690826b64fd9af498ac905d6050cfe5f",
+  "state_before_dryrun.txt": "ce0d7abec828afe1c2151d2628546e45dca457d86e5fcefcd8b8fe4925a2c660"
+ },
+ "stage1_launcher_sha256": "bf40e04368b715b52cac9e83e0ddeaf256eaf50a1b507c33846e95b28311c5f1",
+ "fs_events": {
+  "refused_repo_writes": [],
+  "refused_output_reads": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/calibration-measurements.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"
+  ],
+  "writes_outside_repo_not_review": [],
+  "module_calls_refused": 0,
+  "module_calls_with_101_sequence": 0,
+  "entry_points_refused": [],
+  "entry_point_101_hits": 0,
+  "model_loads": 0,
+  "sealed_instances": 0,
+  "aliases_wrapped": []
+ }
+}

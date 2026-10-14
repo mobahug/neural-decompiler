@@ -1,0 +1,153 @@
+{
+ "dry_run": false,
+ "started_at": "2026-10-14T09:31:30.568874+00:00",
+ "ended_at": "2026-10-14T09:32:09.665436+00:00",
+ "exit_status": 0,
+ "error": null,
+ "lock_invocations": 1,
+ "environment": {
+  "head": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+  "branch": "exp101-phases",
+  "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+  "commits_ahead_of_origin_main": 10,
+  "tree_porcelain": "",
+  "repository": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "launcher_path": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/lock/launch_lock.py",
+  "launcher_sha256": "90e8159f97fc38234835c58e6443474677dfe0236ca48d09e6e67fe124e5e485",
+  "dry_run": false,
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "transformer_lens": "3.9.0",
+  "huggingface_hub": "1.31.0",
+  "numpy": "2.5.3",
+  "torch_num_threads": 4,
+  "deterministic_algorithms": false,
+  "model": {
+   "model_id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "device": "cpu",
+   "dtype": "float32"
+  },
+  "checkpoint": {
+   "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "files": {
+    "config.json": {
+     "sha256": "002050231a9b1ec3ac77aa6b9b3bbdc4d923f4068a7dd33b8da72a9bd6ad9a43",
+     "bytes": 567
+    },
+    "model.safetensors": {
+     "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+     "bytes": 166029852
+    },
+    "special_tokens_map.json": {
+     "sha256": "6f50ab5a5a509a1c309d6171f339b196a900dc9c99ad0408ff23bb615fdae7ad",
+     "bytes": 99
+    },
+    "tokenizer.json": {
+     "sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+     "bytes": 2113710
+    },
+    "tokenizer_config.json": {
+     "sha256": "70e38394e494931c6f773ba41e19460dd4436526b852207367f04341b4066d3f",
+     "bytes": 396
+    }
+   }
+  },
+  "env_flags": {
+   "HF_HUB_OFFLINE": "1",
+   "TRANSFORMERS_OFFLINE": null,
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONHASHSEED": null,
+   "OMP_NUM_THREADS": null,
+   "MKL_NUM_THREADS": null,
+   "TOKENIZERS_PARALLELISM": null,
+   "CUDA_VISIBLE_DEVICES": null,
+   "VIRTUAL_ENV": null,
+   "NEURAL_DECOMPILER_CURRENT_EXPERIMENT": null,
+   "LOCK101_DRY_RUN": null
+  },
+  "recorded_at": "2026-10-14T09:31:30.554719+00:00"
+ },
+ "preflight": {
+  "tree_clean": true,
+  "calibration_committed": true,
+  "no_lock_installed": true,
+  "state_lock_not_started": true,
+  "state_calibration_is_installed": true
+ },
+ "events": {
+  "load_model": 1,
+  "modules_sealed": 430,
+  "module_calls_refused": 0,
+  "forward_refused": [],
+  "model_method_refused": [],
+  "capture_or_intervention_refused": [],
+  "measurement_refused": [],
+  "aliases_patched": [
+   "neural_decompiler.capture.run_capture",
+   "neural_decompiler.interventions.run_interventions",
+   "neural_decompiler.candidate_screening.run_capture",
+   "neural_decompiler.candidate_screening.run_interventions",
+   "neural_decompiler.plural_mechanism.run_capture",
+   "neural_decompiler.plural_mechanism.run_interventions",
+   "neural_decompiler.plural_mechanism.capture_prompt",
+   "neural_decompiler.plural_mechanism.run_patched",
+   "neural_decompiler.readout_decompilation.capture_frame_020"
+  ],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "forbidden_deletes_renames_links_mkdirs": [],
+  "output_writes": [
+   "candidate-lock.json",
+   "candidate-preregistration.md",
+   ".results-wtvdxxg0.json"
+  ],
+  "output_renames": [
+   "os.rename .results-wtvdxxg0.json -> results.json"
+  ],
+  "output_mkdirs": [
+   "os.mkdir experiment-101",
+   "os.mkdir experiment-101"
+  ],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/calibration-measurements.pt",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-calibration-v1.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md"
+  ],
+  "lock_invocations": 1
+ },
+ "dry_run_digests": {},
+ "outputs": {
+  "calibration-measurements.pt": {
+   "sha256": "e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13",
+   "bytes": 65935899
+  },
+  "candidate-calibration-v1.json": {
+   "sha256": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90",
+   "bytes": 354086
+  },
+  "candidate-lock.json": {
+   "sha256": "8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087",
+   "bytes": 68943
+  },
+  "candidate-preregistration.md": {
+   "sha256": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+   "bytes": 8703
+  },
+  "results.json": {
+   "sha256": "cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca",
+   "bytes": 639715
+  }
+ },
+ "logs": [
+  "candidate lock /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json (content sha256 8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061) and /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md. Install both byte-identical as experiments/101-read-component-intervention/preregistration-lock.json and experiments/101-read-component-intervention/preregistration.md, commit, and stop for the independent lock review before stage1."
+ ],
+ "config": "production"
+}
