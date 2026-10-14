@@ -1,0 +1,162 @@
+{
+ "frames": {
+  "coordinated-adjective-101-01": {
+   "max_abs": 0.002414950601860255,
+   "mean_c_ref_scorable": 3.748325203038469
+  },
+  "coordinated-adjective-101-02": {
+   "max_abs": 0.0022770586119804648,
+   "mean_c_ref_scorable": 4.3930725870253164
+  },
+  "coordinated-adjective-101-03": {
+   "max_abs": 0.0018549228198025958,
+   "mean_c_ref_scorable": 3.705345443532437
+  },
+  "coordinated-adjective-101-04": {
+   "max_abs": 0.0028677858508672216,
+   "mean_c_ref_scorable": 4.155065126056913
+  },
+  "coordinated-adjective-101-05": {
+   "max_abs": 0.0016425389885625918,
+   "mean_c_ref_scorable": 3.6345247135886662
+  },
+  "coordinated-adjective-101-06": {
+   "max_abs": 0.0016031386103350087,
+   "mean_c_ref_scorable": 4.104062623615507
+  },
+  "coordinated-adjective-101-07": {
+   "max_abs": 0.002517060107948055,
+   "mean_c_ref_scorable": 4.395472586909427
+  },
+  "coordinated-adjective-101-08": {
+   "max_abs": 0.0015893137644980015,
+   "mean_c_ref_scorable": 3.6316566950158227
+  },
+  "coordinated-adjective-101-09": {
+   "max_abs": 0.0020879935243556247,
+   "mean_c_ref_scorable": 3.8367162776898733
+  },
+  "coordinated-adjective-101-10": {
+   "max_abs": 0.0017223172476406035,
+   "mean_c_ref_scorable": 4.343831895272943
+  },
+  "coordinated-adjective-101-11": {
+   "max_abs": 0.0020518379037639534,
+   "mean_c_ref_scorable": 3.749497824077365
+  },
+  "coordinated-adjective-101-12": {
+   "max_abs": 0.0020758642588134535,
+   "mean_c_ref_scorable": 4.463533425632911
+  },
+  "coordinated-adjective-101-13": {
+   "max_abs": 0.0018059755418562418,
+   "mean_c_ref_scorable": 2.909215202814416
+  },
+  "coordinated-adjective-101-14": {
+   "max_abs": 0.0023590628238707723,
+   "mean_c_ref_scorable": 5.154717167721519
+  },
+  "coordinated-adjective-101-15": {
+   "max_abs": 0.001390498218142966,
+   "mean_c_ref_scorable": 4.2694647583780405
+  },
+  "coordinated-adjective-101-16": {
+   "max_abs": 0.0017053723813660326,
+   "mean_c_ref_scorable": 3.8463273833069622
+  },
+  "coordinated-adjective-101-17": {
+   "max_abs": 0.002357601162202627,
+   "mean_c_ref_scorable": 4.28902696054193
+  },
+  "coordinated-adjective-101-18": {
+   "max_abs": 0.0020821109565076767,
+   "mean_c_ref_scorable": 4.424506465090981
+  },
+  "coordinated-adjective-101-19": {
+   "max_abs": 0.0017627801487378747,
+   "mean_c_ref_scorable": 4.287971846665008
+  },
+  "coordinated-adjective-101-20": {
+   "max_abs": 0.0018752623257114465,
+   "mean_c_ref_scorable": 5.333537590654591
+  },
+  "coordinated-adjective-101-21": {
+   "max_abs": 0.00199267763878197,
+   "mean_c_ref_scorable": 4.876742978639241
+  },
+  "coordinated-adjective-101-22": {
+   "max_abs": 0.0020415294125086803,
+   "mean_c_ref_scorable": 4.747555418859554
+  },
+  "coordinated-adjective-101-23": {
+   "max_abs": 0.001995377260755049,
+   "mean_c_ref_scorable": 5.080650015722347
+  },
+  "coordinated-adjective-101-24": {
+   "max_abs": 0.0022115817312169384,
+   "mean_c_ref_scorable": 4.5882969385460965
+  },
+  "coordinated-adjective-101-25": {
+   "max_abs": 0.0022266856660735357,
+   "mean_c_ref_scorable": 3.0697315071202533
+  },
+  "coordinated-adjective-101-26": {
+   "max_abs": 0.0021942508788015402,
+   "mean_c_ref_scorable": 4.541216596772399
+  },
+  "coordinated-adjective-101-27": {
+   "max_abs": 0.002167934358567436,
+   "mean_c_ref_scorable": 3.283663641048383
+  },
+  "coordinated-adjective-101-28": {
+   "max_abs": 0.001975183623699195,
+   "mean_c_ref_scorable": 4.136737292325949
+  },
+  "coordinated-adjective-101-29": {
+   "max_abs": 0.001558582785037288,
+   "mean_c_ref_scorable": 4.312646793413766
+  },
+  "coordinated-adjective-101-30": {
+   "max_abs": 0.0019127834218579665,
+   "mean_c_ref_scorable": 4.1884209385401086
+  },
+  "coordinated-adjective-101-31": {
+   "max_abs": 0.0021675346324627753,
+   "mean_c_ref_scorable": 4.818393369264241
+  },
+  "coordinated-adjective-101-32": {
+   "max_abs": 0.002096827054174355,
+   "mean_c_ref_scorable": 3.8790916732594938
+  },
+  "coordinated-adjective-101-33": {
+   "max_abs": 0.0017753294036992884,
+   "mean_c_ref_scorable": 4.262301179427135
+  },
+  "coordinated-adjective-101-34": {
+   "max_abs": 0.0019801354362698476,
+   "mean_c_ref_scorable": 4.255596752408184
+  },
+  "coordinated-adjective-101-35": {
+   "max_abs": 0.0018781158025831246,
+   "mean_c_ref_scorable": 3.94327288036105
+  },
+  "coordinated-adjective-101-36": {
+   "max_abs": 0.002059259847328576,
+   "mean_c_ref_scorable": 3.689116381391694
+  }
+ },
+ "worst_abs": 0.0028677858508672216,
+ "worst_rel": 0.00045371479066141636,
+ "n_nouns": 80,
+ "guard": {
+  "repo_write_refusals": [],
+  "subprocess_refusals": [],
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": [],
+  "forbidden_sequences": 0,
+  "forward_guards_installed": false
+ },
+ "criterion": "max-abs < 2e-2 (rd.LOGIT_IDENTITY_TOLERANCE); calibration G4_logit max 3.03e-3 for comparison",
+ "ok": true
+}

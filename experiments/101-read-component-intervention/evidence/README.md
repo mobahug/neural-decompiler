@@ -1,6 +1,6 @@
 # Experiment 101 — evidence
 
-**Status (2026-10-14):** the freeze and the calibration ran once and are installed; the lock ran once and its candidates await the user's commit ([DECISION.md](lock-2026-10-14/DECISION.md)).
+**Status (2026-10-14):** the freeze, the calibration and the lock are installed (the lock by the user, `961e814`); stage 1 ran once and its three files await the user's commit; confirm follows.
 
 | directory | what |
 |---|---|
@@ -10,6 +10,9 @@
 | [`calibration-review-2026-10-14/`](calibration-review-2026-10-14/README.md) | the independent AI calibration review: **PASS WITH NOTES — no blocker**, the Level-1 risk estimate, and the disposition of each finding |
 | [`lock-2026-10-14/`](lock-2026-10-14/README.md) | the guarded lock (one dry run, the one production run at `3621eec`: exit 0, 0 module calls), **`DECISION.md`** for the user, and the prepared stage-1 launcher (not run) |
 | [`lock-review-2026-10-14/`](lock-review-2026-10-14/README.md) | the independent AI lock review: **PASS WITH NOTES — no blocker to committing the lock**, and the disposition of each finding |
+| [`stage1-launcher-recheck-2026-10-14/`](stage1-launcher-recheck-2026-10-14/README.md) | the independent AI re-check of the stage-1 launcher version 2: **READY FOR PRODUCTION** |
+| [`stage1-2026-10-14/`](stage1-2026-10-14/README.md) | the guarded stage 1 (rehearsal; the one production run at `961e814`: exit 0, the 36 S1 keys once each) |
+| [`stage1-review-2026-10-14/`](stage1-review-2026-10-14/README.md) | the independent AI stage-1 review: **PASS WITH NOTES — no blocker**; the barrier passes on these bytes |
 
 The freeze artifact `../confirmation-v1.json` was installed byte-identically in
 `a857f9a2326ff61cae8485deef2ab9337f5d6e02`:

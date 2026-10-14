@@ -1,0 +1,51 @@
+2026-10-14T13:00:19Z
+961e81408e5c4da4fffdf9dfab0343e449a4e1f2
+status-exit 0
+!! .DS_Store
+!! .pytest_cache/.gitignore
+!! .pytest_cache/CACHEDIR.TAG
+!! .pytest_cache/README.md
+!! .pytest_cache/v/cache/lastfailed
+!! .pytest_cache/v/cache/nodeids
+!! .venv/.gitignore
+!! .venv/.lock
+!! .venv/CACHEDIR.TAG
+!! .venv/bin/accelerate
+!! .venv/bin/accelerate-config
+!! .venv/bin/accelerate-estimate-memory
+!! .venv/bin/accelerate-launch
+!! .venv/bin/accelerate-merge-weights
+!! .venv/bin/activate
+!! .venv/bin/activate.bat
+!! .venv/bin/activate.csh
+!! .venv/bin/activate.fish
+!! .venv/bin/activate.nu
+!! .venv/bin/activate.ps1
+!! .venv/bin/activate_this.py
+!! .venv/bin/build-docs
+!! .venv/bin/datasets-cli
+!! .venv/bin/deactivate.bat
+!! .venv/bin/docs-hot-reload
+!! .venv/bin/f2py
+!! .venv/bin/fonttools
+!! .venv/bin/get_gprof
+!! .venv/bin/get_objgraph
+!! .venv/bin/hf
+e8f42c1d04e3a77985d8d2cfe01566ca2f199a1619e04b729da617a9fa166f13  outputs/experiment-101/calibration-measurements.pt
+6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90  outputs/experiment-101/candidate-calibration-v1.json
+8dc6e6d38c876a2dd9bf905fbeaf36b774b487967597795beb032bb4a0751087  outputs/experiment-101/candidate-lock.json
+3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980  outputs/experiment-101/candidate-preregistration.md
+cc98ae1e89887561f3ca1b63b9eadc61677919251037caafe7796198fa3e14ca  outputs/experiment-101/results.json
+da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00  outputs/experiment-020/results.json
+total 1288
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff     288 Oct 14 15:05 .
+drwxr-xr-x@ 29 gaborhorvath-ulenius  staff     928 Oct  5 17:42 ..
+-rw-r--r--@  1 gaborhorvath-ulenius  staff   10860 Oct 14 13:19 README.md
+-rw-r--r--@  1 gaborhorvath-ulenius  staff  354086 Oct 14 11:51 calibration-v1.json
+-rw-r--r--@  1 gaborhorvath-ulenius  staff  135675 Oct 14 11:14 confirmation-v1.json
+drwxr-xr-x@  9 gaborhorvath-ulenius  staff     288 Oct 14 13:18 evidence
+-rw-r--r--@  1 gaborhorvath-ulenius  staff   68943 Oct 14 12:32 preregistration-lock.json
+-rw-r--r--@  1 gaborhorvath-ulenius  staff    8703 Oct 14 12:32 preregistration.md
+-rw-r--r--@  1 gaborhorvath-ulenius  staff   65720 Oct  5 19:02 run.py
+1791979703 .git
+1791979563 .git/index

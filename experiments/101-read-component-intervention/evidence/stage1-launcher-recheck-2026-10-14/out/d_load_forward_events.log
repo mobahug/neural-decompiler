@@ -1,0 +1,47 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:27,  2.76it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 207.40it/s]
+event names by phase (watched + unwatched):
+   imports                                                                os.putenv                    1
+   imports                                                                os.remove                    1
+   imports                                                                os.unsetenv                  1
+   load_model                                                             _thread.start_new_thread     5
+   load_model                                                             object.__delattr__           83
+   load_model                                                             os.link                      1
+   load_model                                                             os.mkdir                     1
+   load_model                                                             os.remove                    2
+   load_model                                                             os.rmdir                     1
+   load_model                                                             os.utime                     1
+   load_model                                                             pathlib.Path.rglob           2
+   load_model                                                             pathlib.Path.walk            2
+   load_model                                                             shutil.rmtree                1
+   load_model                                                             socket.__new__               1
+   load_model                                                             socket.bind                  1
+   load_model                                                             sys.addaudithook             1
+   load_model                                                             tempfile.mkdtemp             1
+   seed_runtime                                                           array.__new__                3
+   seed_runtime                                                           os.mkdir                     1
+   seed_runtime                                                           os.putenv                    1
+write-type or relative events: 20; refused by v2 production rules: 2
+    imports open ['/dev/null', 'r+', 16777218] -> allow
+    imports open ['/dev/null', 'w', 16778753] -> allow
+    imports open ['/dev/null', None, 16777218] -> allow
+    imports open ['/dev/null', None, 16778753] -> allow
+    imports open ['/var/folders/q_/1567wb8j0_q7d7myb3vkvfk40000gn/T/f4acgq1y', None, 16780034] -> allow
+    imports open ['/tmp/5fd0y716', None, 16780034] -> allow
+    imports open ['/var/tmp/9zcek6bx', None, 16780034] -> allow
+    imports open ['/usr/tmp/bcu5xjxw', None, 16780034] -> allow
+    imports open ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/o3cghs30', None, 16780034] -> allow
+    imports os.remove ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/o3cghs30', -1] -> allow
+    seed_runtime os.mkdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/torchinductor_gaborhorvath-ulenius', 511, -1] -> allow
+    load_model tempfile.mkdtemp ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy'] -> allow
+    load_model os.mkdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy', 448, -1] -> allow
+    load_model os.utime ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy/probe-source', None, None] -> allow
+    load_model open ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy/probe-source', None, 16777729] -> allow
+    load_model os.link ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy/probe-source', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy/probe-link', -1] -> allow
+    load_model shutil.rmtree ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy', None] -> allow
+    load_model os.remove ['probe-source', 3] -> REFUSE ('forbidden_writes', 'os.remove /<unresolved>')
+    load_model os.remove ['probe-link', 3] -> REFUSE ('forbidden_writes', 'os.remove /<unresolved>')
+    load_model os.rmdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load/tmpb91xllvy', -1] -> allow
+repo paths touched outside src/: ['/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/005-regular-plural-mechanism/extension-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/launch_stage1.py', '/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json']
+outputs paths touched: ['/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json']
+repo writes: []
+work dir after: ['torchinductor_gaborhorvath-ulenius']

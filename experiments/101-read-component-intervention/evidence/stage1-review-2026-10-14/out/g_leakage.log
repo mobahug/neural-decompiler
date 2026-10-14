@@ -1,0 +1,151 @@
+PASS outputs_101_holds_no_stage2_or_report
+PASS state_has_no_confirmation_block
+PASS ledger_disjoint_from_s2_and_target_prompts
+PASS every_hit_is_a_key_string_or_a_stub
+PASS stub_partials_are_zero_vectors
+PASS chunk_scanned_large_files_have_no_101_keys
+PASS calibration_measurements_hold_no_101_frame
+PASS no_stage2_or_101_outputs_in_git_history
+{
+ "outputs_101": [
+  "calibration-measurements.pt",
+  "candidate-calibration-v1.json",
+  "candidate-lock.json",
+  "candidate-preregistration.md",
+  "results.json"
+ ],
+ "target_prompt_keys": 108,
+ "files_naming_s2_or_target_prompt_keys": {
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/confirmation-v1.json": 1080,
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/independent_derivation.json": 1218,
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/cross_check_ri.json": 30,
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/tests/test_read_intervention.py": 5,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_during_tree_after/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/correct/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/keys_not_all_run/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/earlier_records/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/incident_after_ledger/repo/outputs/experiment-101/results.json": 7,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/incident_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/refusal_swallowed/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/git_fails_after/repo/outputs/experiment-101/results.json": 3,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sighup_under_nohup/repo/outputs/experiment-101/results.json": 6,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sighup_under_nohup/repo/outputs/experiment-101/stage2-partial.pt": 2,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_after_ledger/repo/outputs/experiment-101/results.json": 6,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": 2,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/confirmation-v1.json": 1080,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/independent_derivation.json": 1218,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/cross_check_ri.json": 30,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/tests/test_read_intervention.py": 5,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/freeze-review/independent_derivation.json": 1218,
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/freeze-review/cross_check_ri.json": 30
+ },
+ "skipped_non_regular_or_huge": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/stage2-measurements.pt",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_production/repo/fifo",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/fifo",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/link_out"
+ ],
+ "hit_classes": {
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/confirmation-v1.json": "the S2 manifest (by design)",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/independent_derivation.json": "freeze review: key derivation (key strings only)",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/cross_check_ri.json": "freeze review: key derivation (key strings only)",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/tests/test_read_intervention.py": "tier-A key-format assertions (no model)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_during_tree_after/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/correct/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/keys_not_all_run/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/earlier_records/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/incident_after_ledger/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/incident_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/refusal_swallowed/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/git_fails_after/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sighup_under_nohup/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sighup_under_nohup/repo/outputs/experiment-101/stage2-partial.pt": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_after_ledger/repo/outputs/experiment-101/results.json": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": "concurrent review: StubRunner scenario (stub state / zero tensors)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/confirmation-v1.json": "concurrent review: a git clone of the repository (same files)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/independent_derivation.json": "freeze review: key derivation (key strings only)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/experiments/101-read-component-intervention/evidence/freeze-review-2026-10-14/cross_check_ri.json": "freeze review: key derivation (key strings only)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/clone/tests/test_read_intervention.py": "tier-A key-format assertions (no model)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/freeze-review/independent_derivation.json": "freeze review: key derivation (key strings only)",
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/freeze-review/cross_check_ri.json": "freeze review: key derivation (key strings only)"
+ },
+ "stub_partial_tensors": {
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/incident_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": {
+   "coordinated-adjective-101-01|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ],
+   "coordinated-adjective-101-02|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ],
+   "coordinated-adjective-101-03|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ]
+  },
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sighup_under_nohup/repo/outputs/experiment-101/stage2-partial.pt": {
+   "coordinated-adjective-101-01|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ],
+   "coordinated-adjective-101-02|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ]
+  },
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_after_ledger/repo/outputs/experiment-101/stage2-partial.pt": {
+   "coordinated-adjective-101-01|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ],
+   "coordinated-adjective-101-02|ref|581|REF": [
+    [
+     4
+    ],
+    0.0
+   ]
+  }
+ },
+ "stub_results_with_fabricated_labels": {
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/sigterm_during_tree_after/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ],
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/correct/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ],
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/keys_not_all_run/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ],
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/earlier_records/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ],
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/refusal_swallowed/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ],
+  "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/confirm-launcher-review/main_block/git_fails_after/repo/outputs/experiment-101/results.json": [
+   "READ_COMPONENT_EFFECTS_AS_PREDICTED"
+  ]
+ },
+ "chunk_scanned": {
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-022/calibration-table.pt": 0,
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-025/stage2-measurements.pt": 0
+ },
+ "calibration_measurement_tensors": 2556,
+ "stage2_measurements_path_ignored": true
+}
+ALL OK
+exit 0

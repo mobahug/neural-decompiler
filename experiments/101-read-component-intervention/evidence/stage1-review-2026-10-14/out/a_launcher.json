@@ -1,0 +1,316 @@
+{
+ "checks": {
+  "launcher_sha256": {
+   "ok": true,
+   "detail": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c"
+  },
+  "launcher_equals_committed_prepared_copy": {
+   "ok": true,
+   "detail": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c"
+  },
+  "launcher_equals_git_blob_at_HEAD": {
+   "ok": true,
+   "detail": {
+    "head_blob": "069bbb072573bce29a5f564cba15339315e39f7f",
+    "file_blob": "069bbb072573bce29a5f564cba15339315e39f7f"
+   }
+  },
+  "launcher_sha256_at_production_txt": {
+   "ok": true,
+   "detail": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c  launch_stage1.py"
+  },
+  "sentinel_names_launcher": {
+   "ok": true,
+   "detail": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c"
+  },
+  "production_exit_0": {
+   "ok": true,
+   "detail": "exit 0"
+  },
+  "exactly_one_production_record": {
+   "ok": true,
+   "detail": [
+    "production_run_20261014T130926706170Z.json"
+   ]
+  },
+  "exactly_one_rehearsal_record": {
+   "ok": true,
+   "detail": [
+    "rehearsal_run_20261014T120823753435Z.json"
+   ]
+  },
+  "record_mode_production": {
+   "ok": true,
+   "detail": null
+  },
+  "record_head_is_lock_commit": {
+   "ok": true,
+   "detail": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2"
+  },
+  "record_branch": {
+   "ok": true,
+   "detail": "exp101-phases"
+  },
+  "record_launcher_sha": {
+   "ok": true,
+   "detail": null
+  },
+  "record_env_flags": {
+   "ok": true,
+   "detail": {
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": null,
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONHASHSEED": null,
+    "OMP_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null,
+    "TOKENIZERS_PARALLELISM": null,
+    "VIRTUAL_ENV": null,
+    "STAGE1101_MODE": "production"
+   }
+  },
+  "record_exit_0_no_error": {
+   "ok": true,
+   "detail": {
+    "exit_status": 0,
+    "error": null
+   }
+  },
+  "one_stage1_invocation": {
+   "ok": true,
+   "detail": 1
+  },
+  "one_model_load": {
+   "ok": true,
+   "detail": 1
+  },
+  "nothing_refused": {
+   "ok": true,
+   "detail": {
+    "refused": [],
+    "forbidden_reads": [],
+    "forbidden_writes": []
+   }
+  },
+  "sanctioned_runs_36": {
+   "ok": true,
+   "detail": 36
+  },
+  "forward_calls_36x340": {
+   "ok": true,
+   "detail": {
+    "calls": 12240,
+    "per_run": 340.0
+   }
+  },
+  "stage1_writes_exactly_three": {
+   "ok": true,
+   "detail": [
+    "states.f64",
+    "states.json",
+    "table.json"
+   ]
+  },
+  "stage1_mkdirs_two_events": {
+   "ok": true,
+   "detail": 2
+  },
+  "outputs_reads_only_020_results_and_101_state": {
+   "ok": true,
+   "detail": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-09rbmedr.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-umf8udkn.json"
+   ]
+  },
+  "outputs_101_reads_only_state_and_temporaries": {
+   "ok": true,
+   "detail": [
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-09rbmedr.json",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101",
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/.results-umf8udkn.json"
+   ]
+  },
+  "vestigial_output_writes_and_renames_empty": {
+   "ok": true,
+   "detail": "never filled by v2 (prior re-check N7): the state writes are not counted"
+  },
+  "preflight_all_true": {
+   "ok": true,
+   "detail": {
+    "N1_cwd_is_repo_root": true,
+    "N1_tree_clean": true,
+    "N1_runner_git_state_at_root": true,
+    "N2_environment_identity_with_lock_run": true,
+    "installed_lock_verifies": true,
+    "lock_and_preregistration_committed": true,
+    "production_token_names_the_installed_lock": true,
+    "module_binding_ri": true,
+    "all_pinned_blobs": true,
+    "production_configuration": true,
+    "full_validate_lock": true,
+    "stage1_not_started_ledger_empty": true,
+    "no_stage1_file_yet": true,
+    "runtime_and_versions_equal_020_explore": true,
+    "s1_keys_36": true,
+    "s1_keys_not_forbidden": true,
+    "write_predicate_allows_exactly_the_stage1_files": true
+   }
+  },
+  "preflight_17_checks_rehearsal_plus_token": {
+   "ok": true,
+   "detail": {
+    "production": 17,
+    "rehearsal": 16
+   }
+  },
+  "hook_self_test_ok": {
+   "ok": true,
+   "detail": null
+  },
+  "post_checks_all_true": {
+   "ok": true,
+   "detail": {
+    "keys_done": 36,
+    "all_36_ran_once": true,
+    "ledger_is_exactly_the_36_s1_keys": true,
+    "tree_is_exactly_the_three_untracked_stage1_files": true,
+    "record_digest_reproduces": true,
+    "files_equal_record": true
+   }
+  },
+  "post_files_equal_brief": {
+   "ok": true,
+   "detail": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "1c7e51c049e1c61cf669f1783736054956073dc5af6947354b1d13c058ac5b66",
+    "experiments/101-read-component-intervention/stage1/states.json": "2b2c3a61b4a2ce05eba0dcf875c19bfdb1c2627da1ccb1e8d49710af95a873ca",
+    "experiments/101-read-component-intervention/stage1/table.json": "71d339cd1d7151ad57949384388679593264ac07dec8c9c944c121d9918795fa"
+   }
+  },
+  "post_table_content_sha256": {
+   "ok": true,
+   "detail": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+  },
+  "tree_after_three_untracked": {
+   "ok": true,
+   "detail": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json"
+  },
+  "sealing_signatures_kept": {
+   "ok": true,
+   "detail": 430
+  },
+  "aliases_include_capture_reference_and_run_arm": {
+   "ok": true,
+   "detail": [
+    "neural_decompiler.candidate_screening.run_capture",
+    "neural_decompiler.candidate_screening.run_interventions",
+    "neural_decompiler.capture.run_capture",
+    "neural_decompiler.interventions.run_interventions",
+    "neural_decompiler.plural_mechanism.capture_prompt",
+    "neural_decompiler.plural_mechanism.run_capture",
+    "neural_decompiler.plural_mechanism.run_interventions",
+    "neural_decompiler.plural_mechanism.run_patched",
+    "neural_decompiler.read_intervention.capture_reference",
+    "neural_decompiler.read_intervention.run_arm",
+    "neural_decompiler.readout_decompilation.capture_frame_020"
+   ]
+  },
+  "run_log_36_lines_in_order": {
+   "ok": true,
+   "detail": 36
+  },
+  "run_log_equals_manifest_S1": {
+   "ok": true,
+   "detail": null
+  },
+  "no_s2_key_in_run_log": {
+   "ok": true,
+   "detail": null
+  },
+  "rehearsal_clean": {
+   "ok": true,
+   "detail": {
+    "load_model": 0,
+    "sanctioned_runs": 0,
+    "stage1_writes": []
+   }
+  },
+  "rehearsal_launcher_sha": {
+   "ok": true,
+   "detail": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c"
+  },
+  "log_36_captures_in_order": {
+   "ok": true,
+   "detail": 36
+  },
+  "log_names_table_digest": {
+   "ok": true,
+   "detail": null
+  },
+  "log_no_incident": {
+   "ok": true,
+   "detail": null
+  },
+  "timeline_ordered": {
+   "ok": true,
+   "detail": "started file <= record start <= stage1 running <= stage1 complete <= record end (state times have 1 s resolution)"
+  },
+  "files_written_inside_the_run": {
+   "ok": true,
+   "detail": null
+  },
+  "launcher_not_modified_after_production_sha": {
+   "ok": true,
+   "detail": null
+  },
+  "per_run_count_constant_340": {
+   "ok": true,
+   "detail": {
+    "calibrate_production": 340.0,
+    "calibrate_smoke": 340.0,
+    "stage1": 340.0
+   }
+  }
+ },
+ "facts": {
+  "timeline_utc": {
+   "production_started_utc.txt": "2026-10-14T13:08:44Z",
+   "record.environment.recorded_at": "2026-10-14T13:08:48.319887+00:00",
+   "record.started_at": "2026-10-14T13:08:48.324400+00:00",
+   "state.phases.stage1.started_at": "2026-10-14T13:09:08+00:00",
+   "state.phases.stage1.completed_at": "2026-10-14T13:09:26+00:00",
+   "record.ended_at": "2026-10-14T13:09:26.681862+00:00",
+   "mtime.production_runs.jsonl": "2026-10-14T13:09:11.976857+00:00",
+   "mtime.states.f64": "2026-10-14T13:09:26.182191+00:00",
+   "mtime.states.json": "2026-10-14T13:09:26.189973+00:00",
+   "mtime.table.json": "2026-10-14T13:09:26.222576+00:00",
+   "mtime.results.json": "2026-10-14T13:09:26.454012+00:00",
+   "mtime.sentinel": "2026-10-14T13:08:56.517895+00:00",
+   "mtime.record": "2026-10-14T13:09:26.706989+00:00",
+   "mtime.production.exit": "2026-10-14T13:09:27.283184+00:00",
+   "mtime.launcher_sha_txt": "2026-10-14T13:08:38.422370+00:00",
+   "mtime.launch_stage1.py": "2026-10-14T10:12:00.905144+00:00"
+  },
+  "per_run_module_calls": {
+   "calibrate_production": 340.0,
+   "calibrate_smoke": 340.0,
+   "stage1": 340.0,
+   "calibrate_production_runs": 2016,
+   "calibrate_smoke_runs": 56
+  }
+ },
+ "guard": {
+  "repo_write_refusals": [],
+  "subprocess_refusals": [],
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": [],
+  "forbidden_sequences": 0,
+  "forward_guards_installed": false
+ },
+ "all_ok": true
+}

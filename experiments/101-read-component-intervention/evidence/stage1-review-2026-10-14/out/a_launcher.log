@@ -1,0 +1,73 @@
+PASS launcher_sha256
+PASS launcher_equals_committed_prepared_copy
+PASS launcher_equals_git_blob_at_HEAD
+PASS launcher_sha256_at_production_txt
+PASS sentinel_names_launcher
+PASS production_exit_0
+PASS exactly_one_production_record
+PASS exactly_one_rehearsal_record
+PASS record_mode_production
+PASS record_head_is_lock_commit
+PASS record_branch
+PASS record_launcher_sha
+PASS record_env_flags
+PASS record_exit_0_no_error
+PASS one_stage1_invocation
+PASS one_model_load
+PASS nothing_refused
+PASS sanctioned_runs_36
+PASS forward_calls_36x340
+PASS stage1_writes_exactly_three
+PASS stage1_mkdirs_two_events
+PASS outputs_reads_only_020_results_and_101_state
+PASS outputs_101_reads_only_state_and_temporaries
+PASS vestigial_output_writes_and_renames_empty
+PASS preflight_all_true
+PASS preflight_17_checks_rehearsal_plus_token
+PASS hook_self_test_ok
+PASS post_checks_all_true
+PASS post_files_equal_brief
+PASS post_table_content_sha256
+PASS tree_after_three_untracked
+PASS sealing_signatures_kept
+PASS aliases_include_capture_reference_and_run_arm
+PASS run_log_36_lines_in_order
+PASS run_log_equals_manifest_S1
+PASS no_s2_key_in_run_log
+PASS rehearsal_clean
+PASS rehearsal_launcher_sha
+PASS log_36_captures_in_order
+PASS log_names_table_digest
+PASS log_no_incident
+PASS timeline_ordered
+PASS files_written_inside_the_run
+PASS launcher_not_modified_after_production_sha
+PASS per_run_count_constant_340
+{
+ "timeline_utc": {
+  "production_started_utc.txt": "2026-10-14T13:08:44Z",
+  "record.environment.recorded_at": "2026-10-14T13:08:48.319887+00:00",
+  "record.started_at": "2026-10-14T13:08:48.324400+00:00",
+  "state.phases.stage1.started_at": "2026-10-14T13:09:08+00:00",
+  "state.phases.stage1.completed_at": "2026-10-14T13:09:26+00:00",
+  "record.ended_at": "2026-10-14T13:09:26.681862+00:00",
+  "mtime.production_runs.jsonl": "2026-10-14T13:09:11.976857+00:00",
+  "mtime.states.f64": "2026-10-14T13:09:26.182191+00:00",
+  "mtime.states.json": "2026-10-14T13:09:26.189973+00:00",
+  "mtime.table.json": "2026-10-14T13:09:26.222576+00:00",
+  "mtime.results.json": "2026-10-14T13:09:26.454012+00:00",
+  "mtime.sentinel": "2026-10-14T13:08:56.517895+00:00",
+  "mtime.record": "2026-10-14T13:09:26.706989+00:00",
+  "mtime.production.exit": "2026-10-14T13:09:27.283184+00:00",
+  "mtime.launcher_sha_txt": "2026-10-14T13:08:38.422370+00:00",
+  "mtime.launch_stage1.py": "2026-10-14T10:12:00.905144+00:00"
+ },
+ "per_run_module_calls": {
+  "calibrate_production": 340.0,
+  "calibrate_smoke": 340.0,
+  "stage1": 340.0,
+  "calibrate_production_runs": 2016,
+  "calibrate_smoke_runs": 56
+ }
+}
+ALL OK

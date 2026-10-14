@@ -1,0 +1,69 @@
+{
+ "script": "g_leakage",
+ "python_flags_dont_write_bytecode": true,
+ "env": {
+  "HF_HUB_OFFLINE": "1",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "GIT_OPTIONAL_LOCKS": "0",
+  "TMPDIR": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-review/tmp"
+ },
+ "repo_write_refusals": [],
+ "subprocess": [
+  [
+   "git",
+   "--no-optional-locks",
+   "log",
+   "--all",
+   "--name-only",
+   "--format=%H"
+  ],
+  [
+   "git",
+   "--no-optional-locks",
+   "check-ignore",
+   "-q",
+   "outputs/experiment-101/stage2-measurements.pt"
+  ]
+ ],
+ "subprocess_refusals": [],
+ "writes_outside_repo": [
+  "open /dev/null",
+  "open /dev/null",
+  "open /dev/null",
+  "open /dev/null"
+ ],
+ "module_call_refusals": 0,
+ "module_call_refusal_examples": [],
+ "entry_point_refusals": [],
+ "token_guard_hits": [],
+ "forbidden_sequences": 0,
+ "sealed": null,
+ "forward_guards_installed": false,
+ "self_test": {
+  "refused": {
+   "open w results": true,
+   "open w stage1 file": true,
+   "os.open O_RDONLY|O_TRUNC": true,
+   "open a+ case variant": true,
+   "open data-volume alias": true,
+   "mkdir in repo": true,
+   "rename into repo": true,
+   "remove in repo": true,
+   "relative open w with cwd at root": true,
+   "unresolvable dir_fd": true,
+   "chmod in repo": true,
+   "utime in repo": true,
+   "child python": true,
+   "git commit": true,
+   "git add": true
+  },
+  "passed": {
+   "read results": true,
+   "write review out": true,
+   "write tmp": true,
+   "git status": true,
+   "git ls-files": true
+  },
+  "ok": true
+ }
+}

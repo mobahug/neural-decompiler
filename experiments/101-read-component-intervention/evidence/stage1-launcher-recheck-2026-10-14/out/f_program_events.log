@@ -1,0 +1,37 @@
+exposed table ce055e09c73613b74caae31222192f95528e6f58e101469917138786b2d9758f equals calibration (ce055e09…): True
+states bytes 5755264 blocks 324
+LIVE: 15 write-type or refused events; refusals 0
+   LIVE imports open ['/dev/null', 'r+', 16777218] -> allow
+   LIVE imports open ['/dev/null', 'w', 16778753] -> allow
+   LIVE imports open ['/dev/null', None, 16777218] -> allow
+   LIVE imports open ['/dev/null', None, 16778753] -> allow
+   LIVE imports open ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/y2bg5bl5', None, 16780034] -> allow
+   LIVE imports os.remove ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/y2bg5bl5', -1] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.mkdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/torchinductor_gaborhorvath-ulenius', 511, -1] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.mkdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5', 448, -1] -> allow
+   LIVE seed_runtime + load_model + inputs + programs open ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5/probe-source', None, 16777729] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.link ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5/probe-source', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5/probe-link', -1] -> allow
+   LIVE seed_runtime + load_model + inputs + programs shutil.rmtree ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5', None] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.remove ['probe-source', 3] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.remove ['probe-link', 3] -> allow
+   LIVE seed_runtime + load_model + inputs + programs os.rmdir ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir2/tmpt3v703t5', -1] -> allow
+   LIVE end open ['/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/out/f_program_events.json', 'w', 16778753] -> allow
+event counts (excluding reads/imports):
+   imports | os.putenv 1
+   imports | os.remove 1
+   imports | os.unsetenv 1
+   seed_runtime + load_model + inputs + programs | _thread.start_new_thread 5
+   seed_runtime + load_model + inputs + programs | os.link 1
+   seed_runtime + load_model + inputs + programs | os.mkdir 2
+   seed_runtime + load_model + inputs + programs | os.putenv 1
+   seed_runtime + load_model + inputs + programs | os.remove 2
+   seed_runtime + load_model + inputs + programs | os.rmdir 1
+   seed_runtime + load_model + inputs + programs | os.utime 1
+   seed_runtime + load_model + inputs + programs | pathlib.Path.rglob 2
+   seed_runtime + load_model + inputs + programs | pathlib.Path.walk 2
+   seed_runtime + load_model + inputs + programs | shutil.rmtree 1
+   seed_runtime + load_model + inputs + programs | socket.__new__ 1
+   seed_runtime + load_model + inputs + programs | socket.bind 1
+   seed_runtime + load_model + inputs + programs | sys.addaudithook 1
+   seed_runtime + load_model + inputs + programs | tempfile.mkdtemp 1
+work dir after: [] | repo writes: []

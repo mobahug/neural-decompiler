@@ -1,0 +1,724 @@
+{
+ "launcher_sha256": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c",
+ "mirror_root": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo",
+ "n_cases": 70,
+ "mismatches": [],
+ "cases": [
+  {
+   "case": "mkdir stage1/ (Path.mkdir, parents, exist_ok)",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "mkdir outputs/experiment-101 (write_state_atomic)",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write states.f64 (Path.write_bytes)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write states.json (Path.write_text)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write table.json (Path.write_text)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "tempfile.mkstemp event",
+   "event": "tempfile.mkstemp",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "state temporary os.open (mkstemp, with O_NOFOLLOW)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "fdopen of the temporary",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "os.replace(temporary, results.json)",
+   "event": "os.rename",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "fsync_directory os.open(outputs dir)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "cleanup os.unlink(temporary)",
+   "event": "os.remove",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "read results.json (load_results_state)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "read 020 results.json",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "read states.f64 (file_sha256)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "read the lock (relative, cwd = ROOT)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "sentinel O_CREAT|O_EXCL in the launcher dir",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "record O_CREAT|O_EXCL in the launcher dir",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "production_runs.jsonl append",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "mkdir outside the repo (e.g. a cache)",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "write inside .venv (excluded from the repository)",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "listdir (unhandled read)",
+   "event": "os.listdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "dir_fd >= 0: mkdir 'stage1' relative to the experiment dir",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "dir_fd >= 0: mkdir 'x' relative to an outside dir",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "dir_fd >= 0: remove 'x' relative to an outside dir",
+   "event": "os.remove",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "allow"
+  },
+  {
+   "case": "relative write naming results.json from ROOT",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative mkdir naming stage1/ from ROOT",
+   "event": "os.mkdir",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write of a .results-*.json temporary by open()",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "direct (non-atomic) write of results.json",
+   "event": "open",
+   "expected": "allow",
+   "production": "allow",
+   "detail": "None",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write a repo file",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/README.md')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write a source file",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/src/neural_decompiler/read_intervention.py')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write a sibling in stage1/",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/other.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write another 101 output (report.md)",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/report.md')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write candidate-lock.json",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/candidate-lock.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write 025's outputs",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-025/results.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative write at the root",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative os.open O_CREAT at the root",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative mkdir at the root",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative mkdir elsewhere in the experiment",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/other')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative remove",
+   "event": "os.remove",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative rmdir",
+   "event": "os.rmdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rmdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative chmod",
+   "event": "os.chmod",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative rename",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/a -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/b')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative link",
+   "event": "os.link",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.link /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/a -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/b')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative symlink",
+   "event": "os.symlink",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.symlink /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative shutil.rmtree",
+   "event": "shutil.rmtree",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'shutil.rmtree /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative truncate",
+   "event": "os.truncate",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.truncate /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "remove states.f64",
+   "event": "os.remove",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "chmod states.f64",
+   "event": "os.chmod",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "truncate states.f64 by path",
+   "event": "os.truncate",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.truncate /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rmdir stage1/",
+   "event": "os.rmdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rmdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rmtree stage1/",
+   "event": "shutil.rmtree",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'shutil.rmtree /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "mkdir inside stage1/",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/sub')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "remove results.json",
+   "event": "os.remove",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/results.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rename results.json away",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/results.json -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/.results-3iv5jg38.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rename the temporary into the experiment",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-101/.results-3iv5jg38.json -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/x.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rename a file from outside onto states.f64",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/outside/target.txt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "hard-link a file from outside onto states.f64",
+   "event": "os.link",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.link /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/outside/target.txt -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "symlink onto states.f64",
+   "event": "os.symlink",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.symlink /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/stage1/states.f64')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rename a repo file to outside",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/README.md -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/outside/r')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "dir_fd >= 0: mkdir 'other' relative to the experiment dir",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/other')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "dir_fd >= 0: remove 'README.md' relative to the experiment dir",
+   "event": "os.remove",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/README.md')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "unresolvable dir_fd (closed descriptor number)",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /<unresolved>')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "unresolvable src dir_fd with an outside dst",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /<unresolved> -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/outside/b')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "NUL byte in a write path",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/<unresolved>')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "NUL byte in a remove path",
+   "event": "os.remove",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.remove /<unresolved>')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "write through an outside symlink into the repo",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/experiments/101-read-component-intervention/x.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "mkdir with too few args (fail closed)",
+   "event": "os.mkdir",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.mkdir /<unresolved>')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "rename with one arg (fail closed)",
+   "event": "os.rename",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_writes', 'os.rename /<unresolved>')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "read another experiment's outputs",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_reads', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-025/results.json')",
+   "rehearsal": "refuse"
+  },
+  {
+   "case": "relative read of another experiment's outputs",
+   "event": "open",
+   "expected": "refuse",
+   "production": "refuse",
+   "detail": "('forbidden_reads', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/outputs/experiment-025/results.json')",
+   "rehearsal": "refuse"
+  }
+ ],
+ "probes": [
+  {
+   "probe": "unhandled: os.utime on states.f64",
+   "event": "os.utime",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: os.utime on a source file",
+   "event": "os.utime",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: os.chflags on a source file",
+   "event": "os.chflags",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: os.setxattr on a source file",
+   "event": "os.setxattr",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: os.chown on a source file",
+   "event": "os.chown",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: shutil.copyfile event (its open of dst is judged separately)",
+   "event": "shutil.copyfile",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "unhandled: subprocess.Popen (e.g. git)",
+   "event": "subprocess.Popen",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "symlink in the repo pointing outside: remove the link entry",
+   "event": "os.remove",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "symlink in the repo pointing outside: rename the link entry out",
+   "event": "os.rename",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "os.open with dir_fd outside but relative name that names results.json from ROOT (event has no dir_fd)",
+   "event": "open",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "os.open with dir_fd outside and relative name 'x' (event has no dir_fd; judged against ROOT)",
+   "event": "open",
+   "production": "refuse",
+   "detail": "('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')"
+  },
+  {
+   "probe": "dir_fd that is a regular file's descriptor",
+   "event": "os.mkdir",
+   "production": "allow",
+   "detail": "None"
+  },
+  {
+   "probe": "read with a NUL byte",
+   "event": "open",
+   "production": "allow",
+   "detail": "None"
+  }
+ ],
+ "edge": {
+  "dir_fd 10**20": "EXCEPTION OverflowError: Python int too large to convert to C int",
+  "dir_fd -2": "refuse ('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')",
+  "dir_fd True": "refuse ('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')"
+ },
+ "rehearsal_repo_write_cases_checked": [
+  "mkdir stage1/ (Path.mkdir, parents, exist_ok)",
+  "mkdir outputs/experiment-101 (write_state_atomic)",
+  "write states.f64 (Path.write_bytes)",
+  "write states.json (Path.write_text)",
+  "write table.json (Path.write_text)",
+  "state temporary os.open (mkstemp, with O_NOFOLLOW)",
+  "os.replace(temporary, results.json)",
+  "cleanup os.unlink(temporary)",
+  "dir_fd >= 0: mkdir 'stage1' relative to the experiment dir",
+  "relative write naming results.json from ROOT",
+  "relative mkdir naming stage1/ from ROOT",
+  "write of a .results-*.json temporary by open()",
+  "direct (non-atomic) write of results.json",
+  "write a repo file",
+  "write a source file",
+  "write a sibling in stage1/",
+  "write another 101 output (report.md)",
+  "write candidate-lock.json",
+  "write 025's outputs",
+  "relative write at the root",
+  "relative os.open O_CREAT at the root",
+  "relative mkdir at the root",
+  "relative mkdir elsewhere in the experiment",
+  "relative remove",
+  "relative rmdir",
+  "relative rename",
+  "remove states.f64",
+  "rmdir stage1/",
+  "mkdir inside stage1/",
+  "remove results.json",
+  "rename results.json away",
+  "rename the temporary into the experiment",
+  "rename a file from outside onto states.f64",
+  "rename a repo file to outside",
+  "dir_fd >= 0: mkdir 'other' relative to the experiment dir",
+  "dir_fd >= 0: remove 'README.md' relative to the experiment dir",
+  "unresolvable dir_fd (closed descriptor number)",
+  "unresolvable src dir_fd with an outside dst",
+  "NUL byte in a write path",
+  "NUL byte in a remove path",
+  "write through an outside symlink into the repo"
+ ],
+ "rehearsal_allows_repo_writes": [],
+ "hook_self_test_on_mirror": {
+  "allowed": {
+   "mkdir stage1": true,
+   "mkdir outputs": true,
+   "write states.f64": true,
+   "write states.json": true,
+   "write table.json": true,
+   "state temporary": true,
+   "state rename": true,
+   "state temporary removed": true,
+   "read stage1 file": true
+  },
+  "refused": {
+   "sibling in stage1": true,
+   "experiment file": true,
+   "source file": true,
+   "relative mkdir at the root": true,
+   "relative remove at the root": true,
+   "relative rename at the root": true,
+   "rename into the experiment": true,
+   "unresolvable dir_fd": true,
+   "mkdir elsewhere in the experiment": true,
+   "read another experiment's outputs": true
+  },
+  "rehearsal_refuses_stage1_writes": true,
+  "ok": true
+ }
+}

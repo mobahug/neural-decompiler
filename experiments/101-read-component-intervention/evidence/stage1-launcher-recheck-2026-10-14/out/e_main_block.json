@@ -1,0 +1,344 @@
+[
+ {
+  "scenario": "a_correct",
+  "exit_code": 0,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125422893899Z.json"
+  ],
+  "error": null,
+  "exit_status": 0,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": true,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "d381c6d29cc1ef086a9ad2aee69bc4ab5ba9aa5a3d42cf4df4928fe69873965c"
+   },
+   "record_digest_reproduces": true,
+   "files_equal_record": true,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": true,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n"
+ },
+ {
+  "scenario": "b_incident_after_ledger_return2",
+  "exit_code": 2,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125423134193Z.json"
+  ],
+  "error": null,
+  "exit_status": 2,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": false,
+   "files": {},
+   "record_digest_reproduces": false,
+   "files_equal_record": false,
+   "table_content_sha256": null,
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "c_refusal_inside_stage1_before_ledger",
+  "exit_code": 1,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125423354277Z.json"
+  ],
+  "error": "RuntimeError: PhaseError (stub): a refusal before the ledger",
+  "exit_status": null,
+  "post": null,
+  "logs_in_record": null,
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "d_interrupt_after_ledger",
+  "exit_code": 1,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125423600545Z.json"
+  ],
+  "error": "KeyboardInterrupt: ",
+  "exit_status": null,
+  "post": null,
+  "logs_in_record": null,
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "e_correct_but_stray_file",
+  "exit_code": 1,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125423841228Z.json"
+  ],
+  "error": null,
+  "exit_status": 0,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": false,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "d381c6d29cc1ef086a9ad2aee69bc4ab5ba9aa5a3d42cf4df4928fe69873965c"
+   },
+   "record_digest_reproduces": true,
+   "files_equal_record": true,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n?? experiments/101-read-component-intervention/stray.txt\n"
+ },
+ {
+  "scenario": "f_digest_tampered",
+  "exit_code": 1,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125424097465Z.json"
+  ],
+  "error": null,
+  "exit_status": 0,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": true,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "d381c6d29cc1ef086a9ad2aee69bc4ab5ba9aa5a3d42cf4df4928fe69873965c"
+   },
+   "record_digest_reproduces": false,
+   "files_equal_record": true,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n"
+ },
+ {
+  "scenario": "g_file_changed_after_record",
+  "exit_code": 1,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125424362452Z.json"
+  ],
+  "error": null,
+  "exit_status": 0,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": true,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "7f8b1dfc466b6249f06cbe55c9174df2578e7754da793fded244ef5cba2a38f1"
+   },
+   "record_digest_reproduces": true,
+   "files_equal_record": false,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n"
+ },
+ {
+  "scenario": "h_complete_then_incident",
+  "exit_code": 2,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261014T125424575254Z.json"
+  ],
+  "error": null,
+  "exit_status": 2,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": true,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "d381c6d29cc1ef086a9ad2aee69bc4ab5ba9aa5a3d42cf4df4928fe69873965c"
+   },
+   "record_digest_reproduces": true,
+   "files_equal_record": true,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n"
+ },
+ {
+  "scenario": "i_sentinel_exists",
+  "exit_code": 1,
+  "stage1_calls": 0,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": false,
+  "records": [
+   "production_run_20261014T125424750332Z.json"
+  ],
+  "error": "FileExistsError: [Errno 17] File exists: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/main_block/i_sentinel_exists/here/stage1.sentinel'",
+  "exit_status": null,
+  "post": null,
+  "logs_in_record": null,
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "j_preflight_refuses",
+  "exit_code": 1,
+  "stage1_calls": 0,
+  "sentinel": false,
+  "sentinel_content_is_launcher_sha": false,
+  "records": [
+   "production_run_20261014T125424949110Z.json"
+  ],
+  "error": "RuntimeError: preflight failed: N1_tree_clean (stub)",
+  "exit_status": null,
+  "post": null,
+  "logs_in_record": null,
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "k_self_test_fails",
+  "exit_code": 1,
+  "stage1_calls": 0,
+  "sentinel": false,
+  "sentinel_content_is_launcher_sha": false,
+  "records": [
+   "production_run_20261014T125425160141Z.json"
+  ],
+  "error": "RuntimeError: the hook's self-test failed: {'ok': False}",
+  "exit_status": null,
+  "post": null,
+  "logs_in_record": null,
+  "printed_complete": false,
+  "record_mode": "0o755",
+  "git_status": ""
+ },
+ {
+  "scenario": "l_earlier_records_kept",
+  "exit_code": 0,
+  "stage1_calls": 1,
+  "sentinel": true,
+  "sentinel_content_is_launcher_sha": true,
+  "records": [
+   "production_run_20261010T000000000000Z.json",
+   "production_run_20261011T000000000000Z.json",
+   "production_run_20261014T125425365713Z.json"
+  ],
+  "error": null,
+  "exit_status": 0,
+  "post": {
+   "keys_done": 36,
+   "all_36_ran_once": true,
+   "ledger_is_exactly_the_36_s1_keys": true,
+   "tree_is_exactly_the_three_untracked_stage1_files": true,
+   "files": {
+    "experiments/101-read-component-intervention/stage1/states.f64": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+    "experiments/101-read-component-intervention/stage1/states.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+    "experiments/101-read-component-intervention/stage1/table.json": "d381c6d29cc1ef086a9ad2aee69bc4ab5ba9aa5a3d42cf4df4928fe69873965c"
+   },
+   "record_digest_reproduces": true,
+   "files_equal_record": true,
+   "table_content_sha256": "t",
+   "commit_these": [
+    "experiments/101-read-component-intervention/stage1/states.f64",
+    "experiments/101-read-component-intervention/stage1/states.json",
+    "experiments/101-read-component-intervention/stage1/table.json"
+   ]
+  },
+  "logs_in_record": [
+   "stub log"
+  ],
+  "printed_complete": true,
+  "record_mode": "0o755",
+  "git_status": "?? experiments/101-read-component-intervention/stage1/states.f64\n?? experiments/101-read-component-intervention/stage1/states.json\n?? experiments/101-read-component-intervention/stage1/table.json\n"
+ }
+]

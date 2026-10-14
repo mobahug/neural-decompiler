@@ -1,0 +1,66 @@
+PASS state_digest_verifies
+PASS experiment_and_configuration
+PASS lock_content_digest_verifies
+PASS phase_statuses
+PASS stage1_awaiting_commit
+PASS stage1_phase_commit
+PASS stage1_geometry_bitwise
+PASS confirm_not_started_exactly
+PASS report_not_started_exactly
+PASS no_phase_incidents
+PASS no_calibration_incident
+PASS no_stage1_record_incident
+PASS confirmation_block_absent
+PASS report_block_absent
+PASS lock_phase_before
+PASS ledger_exactly_36_s1_keys
+PASS ledger_has_no_s2_key
+PASS ledger_sorted_as_written
+PASS calibration_ledger_2016_no_101_frame
+PASS s1_s2_disjoint_untagged_s1_only_ref
+PASS record_keys
+PASS record_digest_reproduces
+PASS record_frames_are_frozen_frames
+PASS record_frames_coordinated_structure
+PASS record_state_digests_36
+PASS record_files
+PASS record_paths_equal_lock_paths
+PASS record_table_content_sha256
+PASS record_lock_sha256_is_installed_lock
+PASS record_commit
+PASS record_noun_keys_equal_lock
+PASS record_executed_36
+PASS state_lock_block
+PASS state_versions_equal_now
+PASS state_protocol_commit_is_calibrate_commit
+PASS confirm_phase_rule_allows
+PASS stage1_phase_rule_refuses
+PASS lock_phase_rule_refuses
+PASS calibrate_phase_rule_refuses
+{
+ "state_sha256": "aecd76fc3984e16041ec4f6b0d6b656f07707e28ea4a3665f7bfd8c0fc2a0513",
+ "results_json_file_sha256": "6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a",
+ "record_digest": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f",
+ "stage1_phase": {
+  "awaiting_commit": true,
+  "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+  "completed_at": "2026-10-14T13:09:26+00:00",
+  "geometry": {
+   "bitwise_equal": true,
+   "differing": []
+  },
+  "runtime": {
+   "backend": "cpu",
+   "control_seed": 20260924,
+   "deterministic_algorithms": false,
+   "device": "cpu",
+   "dtype": "float32",
+   "seed": 20260916,
+   "torch_num_threads": 4
+  },
+  "started_at": "2026-10-14T13:09:08+00:00",
+  "status": "complete"
+ },
+ "N1_confirm_rule_ignores_stage1_phase_incidents": true
+}
+ALL OK

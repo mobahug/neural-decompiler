@@ -1,0 +1,3 @@
+O_RDONLY|O_TRUNC: opened; size after = 0 (5 before)
+/Users/gaborhorvath-ulenius/myprojects/NEURAL-DECOMPILER: same inode as the repository = True; Path.resolve() = /Users/gaborhorvath-ulenius/myprojects/NEURAL-DECOMPILER; starts with the repository string = False
+/System/Volumes/Data/Users/gaborhorvath-ulenius/myprojects/neural-decompiler: same inode as the repository = True; Path.resolve() = /System/Volumes/Data/Users/gaborhorvath-ulenius/myprojects/neural-decompiler; starts with the repository string = False

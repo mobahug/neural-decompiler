@@ -1,0 +1,266 @@
+{
+ "checks": {
+  "forward_guards_installed": {
+   "ok": true,
+   "detail": {
+    "forbidden_sequences": 480,
+    "replaced": 12
+   }
+  },
+  "runner_production_configuration": {
+   "ok": true,
+   "detail": null
+  },
+  "state_inputs_equal_base_digests": {
+   "ok": true,
+   "detail": null
+  },
+  "lock_inputs_equal_base_digests": {
+   "ok": true,
+   "detail": null
+  },
+  "confirmation_sha_equals_lock_binding": {
+   "ok": true,
+   "detail": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922"
+  },
+  "calibration_sha_equals_lock_binding": {
+   "ok": true,
+   "detail": "6b1db3388b31b1d8840dc32fbaf70976a005331b366ba02e2d7a794f0cc8ad90"
+  },
+  "confirm_phase_rule_allows_now": {
+   "ok": true,
+   "detail": null
+  },
+  "validated_lock_now_refuses_before_commit": {
+   "ok": true,
+   "detail": "PhaseError: the lock and the preregistration must be tracked and committed"
+  },
+  "stage1_paths_are_non_scientific": {
+   "ok": true,
+   "detail": []
+  },
+  "validate_lock_passes_simulated_post_commit": {
+   "ok": true,
+   "detail": "git_state clean, tracked, changed paths + the three stage-1 paths"
+  },
+  "runtime_equals_020_and_stage1": {
+   "ok": true,
+   "detail": {
+    "now": {
+     "device": "cpu",
+     "backend": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "torch_num_threads": 4
+    },
+    "stage1": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    }
+   }
+  },
+  "model_parameters_and_embedding_digests_equal_lock": {
+   "ok": true,
+   "detail": null
+  },
+  "stage1_binding_rederived_equals_lock": {
+   "ok": true,
+   "detail": null
+  },
+  "G1_and_geometry_digests_bitwise": {
+   "ok": true,
+   "detail": {
+    "bitwise_equal": true,
+    "differing": []
+   }
+  },
+  "barrier_passes_on_current_files": {
+   "ok": true,
+   "detail": {
+    "stage1_digest": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f",
+    "table_content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+   }
+  },
+  "state_digests_from_files_equal_record": {
+   "ok": true,
+   "detail": null
+  },
+  "table_recomputed_bit_for_bit_threads_4": {
+   "ok": true,
+   "detail": {
+    "threads": 4,
+    "content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86",
+    "canonical_equal": true,
+    "bytes_equal": true,
+    "n_differences": 0,
+    "first_differences": [],
+    "seconds": 12.8
+   }
+  },
+  "table_recompute_deterministic_in_process": {
+   "ok": true,
+   "detail": null
+  },
+  "recompute_fractions_for_weak_off": {
+   "ok": true,
+   "detail": null
+  },
+  "guard_never_fired": {
+   "ok": true,
+   "detail": {
+    "repo_write_refusals": [],
+    "subprocess_refusals": [],
+    "module_call_refusals": 0,
+    "entry_point_refusals": [],
+    "token_guard_hits": [],
+    "forbidden_sequences": 480,
+    "forward_guards_installed": true
+   }
+  }
+ },
+ "facts": {
+  "changed_paths_since_lock_protocol_commit": [
+   "experiments/101-read-component-intervention/README.md",
+   "experiments/101-read-component-intervention/evidence/README.md",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/DECISION.md",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/README.md",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/SHA256SUMS",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/dryrun.log",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/dryrun_run.json",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/launch_lock.py",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/launcher_sha256_at_production.txt",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/lock.exit",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/lock.log",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/lock.sentinel",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/lock_run.json",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/hook_self_test.out.json",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/hook_self_test.py",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/launch_stage1.py",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/launch_stage1_v1_as_reviewed.py",
+   "experiments/101-read-component-intervention/evidence/lock-2026-10-14/state_before_dryrun.txt",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/PROMPT.md",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/README.md",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/REVIEW.md",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/SHA256SUMS",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/SHA256SUMS.repository",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/a_repo.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/a_repo.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/audit_event_probe/experiment/stage1/states.f64",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/audit_event_probe/experiment/stage1/states.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/audit_event_probe/experiment/stage1/table.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/audit_event_probe/outputs/results.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/b_independent.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/b_independent.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/c_frozen.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/c_frozen.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/d_params.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/d_params.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/e_state_delta.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/e_state_delta.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/f_audit_events.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/f_audit_events.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/g_iso_checks.json",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/g_iso_checks.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/h_relative_events.log",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/out/repo_snapshot_end.txt",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/a_repo.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/b_independent.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/c_frozen.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/common.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/d_params.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/e_state_delta.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/f_audit_events.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/g_iso_checks.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/h_relative_events.py",
+   "experiments/101-read-component-intervention/evidence/lock-review-2026-10-14/scripts/mine.py",
+   "experiments/101-read-component-intervention/preregistration-lock.json",
+   "experiments/101-read-component-intervention/preregistration.md",
+   "research/synthesis/README.md",
+   "research/synthesis/checks/research-state-2026-10-14-verification.md",
+   "research/synthesis/research-state-2026-10-14.md"
+  ],
+  "scientific_changes_probe": {
+   "evidence_readme_outputs": [],
+   "risky": [
+    "experiments/101-read-component-intervention/launch_confirm.py",
+    "experiments/101-read-component-intervention/stage1/notes.md",
+    "src/neural_decompiler/read_intervention.py"
+   ]
+  },
+  "runtime": {
+   "device": "cpu",
+   "backend": "cpu",
+   "dtype": "float32",
+   "seed": 20260916,
+   "control_seed": 20260924,
+   "deterministic_algorithms": false,
+   "torch_num_threads": 4
+  },
+  "recomputes": {
+   "threads_4_first": {
+    "threads": 4,
+    "content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86",
+    "canonical_equal": true,
+    "bytes_equal": true,
+    "n_differences": 0,
+    "first_differences": [],
+    "seconds": 12.8
+   },
+   "threads_4_second": {
+    "threads": 4,
+    "content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86",
+    "canonical_equal": true,
+    "bytes_equal": true,
+    "n_differences": 0,
+    "first_differences": [],
+    "seconds": 12.49
+   },
+   "threads_1": {
+    "threads": 1,
+    "content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86",
+    "canonical_equal": true,
+    "bytes_equal": true,
+    "n_differences": 0,
+    "first_differences": [],
+    "seconds": 12.32
+   },
+   "threads_8": {
+    "threads": 8,
+    "content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86",
+    "canonical_equal": true,
+    "bytes_equal": true,
+    "n_differences": 0,
+    "first_differences": [],
+    "seconds": 12.67
+   }
+  },
+  "thread_sensitivity": {
+   "threads_4_first": true,
+   "threads_4_second": true,
+   "threads_1": true,
+   "threads_8": true
+  }
+ },
+ "timings_s": {
+  "base": 7.04,
+  "load_and_checks": 2.42,
+  "barrier": 13.04
+ },
+ "guard": {
+  "repo_write_refusals": [],
+  "subprocess_refusals": [],
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": [],
+  "forbidden_sequences": 480,
+  "forward_guards_installed": true
+ },
+ "all_ok": true
+}

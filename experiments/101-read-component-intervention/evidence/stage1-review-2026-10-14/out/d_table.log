@@ -1,0 +1,53 @@
+PASS forward_guards_installed
+PASS runner_production_configuration
+PASS state_inputs_equal_base_digests
+PASS lock_inputs_equal_base_digests
+PASS confirmation_sha_equals_lock_binding
+PASS calibration_sha_equals_lock_binding
+PASS confirm_phase_rule_allows_now
+PASS validated_lock_now_refuses_before_commit
+PASS stage1_paths_are_non_scientific
+PASS validate_lock_passes_simulated_post_commit
+PASS runtime_equals_020_and_stage1
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:16,  4.67it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 352.36it/s]
+PASS model_parameters_and_embedding_digests_equal_lock
+PASS stage1_binding_rederived_equals_lock
+PASS G1_and_geometry_digests_bitwise
+PASS barrier_passes_on_current_files
+PASS state_digests_from_files_equal_record
+  recompute threads_4_first: 9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86 equal=True (12.8s)
+  recompute threads_4_second: 9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86 equal=True (12.49s)
+  recompute threads_1: 9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86 equal=True (12.32s)
+  recompute threads_8: 9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86 equal=True (12.67s)
+PASS table_recomputed_bit_for_bit_threads_4
+PASS table_recompute_deterministic_in_process
+PASS recompute_fractions_for_weak_off
+PASS guard_never_fired
+{
+ "thread_sensitivity": {
+  "threads_4_first": true,
+  "threads_4_second": true,
+  "threads_1": true,
+  "threads_8": true
+ },
+ "scientific_changes_probe": {
+  "evidence_readme_outputs": [],
+  "risky": [
+   "experiments/101-read-component-intervention/launch_confirm.py",
+   "experiments/101-read-component-intervention/stage1/notes.md",
+   "src/neural_decompiler/read_intervention.py"
+  ]
+ },
+ "runtime": {
+  "device": "cpu",
+  "backend": "cpu",
+  "dtype": "float32",
+  "seed": 20260916,
+  "control_seed": 20260924,
+  "deterministic_algorithms": false,
+  "torch_num_threads": 4
+ }
+}
+{"base": 7.04, "load_and_checks": 2.42, "barrier": 13.04}
+ALL OK
+exit 0

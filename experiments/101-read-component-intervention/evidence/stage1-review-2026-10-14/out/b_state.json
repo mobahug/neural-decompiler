@@ -1,0 +1,346 @@
+{
+ "checks": {
+  "state_digest_verifies": {
+   "ok": true,
+   "detail": "aecd76fc3984e16041ec4f6b0d6b656f07707e28ea4a3665f7bfd8c0fc2a0513"
+  },
+  "experiment_and_configuration": {
+   "ok": true,
+   "detail": null
+  },
+  "lock_content_digest_verifies": {
+   "ok": true,
+   "detail": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  },
+  "phase_statuses": {
+   "ok": true,
+   "detail": {
+    "calibrate": "complete",
+    "confirm": "not_started",
+    "lock": "complete",
+    "report": "not_started",
+    "stage1": "complete"
+   }
+  },
+  "stage1_awaiting_commit": {
+   "ok": true,
+   "detail": null
+  },
+  "stage1_phase_commit": {
+   "ok": true,
+   "detail": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2"
+  },
+  "stage1_geometry_bitwise": {
+   "ok": true,
+   "detail": {
+    "bitwise_equal": true,
+    "differing": []
+   }
+  },
+  "confirm_not_started_exactly": {
+   "ok": true,
+   "detail": {
+    "status": "not_started"
+   }
+  },
+  "report_not_started_exactly": {
+   "ok": true,
+   "detail": {
+    "status": "not_started"
+   }
+  },
+  "no_phase_incidents": {
+   "ok": true,
+   "detail": {}
+  },
+  "no_calibration_incident": {
+   "ok": true,
+   "detail": null
+  },
+  "no_stage1_record_incident": {
+   "ok": true,
+   "detail": null
+  },
+  "confirmation_block_absent": {
+   "ok": true,
+   "detail": "NoneType"
+  },
+  "report_block_absent": {
+   "ok": true,
+   "detail": null
+  },
+  "lock_phase_before": {
+   "ok": true,
+   "detail": null
+  },
+  "ledger_exactly_36_s1_keys": {
+   "ok": true,
+   "detail": 36
+  },
+  "ledger_has_no_s2_key": {
+   "ok": true,
+   "detail": null
+  },
+  "ledger_sorted_as_written": {
+   "ok": true,
+   "detail": null
+  },
+  "calibration_ledger_2016_no_101_frame": {
+   "ok": true,
+   "detail": 2016
+  },
+  "s1_s2_disjoint_untagged_s1_only_ref": {
+   "ok": true,
+   "detail": null
+  },
+  "record_keys": {
+   "ok": true,
+   "detail": [
+    "commit",
+    "digest",
+    "executed",
+    "files",
+    "frames",
+    "lock_sha256",
+    "noun_keys",
+    "state_digests",
+    "table_content_sha256"
+   ]
+  },
+  "record_digest_reproduces": {
+   "ok": true,
+   "detail": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f"
+  },
+  "record_frames_are_frozen_frames": {
+   "ok": true,
+   "detail": null
+  },
+  "record_frames_coordinated_structure": {
+   "ok": true,
+   "detail": null
+  },
+  "record_state_digests_36": {
+   "ok": true,
+   "detail": null
+  },
+  "record_files": {
+   "ok": true,
+   "detail": {
+    "states_data": {
+     "path": "experiments/101-read-component-intervention/stage1/states.f64",
+     "sha256": "1c7e51c049e1c61cf669f1783736054956073dc5af6947354b1d13c058ac5b66"
+    },
+    "states_index": {
+     "path": "experiments/101-read-component-intervention/stage1/states.json",
+     "sha256": "2b2c3a61b4a2ce05eba0dcf875c19bfdb1c2627da1ccb1e8d49710af95a873ca"
+    },
+    "table": {
+     "path": "experiments/101-read-component-intervention/stage1/table.json",
+     "sha256": "71d339cd1d7151ad57949384388679593264ac07dec8c9c944c121d9918795fa"
+    }
+   }
+  },
+  "record_paths_equal_lock_paths": {
+   "ok": true,
+   "detail": null
+  },
+  "record_table_content_sha256": {
+   "ok": true,
+   "detail": null
+  },
+  "record_lock_sha256_is_installed_lock": {
+   "ok": true,
+   "detail": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061"
+  },
+  "record_commit": {
+   "ok": true,
+   "detail": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2"
+  },
+  "record_noun_keys_equal_lock": {
+   "ok": true,
+   "detail": null
+  },
+  "record_executed_36": {
+   "ok": true,
+   "detail": null
+  },
+  "state_lock_block": {
+   "ok": true,
+   "detail": {
+    "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+    "content_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+    "preregistration_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+    "preregistration_sha256": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+    "written_at": "2026-10-14T09:32:09+00:00"
+   }
+  },
+  "state_versions_equal_now": {
+   "ok": true,
+   "detail": {
+    "state": {
+     "huggingface-hub": "1.31.0",
+     "python": "3.12.13",
+     "torch": "2.14.0",
+     "transformer-lens": "3.9.0",
+     "transformers": "5.17.0"
+    },
+    "now": {
+     "python": "3.12.13",
+     "torch": "2.14.0",
+     "transformer-lens": "3.9.0",
+     "transformers": "5.17.0",
+     "huggingface-hub": "1.31.0"
+    }
+   }
+  },
+  "state_protocol_commit_is_calibrate_commit": {
+   "ok": true,
+   "detail": "8f65062627c77815adf9289c3fe60191d9fc3c17"
+  },
+  "confirm_phase_rule_allows": {
+   "ok": true,
+   "detail": null
+  },
+  "stage1_phase_rule_refuses": {
+   "ok": true,
+   "detail": "stage1 already ran or recorded an incident; it runs once, and a new attempt requires a new protocol version with new frames"
+  },
+  "lock_phase_rule_refuses": {
+   "ok": true,
+   "detail": "lock already ran or recorded an incident; a new candidate lock requires a new protocol version"
+  },
+  "calibrate_phase_rule_refuses": {
+   "ok": true,
+   "detail": "calibrate is complete; it runs once in this protocol version (a stop for review is never retried automatically)"
+  }
+ },
+ "facts": {
+  "state_sha256": "aecd76fc3984e16041ec4f6b0d6b656f07707e28ea4a3665f7bfd8c0fc2a0513",
+  "results_json_file_sha256": "6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a",
+  "top_keys": [
+   "calibration",
+   "calibration_executed",
+   "configuration",
+   "confirmation",
+   "confirmation_101",
+   "created_at",
+   "design",
+   "executed_prompt_keys",
+   "experiment",
+   "git_dirty",
+   "inputs",
+   "lock",
+   "model",
+   "module_blobs",
+   "phases",
+   "plan",
+   "protocol_code_commit",
+   "report",
+   "run_id",
+   "schema_version",
+   "stage1",
+   "state_sha256",
+   "versions"
+  ],
+  "phases": {
+   "calibrate": {
+    "commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+    "completed_at": "2026-10-14T08:51:04+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T08:45:07+00:00",
+    "status": "complete"
+   },
+   "confirm": {
+    "status": "not_started"
+   },
+   "lock": {
+    "commit": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+    "completed_at": "2026-10-14T09:32:09+00:00",
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "status": "complete"
+   },
+   "report": {
+    "status": "not_started"
+   },
+   "stage1": {
+    "awaiting_commit": true,
+    "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+    "completed_at": "2026-10-14T13:09:26+00:00",
+    "geometry": {
+     "bitwise_equal": true,
+     "differing": []
+    },
+    "runtime": {
+     "backend": "cpu",
+     "control_seed": 20260924,
+     "deterministic_algorithms": false,
+     "device": "cpu",
+     "dtype": "float32",
+     "seed": 20260916,
+     "torch_num_threads": 4
+    },
+    "started_at": "2026-10-14T13:09:08+00:00",
+    "status": "complete"
+   }
+  },
+  "stage1_record_keys": [
+   "commit",
+   "digest",
+   "executed",
+   "files",
+   "frames",
+   "lock_sha256",
+   "noun_keys",
+   "state_digests",
+   "table_content_sha256"
+  ],
+  "stage1_phase": {
+   "awaiting_commit": true,
+   "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+   "completed_at": "2026-10-14T13:09:26+00:00",
+   "geometry": {
+    "bitwise_equal": true,
+    "differing": []
+   },
+   "runtime": {
+    "backend": "cpu",
+    "control_seed": 20260924,
+    "deterministic_algorithms": false,
+    "device": "cpu",
+    "dtype": "float32",
+    "seed": 20260916,
+    "torch_num_threads": 4
+   },
+   "started_at": "2026-10-14T13:09:08+00:00",
+   "status": "complete"
+  },
+  "record_digest": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f",
+  "N1_confirm_rule_ignores_stage1_phase_incidents": true
+ },
+ "guard": {
+  "repo_write_refusals": [],
+  "subprocess_refusals": [],
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": [],
+  "forbidden_sequences": 0,
+  "forward_guards_installed": false
+ },
+ "all_ok": true
+}

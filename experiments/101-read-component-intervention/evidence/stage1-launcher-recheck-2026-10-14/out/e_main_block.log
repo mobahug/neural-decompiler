@@ -1,0 +1,19 @@
+a_correct                                  exit=0    stage1_calls=1 sentinel=True  records=1 complete_msg=True  error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': True, 'record_digest_reproduces': True, 'files_equal_record': True} logs=yes
+b_incident_after_ledger_return2            exit=2    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': False, 'record_digest_reproduces': False, 'files_equal_record': False} logs=yes
+c_refusal_inside_stage1_before_ledger      exit=1    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=RuntimeError: PhaseError (stub): a refusal before the ledger
+d_interrupt_after_ledger                   exit=1    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=KeyboardInterrupt: 
+e_correct_but_stray_file                   exit=1    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': False, 'record_digest_reproduces': True, 'files_equal_record': True} logs=yes
+f_digest_tampered                          exit=1    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': True, 'record_digest_reproduces': False, 'files_equal_record': True} logs=yes
+g_file_changed_after_record                exit=1    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': True, 'record_digest_reproduces': True, 'files_equal_record': False} logs=yes
+h_complete_then_incident                   exit=2    stage1_calls=1 sentinel=True  records=1 complete_msg=False error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': True, 'record_digest_reproduces': True, 'files_equal_record': True} logs=yes
+i_sentinel_exists                          exit=1    stage1_calls=0 sentinel=True  records=1 complete_msg=False error=FileExistsError: [Errno 17] File exists: '/private/tmp/claud
+j_preflight_refuses                        exit=1    stage1_calls=0 sentinel=False records=1 complete_msg=False error=RuntimeError: preflight failed: N1_tree_clean (stub)
+k_self_test_fails                          exit=1    stage1_calls=0 sentinel=False records=1 complete_msg=False error=RuntimeError: the hook's self-test failed: {'ok': False}
+l_earlier_records_kept                     exit=0    stage1_calls=1 sentinel=True  records=3 complete_msg=True  error=None
+                                           post={'all_36_ran_once': True, 'ledger_is_exactly_the_36_s1_keys': True, 'tree_is_exactly_the_three_untracked_stage1_files': True, 'record_digest_reproduces': True, 'files_equal_record': True} logs=yes

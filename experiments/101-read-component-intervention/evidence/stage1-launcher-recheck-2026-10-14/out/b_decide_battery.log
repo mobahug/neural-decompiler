@@ -1,0 +1,17 @@
+cases 70, mismatches 0
+rehearsal rules: 41 repo-write cases checked; allowed in rehearsal: []
+PROBE allow | unhandled: os.utime on states.f64 | None
+PROBE allow | unhandled: os.utime on a source file | None
+PROBE allow | unhandled: os.chflags on a source file | None
+PROBE allow | unhandled: os.setxattr on a source file | None
+PROBE allow | unhandled: os.chown on a source file | None
+PROBE allow | unhandled: shutil.copyfile event (its open of dst is judged separately) | None
+PROBE allow | unhandled: subprocess.Popen (e.g. git) | None
+PROBE allow | symlink in the repo pointing outside: remove the link entry | None
+PROBE allow | symlink in the repo pointing outside: rename the link entry out | None
+PROBE allow | os.open with dir_fd outside but relative name that names results.json from ROOT (event has no dir_fd) | None
+PROBE refuse | os.open with dir_fd outside and relative name 'x' (event has no dir_fd; judged against ROOT) | ('forbidden_writes', '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-449
+PROBE allow | dir_fd that is a regular file's descriptor | None
+PROBE allow | read with a NUL byte | None
+EDGE {'dir_fd 10**20': 'EXCEPTION OverflowError: Python int too large to convert to C int', 'dir_fd -2': "refuse ('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')", 'dir_fd True': "refuse ('forbidden_writes', 'os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror/repo/x')"}
+self-test on mirror ok: True

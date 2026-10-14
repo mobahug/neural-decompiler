@@ -1,0 +1,41 @@
+Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:26,  2.79it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 211.34it/s]
+  coordinated-adjective-101-01: reference state captured
+  coordinated-adjective-101-02: reference state captured
+  coordinated-adjective-101-03: reference state captured
+  coordinated-adjective-101-04: reference state captured
+  coordinated-adjective-101-05: reference state captured
+  coordinated-adjective-101-06: reference state captured
+  coordinated-adjective-101-07: reference state captured
+  coordinated-adjective-101-08: reference state captured
+  coordinated-adjective-101-09: reference state captured
+  coordinated-adjective-101-10: reference state captured
+  coordinated-adjective-101-11: reference state captured
+  coordinated-adjective-101-12: reference state captured
+  coordinated-adjective-101-13: reference state captured
+  coordinated-adjective-101-14: reference state captured
+  coordinated-adjective-101-15: reference state captured
+  coordinated-adjective-101-16: reference state captured
+  coordinated-adjective-101-17: reference state captured
+  coordinated-adjective-101-18: reference state captured
+  coordinated-adjective-101-19: reference state captured
+  coordinated-adjective-101-20: reference state captured
+  coordinated-adjective-101-21: reference state captured
+  coordinated-adjective-101-22: reference state captured
+  coordinated-adjective-101-23: reference state captured
+  coordinated-adjective-101-24: reference state captured
+  coordinated-adjective-101-25: reference state captured
+  coordinated-adjective-101-26: reference state captured
+  coordinated-adjective-101-27: reference state captured
+  coordinated-adjective-101-28: reference state captured
+  coordinated-adjective-101-29: reference state captured
+  coordinated-adjective-101-30: reference state captured
+  coordinated-adjective-101-31: reference state captured
+  coordinated-adjective-101-32: reference state captured
+  coordinated-adjective-101-33: reference state captured
+  coordinated-adjective-101-34: reference state captured
+  coordinated-adjective-101-35: reference state captured
+  coordinated-adjective-101-36: reference state captured
+stage 1 complete: 36 reference states; table 9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86; files ['experiments/101-read-component-intervention/stage1/states.f64', 'experiments/101-read-component-intervention/stage1/states.json', 'experiments/101-read-component-intervention/stage1/table.json']. Commit them exactly as written, then confirm.
+{"mode": "production", "started_at": "2026-10-14T13:08:48.324400+00:00", "ended_at": "2026-10-14T13:09:26.681862+00:00", "exit_status": 0, "error": null}
+{"mode": "production", "load_model": 1, "refused": [], "forbidden_reads": [], "forbidden_writes": [], "output_writes": [], "output_renames": [], "stage1_writes": ["states.f64", "states.json", "table.json"], "stage1_mkdirs": 2, "sanctioned_runs": 36, "sanctioned_forward_calls": 12240, "stage1_invocations": 1}
+Stage 1 complete. The user commits exactly these files, unchanged, before confirm: experiments/101-read-component-intervention/stage1/states.f64, experiments/101-read-component-intervention/stage1/states.json, experiments/101-read-component-intervention/stage1/table.json

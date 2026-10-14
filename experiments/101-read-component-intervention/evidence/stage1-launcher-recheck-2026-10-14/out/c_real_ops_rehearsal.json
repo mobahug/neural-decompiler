@@ -1,0 +1,1228 @@
+{
+ "mode": "rehearsal",
+ "launcher_sha256": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c",
+ "mirror": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal",
+ "steps": [
+  {
+   "step": "ledger write: rr.write_state_atomic(results.json)",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-tituckgb.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    },
+    {
+     "event": "tempfile.mkstemp",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-tituckgb.json"
+     ],
+     "types": [
+      "str"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-tituckgb.json",
+      null,
+      16780034
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "read back: rd.load_results_state",
+   "expect": "FileNotFoundError",
+   "outcome": "FileNotFoundError",
+   "detail": "[Errno 2] No such file or directory: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json'",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "runner: stage1/ mkdir(parents=True, exist_ok=True)",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "launcher write_check on the three paths",
+   "expect": "PhaseError",
+   "outcome": "PhaseError",
+   "detail": "the launcher's write predicate refuses /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "as_expected": true,
+   "events": []
+  },
+  {
+   "step": "ul.write_table(states.f64, states.json)",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "table.json write_text",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/table.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/table.json",
+      "w",
+      16778753
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "rc.file_sha256(states.f64)",
+   "expect": "FileNotFoundError",
+   "outcome": "FileNotFoundError",
+   "detail": "[Errno 2] No such file or directory: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64'",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "rc.file_sha256(states.json)",
+   "expect": "FileNotFoundError",
+   "outcome": "FileNotFoundError",
+   "detail": "[Errno 2] No such file or directory: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.json'",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.json",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "rc.file_sha256(table.json)",
+   "expect": "FileNotFoundError",
+   "outcome": "FileNotFoundError",
+   "detail": "[Errno 2] No such file or directory: '/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/table.json'",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/table.json",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "final state write: rr.write_state_atomic",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-g9ff2ru_.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    },
+    {
+     "event": "tempfile.mkstemp",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-g9ff2ru_.json"
+     ],
+     "types": [
+      "str"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-g9ff2ru_.json",
+      null,
+      16780034
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "cleanup path: replace fails, the temporary is unlinked",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-lpuevkf1.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    },
+    {
+     "event": "tempfile.mkstemp",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-lpuevkf1.json"
+     ],
+     "types": [
+      "str"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-lpuevkf1.json",
+      null,
+      16780034
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "temporaries left in outputs",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": []
+  },
+  {
+   "step": "stage1/ mkdir again (exists)",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "write_check after the files exist",
+   "expect": "PhaseError",
+   "outcome": "PhaseError",
+   "detail": "the launcher's write predicate refuses /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "as_expected": true,
+   "events": []
+  },
+  {
+   "step": "write a repo file",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+      "w",
+      16778753
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "write a sibling in stage1/",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/other.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/other.json",
+      "w",
+      16778753
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "relative mkdir at the root",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/relative_dir",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.mkdir",
+     "args": [
+      "relative_dir",
+      511,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "relative remove at the root",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.remove",
+     "args": [
+      "README.md",
+      -1
+     ],
+     "types": [
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "relative rename at the root",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md -> /private/tmp/claude-501/-Users-gaborhorvath-ulen",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.rename",
+     "args": [
+      "README.md",
+      "R.md",
+      -1,
+      -1
+     ],
+     "types": [
+      "str",
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "relative chmod at the root",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.chmod",
+     "args": [
+      "README.md",
+      384,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "remove states.f64",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.remove",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+      -1
+     ],
+     "types": [
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "chmod states.f64",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.chmod",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+      292,
+      -1
+     ],
+     "types": [
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "truncate states.f64",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.truncate /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.truncate",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+      0
+     ],
+     "types": [
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "rename results.json away",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json -> /private/tmp/claude-50",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.rename",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json",
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/r2.json",
+      -1,
+      -1
+     ],
+     "types": [
+      "str",
+      "str",
+      "int",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "rmtree stage1/",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: shutil.rmtree /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "shutil.rmtree",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+      null
+     ],
+     "types": [
+      "PosixPath",
+      "NoneType"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "numpy.save into the repo",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/x.npy",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/x.npy",
+      "w",
+      16778753
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "read another experiment's outputs",
+   "expect": "PermissionError",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_reads: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-025/results.json",
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-025/results.json",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "step": "PROBE torch.save to a repo path",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/__pycache__/config.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/config.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ],
+   "target_exists_before": false,
+   "target_exists_after": true
+  },
+  {
+   "step": "PROBE sqlite3 database in the repo",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/sqlite3/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/sqlite3/__pycache__/dbapi2.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "sqlite3.connect",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/db.sqlite"
+     ],
+     "types": [
+      "PosixPath"
+     ]
+    }
+   ],
+   "target_exists_before": false,
+   "target_exists_after": true
+  },
+  {
+   "step": "PROBE os.mkfifo in the repo",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [],
+   "target_exists_before": false,
+   "target_exists_after": true
+  },
+  {
+   "step": "PROBE safetensors save_file in the repo",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/safetensors/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/safetensors/__pycache__/torch.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__init__.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__pycache__/_ctypeslib.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/_ctypeslib.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ],
+   "target_exists_before": false,
+   "target_exists_after": true
+  },
+  {
+   "step": "PROBE os.utime on a repo file",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.utime",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+      "(0, 0)",
+      null,
+      -1
+     ],
+     "types": [
+      "str",
+      "tuple",
+      "NoneType",
+      "int"
+     ]
+    }
+   ],
+   "target_exists_before": true,
+   "target_exists_after": true
+  },
+  {
+   "step": "PROBE unlink a repo symlink that points outside",
+   "expect": "ok",
+   "outcome": "ok",
+   "detail": null,
+   "as_expected": true,
+   "events": [
+    {
+     "event": "os.remove",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/link_out",
+      -1
+     ],
+     "types": [
+      "str",
+      "int"
+     ]
+    }
+   ],
+   "target_exists_before": true,
+   "target_exists_after": false
+  },
+  {
+   "step": "PROBE os.open(dir_fd=src/) of a relative name that names results.json from ROOT",
+   "expect": "ok",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json",
+   "as_expected": false,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/src",
+      null,
+      16777216
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "outputs/experiment-101/results.json",
+      null,
+      16777729
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    }
+   ],
+   "target_exists_before": false,
+   "target_exists_after": false
+  }
+ ],
+ "launcher_events": {
+  "mode": "rehearsal",
+  "load_model": 0,
+  "refused": [],
+  "forbidden_reads": [
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-025/results.json"
+  ],
+  "forbidden_writes": [
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-tituckgb.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/table.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-g9ff2ru_.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/.results-lpuevkf1.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/other.json",
+   "os.mkdir /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/relative_dir",
+   "os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/R.md",
+   "os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+   "os.remove /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "os.chmod /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "os.truncate /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1/states.f64",
+   "os.rename /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json -> /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/r2.json",
+   "shutil.rmtree /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/experiments/101-read-component-intervention/stage1",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/x.npy",
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json"
+  ],
+  "output_writes": [],
+  "output_renames": [],
+  "stage1_writes": [],
+  "stage1_mkdirs": 0,
+  "outputs_reads": [
+   "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json"
+  ],
+  "sanctioned_runs": 0,
+  "sanctioned_forward_calls": 0,
+  "stage1_invocations": 0
+ },
+ "tree_after": [
+  "outside/",
+  "outside/target.txt",
+  "repo/",
+  "repo/README.md",
+  "repo/db.sqlite",
+  "repo/experiments/",
+  "repo/experiments/101-read-component-intervention/",
+  "repo/fifo",
+  "repo/outputs/",
+  "repo/outputs/experiment-020/",
+  "repo/outputs/experiment-020/results.json",
+  "repo/outputs/experiment-025/",
+  "repo/outputs/experiment-025/results.json",
+  "repo/outputs/experiment-101/",
+  "repo/src/",
+  "repo/src/neural_decompiler/",
+  "repo/src/outputs/",
+  "repo/src/outputs/experiment-101/",
+  "repo/x.pt",
+  "repo/x.safetensors"
+ ],
+ "unexpected": [],
+ "probes": [
+  {
+   "probe": "PROBE torch.save to a repo path",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/__pycache__/config.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/torch/utils/serialization/config.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "probe": "PROBE sqlite3 database in the repo",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/sqlite3/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/sqlite3/__pycache__/dbapi2.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "sqlite3.connect",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/db.sqlite"
+     ],
+     "types": [
+      "PosixPath"
+     ]
+    }
+   ]
+  },
+  {
+   "probe": "PROBE os.mkfifo in the repo",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": true,
+   "events": []
+  },
+  {
+   "probe": "PROBE safetensors save_file in the repo",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": true,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/safetensors/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/safetensors/__pycache__/torch.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__pycache__/__init__.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__init__.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/__pycache__/_ctypeslib.cpython-312.pyc",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/lib/python3.12/site-packages/numpy/ctypeslib/_ctypeslib.py",
+      "r",
+      16777216
+     ],
+     "types": [
+      "str",
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "probe": "PROBE os.utime on a repo file",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": true,
+   "events": [
+    {
+     "event": "os.utime",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/README.md",
+      "(0, 0)",
+      null,
+      -1
+     ],
+     "types": [
+      "str",
+      "tuple",
+      "NoneType",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "probe": "PROBE unlink a repo symlink that points outside",
+   "outcome": "ok",
+   "detail": null,
+   "created_or_changed": false,
+   "events": [
+    {
+     "event": "os.remove",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/link_out",
+      -1
+     ],
+     "types": [
+      "str",
+      "int"
+     ]
+    }
+   ]
+  },
+  {
+   "probe": "PROBE os.open(dir_fd=src/) of a relative name that names results.json from ROOT",
+   "outcome": "PermissionError",
+   "detail": "stage1 launcher (rehearsal): forbidden_writes: /private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/outputs/experiment-101/results.json",
+   "created_or_changed": false,
+   "events": [
+    {
+     "event": "open",
+     "args": [
+      "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/mirror_rehearsal/repo/src",
+      null,
+      16777216
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    },
+    {
+     "event": "open",
+     "args": [
+      "outputs/experiment-101/results.json",
+      null,
+      16777729
+     ],
+     "types": [
+      "str",
+      "NoneType",
+      "int"
+     ]
+    }
+   ]
+  }
+ ]
+}

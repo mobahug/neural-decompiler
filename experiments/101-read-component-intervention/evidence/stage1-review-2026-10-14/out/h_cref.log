@@ -1,0 +1,4 @@
+c_ref vs W_U·LN_final(h6): worst max-abs 2.868e-03 (relative 4.537e-04) over 36 frames × 80 nouns; ok=True
+reference contrast c_ref (mean over the 79 scorable nouns) per frame: min +2.909 median +4.256 max +5.334
+guard: {'repo_write_refusals': [], 'subprocess_refusals': [], 'module_call_refusals': 0, 'entry_point_refusals': [], 'token_guard_hits': [], 'forbidden_sequences': 0, 'forward_guards_installed': False}
+exit 0

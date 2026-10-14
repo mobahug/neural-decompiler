@@ -1,0 +1,488 @@
+{
+ "tmpdir": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir",
+ "live_judged_writes": [
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "r+",
+    16777218
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "w",
+    16778753
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16777218
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16778753
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/ixusmn39",
+    null,
+    16780034
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.remove",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/ixusmn39",
+    -1
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "seed_runtime",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/torchinductor_gaborhorvath-ulenius",
+    511,
+    -1
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    448,
+    -1
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-source",
+    null,
+    16777729
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.link",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-source",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-link",
+    -1,
+    -1
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "shutil.rmtree",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    null
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-source",
+    3
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-link",
+    3
+   ],
+   "production_decision_at_event_time": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.rmdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    -1
+   ],
+   "production_decision_at_event_time": "allow"
+  }
+ ],
+ "live_refusals": [],
+ "launcher_sha256": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c",
+ "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+ "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+ "text": "The quick brown fox jumps over the lazy dog.",
+ "n_tokens": 11,
+ "n_sites": 18,
+ "parameters_digest": "fd953f1c745299bedfd1f242fc15c7fe31211f79d8bc0d3ca46372962e7fc0e5",
+ "work_dir_after": [],
+ "event_counts": {
+  "ModelPrograms.from_model + parameters_digest | builtins.id": 226,
+  "ModelPrograms.from_model + parameters_digest | exec": 1,
+  "ModelPrograms.from_model + parameters_digest | import": 1,
+  "ModelPrograms.from_model + parameters_digest | marshal.loads": 1,
+  "ModelPrograms.from_model + parameters_digest | open": 1,
+  "ModelPrograms.from_model + parameters_digest | sys._getframe": 2,
+  "end | compile": 2,
+  "end | exec": 1,
+  "end | fcntl.fcntl": 2,
+  "end | open": 1,
+  "end | os.listdir": 1,
+  "frozen_inputs (read-only, as _base does) | open": 23,
+  "imports | builtins.id": 4028,
+  "imports | code.__new__": 1,
+  "imports | compile": 2043,
+  "imports | ctypes.dlopen": 2,
+  "imports | ctypes.dlsym": 10,
+  "imports | exec": 2946,
+  "imports | import": 1116,
+  "imports | marshal.loads": 1025,
+  "imports | object.__getattr__": 4640,
+  "imports | object.__setattr__": 695,
+  "imports | open": 1151,
+  "imports | os.listdir": 156,
+  "imports | os.putenv": 1,
+  "imports | os.remove": 1,
+  "imports | os.unsetenv": 1,
+  "imports | sys._getframe": 820,
+  "imports | sys._getframemodulename": 159,
+  "imports | sys.addaudithook": 1,
+  "load_model | _thread.start_new_thread": 5,
+  "load_model | builtins.id": 46681,
+  "load_model | compile": 2326,
+  "load_model | ctypes.dlopen": 1,
+  "load_model | exec": 3406,
+  "load_model | fcntl.fcntl": 4,
+  "load_model | function.__new__": 89,
+  "load_model | import": 1818,
+  "load_model | marshal.loads": 1615,
+  "load_model | object.__delattr__": 83,
+  "load_model | object.__getattr__": 2507,
+  "load_model | object.__setattr__": 779,
+  "load_model | open": 5361,
+  "load_model | os.link": 1,
+  "load_model | os.listdir": 261,
+  "load_model | os.mkdir": 1,
+  "load_model | os.remove": 2,
+  "load_model | os.rmdir": 1,
+  "load_model | os.scandir": 3163,
+  "load_model | os.utime": 1,
+  "load_model | pathlib.Path.rglob": 2,
+  "load_model | pathlib.Path.walk": 2,
+  "load_model | shutil.rmtree": 1,
+  "load_model | socket.__new__": 1,
+  "load_model | socket.bind": 1,
+  "load_model | sys._getframe": 1770,
+  "load_model | sys._getframemodulename": 54,
+  "load_model | sys.addaudithook": 1,
+  "load_model | tempfile.mkdtemp": 1,
+  "one forward: pm.capture_prompt (neutral sentence, stage 1's plain site set) | builtins.id": 1445,
+  "one forward: pm.capture_prompt (neutral sentence, stage 1's plain site set) | object.__getattr__": 25,
+  "one forward: pm.capture_prompt (neutral sentence, stage 1's plain site set) | sys._getframe": 1,
+  "second forward (steady state) | builtins.id": 1301,
+  "second forward (steady state) | object.__getattr__": 25,
+  "seed_runtime | array.__new__": 3,
+  "seed_runtime | builtins.id": 1804,
+  "seed_runtime | compile": 1929,
+  "seed_runtime | exec": 2462,
+  "seed_runtime | import": 847,
+  "seed_runtime | marshal.loads": 814,
+  "seed_runtime | object.__getattr__": 2806,
+  "seed_runtime | object.__setattr__": 446,
+  "seed_runtime | open": 831,
+  "seed_runtime | os.listdir": 89,
+  "seed_runtime | os.mkdir": 1,
+  "seed_runtime | os.putenv": 1,
+  "seed_runtime | sys._getframe": 228,
+  "seed_runtime | sys._getframemodulename": 44
+ },
+ "write_or_relative_events": [
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "r+",
+    16777218
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    "w",
+    16778753
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16777218
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/dev/null",
+    null,
+    16778753
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/ixusmn39",
+    null,
+    16780034
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "imports",
+   "event": "os.remove",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/ixusmn39",
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "seed_runtime",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/torchinductor_gaborhorvath-ulenius",
+    511,
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "tempfile.mkdtemp",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v"
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.mkdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    448,
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.utime",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-source",
+    null,
+    null,
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "open",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-source",
+    null,
+    16777729
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.link",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-source",
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v/probe-link",
+    -1,
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "shutil.rmtree",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    null
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-source",
+    3
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": true,
+   "production_decision": "REFUSE ('forbidden_writes', 'os.remove /<unresolved>')"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-link",
+    3
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": true,
+   "production_decision": "REFUSE ('forbidden_writes', 'os.remove /<unresolved>')"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.rmdir",
+   "args": [
+    "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/tmpdir/tmpdhkhiq9v",
+    -1
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": false,
+   "production_decision": "allow"
+  }
+ ],
+ "refused_by_v2_production": [
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-source",
+    3
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": true,
+   "production_decision": "REFUSE ('forbidden_writes', 'os.remove /<unresolved>')"
+  },
+  {
+   "phase": "load_model",
+   "event": "os.remove",
+   "args": [
+    "probe-link",
+    3
+   ],
+   "cwd": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-launcher-recheck/work_load",
+   "writing": true,
+   "relative": true,
+   "production_decision": "REFUSE ('forbidden_writes', 'os.remove /<unresolved>')"
+  }
+ ],
+ "repo_paths_touched_outside_src": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/005-regular-plural-mechanism/extension-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/evidence/lock-2026-10-14/prepared/launch_stage1.py",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/screening/behavior-candidates/manifest-v1.json"
+ ],
+ "outputs_paths_touched": [
+  "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+ ],
+ "repo_writes": []
+}

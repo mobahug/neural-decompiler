@@ -1,0 +1,271 @@
+{
+ "script": "d_table",
+ "python_flags_dont_write_bytecode": true,
+ "env": {
+  "HF_HUB_OFFLINE": "1",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "GIT_OPTIONAL_LOCKS": "0",
+  "TMPDIR": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1-review/tmp"
+ },
+ "repo_write_refusals": [],
+ "subprocess": [
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/006-low-rank-cue-decompilation/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/009-head-transport-rule/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/011-encoding-read-prospective/preregistration-lock.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/012-layer-correction-token-local/preregistration-lock.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/013-attention-paths-frozen-pattern/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/014-neuron-1987-feature/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/015-attention-pattern-token-local/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/016-frame-conditioned-qk/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/017-transport-head-pattern/preregistration-lock.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/018-block2-concentration/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/019-block2-routing/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/closure.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/020-readout-decompilation/evidence/exploration-record-2026-09-22.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/confirmation-v1.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/calibration-v1.json"
+  ],
+  [
+   "git",
+   "rev-parse",
+   "HEAD"
+  ],
+  [
+   "git",
+   "status",
+   "--porcelain"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/preregistration-lock.json"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/preregistration.md"
+  ],
+  [
+   "git",
+   "ls-files",
+   "--error-unmatch",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/stage1/states.f64"
+  ],
+  [
+   "git",
+   "merge-base",
+   "--is-ancestor",
+   "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+   "HEAD"
+  ],
+  [
+   "git",
+   "diff",
+   "--no-renames",
+   "--name-only",
+   "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+   "HEAD"
+  ],
+  [
+   "git",
+   "--no-optional-locks",
+   "rev-parse",
+   "HEAD"
+  ],
+  [
+   "git",
+   "merge-base",
+   "--is-ancestor",
+   "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+   "HEAD"
+  ],
+  [
+   "git",
+   "diff",
+   "--no-renames",
+   "--name-only",
+   "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+   "HEAD"
+  ]
+ ],
+ "subprocess_refusals": [],
+ "writes_outside_repo": [
+  "open /dev/null",
+  "open /dev/null",
+  "open /dev/null",
+  "open /dev/null"
+ ],
+ "module_call_refusals": 0,
+ "module_call_refusal_examples": [],
+ "entry_point_refusals": [],
+ "token_guard_hits": [],
+ "forbidden_sequences": 480,
+ "sealed": {
+  "instances": 430,
+  "class_methods": [
+   "Dropout.forward",
+   "Embedding.forward",
+   "EmbeddingBridge.forward",
+   "GELUActivation.forward",
+   "GPTNeoXAttention.forward",
+   "GPTNeoXLayer.forward",
+   "GPTNeoXMLP.forward",
+   "GPTNeoXRotaryEmbedding.forward",
+   "HookPoint.forward",
+   "LayerNorm.forward",
+   "Linear.forward",
+   "LinearBridge.forward",
+   "MLPBridge.forward",
+   "NormalizationBridge.forward",
+   "RotaryEmbeddingBridge.forward",
+   "TransformerBridge.forward",
+   "TransformerBridge.generate",
+   "TransformerBridge.run_with_cache",
+   "TransformerBridge.run_with_hooks",
+   "UnembeddingBridge.forward"
+  ]
+ },
+ "forward_guards_installed": true,
+ "self_test": {
+  "refused": {
+   "open w results": true,
+   "open w stage1 file": true,
+   "os.open O_RDONLY|O_TRUNC": true,
+   "open a+ case variant": true,
+   "open data-volume alias": true,
+   "mkdir in repo": true,
+   "rename into repo": true,
+   "remove in repo": true,
+   "relative open w with cwd at root": true,
+   "unresolvable dir_fd": true,
+   "chmod in repo": true,
+   "utime in repo": true,
+   "child python": true,
+   "git commit": true,
+   "git add": true
+  },
+  "passed": {
+   "read results": true,
+   "write review out": true,
+   "write tmp": true,
+   "git status": true,
+   "git ls-files": true
+  },
+  "ok": true
+ },
+ "forbidden_texts": 240,
+ "entry_points_replaced": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.read_assembly.capture_reference",
+  "neural_decompiler.read_intervention.capture_reference",
+  "neural_decompiler.read_intervention.run_arm",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ]
+}

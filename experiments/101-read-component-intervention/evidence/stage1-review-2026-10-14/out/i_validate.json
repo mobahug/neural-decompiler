@@ -1,0 +1,12 @@
+{
+ "exit": 0,
+ "guard": {
+  "repo_write_refusals": [],
+  "subprocess_refusals": [],
+  "module_call_refusals": 0,
+  "entry_point_refusals": [],
+  "token_guard_hits": [],
+  "forbidden_sequences": 0,
+  "forward_guards_installed": false
+ }
+}

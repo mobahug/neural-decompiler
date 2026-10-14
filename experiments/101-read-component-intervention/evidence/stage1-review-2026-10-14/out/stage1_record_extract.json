@@ -1,0 +1,432 @@
+{
+ "source": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json",
+ "file_sha256": "6372d113d4ed71af0e59916b509c80c7ebdff4abe59848e957e0cc86bd9f3e2a",
+ "state_sha256": "aecd76fc3984e16041ec4f6b0d6b656f07707e28ea4a3665f7bfd8c0fc2a0513",
+ "phases": {
+  "calibrate": {
+   "commit": "8f65062627c77815adf9289c3fe60191d9fc3c17",
+   "completed_at": "2026-10-14T08:51:04+00:00",
+   "runtime": {
+    "backend": "cpu",
+    "control_seed": 20260924,
+    "deterministic_algorithms": false,
+    "device": "cpu",
+    "dtype": "float32",
+    "seed": 20260916,
+    "torch_num_threads": 4
+   },
+   "started_at": "2026-10-14T08:45:07+00:00",
+   "status": "complete"
+  },
+  "confirm": {
+   "status": "not_started"
+  },
+  "lock": {
+   "commit": "3621eec4b6a901119a4b96d4fdc07fa3b19652ab",
+   "completed_at": "2026-10-14T09:32:09+00:00",
+   "runtime": {
+    "backend": "cpu",
+    "control_seed": 20260924,
+    "deterministic_algorithms": false,
+    "device": "cpu",
+    "dtype": "float32",
+    "seed": 20260916,
+    "torch_num_threads": 4
+   },
+   "status": "complete"
+  },
+  "report": {
+   "status": "not_started"
+  },
+  "stage1": {
+   "awaiting_commit": true,
+   "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+   "completed_at": "2026-10-14T13:09:26+00:00",
+   "geometry": {
+    "bitwise_equal": true,
+    "differing": []
+   },
+   "runtime": {
+    "backend": "cpu",
+    "control_seed": 20260924,
+    "deterministic_algorithms": false,
+    "device": "cpu",
+    "dtype": "float32",
+    "seed": 20260916,
+    "torch_num_threads": 4
+   },
+   "started_at": "2026-10-14T13:09:08+00:00",
+   "status": "complete"
+  }
+ },
+ "executed_prompt_keys": [
+  "coordinated-adjective-101-01|ref|581|S1",
+  "coordinated-adjective-101-02|ref|581|S1",
+  "coordinated-adjective-101-03|ref|581|S1",
+  "coordinated-adjective-101-04|ref|581|S1",
+  "coordinated-adjective-101-05|ref|581|S1",
+  "coordinated-adjective-101-06|ref|581|S1",
+  "coordinated-adjective-101-07|ref|581|S1",
+  "coordinated-adjective-101-08|ref|581|S1",
+  "coordinated-adjective-101-09|ref|581|S1",
+  "coordinated-adjective-101-10|ref|581|S1",
+  "coordinated-adjective-101-11|ref|581|S1",
+  "coordinated-adjective-101-12|ref|581|S1",
+  "coordinated-adjective-101-13|ref|581|S1",
+  "coordinated-adjective-101-14|ref|581|S1",
+  "coordinated-adjective-101-15|ref|581|S1",
+  "coordinated-adjective-101-16|ref|581|S1",
+  "coordinated-adjective-101-17|ref|581|S1",
+  "coordinated-adjective-101-18|ref|581|S1",
+  "coordinated-adjective-101-19|ref|581|S1",
+  "coordinated-adjective-101-20|ref|581|S1",
+  "coordinated-adjective-101-21|ref|581|S1",
+  "coordinated-adjective-101-22|ref|581|S1",
+  "coordinated-adjective-101-23|ref|581|S1",
+  "coordinated-adjective-101-24|ref|581|S1",
+  "coordinated-adjective-101-25|ref|581|S1",
+  "coordinated-adjective-101-26|ref|581|S1",
+  "coordinated-adjective-101-27|ref|581|S1",
+  "coordinated-adjective-101-28|ref|581|S1",
+  "coordinated-adjective-101-29|ref|581|S1",
+  "coordinated-adjective-101-30|ref|581|S1",
+  "coordinated-adjective-101-31|ref|581|S1",
+  "coordinated-adjective-101-32|ref|581|S1",
+  "coordinated-adjective-101-33|ref|581|S1",
+  "coordinated-adjective-101-34|ref|581|S1",
+  "coordinated-adjective-101-35|ref|581|S1",
+  "coordinated-adjective-101-36|ref|581|S1"
+ ],
+ "stage1": {
+  "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+  "digest": "d2f1ed03920a7dd66924918b21ea36e754b4981b3517a8621b13edc3286cfc3f",
+  "executed": 36,
+  "files": {
+   "states_data": {
+    "path": "experiments/101-read-component-intervention/stage1/states.f64",
+    "sha256": "1c7e51c049e1c61cf669f1783736054956073dc5af6947354b1d13c058ac5b66"
+   },
+   "states_index": {
+    "path": "experiments/101-read-component-intervention/stage1/states.json",
+    "sha256": "2b2c3a61b4a2ce05eba0dcf875c19bfdb1c2627da1ccb1e8d49710af95a873ca"
+   },
+   "table": {
+    "path": "experiments/101-read-component-intervention/stage1/table.json",
+    "sha256": "71d339cd1d7151ad57949384388679593264ac07dec8c9c944c121d9918795fa"
+   }
+  },
+  "frames": [
+   {
+    "frame_id": "coordinated-adjective-101-01",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-02",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-03",
+    "p_c": 6,
+    "p_t": 7
+   },
+   {
+    "frame_id": "coordinated-adjective-101-04",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-05",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-06",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-07",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-08",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-09",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-10",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-11",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-12",
+    "p_c": 6,
+    "p_t": 7
+   },
+   {
+    "frame_id": "coordinated-adjective-101-13",
+    "p_c": 6,
+    "p_t": 7
+   },
+   {
+    "frame_id": "coordinated-adjective-101-14",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-15",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-16",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-17",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-18",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-19",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-20",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-21",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-22",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-23",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-24",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-25",
+    "p_c": 6,
+    "p_t": 7
+   },
+   {
+    "frame_id": "coordinated-adjective-101-26",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-27",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-28",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-29",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-30",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-31",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-32",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-33",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-34",
+    "p_c": 4,
+    "p_t": 5
+   },
+   {
+    "frame_id": "coordinated-adjective-101-35",
+    "p_c": 5,
+    "p_t": 6
+   },
+   {
+    "frame_id": "coordinated-adjective-101-36",
+    "p_c": 5,
+    "p_t": 6
+   }
+  ],
+  "lock_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+  "noun_keys": [
+   "cat",
+   "dog",
+   "book",
+   "lamp",
+   "chair",
+   "river",
+   "cloud",
+   "train",
+   "cup",
+   "garden",
+   "city",
+   "baby",
+   "story",
+   "party",
+   "box",
+   "bus",
+   "dish",
+   "watch",
+   "class",
+   "brush",
+   "island",
+   "button",
+   "ticket",
+   "mirror",
+   "camera",
+   "tunnel",
+   "village",
+   "bottle",
+   "blanket",
+   "rocket",
+   "family",
+   "lady",
+   "country",
+   "glass",
+   "kiss",
+   "match",
+   "wish",
+   "library",
+   "factory",
+   "anchor",
+   "engine",
+   "forest",
+   "insect",
+   "kernel",
+   "market",
+   "needle",
+   "ocean",
+   "pocket",
+   "table",
+   "army",
+   "enemy",
+   "sky",
+   "fly",
+   "ally",
+   "reply",
+   "beach",
+   "bush",
+   "cross",
+   "dress",
+   "stone",
+   "field",
+   "road",
+   "door",
+   "window",
+   "bridge",
+   "tower",
+   "planet",
+   "letter",
+   "wheel",
+   "patch",
+   "coach",
+   "church",
+   "tax",
+   "boss",
+   "body",
+   "copy",
+   "duty",
+   "spy",
+   "study"
+  ],
+  "state_digests": {
+   "coordinated-adjective-101-01": "9806cbf446a335c49c146c64ade3ca48ca7e15ac977a5c00f74a6ac294836c2a",
+   "coordinated-adjective-101-02": "3dd8b2209b8449f0d72db8e2ebb4e94bd9749ed2785d3140f10a3a447279493a",
+   "coordinated-adjective-101-03": "3a0bbbec035bbe38e554f9b0039481f4397d67c5003b7e696ed65c83e5af76bb",
+   "coordinated-adjective-101-04": "55572e2053e78a05d68993dbc366be65f41d8d77bfbcc0c008da927173b468e5",
+   "coordinated-adjective-101-05": "48f3d64600edd078843ea97ebd7d9ba062301f856c19ac42bf864a87f704a38f",
+   "coordinated-adjective-101-06": "75ed1e35f9a0ea97a23a3178e1940ea036b37220fc700a12c9a3464ad9827915",
+   "coordinated-adjective-101-07": "dfc25701ac150686e9d70e690b1b0e16464875502df98439ff6d83de93340046",
+   "coordinated-adjective-101-08": "b88519c74f44472f051dc4f6fffd9c4f0ebf481431381852203505b92d5cbfac",
+   "coordinated-adjective-101-09": "7d49c2236f1305e8b195532fff3b7656bf7cf3ae099904ae5ce8f2968a616e7f",
+   "coordinated-adjective-101-10": "9f247fa5f615100364615418ab16e4c68a8f564f48077f6c4f9bfbe624012390",
+   "coordinated-adjective-101-11": "48780b97c48eb9d2fa18d9ea347b6ca41621e47520577c6c41c2d073e84476e4",
+   "coordinated-adjective-101-12": "1b611e15def05f8cee8a4d17f781b306bd67ff6073c300e2a11dc59bbd1a5d48",
+   "coordinated-adjective-101-13": "f3c269d74f81f1d98c33d30eae186b055e5a94de9d409aaa5eb1bcef0f700b8e",
+   "coordinated-adjective-101-14": "40406204da39022f018470e9e5fc70fa6f1265fe4586a35074e00988e6a29965",
+   "coordinated-adjective-101-15": "408e105620bc7d4705d8f76dcd32e4697a3a35ec13de0bcac58d1c8a530cdb23",
+   "coordinated-adjective-101-16": "cdeacf165bdf2c73e69e2af77361dc8975235441e4c1bac569b208ed529d3732",
+   "coordinated-adjective-101-17": "2b01b977fa22f576c39aac4ab6fc854b2936b1959ef5a2d9897d559f4396ca7c",
+   "coordinated-adjective-101-18": "78356c409b84a7b16258fe16d894e9162b418617959afbe4aa906b0d674f5c35",
+   "coordinated-adjective-101-19": "b925c97bfbe0d62fc193e551d298368d9968b92077f9949fc38ed4ae1b8f86d1",
+   "coordinated-adjective-101-20": "f355388ed379c45396167932249f4efea3605c1b696a6a4000a5c020e70e64e0",
+   "coordinated-adjective-101-21": "edc9531100044cd491ed5f712c19b321849af735e73ceff4eef9ac2ff52fb189",
+   "coordinated-adjective-101-22": "34131e7d747148ed75d4a73d7e1b987581c8b8923a36b3378f9d6bb742608d7c",
+   "coordinated-adjective-101-23": "ce3ff1f057a50518972b28ad728f0b16048767de346fcdbe14cdb8bb3b19dd9e",
+   "coordinated-adjective-101-24": "e94aff6f0ef41a8166f5100476c2743261f5b190086cccd873420afa052ab48a",
+   "coordinated-adjective-101-25": "b1a8492420ada695a41a51a67257e55bb8e7425f55a7929b2261b6c87f9eed38",
+   "coordinated-adjective-101-26": "edef3ef380791f94b0a0218afe813380845d3dca040676d2cd01dc98861d3d07",
+   "coordinated-adjective-101-27": "3ab3e26ebf21812d03ac1c73fe332d240a6ebe376cafd8bd2f8f5cf464343c87",
+   "coordinated-adjective-101-28": "7159775d3490661fc97f77d18a3cf61c481be838b11a618df232fefad9c80621",
+   "coordinated-adjective-101-29": "67e418e6ea982d5d093848bc2bd941ca4312b7410ab36daddd68e735b1495742",
+   "coordinated-adjective-101-30": "cb38223ced25ccee5abeff4904c558b997057f6c8523b7eb638b6055c25a970f",
+   "coordinated-adjective-101-31": "bfe49fd55d47d2e856ff00d49a3c3af4db62070a520402bc2ae3b2a6de1a7f43",
+   "coordinated-adjective-101-32": "c68d74f34f0cc79e52b0c4100209e82d4d6446fa304828d9a3be6ac4171b894e",
+   "coordinated-adjective-101-33": "c153c16f7684635312e3b71264dbfb1283015da93ba5b60b120e39d21680b7ce",
+   "coordinated-adjective-101-34": "ed3fa72be81cff0767d86dfbac9da589911bdbef512d894a2388e8406d31400c",
+   "coordinated-adjective-101-35": "f92ce254a95b47f4c026247b624e9acac0708d2f6a468cb7314db4f31fe3c3fb",
+   "coordinated-adjective-101-36": "7b71a9f9ead82775ee2bd0eb3e22961f19571716c65197c2fbd3347e899f42be"
+  },
+  "table_content_sha256": "9191800440af37909d2068459e360d7772191fc66bf2ad5fb9cf2c133246ac86"
+ },
+ "lock": {
+  "candidate_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-lock.json",
+  "content_sha256": "8da97e35556d0baa4739899cb841e86cbd59cced21611c732fdd9d8c9edd9061",
+  "preregistration_path": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/candidate-preregistration.md",
+  "preregistration_sha256": "3761b8130203d5d15ac0e30055aa135626a6d97f0ab807df6cf4d31b6af8e980",
+  "written_at": "2026-10-14T09:32:09+00:00"
+ },
+ "confirmation": null,
+ "report": null,
+ "note": "read-only extract made by the AI stage-1 review; the live state is the file above"
+}

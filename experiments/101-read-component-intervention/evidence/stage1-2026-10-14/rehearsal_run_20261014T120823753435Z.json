@@ -1,0 +1,174 @@
+{
+ "mode": "rehearsal",
+ "environment": {
+  "head": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+  "branch": "exp101-phases",
+  "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+  "commits_ahead_of_origin_main": 13,
+  "repository": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler",
+  "launcher_path": "/private/tmp/claude-501/-Users-gaborhorvath-ulenius-myprojects-neural-decompiler/1e9b7b17-f314-4497-8f93-aab17cd53f53/scratchpad/exp101/stage1/launch_stage1.py",
+  "launcher_sha256": "13b1992f7f0feb652207ca835df044244f20faea750e92f42d8d51bced7c3e1c",
+  "mode": "rehearsal",
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "executable": "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/.venv/bin/python",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "transformer_lens": "3.9.0",
+  "huggingface_hub": "1.31.0",
+  "numpy": "2.5.3",
+  "torch_num_threads": 4,
+  "model": {
+   "model_id": "EleutherAI/pythia-70m-deduped",
+   "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "device": "cpu",
+   "dtype": "float32"
+  },
+  "checkpoint": {
+   "snapshot": "/Users/gaborhorvath-ulenius/.cache/huggingface/hub/models--EleutherAI--pythia-70m-deduped/snapshots/e93a9faa9c77e5d09219f6c868bfc7a1bd65593c",
+   "files": {
+    "config.json": {
+     "sha256": "002050231a9b1ec3ac77aa6b9b3bbdc4d923f4068a7dd33b8da72a9bd6ad9a43",
+     "bytes": 567
+    },
+    "model.safetensors": {
+     "sha256": "3da388330e4549156d76b58d6d268c63cd005e9336b4f4d2d378421e7b7a33fd",
+     "bytes": 166029852
+    },
+    "special_tokens_map.json": {
+     "sha256": "6f50ab5a5a509a1c309d6171f339b196a900dc9c99ad0408ff23bb615fdae7ad",
+     "bytes": 99
+    },
+    "tokenizer.json": {
+     "sha256": "c24618a1b3e6a38167beff1c72cffd126c3a66254347304b50547d12c5f25624",
+     "bytes": 2113710
+    },
+    "tokenizer_config.json": {
+     "sha256": "70e38394e494931c6f773ba41e19460dd4436526b852207367f04341b4066d3f",
+     "bytes": 396
+    }
+   }
+  },
+  "env_flags": {
+   "HF_HUB_OFFLINE": "1",
+   "TRANSFORMERS_OFFLINE": null,
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONHASHSEED": null,
+   "OMP_NUM_THREADS": null,
+   "MKL_NUM_THREADS": null,
+   "TOKENIZERS_PARALLELISM": null,
+   "VIRTUAL_ENV": null,
+   "STAGE1101_MODE": "rehearsal"
+  },
+  "recorded_at": "2026-10-14T12:08:14.890517+00:00"
+ },
+ "started_at": "2026-10-14T12:08:14.894439+00:00",
+ "preflight": {
+  "N1_cwd_is_repo_root": true,
+  "N1_tree_clean": true,
+  "N1_runner_git_state_at_root": {
+   "ok": true,
+   "detail": {
+    "commit": "961e81408e5c4da4fffdf9dfab0343e449a4e1f2",
+    "dirty": false
+   }
+  },
+  "N2_environment_identity_with_lock_run": {
+   "ok": true,
+   "detail": []
+  },
+  "installed_lock_verifies": true,
+  "lock_and_preregistration_committed": true,
+  "module_binding_ri": {
+   "ok": true,
+   "detail": {
+    "lock": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "git_head": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "imported_file": "d7db6197140fe871da591b5c578cc675f05f7d69",
+    "own_blob": "d7db6197140fe871da591b5c578cc675f05f7d69"
+   }
+  },
+  "all_pinned_blobs": true,
+  "production_configuration": true,
+  "full_validate_lock": true,
+  "stage1_not_started_ledger_empty": true,
+  "no_stage1_file_yet": true,
+  "runtime_and_versions_equal_020_explore": true,
+  "s1_keys_36": true,
+  "s1_keys_not_forbidden": true,
+  "write_predicate_refuses_stage1_files_in_rehearsal": {
+   "ok": true,
+   "detail": {
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/stage1/states.f64": false,
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/stage1/states.json": false,
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/stage1/table.json": false,
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/stage1/other.json": false,
+    "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/table.json": false
+   }
+  }
+ },
+ "aliases_wrapped": [
+  "neural_decompiler.candidate_screening.run_capture",
+  "neural_decompiler.candidate_screening.run_interventions",
+  "neural_decompiler.capture.run_capture",
+  "neural_decompiler.interventions.run_interventions",
+  "neural_decompiler.plural_mechanism.capture_prompt",
+  "neural_decompiler.plural_mechanism.run_capture",
+  "neural_decompiler.plural_mechanism.run_interventions",
+  "neural_decompiler.plural_mechanism.run_patched",
+  "neural_decompiler.read_intervention.capture_reference",
+  "neural_decompiler.read_intervention.run_arm",
+  "neural_decompiler.readout_decompilation.capture_frame_020"
+ ],
+ "hook_self_test": {
+  "allowed": {
+   "mkdir stage1": true,
+   "mkdir outputs": true,
+   "write states.f64": true,
+   "write states.json": true,
+   "write table.json": true,
+   "state temporary": true,
+   "state rename": true,
+   "state temporary removed": true,
+   "read stage1 file": true
+  },
+  "refused": {
+   "sibling in stage1": true,
+   "experiment file": true,
+   "source file": true,
+   "relative mkdir at the root": true,
+   "relative remove at the root": true,
+   "relative rename at the root": true,
+   "rename into the experiment": true,
+   "unresolvable dir_fd": true,
+   "mkdir elsewhere in the experiment": true,
+   "read another experiment's outputs": true
+  },
+  "rehearsal_refuses_stage1_writes": true,
+  "ok": true
+ },
+ "logs": [],
+ "ended_at": "2026-10-14T12:08:23.716146+00:00",
+ "exit_status": 0,
+ "error": null,
+ "events": {
+  "mode": "rehearsal",
+  "load_model": 0,
+  "refused": [],
+  "forbidden_reads": [],
+  "forbidden_writes": [],
+  "output_writes": [],
+  "output_renames": [],
+  "stage1_writes": [],
+  "stage1_mkdirs": 0,
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json",
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-101/results.json"
+  ],
+  "sanctioned_runs": 0,
+  "sanctioned_forward_calls": 0,
+  "stage1_invocations": 0
+ },
+ "sealing": {},
+ "tree_after": ""
+}

@@ -1,0 +1,45 @@
+PASS sha256_states_data_equals_record
+PASS path_states_data_equals_record
+PASS sha256_states_index_equals_record
+PASS path_states_index_equals_record
+PASS sha256_table_equals_record
+PASS path_table_equals_record
+PASS index_is_canonical_json_plus_newline
+PASS index_verifies_against_lock_layout_and_meta
+PASS index_file_sha256_names_states_f64
+PASS index_format
+PASS index_has_no_unbound_keys
+PASS index_offsets_equal_contiguous_layout
+PASS layout_324_blocks
+PASS independent_numpy_parse_equals_read_table
+PASS all_values_finite
+PASS state_digests_equal_record
+PASS independent_state_digests_equal_record
+PASS positions_equal_frozen_frames
+PASS shapes_match_frames
+PASS attention_rows_are_distributions
+PASS table_is_canonical_json_plus_newline
+PASS table_content_digest_verifies
+PASS table_metadata_equals_lock_binding
+PASS table_top_keys
+PASS table_fractions_for_weak_off
+PASS table_frames_are_the_frozen_frames
+PASS table_structure
+PASS table_no_nonfinite
+{
+ "sizes": {
+  "states_data": 5240064,
+  "states_index": 34492,
+  "table": 1946190
+ },
+ "attention_row_sum_max_deviation": 1.46386355481809e-07,
+ "c_ref_length": 80,
+ "p_c_distribution": {
+  "4": 10,
+  "5": 22,
+  "6": 4,
+  "7": 0
+ },
+ "predicted_weak_frames": {}
+}
+ALL OK

@@ -1,0 +1,4 @@
+module blobs 20 verified; 022–025's committed files and 020's confirmation file verified; confirmation ef35650678e9… (36 frames, 1980 S2 keys); calibration τ_rem 0.025153865322968608, τ_ins 0.03511072680382421; lock and preregistration verified
+validate exit 0
+guard {'repo_write_refusals': [], 'subprocess_refusals': [], 'module_call_refusals': 0, 'entry_point_refusals': [], 'token_guard_hits': [], 'forbidden_sequences': 0, 'forward_guards_installed': False}
+exit 0

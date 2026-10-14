@@ -1,14 +1,13 @@
 # Experiment 101: Is the Read Component at the Cue Position Causal for the `one`/`two` Choice?
 
-**Status (2026-10-14): LOCK CANDIDATE — awaiting the user's commit.** The freeze, the calibration and the lock ran once
-each, on the branch `exp101-phases` (local; nothing pushed). The freeze (tokenizer only, at `40829d2`):
-`confirmation-v1.json`, installed in `a857f9a`. The calibration (exposed, exploratory; spent data; at `8f65062`): no
-revision trigger, every gate held (G4 included), `τ_rem` 0.0252 and `τ_ins` 0.0351; `calibration-v1.json`, installed in
-`d502777`. The lock (weights only, at `3621eec`): candidate lock `8da97e35…` and preregistration `3761b813…` in
-`outputs/experiment-101/`, **not installed** — design §9: "The user commits the lock". All three independent AI reviews
-found PASS WITH NOTES, with no blocker. **The decision, the recommendation and the commands are in
-[evidence/lock-2026-10-14/DECISION.md](evidence/lock-2026-10-14/DECISION.md).** No stage 1 or confirmation has run, and
-no 101 prompt has been executed.
+**Status (2026-10-14): STAGE 1 COMPLETE — the three stage-1 files await the user's commit; then confirm.** The freeze,
+the calibration, the lock and stage 1 ran once each, on the branch `exp101-phases`. The freeze: `confirmation-v1.json`,
+installed in `a857f9a`. The calibration (exposed, exploratory; spent data): no revision trigger, every gate held,
+`τ_rem` 0.0252 and `τ_ins` 0.0351, installed in `d502777`. The lock: committed by the user in `961e814` (content
+`8da97e35…`). Stage 1 (at `961e814`): only the 36 reference prompts, exit 0; it wrote `stage1/states.f64`,
+`stage1/states.json` and `stage1/table.json` (table content `9191800440af…`), which **the user commits** before confirm
+(the prediction freeze). Every phase's independent AI review found no blocker ([evidence](evidence/README.md)). No
+target (S2) prompt has run.
 
 Experiment 101 opens the second series (Neural Decompiler II), numbered from 101. It is the causal test of claim
 [C003](../../research/claims/C003-frame-conditioned-decoded-program.md) that the paper-readiness assessment named:
@@ -65,6 +64,9 @@ remove, install, double and reverse the component of the residual entering layer
    it.**
 4. **`stage1`** runs only the 36 reference prompts, seals the model, computes the program's table from the states and
    the weights, and writes `stage1/states.f64`, `stage1/states.json` and `stage1/table.json`. The user commits them.
+   **Ran on 2026-10-14** at `961e814`, on the user's authorization: exit 0, the 36 S1 keys once each; files
+   `1c7e51c0…`, `2b2c3a61…`, `71d339cd…` ([evidence/stage1-2026-10-14/](evidence/stage1-2026-10-14/README.md)); the
+   launcher re-check READY FOR PRODUCTION and the stage-1 review PASS WITH NOTES, no blocker.
 5. **`confirm`** (once; never resumed) passes the barrier, writes the ledger of all 1,980 S2 keys, runs each once,
    saves the measurements, checks the accounting, computes G2–G6, scores R, I, D and P, and writes the result in one
    atomic write; then the secondary records.
