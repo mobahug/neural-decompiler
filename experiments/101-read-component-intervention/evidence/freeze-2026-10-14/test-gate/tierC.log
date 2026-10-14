@@ -1,0 +1,17 @@
+  G3_pass_through: 5.178153514862061e-07 (tolerance 0.0001) at coordinated-adjective-2|cardinal:pl|767|NEC-READ@two
+  G4_I3: 9.962204799902876e-06 (tolerance 0.0001) at coordinated-adjective-2|two
+  G4_I4: 2.5610173552403914e-05 (tolerance 0.001) at coordinated-adjective-1|three|1264|PC-SWAP-PL@three
+  G4_level1: 0.004740018049679495 (tolerance 0.02) at coordinated-adjective-1|cardinal:pl|767|PL@two
+  G4_readout: 0.004090984157427258 (tolerance 0.02) at coordinated-adjective-2|ref|581|SUF-ISO-4@two
+  G4_logit: 0.00262977659281205 (tolerance 0.02) at coordinated-adjective-1|many|1142|PC-SWAP-PL@many
+  G5_row: 2.7277361643734954e-06 (tolerance 0.0001) at coordinated-adjective-1|ref|581|HEAD-SUF@two
+  G5_output: 4.273377916863552e-06 (tolerance 0.001) at coordinated-adjective-2|cardinal:pl|767|HEAD-NEC@two
+  bitwise: {'G3_noop': {'failures': 0, 'checked': 2, 'first': None}, 'G4_x3_pt': {'failures': 0, 'checked': 94, 'first': None}, 'G5_landing': {'failures': 0, 'checked': 8, 'first': None}, 'G6_c_ref': {'failures': 0, 'checked': 2, 'first': None}, 'G6_state': {'failures': 0, 'checked': 2, 'first': None}}; recorded: {'E1': {'max': 0.004969593642526084, 'at': 'coordinated-adjective-2|ref|581|SUF-OFF@three'}, 'logit_other': {'max': 0.002605320769816899, 'at': 'coordinated-adjective-1|cardinal:pl|767|HEAD-NEC@two'}, 'pass_through_other': {'max': 2.0582228899002075e-07, 'at': 'coordinated-adjective-2|ref|581|REF'}, 'ceiling_error': {'max': 1.2322956871622983, 'at': 'coordinated-adjective-1|many|1142|PC-SWAP-PL@many'}}
+................................ [ 78%]
+.......................................................
+spent keys re-measured (020's ledger; none a 024 candidate): cardinal-009-1|an|271, quantifier-009-1|least|1878, coordinated-adjective-009-1|black|2806, quantifier-new-2|he|344
+................. [ 89%]
+.....................................................................    [100%]
+645 passed, 239 deselected in 722.55s (0:12:02)
+HF_HUB_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q -p  --tier C    653.62s user 72.94s system 100% cpu 12:04.24 total
+tail -15  0.00s user 0.01s system 0% cpu 12:04.24 total

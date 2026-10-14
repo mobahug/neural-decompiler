@@ -1,0 +1,746 @@
+{
+ "dry_run": false,
+ "started_at": "2026-10-14T08:14:27.655550+00:00",
+ "ended_at": "2026-10-14T08:14:42.756480+00:00",
+ "exit_status": 0,
+ "error": null,
+ "freeze_invocations": 1,
+ "environment": {
+  "head": "40829d21a795a501d9a61c953587b8afcf5f0b86",
+  "branch": "exp101-phases",
+  "status_porcelain": "",
+  "origin_main": "96f0cc802337bf6a83e877bdfaabcde03d51d479",
+  "launcher_sha256": "ea4f55b9139842d0ad280a68b15fecaa8442b2bf58d92234e5b43dbdd1ed4203",
+  "python": "3.12.13 (main, Jul 18 2026, 16:55:18) [Clang 22.1.3 ]",
+  "platform": "macOS-15.7.3-arm64-arm-64bit",
+  "torch": "2.14.0",
+  "transformers": "5.17.0",
+  "HF_HUB_OFFLINE": "1",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "dry_run": false
+ },
+ "events": {
+  "module_calls": 0,
+  "load_model": 0,
+  "model_constructors": [],
+  "capture_calls": [],
+  "refused_functions": [],
+  "forbidden_writes": [],
+  "forbidden_fs_ops": [],
+  "outputs_reads": [
+   "/Users/gaborhorvath-ulenius/myprojects/neural-decompiler/outputs/experiment-020/results.json"
+  ],
+  "confirmation_writes": 1,
+  "allowed_mkdir": 1,
+  "freeze_invocations": 1
+ },
+ "pre_write_checks": {
+  "picks_are_candidates_1_to_36": true,
+  "exclusion_sizes_as_planned": true,
+  "exclusion_record_matches_committed_sources": true,
+  "independent_first_36_eligible_are_1_to_36": true,
+  "payload_eligibility_equals_independent_for_all_60": true,
+  "frames_equal_independent_tokenization": true,
+  "adjectives_distinct": true,
+  "s1_is_36_reference_keys": true,
+  "s2_is_1980_distinct_keys": true,
+  "s1_s2_disjoint": true,
+  "s2_55_per_frame_with_the_frozen_tags": true,
+  "s2_prompt_labels_match_tokens": true,
+  "untagged_prompts_are_144": true,
+  "no_collision_with_forbidden": true,
+  "manifest_digest_recomputes": true,
+  "content_digest_recomputes": true,
+  "configuration_is_production": true,
+  "counts": true,
+  "confirmation_reverifies": true
+ },
+ "facts": {
+  "exclusion_sizes": {
+   "frame_texts": 162,
+   "earlier_cue_ids": 431,
+   "candidate_words_025": 80,
+   "candidate_ids_025": 76,
+   "target_form_ids": 161,
+   "prior_noun_ids": 48
+  },
+  "independent_eligible_numbers": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41,
+   42,
+   43,
+   44,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   53,
+   54,
+   55,
+   56,
+   57,
+   58,
+   59,
+   60
+  ],
+  "adjectives": [
+   "large",
+   "soft",
+   "gray",
+   "sticky",
+   "tiny",
+   "clean",
+   "fine",
+   "damp",
+   "messy",
+   "bent",
+   "full",
+   "wet",
+   "deep",
+   "bad",
+   "thin",
+   "sour",
+   "lean",
+   "good",
+   "pale",
+   "neat",
+   "tired",
+   "dry",
+   "cool",
+   "happy",
+   "long",
+   "cozy",
+   "dull",
+   "tidy",
+   "open",
+   "dead",
+   "loose",
+   "broad",
+   "slim",
+   "sleek",
+   "bold",
+   "sealed"
+  ],
+  "p_c_counts": {
+   "4": 10,
+   "5": 22,
+   "6": 4,
+   "7": 0
+  },
+  "exposed_frame_token_picks": [
+   "soft",
+   "tiny",
+   "clean",
+   "damp",
+   "wet",
+   "thin",
+   "sour",
+   "pale",
+   "neat",
+   "dry",
+   "cool",
+   "loose"
+  ],
+  "forbidden_keys": 47952,
+  "rederived": {
+   "1": {
+    "text": "Aria and Ben carried {cue} large",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "large",
+    "adjective_id": 1781
+   },
+   "2": {
+    "text": "Cora and Dan folded {cue} soft",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "soft",
+    "adjective_id": 2602
+   },
+   "3": {
+    "text": "Eli and Faye stacked {cue} gray",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "gray",
+    "adjective_id": 11978
+   },
+   "4": {
+    "text": "Gus and Hope washed {cue} sticky",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "sticky",
+    "adjective_id": 31714
+   },
+   "5": {
+    "text": "Ian and June sorted {cue} tiny",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "tiny",
+    "adjective_id": 10058
+   },
+   "6": {
+    "text": "Kit and Lou counted {cue} clean",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "clean",
+    "adjective_id": 4076
+   },
+   "7": {
+    "text": "Max and Nell wrapped {cue} fine",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "fine",
+    "adjective_id": 4030
+   },
+   "8": {
+    "text": "Oscar and Paula dried {cue} damp",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "damp",
+    "adjective_id": 16109
+   },
+   "9": {
+    "text": "Quinn and Rex cleaned {cue} messy",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "messy",
+    "adjective_id": 36396
+   },
+   "10": {
+    "text": "Sara and Tom fixed {cue} bent",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "bent",
+    "adjective_id": 16535
+   },
+   "11": {
+    "text": "Uma and Vera moved {cue} full",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "full",
+    "adjective_id": 2120
+   },
+   "12": {
+    "text": "Walt and Yara lifted {cue} wet",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "wet",
+    "adjective_id": 9685
+   },
+   "13": {
+    "text": "Zack and Abby filled {cue} deep",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "deep",
+    "adjective_id": 3676
+   },
+   "14": {
+    "text": "Beth and Carl peeled {cue} bad",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "bad",
+    "adjective_id": 3076
+   },
+   "15": {
+    "text": "Dora and Erik sliced {cue} thin",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "thin",
+    "adjective_id": 6906
+   },
+   "16": {
+    "text": "Gina and Hank cooked {cue} sour",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "sour",
+    "adjective_id": 18988
+   },
+   "17": {
+    "text": "Ivy and Jack grilled {cue} lean",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "lean",
+    "adjective_id": 9644
+   },
+   "18": {
+    "text": "Kate and Luke served {cue} good",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "good",
+    "adjective_id": 1175
+   },
+   "19": {
+    "text": "Mia and Ned planted {cue} pale",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "pale",
+    "adjective_id": 14530
+   },
+   "20": {
+    "text": "Olga and Pete picked {cue} neat",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "neat",
+    "adjective_id": 18176
+   },
+   "21": {
+    "text": "Rita and Seth hugged {cue} tired",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "tired",
+    "adjective_id": 11870
+   },
+   "22": {
+    "text": "Tess and Uri labeled {cue} dry",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "dry",
+    "adjective_id": 6079
+   },
+   "23": {
+    "text": "Val and Wes measured {cue} cool",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "cool",
+    "adjective_id": 4484
+   },
+   "24": {
+    "text": "Ada and Bo watched {cue} happy",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "happy",
+    "adjective_id": 5211
+   },
+   "25": {
+    "text": "Cleo and Dev mended {cue} long",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "long",
+    "adjective_id": 1048
+   },
+   "26": {
+    "text": "Gil and Jo sewed {cue} cozy",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "cozy",
+    "adjective_id": 47400
+   },
+   "27": {
+    "text": "Kim and Lia carved {cue} dull",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "dull",
+    "adjective_id": 22544
+   },
+   "28": {
+    "text": "Mo and Nia built {cue} tidy",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "tidy",
+    "adjective_id": 49031
+   },
+   "29": {
+    "text": "Pia and Ray painted {cue} open",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "open",
+    "adjective_id": 1527
+   },
+   "30": {
+    "text": "Sol and Ty repaired {cue} dead",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "dead",
+    "adjective_id": 3846
+   },
+   "31": {
+    "text": "Ann and Bill tied {cue} loose",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "loose",
+    "adjective_id": 13155
+   },
+   "32": {
+    "text": "Chris and Di pulled {cue} broad",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "broad",
+    "adjective_id": 3862
+   },
+   "33": {
+    "text": "Ed and Fran pushed {cue} slim",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "slim",
+    "adjective_id": 27973
+   },
+   "34": {
+    "text": "Greg and Holly sent {cue} sleek",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "sleek",
+    "adjective_id": 47115
+   },
+   "35": {
+    "text": "Jim and Kara brought {cue} bold",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "bold",
+    "adjective_id": 13433
+   },
+   "36": {
+    "text": "Liz and Mark stored {cue} sealed",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "sealed",
+    "adjective_id": 18495
+   },
+   "37": {
+    "text": "Nate and Olive fed {cue} sick",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "sick",
+    "adjective_id": 8334
+   },
+   "38": {
+    "text": "Phil and Rosa chose {cue} bland",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "bland",
+    "adjective_id": 40672
+   },
+   "39": {
+    "text": "Ron and Sue grew {cue} lush",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "lush",
+    "adjective_id": 45788
+   },
+   "40": {
+    "text": "Tim and Vicky calmed {cue} angry",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "angry",
+    "adjective_id": 11790
+   },
+   "41": {
+    "text": "Adam and Betty drew {cue} quick",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "quick",
+    "adjective_id": 3158
+   },
+   "42": {
+    "text": "Clare and Doug wrote {cue} funny",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "funny",
+    "adjective_id": 11755
+   },
+   "43": {
+    "text": "Dean and Ellen sang {cue} slow",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "slow",
+    "adjective_id": 3468
+   },
+   "44": {
+    "text": "Fred and Gwen told {cue} odd",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "odd",
+    "adjective_id": 8909
+   },
+   "45": {
+    "text": "Hugh and Iris heard {cue} strange",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "strange",
+    "adjective_id": 8921
+   },
+   "46": {
+    "text": "Jake and Karen made {cue} simple",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "simple",
+    "adjective_id": 2969
+   },
+   "47": {
+    "text": "Lisa and Matt bought {cue} decent",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "decent",
+    "adjective_id": 12524
+   },
+   "48": {
+    "text": "Neil and Olga found {cue} real",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "real",
+    "adjective_id": 1524
+   },
+   "49": {
+    "text": "Paul and Rita adopted {cue} lost",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "lost",
+    "adjective_id": 3663
+   },
+   "50": {
+    "text": "Ray and Sally picked {cue} early",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "early",
+    "adjective_id": 2393
+   },
+   "51": {
+    "text": "Sam and Tina ate {cue} stale",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "stale",
+    "adjective_id": 46745
+   },
+   "52": {
+    "text": "Ted and Una hired {cue} smart",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 6,
+    "p_t": 7,
+    "adjective": "smart",
+    "adjective_id": 7060
+   },
+   "53": {
+    "text": "Vince and Wendy met {cue} nice",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "nice",
+    "adjective_id": 5322
+   },
+   "54": {
+    "text": "Alan and Bea fed {cue} cute",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "cute",
+    "adjective_id": 20295
+   },
+   "55": {
+    "text": "Carl and Dina drew {cue} pretty",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "pretty",
+    "adjective_id": 3965
+   },
+   "56": {
+    "text": "Eric and Flora fixed {cue} torn",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "torn",
+    "adjective_id": 15070
+   },
+   "57": {
+    "text": "Gary and Helen trained {cue} keen",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "keen",
+    "adjective_id": 19497
+   },
+   "58": {
+    "text": "Ian and Jill chased {cue} fast",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 5,
+    "p_t": 6,
+    "adjective": "fast",
+    "adjective_id": 3809
+   },
+   "59": {
+    "text": "Ken and Laura cleaned {cue} worn",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 4,
+    "p_t": 5,
+    "adjective": "worn",
+    "adjective_id": 16332
+   },
+   "60": {
+    "text": "Leo and Mona scrubbed {cue} stained",
+    "eligible": true,
+    "reasons": [],
+    "p_c": 7,
+    "p_t": 8,
+    "adjective": "stained",
+    "adjective_id": 13968
+   }
+  },
+  "manifest_sha256": "7c7c94942dc883505b97403042e095d8d616168f3a0a1d8cf495edef25f8b8bd",
+  "content_sha256": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+  "expected_file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+  "expected_bytes": 135675
+ },
+ "post_write": {
+  "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+  "bytes": 135675,
+  "bytes_equal_pre_verified_payload": true,
+  "content_sha256": "ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a",
+  "status_after": "?? experiments/101-read-component-intervention/confirmation-v1.json"
+ },
+ "logs": [
+  "froze 36 frames, 36 S1 and 1980 S2 keys to /Users/gaborhorvath-ulenius/myprojects/neural-decompiler/experiments/101-read-component-intervention/confirmation-v1.json (content sha256 ef35650678e98a638838af10b75f340cec331f542589d6f089100eee8822624a, file sha256 6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922); commit it alone and stop for the freeze review before calibrate"
+ ],
+ "config": "production"
+}

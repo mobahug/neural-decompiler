@@ -1,0 +1,24 @@
+{
+ "install_commit": "a857f9a2326ff61cae8485deef2ab9337f5d6e02",
+ "checks": {
+  "install_commit_parent_is_freeze_head": true,
+  "install_commit_touches_exactly_the_file": true,
+  "committed_bytes_equal_working_file": true,
+  "file_sha256": true,
+  "content_sha256": true,
+  "manifest_sha256": true,
+  "runner_validate_exit_0": true,
+  "runner_confirmation_sha_equal": true,
+  "keys_2016_distinct": true,
+  "untagged_144": true,
+  "zero_collisions_with_forbidden": true,
+  "tree_clean_after_install": true,
+  "nothing_refused": true
+ },
+ "all_true": true,
+ "validate_log": [
+  "module blobs 20 verified; 022\u2013025's committed files and 020's confirmation file verified; confirmation ef35650678e9\u2026 (36 frames, 1980 S2 keys); no lock installed"
+ ],
+ "forbidden_keys": 47952,
+ "refused": []
+}

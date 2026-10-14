@@ -1,0 +1,21 @@
+{
+ "checks": {
+  "head_is_the_freeze_head": true,
+  "branch_is_exp101_phases": true,
+  "tree_holds_exactly_the_untracked_freeze_file": true,
+  "no_outputs_experiment_101": true,
+  "no_lock_calibration_or_stage1": true,
+  "file_sha256_is_the_recorded": true,
+  "content_sha256_is_the_recorded": true,
+  "manifest_counts": true,
+  "manifest_sha256_is_the_recorded": true,
+  "no_gitattributes": true,
+  "no_active_git_hook": true,
+  "autocrlf_unset_or_false": true,
+  "ends_with_one_newline": true
+ },
+ "all_true": true,
+ "head": "40829d21a795a501d9a61c953587b8afcf5f0b86",
+ "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+ "bytes": 135675
+}

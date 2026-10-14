@@ -1,0 +1,29 @@
+{
+ "r": {
+  "results_020_file_sha256": "da63b8c29f9553a9da62bea7a442e11cef999ccddc71a7a332ac7c938abc9e00",
+  "results_020_state_sha256_recorded": "2e5485dccb39c018eb02ee8d0a3086004399690a4dfd9c114008f057b23bf8f5",
+  "results_020_state_sha256_verifies": true,
+  "sizes": {
+   "L020": 30132,
+   "C020": 3060,
+   "C020_S2_eq_prompt_lists": true,
+   "M022": 3060,
+   "M023": 3060,
+   "M024": 4320,
+   "U025": 4320,
+   "F025_025s_own_set": 43632,
+   "FORBIDDEN": 47952
+  },
+  "tagged_keys_in_forbidden": 0,
+  "keys101": 2016,
+  "untagged101": 144,
+  "collisions_tagged": [],
+  "collisions_untagged": [],
+  "collisions_with_untagged_forms_of_forbidden": [],
+  "forbidden_frame_ids_with_101": [],
+  "forbidden_frame_ids_coordinated": 54,
+  "collisions_with_025_tagged": 0,
+  "frame_id_prefix_101_in_any_earlier_manifest": false
+ },
+ "forbidden_sha256": "fc0cbc696712dcccf07210f18e8095482e58eb37e8278e4af092ca8d067015e3"
+}

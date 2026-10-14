@@ -1,0 +1,281 @@
+{
+ "file_sha256": "6da26cd7d137510bef384af3a581e857244376c0b5825f071c069ebaabc10922",
+ "bytes": 135675,
+ "file_is_canonical_json_plus_newline": true,
+ "ends_with_single_newline": true,
+ "content_sha256_recomputes": true,
+ "manifest_sha256_recomputes": true,
+ "manifest_sha256_equals_independent": true,
+ "manifest_equals_independent": true,
+ "experiment": "101",
+ "schema_version": 1,
+ "design": {
+  "commit": "a87e284",
+  "decision": "516df20",
+  "path": "docs/superpowers/specs/2026-10-01-experiment-101-read-component-intervention-design.md",
+  "revision": 3
+ },
+ "plan": {
+  "commit": "96f0cc8",
+  "decision": "1e48c1c",
+  "path": "docs/superpowers/plans/2026-10-05-experiment-101-read-component-intervention-plan.md",
+  "revision": 3
+ },
+ "model": {
+  "model_id": "EleutherAI/pythia-70m-deduped",
+  "revision": "e93a9faa9c77e5d09219f6c868bfc7a1bd65593c"
+ },
+ "top_level_keys": [
+  "candidate_ids_025",
+  "candidates",
+  "configuration",
+  "content_sha256",
+  "counts",
+  "cue_order",
+  "design",
+  "exclusions",
+  "expected_picks",
+  "experiment",
+  "frames",
+  "kind",
+  "manifest",
+  "manifest_sha256",
+  "model",
+  "picks",
+  "picks_match_expected",
+  "plan",
+  "rules",
+  "run_order",
+  "schema_version"
+ ],
+ "configuration_summary": {
+  "cues": [
+   [
+    "two",
+    767
+   ],
+   [
+    "three",
+    1264
+   ],
+   [
+    "many",
+    1142
+   ]
+  ],
+  "d_threshold": 25,
+  "exposed_frames": 36,
+  "holm_thresholds": [
+   26,
+   25
+  ],
+  "k_iso": 8,
+  "max_overshoot_frames": 6,
+  "max_weak_frames": 6,
+  "n_frames": 36,
+  "n_scored_nouns": 79,
+  "name": "production",
+  "p_threshold": 27,
+  "precondition": 30,
+  "reference": [
+   "ref",
+   581
+  ],
+  "runs_per_frame": 55,
+  "tau_rank": 33
+ },
+ "configuration_frame_candidates_equal_design": true,
+ "configuration_expected_picks": true,
+ "configuration_tags_equal_independent_run_order": true,
+ "run_order_equals_independent": true,
+ "cue_order": [
+  "two",
+  "three",
+  "many"
+ ],
+ "exclusions_compare": {
+  "frame_texts": {
+   "file": {
+    "count": 162,
+    "sha256": "5c8a47a424c004f10fe073eeb9de536a0b3bd4929254864647d4355167419f3d"
+   },
+   "mine": {
+    "count": 162,
+    "sha256": "5c8a47a424c004f10fe073eeb9de536a0b3bd4929254864647d4355167419f3d"
+   },
+   "equal": true
+  },
+  "earlier_cue_ids": {
+   "file": {
+    "count": 431,
+    "sha256": "adf6ad558a8043f44d677f61ba5e12b69bb378535f5dd6cddf90210e038eb0ce"
+   },
+   "mine": {
+    "count": 431,
+    "sha256": "adf6ad558a8043f44d677f61ba5e12b69bb378535f5dd6cddf90210e038eb0ce"
+   },
+   "equal": true
+  },
+  "candidate_words_025": {
+   "file": {
+    "count": 80,
+    "sha256": "e8caa859c1d1af054b632d92a01ac0340427dc68f3dbddac661d2d18d03fadf4"
+   },
+   "mine": {
+    "count": 80,
+    "sha256": "e8caa859c1d1af054b632d92a01ac0340427dc68f3dbddac661d2d18d03fadf4"
+   },
+   "equal": true
+  },
+  "target_form_ids": {
+   "file": {
+    "count": 161,
+    "sha256": "e0f8ea0ac6dfbe9e9ae57f24cbafac865bd25ae8f4f9d8d8e9561cbe6aa0d8c7"
+   },
+   "mine": {
+    "count": 161,
+    "sha256": "e0f8ea0ac6dfbe9e9ae57f24cbafac865bd25ae8f4f9d8d8e9561cbe6aa0d8c7"
+   },
+   "equal": true
+  },
+  "prior_noun_ids": {
+   "file": {
+    "count": 48,
+    "sha256": "4a1e2268e9d71878649bc897fb4448e364a9ea53446a19354e1ca43581e00295"
+   },
+   "mine": {
+    "count": 48,
+    "sha256": "4a1e2268e9d71878649bc897fb4448e364a9ea53446a19354e1ca43581e00295"
+   },
+   "equal": true
+  }
+ },
+ "candidate_ids_025_compare": {
+  "file": {
+   "count": 76,
+   "sha256": "0bff17e0aa882acb246ec10e6fed2388aa7f437acb125137a90d5577d0abb2f7"
+  },
+  "mine": {
+   "count": 76,
+   "sha256": "0bff17e0aa882acb246ec10e6fed2388aa7f437acb125137a90d5577d0abb2f7"
+  },
+  "equal": true
+ },
+ "number_words_equal": true,
+ "earlier_cue_ids_024": 391,
+ "exclusion_sources": {
+  "confirmation_023": {
+   "content_sha256": "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed",
+   "path": "experiments/023-block0-completion/confirmation-v1.json"
+  },
+  "confirmation_024": {
+   "content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+   "path": "experiments/024-readout-routing-nounness/confirmation-v1.json"
+  },
+  "confirmation_025": {
+   "content_sha256": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "path": "experiments/025-nounness-direction-intervention/confirmation-v1.json"
+  },
+  "prior_nouns_020": {
+   "file_sha256": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "path": "experiments/020-readout-decompilation/confirmation-v1.json"
+  }
+ },
+ "exclusion_source_digests": {
+  "confirmation_023": {
+   "recorded": "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed",
+   "file_content_sha256": "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed",
+   "recomputed": "4e64d4c2c85ae8f9c710171372a4bf28f0964a8e8864a0326182edba44aa14ed",
+   "equal": true
+  },
+  "confirmation_024": {
+   "recorded": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+   "file_content_sha256": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+   "recomputed": "87f8aff1dca467f92a905b115681a0f6f80328c0f872c426d231b67d129b1e87",
+   "equal": true
+  },
+  "confirmation_025": {
+   "recorded": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "file_content_sha256": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "recomputed": "6eca7024fe3fdcde000b6dc6fe84ef9c547f1f92bd456b51cd73dfdd3443fea4",
+   "equal": true
+  },
+  "prior_nouns_020": {
+   "recorded": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "recomputed": "de4ebb7b25eb3022a72ad202a623bd62fafc80268a9178250cb94f7ea96a38b9",
+   "equal": true
+  }
+ },
+ "candidates_count": 60,
+ "candidates_numbers_in_order": true,
+ "candidate_diffs": [],
+ "picks": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36
+ ],
+ "picks_equal_independent": true,
+ "expected_picks_equal": true,
+ "picks_match_expected": true,
+ "frames_count": 36,
+ "frame_origins": [
+  "extension"
+ ],
+ "frame_diffs": [],
+ "manifest_counts": {
+  "S1": 36,
+  "S1_distinct": 36,
+  "S2": 1980,
+  "S2_distinct": 1980,
+  "S1_sorted": true,
+  "S2_sorted": true,
+  "disjoint": true
+ },
+ "counts_field": {
+  "S1-REF": 36,
+  "S2-TARGET": 1980,
+  "frames": 36,
+  "runs_per_frame": 55,
+  "untagged_prompts": 144
+ },
+ "untagged_from_file": 144,
+ "untagged_equal_independent": true,
+ "s2_role_violations": [],
+ "s2_per_frame_sizes": [
+  55
+ ],
+ "s2_frames": 36
+}
