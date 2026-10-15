@@ -7,8 +7,10 @@ independent AI review (a Claude agent, read-only), not a human validation.
 |---|---|---|---|
 | 1 (2026-10-15) | revision 1, sha256 `84b24685…796f` (commit `1cf99b4`) | NOT READY: 2 blockers, 11 SHOULDs, 9 notes | `edd86fe9bbb7633766db40af82a1f64f4d98bd0ef747ad848ceb03c335e88dfb` |
 | 2 (2026-10-15, re-check) | revision 2, sha256 `efb1b137…c28936` (commit `53b1458`) | READY WITH CHANGES: no blocker, 6 SHOULDs, 12 notes | `e839c14a53b99259bff896530d5bd9a50fa74cd51469c152bfa5586a45f653e2` |
+| 3 (2026-10-15, change check) | revision 3, sha256 `7563f985…c0a4` (commit `58ecf45`) | READY WITH CHANGES: no blocker, 2 SHOULDs, 9 notes | `d7690df8a12e6c91399470512bda2f78a3ccf9d65c4ad5083ce9ca8c83eb6856` |
 
-Revision 2 of the design applies every finding of review 1 (its §16); revision 3 applies every finding of review 2 (its §17).
+Revision 2 of the design applies every finding of review 1 (its §16); revision 3 every finding of review 2 (its §17);
+revision 4 every finding of review 3 (its §18). Revision 4's own edits have not been reviewed.
 
 ---
 
@@ -567,3 +569,116 @@ H2 assumes that a read of `p_c` does nothing when written at `p_t`. Under the me
   - G0's identity holds by construction.
   - The verdict table is ordered, and its rows are mutually exclusive.
   - The rule for D's split is deterministic.
+
+---
+
+## Review 3: change check of revision 3 (verbatim)
+
+# Experiment 102 design, revision 3: change check
+
+**This is an independent AI review (Claude, Opus 5.5), not a human validation.** It was written on 2026-10-15, read-only.
+- Nothing in the repository changed. No model, runner, test, tokenizer or forward pass ran, and no network was used.
+- The only computations were binomial tails and arithmetic on 101's recorded per-frame values.
+
+**The file:** `docs/superpowers/specs/2026-10-15-experiment-102-blind-read-discovery-transfer-design.md`, revision 3, 659 lines, at HEAD `58ecf45`.
+- Its sha256 is `7563f9856ad7b77eaf8e2bc57cd7207755064e3e390a8b883a3ca0055700c0a4`, as expected.
+- It was diffed against `53b1458` and read against review 2.
+- "l." below means a line of revision 3.
+
+## Verdict: READY WITH CHANGES
+
+There is no blocker, and every review-2 finding is applied. Two new SHOULDs remain, each a short text change, plus nine notes.
+
+## 1. Review 2's findings
+
+| finding | status | lines |
+|---|---|---|
+| SHOULD 1 | RESOLVED (new issues: S-A, N3, N4) | 58, 137, 178, 221, 237–239, 307–310, 321, 394, 499–501, 521, 556 |
+| SHOULD 1b | RESOLVED | 308 |
+| SHOULD 2 | RESOLVED (MD kept on the ladder by decision: N5; new issue: N6) | 267–271, 331–343, 378, 498, 562 |
+| SHOULD 3 | RESOLVED (new issue: S-B) | 62, 273–278, 349–355, 496 |
+| SHOULD 4 | RESOLVED; the old name appears only in §17 | 391, 503 |
+| SHOULD 5 | RESOLVED | 423–433 |
+| SHOULD 6 | RESOLVED (new issue: N2) | 157–163, 168 |
+| NOTE 1 | RESOLVED; recomputed: 0.9148, 0.837, 0.830 | 416 |
+| NOTE 2 | RESOLVED | 102–103, 167, 465, 472, 486, 571 |
+| NOTE 3 | RESOLVED | 150–153 |
+| NOTE 4 | RESOLVED (`Δx̂_c` is undefined: N8) | 125, 145, 174, 187, 195–199, 243 |
+| NOTE 5 | RESOLVED | 359–363, 367–380 |
+| NOTE 6 | RESOLVED (Holm with a voided family: N1) | 211–253, 460 |
+| NOTE 7 | RESOLVED | 457 |
+| NOTE 8 | RESOLVED as specified (consistency gaps: N7) | 581–592, 600, 606 |
+| NOTE 9 | RESOLVED | 407–410 |
+| NOTE 10 | RESOLVED | 283, 536 |
+| NOTE 11 | RESOLVED | 293, 299, 318–327 |
+| NOTE 12 | RESOLVED | 59, 205, 265, 375, 500 |
+
+## 2. What checks out in the changed text
+
+- **`R_⊥`.**
+  - It is well defined: `R` and every `d̂_T^h` live in the residual space.
+  - It is used consistently in H2, (e‴), §5, §6, §8.2, §8.6, §11–§13, D3, G1 and G5.
+  - The clamp removes the self-read and query routes, and the projection removes the write-axis overlap. The PT, ABH-PT and WPT arms measure these routes separately.
+  - For k = 1, `‖R_⊥‖/‖R‖ = √(1 − cos²(ŵ, d̂_T))` is the same in every frame: 0.980 in 70M.
+  - The 0.5 cut (cos > 0.87) is sensible, but see SHOULD A.
+- **`…_POSITION_UNTESTED`** fits "counts as passed for gatekeeping only":
+  - it claims no rejection;
+  - direction needs 25/36 whether position is dropped from Holm or counted as passed;
+  - stage 3 is then reached.
+- **`λ_f`** is right on both sides.
+  - For k = 1, `P_V(s·DX) = ρR`, so DX's off-read part is `λ_f·s·û_off` with `λ_f = ‖off_c‖/‖CΔx‖ = √(1−ρ²)`. That is the off-read length divided by the OFF arm's length, along the same `û_off`.
+  - The removal term is relative to F = 1 and the installation term to F = 0. The signs match NEC-OFF and SUF-OFF.
+  - In 70M, λ_f ≈ 0.93.
+- **The rest checks out:**
+  - the ε /4 rule (interpolation error scales with the square of the rung gap);
+  - the ±∞ rule;
+  - completeness and mutual exclusivity of the labels and verdict table (except N1);
+  - the read check (30/36, medians ≥ 0.5; 101's R and I medians were 1.006 and 1.035);
+  - the Holm thresholds 26/25 and 26/26/26/25;
+  - the power figures 0.915, 0.84 and 0.83.
+- **No leftovers:** no removed name, floor 0.25 or old ε rule appears outside the §16/§17 logs.
+- **Frames:** 65 and 71 match. The replacement rule cannot pull a listed flagged frame into C.
+
+## 3. Remaining findings
+
+**SHOULD A. The position gate compares unequal lengths** (l.58, 221, 307–310, 556).
+- **The problem.**
+  - The gate compares `R_⊥` at `p_t`, of length r·s where r = `‖R_⊥‖/‖R‖`, with the full `R` at `p_c`.
+  - To first order, a direction acting at `p_t` with per-length efficacy e, relative to the read at `p_c`, therefore passes whenever e < 1/(2r).
+  - That bound is 0.51 at 70M's r = 0.98, but 0.58 at r = 0.87, 0.70 at r = 0.71, and 1.0 at the cut.
+  - Every other control in the design is compared at equal length.
+- **Fix.** Use `s·R_⊥/‖R_⊥‖` in NEC-/SUF-PTX and keep the unscaled vector as a secondary arm. Alternatively, put `r·(1 − F_rem)` and `r·F_ins` in Z′. The 0.5 cut then also bounds `cos(R̂_⊥, ŵ) = r`.
+
+**SHOULD B. PT's DX prediction lacks the off-read term that PS now adds** (l.349–352 vs 334–338).
+- **The problem.**
+  - PT predicts DX from the read ladder alone, with τ taken from the read's own spread.
+  - On 101's spent frames, `λ_f·F_ins_off` has median −0.031, reaches −0.083, and lies beyond 0.05 in 10 of 36 frames *(est.)*.
+  - That is the order of the read's spread: 101's leave-one-frame-out spread of `F_ins` is 0.08.
+  - PT on SUF-DX in 70M can therefore fail on the recorded remainder, the reading PS's term was added to avoid. Calibration cannot revise it.
+- **Fix.** Add `λ_f·median_D(F(NEC-OFF) − 1)` and `λ_f·median_D F(SUF-OFF)`, both known at stage 1, and state the 70M expectation in §8.8.
+
+**NOTES**
+- **N1** (l.318–325).
+  - Say how a family that is not evaluable (position, or B or H after a gate failure on a qualifier arm) enters its Holm stage. For example, if it is dropped, the thresholds are 26/26/25 for three families, 26/25 for two and 25 for one.
+  - Say that 26/26/26/25 are step-down thresholds by rank. l.323 reads as if each belonged to one family.
+- **N2** (l.165–170, 465).
+  - A re-run after a defect fix is not "the one permitted repeat". Permit it explicitly for the 70M retrodiction.
+  - A defect found after the 160M discovery should give `NOT_INTERPRETABLE`, not a second discovery.
+- **N3** (l.238, 433). ABH-PT is one arm, but its Z′ needs both directions. Make it NEC-/SUF-ABH-PT.
+- **N4** (l.178, 441).
+  - If `d̂_T^h` is not mean-free, the centred part of `R_⊥` keeps `⟨R, d̂⟩(1 − ‖Cd̂‖²)` along `Cd̂`. Project onto `C d̂_T^h`.
+  - For 70M, name which `d̂_T` is used (011's recorded one).
+- **N5** (l.334, 418–421, 562). In 70M, MD has cos 0.41 with ŵ (X101-1), so 0.91·s of it is off-read, yet it is scored on the ladder alone. State its 70M PS expectation, or add an MD-OFF arm and term.
+- **N6** (l.267–271, 331–333). The [−1, 0] segment has a gap of 1, so ε's /4 does not cover ρ < 0: the error can reach 4·e₉₀ at ρ = −0.5. Add rungs at ρ = −0.5 (`x_pl + ½R`, `x_ref − ½R`) and use `max(0.05, e₉₀)` there, or state the limit.
+- **N7** (§15).
+  - The reciprocal criterion that changed 65 and 71 also reads on 44 `told` and 53 `met` (in C) and on 73 `groomed` and 80 `hugged` (the 1st and 8th replacements). None is flagged.
+  - Review 2's claim that 53 behaved normally is wrong: 101 executed only frames 1–36 (`picks`). Only frame 21 `hugged` is evidence. Either drop the criterion, citing 21, or flag these frames.
+  - Arguably also flag 37 `sick`, 49 `lost` and 55 `pretty` (adverb) in C, and 74 `skinny`, 84 `mild` and 92 `floral` in the pool.
+  - Extend "skipping the flagged ones" to the tokenizer selection (l.576–579).
+- **N8** (definitions).
+  - Define `Δx̂_c` (l.198, 335).
+  - "Cannot be evaluated" (l.341) means `Δc_full > −1`.
+  - PS "uninformative" maps to `PROJECTION_SUFFICIENCY_NOT_EVALUABLE`.
+  - Say when DX is uninformative for PT, since `τ(ρ_f)` varies by frame (l.276).
+  - Give PC's value when 70M's precondition or a verdict gate fails.
+- **N9** (l.393, 499). `MD1_READ_NOT_SPECIFIC_160M` and "behaves as a generic number direction there" assert non-specificity from a failed test; 24/36 with a median Z′ of 0.3 would fail. Use `…_SPECIFICITY_NOT_ESTABLISHED_160M`.

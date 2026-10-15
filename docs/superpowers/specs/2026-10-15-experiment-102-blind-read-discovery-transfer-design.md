@@ -1,15 +1,17 @@
 # Experiment 102: blind transfer of an explicit read-discovery procedure to Pythia-160M, with specificity controls and simple baselines — design
 
-**Status:** revision 3, 2026-10-15, **proposed, not decided.** This document contains no code, has run no model,
+**Status:** revision 4, 2026-10-15, **proposed, not decided.** This document contains no code, has run no model,
 freezes no frame and computes no tolerance. It was written by the operator (Claude, an AI) on the user's authorization
 of 2026-10-14 to *design* the next experiment and to preregister its hypotheses, controls, thresholds, failure criteria
 and untouched confirmation data before any run.
 - Revision 1 (`1cf99b4`) had an independent AI design review: **NOT READY** (two blockers, eleven SHOULDs, nine notes).
 - Revision 2 (`53b1458`) applied all of them (§16). Its independent AI re-check: **READY WITH CHANGES**, no blocker, six
   SHOULDs and twelve notes.
-- Revision 3 (this file) applies all of those (§17).
+- Revision 3 (`58ecf45`) applied all of those (§17). A focused AI check of its changes: **READY WITH CHANGES**, two
+  SHOULDs and nine notes, no blocker.
+- Revision 4 (this file) applies all of those (§18). Its own edits have not been re-reviewed.
 
-Both reviews are in the companion file [2026-10-15-experiment-102-design-reviews.md](2026-10-15-experiment-102-design-reviews.md);
+All three reviews are in the companion file [2026-10-15-experiment-102-design-reviews.md](2026-10-15-experiment-102-design-reviews.md);
 they are AI reviews, not human validation. Nothing here runs until the user decides §14 and authorizes each phase of §10.
 
 Inputs: Experiment 101's closed record (`experiments/101-read-component-intervention/evidence/closure-2026-10-14.md`,
@@ -54,7 +56,7 @@ frames. If 160M transfers, the next test of the recipe is a different behavior (
 | id | hypothesis | model(s) | refuted, within scope, by |
 |---|---|---|---|
 | **H1** (recipe transfer) | MD-1 finds a compact read in 160M (one consumption layer, at most 3 heads, replicated on the held-out half of D), and on fresh frames its read coordinate removes and installs the `one`→`two` shift beyond an equal-length off-read control, carrying at least half of it | 160M | a discovery stop (§4), or R, I or M failing |
-| **H2** (position specificity) | with the head's own routes removed — `T`'s outputs at `p_t` clamped and the read vector's components along `T`'s write axes projected out — the read vector written at the prediction position `p_t` (same layer input) has less than half its effect at `p_c`, in both directions | both | the position family failing |
+| **H2** (position specificity) | with the head's own routes removed — `T`'s outputs at `p_t` clamped and the read vector's components along `T`'s write axes projected out, then rescaled to the read's length — the read vector written at the prediction position `p_t` (same layer input) has less than half the read's effect at `p_c`, in both directions | both | the position family failing |
 | **H3** (signed direction) | reversing the read change in the `one` prompt makes it more singular | both | A_neg failing (read as "not signed beyond the natural range", X101-1) |
 | **H4** (per-length efficiency) | at equal edit length the read beats the frame's own cue-change direction in removal and installation | both | B failing while the two directions are not near-collinear |
 | **H5** (held-out axis) | a read built from an axis estimated without `two` (from `three` and `many` against `one`) is non-inferior to the read, within 0.10 of the shift | both | H failing |
@@ -164,10 +166,12 @@ use). The same read is positive-controlled with force on C (PC, §8.5).
 
 **Revision cap.** If the retrodiction fails, MD-1 may be revised **once**, for a stated principle (for example, "the
 attention criterion should not exclude heads behind an attention sink"), never to match a 70M number; the revision and
-its reason are recorded, and version 2 must pass; its retrodiction is the one permitted repeat of a phase. A second
-failure returns the design to the user. An **implementation defect** (code that does not do what this document says) is
-fixed, re-reviewed and recorded without counting against the cap; only a change of rule counts. No 160M prompt runs
-before a version passes, and no revision is allowed after any 160M pass.
+its reason are recorded, and version 2 must pass. A second failure returns the design to the user. An **implementation
+defect** (code that does not do what this document says) is fixed, re-reviewed and recorded without counting against
+the cap; only a change of rule counts. A version-2 retrodiction and a 70M retrodiction re-run after a defect fix are the
+only permitted repeats of a phase. No 160M prompt runs before a version passes, and no revision is allowed after any
+160M pass; a defect found after the 160M discovery makes the 160M verdict `NOT_INTERPRETABLE`, and the discovery is
+never re-run.
 
 ## 5. The read variable and the edits
 
@@ -176,13 +180,14 @@ centring projector (applied to each vector, never across samples); `P_V` the ort
 - **Read part** `R = P_V Δx` (k = 1: `(Δr/‖w_c‖²)·w_c`, `Δr = ⟨Δx, w_c⟩`), of length `s = ‖R‖`.
 - **Off-read part** `off_c = CΔx − R`, `û_off = off_c/‖off_c‖`; overshoot flagged when `‖off_c‖ < s`, as in 101.
 - **The read vector without the head's write axes:** `R_⊥ = R − P_W R`, where `P_W` projects onto the span of the
-  `d̂_T^h`, `h ∈ T`. It is the position control's edit (§6).
+  centred write axes `C d̂_T^h`, `h ∈ T` (for 70M, 011's `d̂_T`). The position control's edit is `R̃_⊥ = s·R_⊥/‖R_⊥‖`,
+  of the read's own length (§6); `‖R_⊥‖/‖R‖` is recorded (70M: 0.980, constant across frames for one head).
 - **Realized read change** of an edit `e` (k = 1): `ρ(e) = −⟨e, w_c⟩/Δr` on the `two` prompt (fraction removed) and
   `⟨e, w_c⟩/Δr` on the `one` prompt (fraction installed), in float64 from the float32 edit. For an equal-length edit along
   a unit direction `u`, `ρ = cos(u, ŵ)`.
 - **Baseline directions**, each centred, unit, and oriented so that `⟨u, δ_D⟩ > 0`, where `δ_D` is the mean of `CΔx`
   over D for the cue `two`; all frozen at calibration from D except DX:
-  - **DX** (per frame): `CΔx/‖CΔx‖`, the frame's own cue change;
+  - **DX** (per frame): `Δx̂_c = CΔx/‖CΔx‖`, the frame's own cue change;
   - **MD**: `δ_D/‖δ_D‖`, the mean cue difference;
   - **PC1**: the first right-singular vector of the 108 centred cue changes on D (`two`, `three`, `many` against `one`),
     stacked without subtracting their mean;
@@ -194,6 +199,8 @@ centring projector (applied to each vector, never across samples); `P_V` the ort
     reaching 95 % of the summed squared singular values; `ŵ_nat = P_nat ŵ/‖P_nat ŵ‖`, and the out-of-span direction
     `u_dorm = C(I − P_nat)ŵ`, normalized and oriented so that `⟨u_dorm, ŵ⟩ > 0`. `k` and `‖P_nat ŵ‖` are reported.
   - **W^h** (each other head `h` of `L*`): the recipe of §4(e) applied to `h`, unit, oriented by `δ_D`.
+- **The off-read coefficient** of an equal-length edit along a unit direction `u` in frame `f`: `λ_{u,f} = ⟨u, û_off⟩`,
+  its component along the frame's own off-read direction per unit of `s` (for DX, `λ = √(1 − ρ²)`).
 - **Held-out** `R^(−) = P_{V^(−)} Δx`, `s^(−)`, `û_off^(−)` as above.
 - **For k > 1:** `cos(V, V^(−))` is the smallest principal cosine; B's collinearity uses the median of `‖P_V Δx̂_c‖`, the
   cosine between the cue change and `V`; PS and PT are not tested.
@@ -218,14 +225,14 @@ Arms come in three classes, which decide what a gate failure voids (§9).
 | REF, PL, NOOP | `one`, `two`, `two` | none; none; `x_pl` replaced by itself | references; G3 |
 | NEC-READ, SUF-READ | `two`, `one` | `x_pl − R`; `x_ref + R` | R, I, M |
 | NEC-OFF, SUF-OFF | `two`, `one` | `x_pl − s·û_off`; `x_ref + s·û_off` | R, I (matched control) |
-| NEC-PTX, SUF-PTX | `two`, `one` | `R_⊥` subtracted from / added to `RESID_PRE.L*` at **`p_t`**, with `T`'s outputs at `p_t` clamped to their unedited values | position |
+| NEC-PTX, SUF-PTX | `two`, `one` | `R̃_⊥` (the read's length) subtracted from / added to `RESID_PRE.L*` at **`p_t`**, with `T`'s outputs at `p_t` clamped to their unedited values | position |
 | SUF-NEG | `one` | `x_ref − R` | A_neg; ladder rung ρ = −1 |
 
 **Qualifier arms** (a gate failure voids only the qualifier they serve):
 
 | arm | prompt | edit | qualifier |
 |---|---|---|---|
-| NEC-Lq, SUF-Lq, q ∈ {0.25, 0.5, 0.75}; NEC-AMP | `two`, `one`; `two` | `x_pl − q·R`; `x_ref + q·R`; `x_pl + R` (rung ρ = −1) | PS, PT |
+| NEC-Lq, SUF-Lq, q ∈ {−0.5, 0.25, 0.5, 0.75}; NEC-AMP | `two`, `one`; `two` | `x_pl − q·R`; `x_ref + q·R`; `x_pl + R` (rung ρ = −1) | PS, PT |
 | NEC-u, SUF-u for u ∈ {DX, MD, GRAD} | `two`, `one` | `x_pl − s·u`; `x_ref + s·u` (equal length) | B (DX), PS, PT |
 | NEC-HREAD, SUF-HREAD, NEC-HOFF, SUF-HOFF | `two`, `one` | READ and OFF with `R^(−)`, `s^(−)`, `û_off^(−)` | H |
 | 70M only: NEC/SUF-BREAD, NEC/SUF-BOFF | `two`, `one` | READ and OFF with MD-1's 70M read | PC |
@@ -235,7 +242,7 @@ Arms come in three classes, which decide what a gate failure voids (§9).
 | arm | edit | purpose |
 |---|---|---|
 | NEC-PT, SUF-PT | the full `R` at `RESID_PRE.L*`, `p_t`, unclamped | the total effect at `p_t` (est. 70M `Z′` near 0.4) |
-| ABH-PT | `R` at `p_t` with `T`'s outputs at `p_t` clamped | the self-read and query routes |
+| NEC-ABH-PT, SUF-ABH-PT | the full `R` at `p_t` with `T`'s outputs at `p_t` clamped, both ways | the self-read and query routes |
 | NEC/SUF-WPT | `∓P_W R` at `RESID_PRE.(L*+1)`, `p_t` | the write-axis route |
 | PC-SWAP-PL, PC-SWAP-REF | the whole `x(p_c)` from the other prompt | share through `p_c` |
 | NEC/SUF-PC1, NEC/SUF-LDA | equal length `s` | further baselines |
@@ -271,10 +278,12 @@ are spent; the phase is exploratory. A revision here may never touch MD-1 or `T`
   If `e₉₀/4 > 0.10` on either side, PS is uninformative for that model. D's DX, MD and GRAD discrepancies are reported
   as exploratory evidence on H6.
 - **PT's pooled dose–response:** for removal and installation, the median over D of `F` at each rung
-  ρ ∈ {−1, 0, 0.25, 0.5, 0.75, 1}, linearly interpolated. **PT's tolerance** at a given `ρ` is the read's own spread
+  ρ ∈ {−1, −0.5, 0, 0.25, 0.5, 0.75, 1}, linearly interpolated. **PT's tolerance** at a given `ρ` is the read's own spread
   between frames: `τ(ρ)` = the nearest-rank 90th percentile over D of `|ladder_f(ρ) − pooled_{−f}(ρ)|`, where
   `ladder_f` is frame `f`'s own interpolated ladder and `pooled_{−f}` the pooled curve without it; floor 0.02. An arm
-  whose `τ(ρ)` exceeds 0.20 is uninformative for PT. The predicted arms' own D errors never enter `τ`, so a biased arm
+  whose `τ(ρ)` exceeds 0.20 is uninformative for PT; DX, whose `ρ` varies by frame, uses `τ(ρ_f)` in each frame and is
+  uninformative if the median over C of `τ(ρ_f)` exceeds 0.20. The medians over D of the OFF effects,
+  `F(NEC-OFF) − 1` and `F(SUF-OFF)`, are frozen for PT's off-read term. The predicted arms' own D errors never enter `τ`, so a biased arm
   fails rather than being absorbed.
 - the per-noun margin `ε_noun = max(0.10, e₉₀^noun/4)` from the cell-level leave-one-rung-out error (uninformative above
   0.20).
@@ -305,7 +314,8 @@ At least **30 of 36** C frames with `Δc_full ≤ −1` nat (checked in stage 1)
   `N_f > 0`, median `N ≥ 0.05`. I: `S_f = F(SUF-READ) − F(SUF-OFF)`, count of `S_f > 0`, median `S ≥ 0.05`.
 - **Magnitude M** (a criterion, not a test, applied after stage 1): median `F_rem ≤ 0.5` and median `F_ins ≥ 0.5`.
 - **Position:** `Z′_f = min[(1 − F_rem) − 2(1 − F(NEC-PTX)), F_ins − 2·F(SUF-PTX)]`, count of `Z′_f > 0` (the effect of
-  `R_⊥` at `p_t`, with the head clamped, is less than half the read's effect at `p_c`, both ways), median `Z′ ≥ 0.10`.
+  `R̃_⊥` at `p_t`, with the head clamped, is less than half the read's effect at `p_c` at equal length, both ways), median
+  `Z′ ≥ 0.10`.
   **Not evaluable as a site test** if the median `‖R_⊥‖/‖R‖` on D (§4 (e‴)) is below 0.5 — that is, if the read
   direction is nearly the head's own write axis.
 - **Direction:** count of `A_neg = Δc(SUF-NEG) > 0` (nats), no floor.
@@ -320,26 +330,32 @@ At least **30 of 36** C frames with `Δc_full ≤ −1` nat (checked in stage 1)
   direction (the verdict's remaining gates); stage 3 B and H (the qualifiers). A later stage is tested only if every
   family of the stage before it passes, so the qualifiers never move a gate's threshold. A position family that is not
   evaluable counts as passed for gatekeeping only, and the verdict records it (§8.6).
-- **70M (stage 1, then one Holm stage at 0.025 over position, direction, B and H: 26, 26, 26 and 25 of 36):** 70M's
+- **70M (stage 1, then one Holm stage at 0.025 over position, direction, B and H: 26, 26, 26 and 25 of 36 by rank):** 70M's
   purpose is C004's Level-4 battery, in which H tests the top confounder; a failed position test must not leave H
   untested.
 
-Both orders keep the familywise error at 0.025 per model.
+Holm's thresholds are by rank: the smallest p-value is compared with α/m, the next with α/(m−1), and so on, not one
+threshold per family. A family that is not evaluable is dropped from its stage, and Holm runs over the rest (three
+families: 26, 26 and 25 of 36; two: 26 and 25; one: 25). Both orders keep the familywise error at 0.025 per model.
 
 ### 8.3 PS — projection sufficiency, with fixed margins (k = 1; evaluated if R and I pass)
 
-- **The ladders.** Removal: `{(−1, F(NEC-AMP)), (0, 1), (0.25, F(NEC-L25)), (0.5, F(NEC-L50)), (0.75, F(NEC-L75)),
-  (1, F_rem)}`; installation: `{(−1, F(SUF-NEG)), (0, 0), (0.25, F(SUF-L25)), …, (1, F_ins)}`; linear interpolation on
-  [−1, 1], which covers every equal-length edit.
-- **The predictions.** For MD and GRAD: `F̂(u)` = the frame's ladder at `ρ(u)`. For DX, the frame's own off-read effect
-  is added, scaled by DX's off-read length `λ_f = ‖C(s·Δx̂_c) − ρ·R‖/s`:
-  `F̂_rem(DX) = ladder_rem(ρ) + λ_f·(F(NEC-OFF) − 1)` and `F̂_ins(DX) = ladder_ins(ρ) + λ_f·F(SUF-OFF)` — DX moves along
-  the frame's own `û_off` by that length, and 101's near-inert remainder (`F_ins_off` −0.033) would otherwise fail PS
-  without any hidden channel.
+- **The ladders.** Removal: `{(−1, F(NEC-AMP)), (−0.5, F(NEC-L−50)), (0, 1), (0.25, F(NEC-L25)), (0.5, F(NEC-L50)),
+  (0.75, F(NEC-L75)), (1, F_rem)}`; installation: `{(−1, F(SUF-NEG)), (−0.5, F(SUF-L−50)), (0, 0), (0.25, F(SUF-L25)),
+  …, (1, F_ins)}`; linear interpolation on [−1, 1], which covers every equal-length edit. The margins are calibrated on
+  [0, 1]; on [−1, 0] the rungs are 0.5 apart, so a prediction there carries up to about four times the margin's
+  interpolation error, which is stated with every result at `ρ < 0`.
+- **The predictions,** for each equal-length edit `u ∈ {DX, MD, GRAD}`: `F̂_rem(u) = ladder_rem(ρ_u) +
+  λ_{u,f}·(F(NEC-OFF) − 1)` and `F̂_ins(u) = ladder_ins(ρ_u) + λ_{u,f}·F(SUF-OFF)`. The edit's component along the
+  frame's own off-read direction is credited with that frame's measured OFF effect, scaled linearly; every other
+  component is predicted inert. Without the term, 101's near-inert remainder (`F_ins_off` −0.033; DX's off-read length
+  ≈ 0.91–0.95·s, MD's ≈ 0.91·s in 70M) would fail PS without any hidden channel.
 - **Agreement.** A frame agrees for `u` if `|F(NEC-u) − F̂_rem(u)| ≤ ε_rem` and `|F(SUF-u) − F̂_ins(u)| ≤ ε_ins`.
 - **PS passes** if, for each of DX, MD and GRAD, at least **27 of 36** frames agree and the median signed deviation
-  `F − F̂` lies within **±0.05** on each side. For the signed median, a frame that cannot be evaluated is entered once as
-  +∞ and once as −∞, and both medians must lie within the band. GRAD is the adversarial edit: its components outside the
+  `F − F̂` lies within **±0.05** on each side. A frame **cannot be evaluated** if its `Δc_full > −1` nat or an arm its
+  prediction needs is voided by a gate; for the signed median it is entered once as +∞ and once as −∞, and both medians
+  must lie within the band. If the margins are uninformative (§7), the component is
+  `PROJECTION_SUFFICIENCY_NOT_EVALUABLE`. GRAD is the adversarial edit: its components outside the
   read are where a hidden channel would act.
 - The same statistic is reported, with no force, for every secondary edit (PC1, LDA, NAT, DORM, ISO, W^h, UP with its
   realized `ρ`).
@@ -347,9 +363,10 @@ Both orders keep the familywise error at 0.025 per model.
 ### 8.4 PT — the D-calibrated per-frame table (k = 1; stage 1)
 
 After the lock, stage 1 runs REF, PL and the stratum PL prompts on C (unedited), computes every primary edit's `ρ` per
-frame, and predicts `F` for NEC/SUF-READ, -DX, -MD and -GRAD from D's pooled dose–response at that `ρ` (§7). Only DX's
-prediction is frame-specific (through `ρ`); for READ, MD and GRAD the prediction is one number per arm, and PT tests
-whether fresh frames stay within the read's own between-frame spread around it. The table (the predictions, the `ρ`s,
+frame, and predicts `F` for NEC/SUF-READ, -DX, -MD and -GRAD from D's pooled dose–response at that `ρ`, plus, for DX,
+MD and GRAD, `λ_{u,f}` times D's median OFF effect (§7) — both known before any edit. DX's prediction is frame-specific
+through `ρ` and `λ`; MD's and GRAD's through `λ` only; READ's is one number, and PT tests whether fresh frames stay
+within the read's own between-frame spread around it. The table (the predictions, the `ρ`s,
 the tolerances and the precondition) is written, digested and **committed by the user before stage 2 runs any edit**;
 stage 2 refuses to start otherwise. **PT passes** if every informative arm has at least **27 of 36** frames within
 `τ(ρ)`; it is not evaluable if more than half the arms are uninformative.
@@ -357,7 +374,8 @@ stage 2 refuses to start otherwise. **PT passes** if every informative arm has a
 ### 8.5 PC — the positive control (70M)
 
 MD-1's own 70M read, with its own matched off-read control, is scored by stage 1's rules (R and I, Holm 26/25 at
-0.025, medians ≥ 0.05) as a separate family: `PC_PASSED`, `PC_FAILED` or `PC_NOT_EVALUABLE` (a qualifier-arm gate
+0.025, medians ≥ 0.05) as a separate family: `PC_PASSED`, `PC_FAILED` or `PC_NOT_EVALUABLE` (70M's precondition on C
+fails, a 70M verdict-arm gate fails, or a qualifier-arm gate
 failure). A failed or unevaluable PC is appended to every 160M verdict that involves a read
 (`METHOD_POSITIVE_CONTROL_FAILED` or `…_NOT_EVALUABLE`), which then cannot be read as a statement about MD-1; it is not
 appended to a discovery stop.
@@ -390,7 +408,7 @@ template; Pythia-70M-deduped → Pythia-160M-deduped; the read-discovery recipe,
 | C precondition fails | `BEHAVIOR_PRECONDITION_NOT_MET_ON_C` | nothing about MD-1 |
 | R and I do not both pass | `MD1_READ_EFFECTS_NOT_ESTABLISHED_160M` (with `_REMOVAL_ONLY` or `_INSTALLATION_ONLY` when one passes) | H1 negative: the read did not pass R and I on fresh 160M frames |
 | R, I pass; M fails | `MD1_READ_PARTIAL_160M` | H1 negative on magnitude |
-| R, I, M pass; position or direction fails | `MD1_READ_NOT_SPECIFIC_160M` (the failing component named) | H1 holds causally; H2 or H3 negative |
+| R, I, M pass; position or direction fails | `MD1_READ_SPECIFICITY_NOT_ESTABLISHED_160M` (the failing component named) | H1 holds causally; H2 or H3 negative |
 | R, I, M, direction pass; position not evaluable | `MD1_READ_TRANSFERS_TO_160M_POSITION_UNTESTED`, with the qualifiers | H1 and H3 supported; H2 untestable for this head |
 | R, I, M, position and direction pass | `MD1_READ_TRANSFERS_TO_160M`, with B, H, PS, PT and PER_ITEM | H1–H3 supported within scope |
 
@@ -417,7 +435,8 @@ No label says that a variable has no causal role.
   four-family stage** about 0.83 (simulation). The minimal effect of interest is a per-frame success probability of 0.8.
 - **70M expectations (est.):** R, I, M and the position test (with the head clamped and its write axis removed) well
   above threshold; the unclamped `p_t` edit near `Z′` 0.4 (`g_w` ≈ 0.20); B around 0.36–0.54 against a floor of 0.10;
-  PS on DX near the margin because of the recorded remainder (the additive prediction is meant to absorb it). 70M's
+  PS and PT near their margins on the installation side because of the recorded remainder, which the off-read term is
+  meant to absorb (without it, PT on SUF-DX would fall outside 0.05 in about 10 of 36 frames *(est.)*). 70M's
   Level-4 value lies in H, PS, PT, the position test and the NAT/DORM arms. For 160M nothing is known.
 
 ### 8.9 Baselines and naive selections (preregistered, no force)
@@ -430,7 +449,7 @@ No label says that a variable has no causal role.
   the other heads' equal-length reads in both directions.
 - **Each naive head (ATTN, DLA, TOP) outside `T`:** the medians of its `F_rem` and `F_ins`; the count of frames in which
   `T`'s read beats it in both directions; its edit length; and, if its layer is below `L*`, its realized `ρ` at `L*`.
-- **The `p_t` routes:** `Z′` for the unclamped PT arms and for ABH-PT, and WPT's effect, against `g_w` and `g_s`.
+- **The `p_t` routes:** `Z′` for the unclamped PT arms and for NEC/SUF-ABH-PT, and WPT's effect, against `g_w` and `g_s`.
 
 ## 9. Gates
 
@@ -439,7 +458,7 @@ No label says that a variable has no causal role.
   saved measurements bit for bit.
 - **G1, geometry.** Each `w_c^h` recomputed from the weights and the recorded `d̂_T^h` within 1e-9; `V` orthonormal
   within 1e-12; every ISO and baseline direction unit and mean-zero within 1e-12, ISO orthogonal to `V`; `R_⊥`
-  orthogonal to the write axes within 1e-9; 70M's `w_c` equal to 101's within 1e-9.
+  orthogonal to the centred write axes within 1e-9; 70M's `w_c` equal to 101's within 1e-9.
 - **G2, the edits.** Landing bit for bit, zero change outside the slice; in float64 from the float32 vector, realized
   read coordinates within 1e-4 of target, centred lengths within 1e-4 relative, parallel/orthogonal within 1e-4;
   realized `ρ` recorded for every edit.
@@ -496,8 +515,8 @@ seen.
 | `MD1_READ_TRANSFERS_TO_160M` with `PER_LENGTH_ADVANTAGE`, `PROJECTION_SUFFICIENT`, `FRAMES_WITHIN_SPREAD` | a frozen read-discovery recipe found, in a model where the answer was unknown, a cue-position-specific, signed read carrying at least half of the tested shift, more efficient per unit length than the naive direction, sufficient within fixed margins against an adversarial gradient edit, with fresh frames inside the read's own spread — for this behavior and template | generality to other behaviors, model families or templates; anything about the decompiled programs; that the read is the model's algorithm |
 | transfers, `NO_ADVANTAGE_COLLINEAR` | the recipe finds the variable, but in 160M the naive direction finds it too: the mechanism adds explanation, not search power | that the recipe is needed to find the direction |
 | transfers, `NO_ADVANTAGE` or `PROJECTION_SUFFICIENCY_NOT_SUPPORTED` | `r` is not sufficient within ε at the site; the side, sign and size of the deviation are reported. A subspace claim needs a median absolute deviation above 0.10 | a one-dimensional variable |
-| `MD1_READ_NOT_SPECIFIC_160M` (position) | with the head clamped and its write axes removed, the read vector still acts at `p_t`: it behaves as a generic number direction there | the "read of a transport head" reading |
-| `MD1_READ_NOT_SPECIFIC_160M` (direction) | the read's reversal is not signed beyond the natural range of `r` | a signed variable outside the natural range |
+| `MD1_READ_SPECIFICITY_NOT_ESTABLISHED_160M` (position) | position specificity was not established: with the head clamped and its write axes removed, the read vector at `p_t` had at least half the read's effect in too many frames, or too large a median | the "read of a transport head" reading as established; nor that the read is a generic direction (a failed test is not evidence for the alternative) |
+| `MD1_READ_SPECIFICITY_NOT_ESTABLISHED_160M` (direction) | the read's reversal was not shown to be signed beyond the natural range of `r` | a signed variable outside the natural range |
 | `…_POSITION_UNTESTED` | as transfers, but the read direction is nearly the head's write axis, so position cannot be tested this way | position specificity |
 | `MD1_READ_PARTIAL_160M` | the read carries less than half of the shift; transport is shared beyond `T` | a complete read |
 | `MD1_READ_EFFECTS_NOT_ESTABLISHED_160M` | the read did not pass R and I on fresh 160M frames | that 160M has no such variable, or that the read has no causal role |
@@ -553,16 +572,18 @@ behavior.
 - **D1. Scope:** the 160M recipe-transfer test and the 70M battery in one experiment, with separate families.
 - **D2. MD-1's rules:** CONCENTRATED at 0.5/0.7; attention ≥ 0.1; joint recovery ≥ 0.70 on D1 and ≥ 0.60 on D2; k ≤ 3;
   medians; the revision cap; the 70M read check (30/36, medians ≥ 0.5).
-- **D3. Position:** the gate uses `R_⊥` at `p_t` with the head clamped (floor 0.10), because the mechanism itself
-  predicts a non-zero effect for the raw vector at `p_t` (70M est. `Z′` ≈ 0.4); not evaluable if `‖R_⊥‖/‖R‖` < 0.5; the
-  raw and route-separating arms secondary; the layer control secondary.
+- **D3. Position:** the gate uses `R̃_⊥` (the read vector without the head's write axes, at the read's length) at `p_t`
+  with the head clamped (floor 0.10), because the mechanism itself predicts a non-zero effect for the raw vector at `p_t`
+  (70M est. `Z′` ≈ 0.4); not evaluable if `‖R_⊥‖/‖R‖` < 0.5; the raw and route-separating arms secondary; the layer
+  control secondary.
 - **D4. Direction:** A_neg as a gate; A_amp as a ladder rung only.
 - **D5. B** as a per-length-efficiency qualifier, with the interchange and footprint forms secondary (§8.9).
 - **D6. H** with non-inferiority at 0.10.
-- **D7. PS** with fixed margins `max(0.05, e₉₀/4)`, ladders on [−1, 1], DX's prediction including the frame's measured
-  off-read effect, MD and GRAD on the ladder alone, and a signed criterion. The alternative is DX on the ladder alone,
-  with 70M then predicted near 26 of 36.
-- **D8. PT** with the read's between-frame spread as tolerance, committed by the user before the edits.
+- **D7. PS** with fixed margins `max(0.05, e₉₀/4)`, ladders on [−1, 1] with a rung at −0.5, every edit's prediction
+  including its component along the frame's own off-read direction credited with the frame's measured OFF effect, and a
+  signed criterion. The alternative is the ladder alone, with 70M then predicted near 26 of 36 on DX.
+- **D8. PT** with the read's between-frame spread as tolerance and D's median OFF effect as the off-read term, committed
+  by the user before the edits.
 - **D9. The 70M positive control** with force on the verdict's interpretation, plus the read check in the retrodiction.
 - **D10. Frames:** C = 101's 37–60 and the first 12 eligible of 61–96, after a human linguistic check of all 36 (§15).
 - **D11. Per-item criteria** secondary, without force.
@@ -574,8 +595,9 @@ behavior.
 ## 15. The frames
 
 **C = 101's candidates 37–60** (frozen eligible in 101's `confirmation-v1.json`, never executed) **and the first 12
-eligible of candidates 61–96 below**, in order, chosen by the tokenizer only under 101 §11's rules plus: the adjective is
-none of 101's 60 candidates' adjectives, and the text equals none of them. A tokenizer-only pre-check (no model;
+eligible, unflagged candidates of 61–96 below**, in order, chosen by the tokenizer only under 101 §11's rules plus: the
+adjective is none of 101's 60 candidates' adjectives, the text equals none of them, and the candidate is not on the
+reserve's flag list below. A tokenizer-only pre-check (no model;
 2026-10-15) found all 36 new candidates eligible, so C would take 61–72; the freeze re-checks and decides.
 
 **The human linguistic check,** before the freeze, covers all 36 C frames. A frame whose adjective reads in it as a noun
@@ -583,13 +605,17 @@ or an adverb, or whose verb invites a reading other than a plural object, is rep
 61–96, in order, skipping the flagged ones listed below; the check and its outcome are committed with the freeze. If
 fewer than 36 frames survive, the freeze writes nothing and the design is revised.
 - **AI flags for the check** (an AI judgment, not a decision): 101's 39 `lush` and 58 `fast` (noun readings); 41
-  `quick`, 43 `slow`, 48 `real` and 50 `early` (adverb readings, "picked one early").
+  `quick`, 43 `slow`, 48 `real` and 50 `early` (adverb readings, "picked one early"); 44 `told` and 53 `met`
+  (reciprocal readings, "met one…"); arguably 37 `sick`, 49 `lost` and 55 `pretty`. 101 executed only its frames 1–36,
+  so no outcome on 37–60 exists; frame 21 (`hugged`) is the only executed frame with a reciprocal-capable verb.
 - **Revisions 2 and 3** replaced 65 `tender`, 69 `plain`, 70 `vintage`, 71 `antique` and 72 `hollow` (noun readings) and
   changed two verbs that invite a reciprocal reading ("shook one…", "greeted one…"): 65 now `swept`, 71 `hired`.
 - **The new adjectives of 61–72** — `bulky`, `muddy`, `dusty`, `tasty`, `sandy`, `hot`, `lively`, `loyal`, `icy`,
   `rocky`, `bald`, `slender` — are plain attributive adjectives here (AI judgment).
-- **Flagged in the reserve, skipped by the replacement rule and to be replaced before any later use:** 81 `solid`, 82
-  `delicate`, 83 `strong`, 85 `tart`, 86 `weak`, 87 `sore`, 88 `healthy`, 89 `compact`, 93 `short`, 95 `poor`, 96 `rich`.
+- **Flagged in the reserve, skipped by the selection and the replacement rule, and to be replaced before any later use:**
+  73 `groomed` and 80 `hugged` (reciprocal readings); 81 `solid`, 82 `delicate`, 83 `strong`, 85 `tart`, 86 `weak`, 87
+  `sore`, 88 `healthy`, 89 `compact`, 93 `short`, 95 `poor` and 96 `rich` (noun readings); arguably 74 `skinny`, 84
+  `mild` and 92 `floral`. Unflagged replacements are therefore, in order: 75, 76, 77, 78, 79, 90, 91 and 94.
 
 | # | text | # | text |
 |---|---|---|---|
@@ -654,6 +680,22 @@ fewer than 36 frames survive, the freeze writes nothing and the design is revise
 | NOTE 10 in-sample calibration | 160M's calibration reported for D1 and D2 separately |
 | NOTE 11 gating order; "rejected"; precondition | 70M uses one four-family Holm stage; "passes" defined to include floors; nothing is tested after a failed precondition |
 | NOTE 12 A_neg reading; calibration revisions; footprints | DIRECTION failure read as "not signed beyond the natural range"; calibration may not touch MD-1 or `T`; footprints recorded for every edit |
+
+## 18. What changed in revision 4 (the change check of revision 3)
+
+| finding | change |
+|---|---|
+| SHOULD A: the position gate compared a shorter `R_⊥` at `p_t` with the full `R` at `p_c` | the gate edit is `R̃_⊥ = s·R_⊥/‖R_⊥‖`, at the read's length (§2, §5, §6, §8.2, D3) |
+| SHOULD B: PT predicted DX without the off-read term PS adds | PT adds `λ_{u,f}` times D's median OFF effect for DX, MD and GRAD; 70M expectation stated (§7, §8.4, §8.8, D8) |
+| N1: dropped families in Holm; thresholds by rank | stated (§8.2) |
+| N2: defect re-runs vs the one permitted repeat | a 70M re-run after a defect fix is permitted; a defect found after the 160M discovery makes the verdict `NOT_INTERPRETABLE` (§4.4) |
+| N3: ABH-PT needed both directions | NEC/SUF-ABH-PT (§6, §8.9) |
+| N4: write axes not centred; 70M's axis | `P_W` projects onto `C d̂_T^h`; 70M uses 011's `d̂_T` (§5, §9) |
+| N5: MD's off-read length scored on the ladder alone | one rule for every edit: its component along the frame's `û_off` is credited with the frame's OFF effect (§5, §8.3, D7) |
+| N6: the [−1, 0] segment spans a gap of 1 | a rung at −0.5 (NEC/SUF-L−50); the margin's limit at `ρ < 0` stated (§6, §7, §8.3) |
+| N7: frames | reciprocal-capable verbs flagged (44, 53 in C; 73, 80 in the reserve); arguable adjectives flagged; flagged candidates skipped by the selection too; the "53 behaved normally" premise corrected (§15) |
+| N8: definitions | `Δx̂_c`; "cannot be evaluated"; PS's uninformative label; DX's PT rule; PC's value after a failed 70M precondition or verdict gate (§5, §7, §8.3–§8.5) |
+| N9: `MD1_READ_NOT_SPECIFIC_160M` asserted non-specificity from a failed test | renamed `MD1_READ_SPECIFICITY_NOT_ESTABLISHED_160M`; §11 reworded (§8.6, §11) |
 
 No model is run until the design is decided, the implementation and its review are complete, and the user authorizes
 the phase.
