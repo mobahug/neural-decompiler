@@ -5,7 +5,7 @@ independent AI review (a Claude agent, read-only), not a human validation.
 
 | review | of | verdict | source sha256 |
 |---|---|---|---|
-| 1 (2026-10-15) | revision 1, sha256 `84b24685…796f` (commit of this file's parent) | NOT READY: 2 blockers, 11 SHOULDs, 9 notes | `edd86fe9bbb7633766db40af82a1f64f4d98bd0ef747ad848ceb03c335e88dfb` |
+| 1 (2026-10-15) | revision 1, sha256 `84b24685…796f` (commit `1cf99b4`) | NOT READY: 2 blockers, 11 SHOULDs, 9 notes | `edd86fe9bbb7633766db40af82a1f64f4d98bd0ef747ad848ceb03c335e88dfb` |
 
 Revision 2 of the design applies every finding; its section "What changed in revision 2" maps each one.
 

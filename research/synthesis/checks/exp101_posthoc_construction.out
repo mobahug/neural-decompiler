@@ -1,7 +1,7 @@
-Loading weights:   0%|          | 0/76 [00:00<?, ?it/s]Loading weights:   1%|▏         | 1/76 [00:00<00:26,  2.82it/s]Loading weights: 100%|██████████| 76/76 [00:00<00:00, 212.98it/s]
 sanity: max |CΓW d̂_T − w_c| = 1.725e-10 (‖w_c‖ 0.7659)
 cos(M d̂_T, d̂_T) = 0.9388; off-axis share ‖(I − d̂d̂ᵀ)M d̂‖/‖M d̂‖ = 0.3445
 Rayleigh d̂ᵀM d̂ = 0.5866; top eigenvalues of M: 0.8845, 0.7895, 0.7603, 0.7440, 0.6785
+cos(ŵ, d̂_T) = 0.2013 (read covector at p_c against the head's write axis at p_t; added 2026-10-15)
 == calibration (exposed): 36 frames
   cos(w_c, K δ) = 0.9484; cos(δ, ŵ) = 0.4098
   per frame cos(w_c, K Δx_f): min 0.8822 median 0.9306 max 0.9722

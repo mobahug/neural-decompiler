@@ -12,7 +12,8 @@ outputs/experiment-101/. Notation (the 102 baselines survey, scratchpad memo of 
 Checks:
 - G1-style sanity: C Γ W d̂_T from the weights equals 101's w_c (validates the conventions used here);
 - cos(M d̂_T, d̂_T) and the off-axis share of M d̂_T, and d̂_T's Rayleigh quotient against M's top eigenvalue;
-- cos(w_c, K δ) with δ the mean centred one→two change, and per frame cos(w_c, K Δx_f).
+- cos(w_c, K δ) with δ the mean centred one→two change, and per frame cos(w_c, K Δx_f);
+- cos(ŵ, d̂_T): how far the read covector is from the head's write axis (added 2026-10-15 for 102's position control).
 Descriptive only; no outcome force. Run:
 HF_HUB_OFFLINE=1 .venv/bin/python -B research/synthesis/checks/exp101_posthoc_construction.py
 """
@@ -46,6 +47,7 @@ off = Md - (Md @ d_hat) * d_hat
 evals = torch.linalg.eigvalsh(M)
 print(f"cos(M d̂_T, d̂_T) = {cos_md:.4f}; off-axis share ‖(I − d̂d̂ᵀ)M d̂‖/‖M d̂‖ = {float(off.norm() / Md.norm()):.4f}")
 print(f"Rayleigh d̂ᵀM d̂ = {float(d_hat @ Md):.4f}; top eigenvalues of M: " + ", ".join(f"{float(v):.4f}" for v in evals.flip(0)[:5]))
+print(f"cos(ŵ, d̂_T) = {float(w_c @ d_hat / w_c.norm()):.4f} (read covector at p_c against the head's write axis at p_t; added 2026-10-15)")
 
 K = C @ G @ W @ W.T @ G @ C
 tags = list(ri.PRODUCTION.tags())
