@@ -1,0 +1,10 @@
+== calibration (exposed): 36 frames
+  cos(Δx_frame, ŵ): min 0.305 median 0.377 max 0.429
+  cos(mean Δx, ŵ) 0.410; cos(PC1, ŵ) 0.409 (PC1 share 0.840); cos(class-mean probe, ŵ) 0.419; cos(shrinkage LDA, ŵ) 0.418
+  natural r: REF -1.03..-0.34; PL@two 0.88..1.53; PL@three 0.80..1.42; PL@many 0.71..1.30
+  NEC-AMP target beyond the max natural plural r in 36/36; SUF-NEG target below the min natural r(one) in 36/36
+== confirmation (spent): 36 frames
+  cos(Δx_frame, ŵ): min 0.293 median 0.379 max 0.435
+  cos(mean Δx, ŵ) 0.407; cos(PC1, ŵ) 0.407 (PC1 share 0.847); cos(class-mean probe, ŵ) 0.414; cos(shrinkage LDA, ŵ) 0.428
+  natural r: REF -1.06..-0.45; PL@two 0.94..1.58; PL@three 0.74..1.32; PL@many 0.63..1.22
+  NEC-AMP target beyond the max natural plural r in 36/36; SUF-NEG target below the min natural r(one) in 36/36
